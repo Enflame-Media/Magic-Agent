@@ -1,0 +1,88 @@
+name = "happy-server-workers"
+main = "src/index.ts"
+compatibility_date = "2025-01-08"
+compatibility_flags = ["nodejs_compat"]
+
+# Cloudflare Account ID: 81f483e6767ea3194467ecef42840f79
+account_id = "81f483e6767ea3194467ecef42840f79"
+
+# Enable Node.js compatibility for process.env and other Node APIs
+[build]
+command = ""
+
+# Local development settings
+[dev]
+port = 8787
+local_protocol = "http"
+
+#############################
+# Development Environment
+#############################
+[env.dev]
+name = "happy-server-workers-dev"
+vars = { ENVIRONMENT = "development" }
+
+# D1 Database binding (development)
+[[env.dev.d1_databases]]
+binding = "DB"
+database_name = "happy-dev"
+database_id = "REPLACE_WITH_ACTUAL_DATABASE_ID"  # Run: wrangler d1 create happy-dev
+
+# R2 Bucket binding (development)
+[[env.dev.r2_buckets]]
+binding = "UPLOADS"
+bucket_name = "happy-dev-uploads"
+
+# Durable Objects bindings (development) - uncomment when needed
+# [[env.dev.durable_objects.bindings]]
+# name = "WEBSOCKET_SESSIONS"
+# class_name = "WebSocketSession"
+# script_name = "happy-server-workers-dev"
+
+#############################
+# Production Environment
+#############################
+[env.prod]
+name = "happy-server-workers-prod"
+vars = { ENVIRONMENT = "production" }
+# Custom domain routing - configure after domain setup
+# routes = [
+#     { pattern = "happy-api.enflamemedia.com", custom_domain = true }
+# ]
+
+# D1 Database binding (production)
+[[env.prod.d1_databases]]
+binding = "DB"
+database_name = "happy-prod"
+database_id = "REPLACE_WITH_ACTUAL_DATABASE_ID"  # Run: wrangler d1 create happy-prod
+
+# R2 Bucket binding (production)
+[[env.prod.r2_buckets]]
+binding = "UPLOADS"
+bucket_name = "happy-prod-uploads"
+
+# Durable Objects bindings (production) - uncomment when needed
+# [[env.prod.durable_objects.bindings]]
+# name = "WEBSOCKET_SESSIONS"
+# class_name = "WebSocketSession"
+# script_name = "happy-server-workers-prod"
+
+#############################
+# Resource Limits (Paid Plan)
+#############################
+# Requires Cloudflare Workers Paid plan ($5/month)
+# Provides:
+# - Durable Objects access
+# - Extended CPU time (500ms vs 50ms)
+# - Higher request limits
+# - D1 storage beyond 500MB
+
+#############################
+# Notes
+#############################
+# 1. Default environment (no env prefix) used for local development
+# 2. Deploy to specific environment: wrangler deploy --env dev|prod
+# 3. Update database_id values after creating D1 databases
+# 4. R2 buckets must be created before first deployment
+# 5. Custom domains configured in Cloudflare dashboard
+# 6. Secrets managed via: wrangler secret put SECRET_NAME --env prod

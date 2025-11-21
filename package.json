@@ -1,0 +1,54 @@
+{
+  "name": "happy-server-workers",
+  "version": "0.0.0",
+  "description": "Happy Server on Cloudflare Workers with Hono",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --ext .ts",
+    "lint:fix": "eslint . --ext .ts --fix",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "wrangler d1 execute happy-db --local --file=./drizzle/migrations/*.sql",
+    "db:studio": "drizzle-kit studio",
+    "db:seed": "tsx src/db/seed.ts",
+    "db:compare": "tsx src/db/comparison-tool.ts"
+  },
+  "keywords": [
+    "cloudflare",
+    "workers",
+    "hono",
+    "typescript"
+  ],
+  "author": "Steve Korshakov <steve@korshakov.com>",
+  "license": "MIT",
+  "private": true,
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20251109.0",
+    "@types/node": "^22.12.6",
+    "@typescript-eslint/eslint-plugin": "^8.46.3",
+    "@typescript-eslint/parser": "^8.46.3",
+    "drizzle-kit": "^0.30.0",
+    "eslint": "^9.39.1",
+    "prettier": "^3.6.2",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.8",
+    "wrangler": "^4.46.0"
+  },
+  "dependencies": {
+    "@hono/zod-openapi": "^1.1.4",
+    "@libsql/client": "^0.15.15",
+    "@paralleldrive/cuid2": "^2.2.2",
+    "drizzle-orm": "^0.44.7",
+    "hono": "^4.10.4",
+    "privacy-kit": "0.0.23",
+    "tweetnacl": "^1.0.3",
+    "zod": "^4.1.12"
+  }
+}

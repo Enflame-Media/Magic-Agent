@@ -1,0 +1,49 @@
+{
+    "compilerOptions": {
+        /* Language and Environment */
+        "target": "ES2021",
+        "lib": ["ES2021"],
+        "module": "ESNext",
+        "moduleResolution": "bundler",
+
+        /* Emit */
+        "noEmit": true,
+        "outDir": "./dist",
+
+        /* Type Checking - Strict Mode */
+        "strict": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "noFallthroughCasesInSwitch": true,
+        "noImplicitReturns": true,
+        "noImplicitOverride": true,
+        "noUncheckedIndexedAccess": true,
+        "allowUnusedLabels": false,
+        "allowUnreachableCode": false,
+
+        /* Type Checking - Quality */
+        "forceConsistentCasingInFileNames": true,
+        "useDefineForClassFields": true,
+
+        /* Interop Constraints */
+        "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true,
+        "isolatedModules": true,
+        "resolveJsonModule": true,
+        "verbatimModuleSyntax": false,
+
+        /* Completeness */
+        "skipLibCheck": true,
+
+        /* Path Mapping */
+        "baseUrl": ".",
+        "paths": {
+            "@/*": ["./src/*"]
+        },
+
+        /* Cloudflare Workers */
+        "types": ["@cloudflare/workers-types", "vitest/globals", "node"]
+    },
+    "include": ["src/**/*"],
+    "exclude": ["node_modules", "dist", ".wrangler"]
+}
