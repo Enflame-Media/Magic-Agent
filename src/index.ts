@@ -5,6 +5,11 @@ import { errorHandler } from '@/middleware/error';
 import { initAuth } from '@/lib/auth';
 import authRoutes from '@/routes/auth';
 import testRoutes from '@/routes/test/privacy-kit-test';
+import sessionsRoutes from '@/routes/sessions';
+import machinesRoutes from '@/routes/machines';
+import artifactsRoutes from '@/routes/artifacts';
+import accessKeysRoutes from '@/routes/accessKeys';
+import connectRoutes from '@/routes/connect';
 
 /**
  * Environment bindings interface for Cloudflare Workers
@@ -75,6 +80,13 @@ app.use('*', async (c, next) => {
 
 // Mount authentication routes
 app.route('/', authRoutes);
+
+// Mount core API routes (HAP-13)
+app.route('/', sessionsRoutes);
+app.route('/', machinesRoutes);
+app.route('/', artifactsRoutes);
+app.route('/', accessKeysRoutes);
+app.route('/', connectRoutes);
 
 // Mount test routes
 app.route('/test', testRoutes);
