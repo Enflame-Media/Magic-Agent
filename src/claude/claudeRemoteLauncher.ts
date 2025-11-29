@@ -16,6 +16,9 @@ import { RawJSONLines } from "@/claude/types";
 import { OutgoingMessageQueue } from "./utils/OutgoingMessageQueue";
 import { getToolName } from "./utils/getToolName";
 
+/** Debounce interval for ready notifications to prevent notification spam */
+const READY_DEBOUNCE_MS = 1000;
+
 interface PermissionsField {
     date: number;
     result: 'approved' | 'denied';
@@ -301,6 +304,11 @@ export async function claudeRemoteLauncher(session: Session): Promise<'switch' |
         // actually changes (e.g., new session started or /clear command used).
         // See: https://github.com/anthropics/happy-cli/issues/143
         let previousSessionId: string | null = null;
+
+        // Track last ready notification time to prevent notification spam
+        // See: HAP-88 - onReady was sending duplicate push notifications
+        let lastReadyTime = 0;
+
         while (!exitReason) {
             logger.debug('[remote]: launch');
             messageBuffer.addMessage('═'.repeat(40), 'status');
@@ -381,6 +389,12 @@ export async function claudeRemoteLauncher(session: Session): Promise<'switch' |
                     },
                     onReady: () => {
                         if (!pending && session.queue.size() === 0) {
+                            const now = Date.now();
+                            if (now - lastReadyTime < READY_DEBOUNCE_MS) {
+                                return; // Debounce: skip duplicate notification
+                            }
+                            lastReadyTime = now;
+
                             session.client.sendSessionEvent({ type: 'ready' });
                             session.api.push().sendToAllDevices(
                                 'It\'s ready!',

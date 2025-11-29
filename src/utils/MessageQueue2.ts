@@ -181,11 +181,16 @@ export class MessageQueue2<T> {
      */
     reset(): void {
         logger.debug(`[MessageQueue2] reset() called. Clearing ${this.queue.length} messages`);
+
+        // Resolve pending waiter before clearing to prevent orphaned Promises
+        if (this.waiter) {
+            const waiter = this.waiter;
+            this.waiter = null;
+            waiter(false);  // Resolve with false indicating reset, not new messages
+        }
+
         this.queue = [];
         this.closed = false;
-
-        // Clear waiter without calling it since we're not closing
-        this.waiter = null;
     }
 
     /**

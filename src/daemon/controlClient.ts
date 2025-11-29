@@ -316,7 +316,7 @@ export async function stopDaemon(): Promise<void> {
     if (result.success) {
       // Wait for daemon to die
       try {
-        await waitForProcessDeath(state.pid, 2000);
+        await waitForProcessDeath(state.pid, 10_000);
         logger.debug('Daemon stopped gracefully via HTTP');
         return;
       } catch {

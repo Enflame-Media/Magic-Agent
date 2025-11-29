@@ -92,6 +92,39 @@ describe('deterministicStringify', () => {
         const str2 = deterministicStringify(obj);
         expect(str1).toBe(str2);
     });
+
+    it('should handle deeply nested arrays with sortArrays enabled without stack overflow', () => {
+        // Create a deeply nested array structure that would cause stack overflow
+        // if sortArrays re-processed already-processed items
+        const createDeeplyNested = (depth: number): any => {
+            if (depth === 0) return { value: 'leaf' };
+            return [createDeeplyNested(depth - 1), createDeeplyNested(depth - 1)];
+        };
+
+        // Depth of 15 creates 2^15 = 32768 nodes - enough to cause stack overflow
+        // if items were re-processed during sort
+        const deeplyNested = createDeeplyNested(15);
+
+        // This should not throw a stack overflow error
+        expect(() => {
+            deterministicStringify(deeplyNested, { sortArrays: true });
+        }).not.toThrow();
+    });
+
+    it('should correctly sort deeply nested arrays', () => {
+        // Verify sorting works correctly with nested structures
+        const obj = {
+            arr: [
+                [3, 2, 1],
+                [1, 2, 3],
+                [2, 1, 3]
+            ]
+        };
+
+        const result = deterministicStringify(obj, { sortArrays: true });
+        // Inner arrays should be sorted, then outer array sorted by stringified content
+        expect(result).toBe('{"arr":[[1,2,3],[1,2,3],[1,2,3]]}');
+    });
 });
 
 describe('hashObject', () => {

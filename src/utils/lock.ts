@@ -1,22 +1,78 @@
+/**
+ * Custom error thrown when lock acquisition times out.
+ */
+export class LockTimeoutError extends Error {
+    constructor(message: string = 'Lock acquisition timeout') {
+        super(message);
+        this.name = 'LockTimeoutError';
+        Error.captureStackTrace(this, this.constructor);
+    }
+}
+
 export class AsyncLock {
     private permits: number = 1;
     private promiseResolverQueue: Array<(v: boolean) => void> = [];
 
-    async inLock<T>(func: () => Promise<T> | T): Promise<T> {
+    /**
+     * Execute a function while holding the lock.
+     * @param func - The function to execute
+     * @param timeout - Optional timeout in milliseconds for lock acquisition. If not provided, waits indefinitely.
+     * @throws {LockTimeoutError} If timeout is specified and lock cannot be acquired within the timeout period.
+     */
+    async inLock<T>(func: () => Promise<T> | T, timeout?: number): Promise<T> {
+        const lockAcquired = await this.lock(timeout);
+        if (!lockAcquired) {
+            throw new LockTimeoutError();
+        }
         try {
-            await this.lock();
             return await func();
         } finally {
             this.unlock();
         }
     }
 
-    private async lock() {
+    /**
+     * Acquire the lock with optional timeout.
+     * @param timeout - Optional timeout in milliseconds. If undefined or <= 0, waits indefinitely.
+     * @returns true if lock was acquired, false if timed out
+     */
+    private async lock(timeout?: number): Promise<boolean> {
         if (this.permits > 0) {
-            this.permits = this.permits - 1;
-            return;
+            this.permits -= 1;
+            return true;
         }
-        await new Promise<boolean>(resolve => this.promiseResolverQueue.push(resolve));
+
+        return new Promise<boolean>(resolve => {
+            let timeoutId: NodeJS.Timeout | undefined;
+            let resolved = false;
+
+            const resolver = (v: boolean) => {
+                if (resolved) return;
+                resolved = true;
+                if (timeoutId !== undefined) {
+                    clearTimeout(timeoutId);
+                    timeoutId = undefined;
+                }
+                resolve(v);
+            };
+
+            this.promiseResolverQueue.push(resolver);
+
+            if (timeout !== undefined && timeout > 0) {
+                timeoutId = setTimeout(() => {
+                    if (resolved) return;
+                    resolved = true;
+                    // Remove resolver from queue to prevent memory leak
+                    const index = this.promiseResolverQueue.indexOf(resolver);
+                    if (index !== -1) {
+                        this.promiseResolverQueue.splice(index, 1);
+                    }
+                    // Clear the timeout reference
+                    timeoutId = undefined;
+                    resolve(false);
+                }, timeout);
+            }
+        });
     }
 
     private unlock() {

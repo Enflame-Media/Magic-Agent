@@ -168,9 +168,11 @@ export class OutgoingMessageQueue {
     private scheduleProcessing(): void {
         if (this.processTimer) {
             clearTimeout(this.processTimer);
+            this.processTimer = undefined;
         }
         
         this.processTimer = setTimeout(() => {
+            this.processTimer = undefined;  // Clear before processing
             this.processQueue();
         }, 0);
     }
@@ -181,6 +183,7 @@ export class OutgoingMessageQueue {
     destroy(): void {
         if (this.processTimer) {
             clearTimeout(this.processTimer);
+            this.processTimer = undefined;
         }
         
         for (const timer of this.delayTimers.values()) {

@@ -37,8 +37,8 @@ export async function createSessionScanner(opts: {
 
         // Collect session ids
         let sessions: string[] = [];
-        for (let p of pendingSessions) {
-            sessions.push(p);
+        for (let sessionId of pendingSessions) {
+            sessions.push(sessionId);
         }
         if (currentSessionId) {
             sessions.push(currentSessionId);
@@ -56,26 +56,31 @@ export async function createSessionScanner(opts: {
             }
         }
 
-        // Move pending sessions to finished sessions
-        for (let p of sessions) {
-            if (pendingSessions.has(p)) {
-                pendingSessions.delete(p);
-                finishedSessions.add(p);
+        // Move pending sessions to finished sessions and close their watchers
+        for (let sessionId of sessions) {
+            if (pendingSessions.has(sessionId)) {
+                pendingSessions.delete(sessionId);
+                finishedSessions.add(sessionId);
+
+                // Close watcher for finished session to prevent file descriptor leaks
+                const watcher = watchers.get(sessionId);
+                if (watcher) {
+                    watcher();
+                    watchers.delete(sessionId);
+                }
             }
         }
 
-        // Update watchers
-        for (let p of sessions) {
-            if (!watchers.has(p)) {
-                // Validate session ID before creating watcher path
-                try {
-                    const watchPath = getValidatedSessionPath(projectDir, p);
-                    watchers.set(p, startFileWatcher(watchPath, () => { sync.invalidate(); }));
-                } catch (error) {
-                    if (error instanceof InvalidSessionIdError) {
-                        logger.debug(`[SESSION_SCANNER] Invalid session ID rejected for watcher: ${error.message}`);
-                        continue;
-                    }
+        // Only watch current active session (not pending/finished ones)
+        if (currentSessionId && !watchers.has(currentSessionId)) {
+            // Validate session ID before creating watcher path
+            try {
+                const watchPath = getValidatedSessionPath(projectDir, currentSessionId);
+                watchers.set(currentSessionId, startFileWatcher(watchPath, () => { sync.invalidate(); }));
+            } catch (error) {
+                if (error instanceof InvalidSessionIdError) {
+                    logger.debug(`[SESSION_SCANNER] Invalid session ID rejected for watcher: ${error.message}`);
+                } else {
                     throw error;
                 }
             }

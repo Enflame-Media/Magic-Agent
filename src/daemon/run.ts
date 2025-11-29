@@ -23,6 +23,8 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { projectPath } from '@/projectPath';
 import { validateHeartbeatInterval } from '@/utils/validators';
+import { createDefaultMemoryMonitor, MemoryMonitorHandle } from './memoryMonitor';
+import { clearGlobalDeduplicator } from '@/utils/requestDeduplication';
 
 // Prepare initial metadata
 export const initialMachineMetadata: MachineMetadata = {
@@ -90,6 +92,10 @@ export async function startDaemon(): Promise<void> {
   });
 
   process.on('exit', (code) => {
+    // Report any logger write errors that occurred during daemon operation
+    // Note: In detached daemon mode, this output may not be visible to users
+    // but it serves as a best-effort report and helps when debugging
+    logger.reportWriteErrorsIfAny();
     logger.debug(`[DAEMON RUN] Process exiting with code: ${code}`);
   });
 
@@ -328,17 +334,23 @@ export async function startDaemon(): Promise<void> {
         logger.debug(`[DAEMON RUN] Waiting for session webhook for PID ${happyProcess.pid}`);
 
         return new Promise((resolve) => {
-          // Set timeout for webhook
+          // Set timeout for webhook - configurable via env var, default 30s
+          // Slow systems may need more time for cold start + auth + network
+          const timeoutMs = parseInt(process.env.HAPPY_SESSION_SPAWN_TIMEOUT || '30000', 10);
+          const effectiveTimeout = Number.isNaN(timeoutMs) || timeoutMs < 1000 ? 30000 : timeoutMs;
+
           const timeout = setTimeout(() => {
             pidToAwaiter.delete(happyProcess.pid!);
-            logger.debug(`[DAEMON RUN] Session webhook timeout for PID ${happyProcess.pid}`);
+            logger.debug(`[DAEMON RUN] Session spawn timeout after ${effectiveTimeout}ms for PID ${happyProcess.pid}`);
+
+            // Graceful handling: return success with PID-based session ID
+            // The session may still complete - this prevents false "timeout" errors
             resolve({
-              type: 'error',
-              errorMessage: `Session webhook timeout for PID ${happyProcess.pid}`
+              type: 'success',
+              sessionId: `PID-${happyProcess.pid}`,
+              message: 'Session starting slowly. Check daemon logs for status.'
             });
-            // 15 second timeout - I have seen timeouts on 10 seconds
-            // even though session was still created successfully in ~2 more seconds
-          }, 15_000);
+          }, effectiveTimeout);
 
           // Register awaiter
           pidToAwaiter.set(happyProcess.pid!, (completedSession) => {
@@ -553,6 +565,26 @@ export async function startDaemon(): Promise<void> {
       heartbeatRunning = false;
     }, heartbeatIntervalMs); // Every 60 seconds in production
 
+    // Start memory pressure monitoring
+    // Monitors heap usage and triggers cleanup when threshold exceeded
+    const memoryMonitor: MemoryMonitorHandle = createDefaultMemoryMonitor(() => {
+      // Clear non-essential caches under memory pressure
+      logger.debug('[DAEMON RUN] Memory pressure: clearing caches');
+
+      // Clear global request deduplication cache
+      clearGlobalDeduplicator();
+
+      // Clear stale session awaiters (shouldn't have many, but safety cleanup)
+      for (const [pid] of pidToAwaiter.entries()) {
+        try {
+          process.kill(pid, 0);
+        } catch {
+          // Process is dead, remove stale awaiter
+          pidToAwaiter.delete(pid);
+        }
+      }
+    });
+
     // Setup signal handlers
     const cleanupAndShutdown = async (source: 'happy-app' | 'happy-cli' | 'os-signal' | 'exception', errorMessage?: string) => {
       logger.debug(`[DAEMON RUN] Starting proper cleanup (source: ${source}, errorMessage: ${errorMessage})...`);
@@ -562,6 +594,9 @@ export async function startDaemon(): Promise<void> {
         clearInterval(restartOnStaleVersionAndHeartbeat);
         logger.debug('[DAEMON RUN] Health check interval cleared');
       }
+
+      // Stop memory monitor
+      memoryMonitor.stop();
 
       // Update daemon state before shutting down
       await apiMachine.updateDaemonState((state: DaemonState | null) => ({

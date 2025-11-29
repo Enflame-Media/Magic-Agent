@@ -94,7 +94,17 @@ export function spawnHappyCLI(args: string[], options: SpawnOptions = {}): Child
 
   // Sanity check of the entrypoint path exists
   if (!existsSync(entrypoint)) {
-    const errorMessage = `Entrypoint ${entrypoint} does not exist`;
+    const errorMessage = [
+      'Happy CLI installation appears corrupted.',
+      `Missing: ${entrypoint}`,
+      '',
+      'To fix, reinstall Happy CLI:',
+      '  npm uninstall -g happy-coder',
+      '  npm install -g happy-coder',
+      '',
+      'If the issue persists, please report it at:',
+      '  https://github.com/slopus/happy-cli/issues',
+    ].join('\n');
     logger.debug(`[SPAWN HAPPY CLI] ${errorMessage}`);
     throw new Error(errorMessage);
   }

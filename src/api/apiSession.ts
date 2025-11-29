@@ -11,7 +11,27 @@ import { AsyncLock } from '@/utils/lock';
 import { RpcHandlerManager } from './rpc/RpcHandlerManager';
 import { registerCommonHandlers } from '../modules/common/registerCommonHandlers';
 
-export class ApiSessionClient extends EventEmitter {
+/**
+ * Event types emitted by ApiSessionClient
+ */
+export interface ApiSessionClientEvents {
+    /** Emitted when state is reconciled after reconnection */
+    stateReconciled: (details: { source: 'server' | 'local', agentStateUpdated: boolean, metadataUpdated: boolean }) => void;
+    /** Emitted when a message is received */
+    message: (data: unknown) => void;
+}
+
+/**
+ * Typed EventEmitter for ApiSessionClient
+ * Provides type-safe event emission and handling
+ */
+interface TypedEventEmitter {
+    on<K extends keyof ApiSessionClientEvents>(event: K, listener: ApiSessionClientEvents[K]): this;
+    emit<K extends keyof ApiSessionClientEvents>(event: K, ...args: Parameters<ApiSessionClientEvents[K]>): boolean;
+    removeAllListeners(event?: keyof ApiSessionClientEvents): this;
+}
+
+export class ApiSessionClient extends EventEmitter implements TypedEventEmitter {
     private readonly token: string;
     readonly sessionId: string;
     private metadata: Metadata | null;
@@ -26,6 +46,8 @@ export class ApiSessionClient extends EventEmitter {
     private metadataLock = new AsyncLock();
     private encryptionKey: Uint8Array;
     private encryptionVariant: 'legacy' | 'dataKey';
+    /** Tracks if we've connected before to detect reconnections */
+    private hasConnectedBefore = false;
 
     constructor(token: string, session: Session) {
         super()
@@ -48,22 +70,49 @@ export class ApiSessionClient extends EventEmitter {
         registerCommonHandlers(this.rpcHandlerManager);
 
         //
-        // Create socket
+        // Create socket with optimized connection options
+        //
+        // Socket.IO Configuration Rationale:
+        // - WebSocket-only transport: Preferred for real-time bidirectional session sync.
+        //   Polling fallback would introduce latency that breaks the real-time experience.
+        // - Aggressive reconnection: Sessions are long-lived and must survive network hiccups.
+        // - Randomization factor: Prevents "thundering herd" when many clients reconnect
+        //   simultaneously after server restart.
+        // - Extended max delay: For mobile/unstable networks, prevents battery drain from
+        //   aggressive reconnection attempts.
+        // - Binary transport (msgpack): Not implemented - would require server-side changes
+        //   and cross-project dependency coordination. Current JSON transport is sufficient
+        //   given that messages are already encrypted (binary overhead minimal).
         //
 
         this.socket = io(configuration.serverUrl, {
+            // Authentication - passed on every connection/reconnection
             auth: {
                 token: this.token,
                 clientType: 'session-scoped' as const,
                 sessionId: this.sessionId
             },
+
+            // Server endpoint path
             path: '/v1/updates',
-            reconnection: true,
-            reconnectionAttempts: Infinity,
-            reconnectionDelay: 1000,
-            reconnectionDelayMax: 5000,
-            transports: ['websocket'],
+
+            // Reconnection settings - tuned for long-lived session connections
+            reconnection: true,              // Enable automatic reconnection
+            reconnectionAttempts: Infinity,  // Never give up - sessions are critical
+            reconnectionDelay: 1000,         // Start with 1 second delay
+            reconnectionDelayMax: 30000,     // Cap at 30 seconds for poor networks
+            randomizationFactor: 0.5,        // Add jitter (0.5-1.5x) to prevent thundering herd
+
+            // Connection timeout - time to wait for initial connection
+            timeout: 20000,                  // 20 seconds - generous for slow networks
+
+            // Transport options - WebSocket only for real-time performance
+            transports: ['websocket'],       // No polling fallback - latency unacceptable
+
+            // Credentials for cross-origin requests
             withCredentials: true,
+
+            // Manual connection control - we connect after setting up handlers
             autoConnect: false
         });
 
@@ -74,6 +123,15 @@ export class ApiSessionClient extends EventEmitter {
         this.socket.on('connect', () => {
             logger.debug('Socket connected successfully');
             this.rpcHandlerManager.onSocketConnect(this.socket);
+
+            // On reconnection, request state sync to reconcile any changes that occurred during disconnection
+            if (this.hasConnectedBefore) {
+                logger.debug('[API] Reconnected - requesting state reconciliation');
+                this.requestStateSync().catch((error) => {
+                    logger.debug('[API] State reconciliation failed:', error);
+                });
+            }
+            this.hasConnectedBefore = true;
         })
 
         // Set up global RPC request handler
@@ -397,6 +455,158 @@ export class ApiSessionClient extends EventEmitter {
                 resolve();
             }, 10000);
         });
+    }
+
+    /**
+     * Request state synchronization with the server after reconnection.
+     *
+     * This method compares local state versions with server state and applies
+     * any updates that occurred while the client was disconnected.
+     *
+     * Conflict resolution strategy: Last-write-wins based on version numbers.
+     * The server is the source of truth - if server version is higher, we apply
+     * the server's state. This ensures consistency across all clients.
+     *
+     * Edge cases handled:
+     * - Socket disconnection during sync: Operations fail gracefully, sync retried on next reconnection
+     * - Concurrent updates: Locks prevent race conditions with ongoing state updates
+     * - Version rollback prevention: Only applies server state if version is strictly greater
+     * - Partial sync failure: Each state type (agent/metadata) syncs independently
+     *
+     * @emits stateReconciled - When state changes are applied from server
+     * @throws Never throws - all errors are logged and handled internally
+     */
+    async requestStateSync(): Promise<void> {
+        if (!this.socket.connected) {
+            logger.debug('[API] Cannot sync state - socket not connected');
+            return;
+        }
+
+        logger.debug('[API] Requesting state sync', {
+            localAgentStateVersion: this.agentStateVersion,
+            localMetadataVersion: this.metadataVersion
+        });
+
+        let agentStateUpdated = false;
+        let metadataUpdated = false;
+
+        // Sync agent state by sending current state with current version
+        // If version mismatch, server returns current state
+        try {
+            await this.agentStateLock.inLock(async () => {
+                // Check connection again inside lock (could have disconnected while waiting)
+                if (!this.socket.connected) {
+                    logger.debug('[API] Socket disconnected during agent state sync - aborting');
+                    return;
+                }
+
+                const currentState = this.agentState;
+                const encryptedState = currentState
+                    ? encodeBase64(encrypt(this.encryptionKey, this.encryptionVariant, currentState))
+                    : null;
+
+                const answer = await this.socket.emitWithAck('update-state', {
+                    sid: this.sessionId,
+                    expectedVersion: this.agentStateVersion,
+                    agentState: encryptedState
+                });
+
+                if (answer.result === 'version-mismatch') {
+                    // Server has newer state - apply it
+                    if (answer.version > this.agentStateVersion) {
+                        const previousVersion = this.agentStateVersion;
+                        this.agentStateVersion = answer.version;
+                        this.agentState = answer.agentState
+                            ? decrypt(this.encryptionKey, this.encryptionVariant, decodeBase64(answer.agentState))
+                            : null;
+                        agentStateUpdated = true;
+                        logger.debug('[API] Agent state reconciled from server', {
+                            previousVersion,
+                            newVersion: answer.version
+                        });
+                    } else {
+                        logger.debug('[API] Server version not newer, skipping agent state update', {
+                            localVersion: this.agentStateVersion,
+                            serverVersion: answer.version
+                        });
+                    }
+                } else if (answer.result === 'success') {
+                    // Local state matches server or was updated - sync version
+                    this.agentStateVersion = answer.version;
+                    logger.debug('[API] Agent state in sync with server', { version: answer.version });
+                } else if (answer.result === 'error') {
+                    logger.debug('[API] Server error during agent state sync');
+                }
+            });
+        } catch (error) {
+            logger.debug('[API] Failed to sync agent state:', error);
+            // Continue to metadata sync even if agent state sync fails
+        }
+
+        // Sync metadata by sending current metadata with current version
+        try {
+            await this.metadataLock.inLock(async () => {
+                // Check connection again inside lock (could have disconnected while waiting)
+                if (!this.socket.connected) {
+                    logger.debug('[API] Socket disconnected during metadata sync - aborting');
+                    return;
+                }
+
+                const currentMetadata = this.metadata;
+                if (!currentMetadata) {
+                    logger.debug('[API] No metadata to sync');
+                    return;
+                }
+
+                const answer = await this.socket.emitWithAck('update-metadata', {
+                    sid: this.sessionId,
+                    expectedVersion: this.metadataVersion,
+                    metadata: encodeBase64(encrypt(this.encryptionKey, this.encryptionVariant, currentMetadata))
+                });
+
+                if (answer.result === 'version-mismatch') {
+                    // Server has newer metadata - apply it
+                    if (answer.version > this.metadataVersion) {
+                        const previousVersion = this.metadataVersion;
+                        this.metadataVersion = answer.version;
+                        this.metadata = decrypt(this.encryptionKey, this.encryptionVariant, decodeBase64(answer.metadata));
+                        metadataUpdated = true;
+                        logger.debug('[API] Metadata reconciled from server', {
+                            previousVersion,
+                            newVersion: answer.version
+                        });
+                    } else {
+                        logger.debug('[API] Server version not newer, skipping metadata update', {
+                            localVersion: this.metadataVersion,
+                            serverVersion: answer.version
+                        });
+                    }
+                } else if (answer.result === 'success') {
+                    // Local metadata matches server or was updated - sync version
+                    this.metadataVersion = answer.version;
+                    logger.debug('[API] Metadata in sync with server', { version: answer.version });
+                } else if (answer.result === 'error') {
+                    logger.debug('[API] Server error during metadata sync');
+                }
+            });
+        } catch (error) {
+            logger.debug('[API] Failed to sync metadata:', error);
+        }
+
+        // Emit event if any state was updated from server
+        if (agentStateUpdated || metadataUpdated) {
+            this.emit('stateReconciled', {
+                source: 'server' as const,
+                agentStateUpdated,
+                metadataUpdated
+            });
+            logger.debug('[API] State reconciliation complete - changes applied', {
+                agentStateUpdated,
+                metadataUpdated
+            });
+        } else {
+            logger.debug('[API] State reconciliation complete - no changes needed');
+        }
     }
 
     async close() {

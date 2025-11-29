@@ -3,6 +3,11 @@ import type { StartOptions } from '@/claude/runClaude'
 import { validateStartedBy } from '@/utils/validators'
 
 /**
+ * Schema for --happy-starting-mode argument values
+ */
+const startingModeSchema = z.enum(['local', 'remote'])
+
+/**
  * Result of parsing CLI arguments
  */
 export interface ParsedCliArgs {
@@ -52,7 +57,12 @@ export function parseCliArgs(args: string[]): ParsedCliArgs {
       // Also pass through to claude (will show after our version)
       unknownArgs.push(arg)
     } else if (arg === '--happy-starting-mode') {
-      options.startingMode = z.enum(['local', 'remote']).parse(argsCopy[++i])
+      const value = argsCopy[++i]
+      const result = startingModeSchema.safeParse(value)
+      if (!result.success) {
+        throw new Error(`Invalid --happy-starting-mode value: "${value}". Must be one of: local, remote`)
+      }
+      options.startingMode = result.data
     } else if (arg === '--yolo') {
       // Shortcut for --dangerously-skip-permissions
       unknownArgs.push('--dangerously-skip-permissions')

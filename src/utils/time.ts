@@ -1,5 +1,15 @@
-export async function delay(ms: number) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+export async function delay(ms: number, signal?: AbortSignal): Promise<void> {
+    return new Promise((resolve, reject) => {
+        if (signal?.aborted) {
+            reject(new DOMException('Aborted', 'AbortError'));
+            return;
+        }
+        const timeoutId = setTimeout(resolve, ms);
+        signal?.addEventListener('abort', () => {
+            clearTimeout(timeoutId);
+            reject(new DOMException('Aborted', 'AbortError'));
+        }, { once: true });
+    });
 }
 
 export function exponentialBackoffDelay(currentFailureCount: number, minDelay: number, maxDelay: number, maxFailureCount: number) {
@@ -7,7 +17,7 @@ export function exponentialBackoffDelay(currentFailureCount: number, minDelay: n
     return Math.round(Math.random() * maxDelayRet);
 }
 
-export type BackoffFunc = <T>(callback: () => Promise<T>) => Promise<T>;
+export type BackoffFunc = <T>(callback: () => Promise<T>, signal?: AbortSignal) => Promise<T>;
 
 export function createBackoff(
     opts?: {
@@ -16,15 +26,21 @@ export function createBackoff(
         maxDelay?: number,
         maxFailureCount?: number
     }): BackoffFunc {
-    return async <T>(callback: () => Promise<T>): Promise<T> => {
+    return async <T>(callback: () => Promise<T>, signal?: AbortSignal): Promise<T> => {
         let currentFailureCount = 0;
         const minDelay = opts && opts.minDelay !== undefined ? opts.minDelay : 250;
         const maxDelay = opts && opts.maxDelay !== undefined ? opts.maxDelay : 1000;
         const maxFailureCount = opts && opts.maxFailureCount !== undefined ? opts.maxFailureCount : 50;
         while (true) {
+            if (signal?.aborted) {
+                throw new DOMException('Aborted', 'AbortError');
+            }
             try {
                 return await callback();
             } catch (e) {
+                if (e instanceof DOMException && e.name === 'AbortError') {
+                    throw e;
+                }
                 if (currentFailureCount < maxFailureCount) {
                     currentFailureCount++;
                 }
@@ -32,7 +48,7 @@ export function createBackoff(
                     opts.onError(e, currentFailureCount);
                 }
                 let waitForRequest = exponentialBackoffDelay(currentFailureCount, minDelay, maxDelay, maxFailureCount);
-                await delay(waitForRequest);
+                await delay(waitForRequest, signal);
             }
         }
     };

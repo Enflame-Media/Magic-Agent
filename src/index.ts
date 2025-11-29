@@ -2,7 +2,7 @@
 
 /**
  * CLI entry point for happy command
- * 
+ *
  * Simple argument parsing without any CLI framework dependencies
  */
 
@@ -11,6 +11,7 @@ import chalk from 'chalk'
 import { runClaude } from '@/claude/runClaude'
 import { parseCliArgs } from '@/parsers/cliArgs'
 import { validateStartedBy } from '@/utils/validators'
+import { validateEnv } from '@/utils/validateEnv'
 import { logger } from './ui/logger'
 import { readCredentials, readDaemonState } from './persistence'
 import { authAndSetupMachineIfNeeded } from './ui/auth'
@@ -32,6 +33,9 @@ import { execFileSync } from 'node:child_process'
 
 
 (async () => {
+  // Validate environment variables early (logs warnings for unusual configs)
+  validateEnv()
+
   const args = process.argv.slice(2)
 
   // If --version is passed - do not log, its likely daemon inquiring about our version

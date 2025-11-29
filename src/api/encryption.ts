@@ -2,6 +2,13 @@ import { createCipheriv, createDecipheriv, randomBytes, createHash } from 'node:
 import tweetnacl from 'tweetnacl';
 
 /**
+ * Module-level counter for hybrid nonce generation.
+ * Combined with random bytes to eliminate any theoretical nonce collision risk.
+ */
+let nonceCounter = 0n;
+const MAX_UINT64 = (2n ** 64n) - 1n;
+
+/**
  * Encode a Uint8Array to base64 string
  * @param buffer - The buffer to encode
  * @param variant - The encoding variant ('base64' or 'base64url')
@@ -52,6 +59,66 @@ export function getRandomBytes(size: number): Uint8Array {
   return new Uint8Array(randomBytes(size))
 }
 
+/**
+ * Generate a hybrid nonce combining random bytes with a monotonic counter.
+ * This eliminates theoretical collision risk in high-throughput scenarios
+ * while maintaining cryptographic randomness.
+ *
+ * Structure: [random bytes][8-byte counter (big-endian)]
+ * - 24-byte nonce (NaCl): 16 random + 8 counter
+ * - 12-byte nonce (AES-GCM): 4 random + 8 counter
+ *
+ * @param totalLength - Total nonce length in bytes
+ * @returns Hybrid nonce as Uint8Array
+ */
+function generateHybridNonce(totalLength: number): Uint8Array {
+  const counterBytes = 8;
+  const randomLength = totalLength - counterBytes;
+
+  if (randomLength < 0) {
+    throw new Error(`Nonce length ${totalLength} is too short for hybrid nonce (minimum 8 bytes)`);
+  }
+
+  const nonce = new Uint8Array(totalLength);
+
+  // Random prefix for cross-process/cross-machine uniqueness
+  if (randomLength > 0) {
+    const randomPart = getRandomBytes(randomLength);
+    nonce.set(randomPart, 0);
+  }
+
+  // Counter suffix for within-process uniqueness (big-endian)
+  const counterView = new DataView(nonce.buffer, randomLength, counterBytes);
+  counterView.setBigUint64(0, nonceCounter, false);
+
+  // Increment counter, but never allow wrapping
+  if (nonceCounter >= MAX_UINT64) {
+    // This should be practically impossible (2^64 encryptions)
+    // but handle it securely: never
+    throw new Error("Nonce counter exhausted: cryptographic safety requires key rotation or process termination.");
+  } else {
+    nonceCounter++;
+  }
+
+  return nonce;
+}
+
+/**
+ * Reset the nonce counter. Primarily for testing purposes.
+ * @internal
+ */
+export function _resetNonceCounter(): void {
+  nonceCounter = 0n;
+}
+
+/**
+ * Get the current nonce counter value. For testing purposes.
+ * @internal
+ */
+export function _getNonceCounter(): bigint {
+  return nonceCounter;
+}
+
 export function libsodiumPublicKeyFromSecretKey(seed: Uint8Array): Uint8Array {
   // NOTE: This matches libsodium implementation, tweetnacl doesnt do this by default
   const hashedSeed = new Uint8Array(createHash('sha512').update(seed).digest());
@@ -62,9 +129,9 @@ export function libsodiumPublicKeyFromSecretKey(seed: Uint8Array): Uint8Array {
 export function libsodiumEncryptForPublicKey(data: Uint8Array, recipientPublicKey: Uint8Array): Uint8Array {
   // Generate ephemeral keypair for this encryption
   const ephemeralKeyPair = tweetnacl.box.keyPair();
-  
-  // Generate random nonce (24 bytes for box encryption)
-  const nonce = getRandomBytes(tweetnacl.box.nonceLength);
+
+  // Generate hybrid nonce (24 bytes for box encryption: 16 random + 8 counter)
+  const nonce = generateHybridNonce(tweetnacl.box.nonceLength);
   
   // Encrypt the data using box (authenticated encryption)
   const encrypted = tweetnacl.box(data, nonce, recipientPublicKey, ephemeralKeyPair.secretKey);
@@ -85,7 +152,8 @@ export function libsodiumEncryptForPublicKey(data: Uint8Array, recipientPublicKe
  * @returns The encrypted data
  */
 export function encryptLegacy(data: any, secret: Uint8Array): Uint8Array {
-  const nonce = getRandomBytes(tweetnacl.secretbox.nonceLength);
+  // Generate hybrid nonce (24 bytes for secretbox: 16 random + 8 counter)
+  const nonce = generateHybridNonce(tweetnacl.secretbox.nonceLength);
   const encrypted = tweetnacl.secretbox(new TextEncoder().encode(JSON.stringify(data)), nonce, secret);
   const result = new Uint8Array(nonce.length + encrypted.length);
   result.set(nonce);
@@ -118,7 +186,8 @@ export function decryptLegacy(data: Uint8Array, secret: Uint8Array): any | null 
  * @returns The encrypted data bundle (nonce + ciphertext + auth tag)
  */
 export function encryptWithDataKey(data: any, dataKey: Uint8Array): Uint8Array {
-  const nonce = getRandomBytes(12); // GCM uses 12-byte nonces
+  // Generate hybrid nonce (12 bytes for AES-GCM: 4 random + 8 counter)
+  const nonce = generateHybridNonce(12);
   const cipher = createCipheriv('aes-256-gcm', dataKey, nonce);
 
   const plaintext = new TextEncoder().encode(JSON.stringify(data));

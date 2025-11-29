@@ -122,8 +122,8 @@ export class ApiMachineClient {
 
             switch (result.type) {
                 case 'success':
-                    logger.debug(`[API MACHINE] Spawned session ${result.sessionId}`);
-                    return { type: 'success', sessionId: result.sessionId };
+                    logger.debug(`[API MACHINE] Spawned session ${result.sessionId}${result.message ? ` (${result.message})` : ''}`);
+                    return { type: 'success', sessionId: result.sessionId, message: result.message };
 
                 case 'requestToApproveDirectoryCreation':
                     logger.debug(`[API MACHINE] Requesting directory creation approval for: ${result.directory}`);

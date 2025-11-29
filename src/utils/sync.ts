@@ -6,6 +6,7 @@ export class InvalidateSync {
     private _stopped = false;
     private _command: () => Promise<void>;
     private _pendings: (() => void)[] = [];
+    private _abortController: AbortController | null = null;
 
     constructor(command: () => Promise<void>) {
         this._command = command;
@@ -40,8 +41,9 @@ export class InvalidateSync {
         if (this._stopped) {
             return;
         }
-        this._notifyPendings();
+        this._abortController?.abort();
         this._stopped = true;
+        this._notifyPendings();
     }
 
     private _notifyPendings = () => {
@@ -53,12 +55,24 @@ export class InvalidateSync {
 
 
     private _doSync = async () => {
-        await backoff(async () => {
-            if (this._stopped) {
+        this._abortController = new AbortController();
+        const signal = this._abortController.signal;
+
+        try {
+            await backoff(async () => {
+                if (this._stopped) {
+                    return;
+                }
+                await this._command();
+            }, signal);
+        } catch (e) {
+            if (e instanceof DOMException && e.name === 'AbortError') {
+                this._notifyPendings();
                 return;
             }
-            await this._command();
-        });
+            throw e;
+        }
+
         if (this._stopped) {
             this._notifyPendings();
             return;

@@ -95,9 +95,11 @@ export function deterministicStringify(
             
             if (sortArrays) {
                 // Sort arrays by their stringified content for true determinism
+                // Note: Items are already processed, so we use them directly
+                // (calling processValue again would cause stack overflow on deep nesting)
                 processed.sort((a, b) => {
-                    const aStr = JSON.stringify(processValue(a));
-                    const bStr = JSON.stringify(processValue(b));
+                    const aStr = JSON.stringify(a);
+                    const bStr = JSON.stringify(b);
                     return aStr.localeCompare(bStr);
                 });
             }

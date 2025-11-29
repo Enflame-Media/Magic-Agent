@@ -51,6 +51,8 @@ export function formatClaudeMessageForInk(
                                 const maxLength = 200
                                 if (outputStr.length > maxLength) {
                                     messageBuffer.addMessage(outputStr.substring(0, maxLength) + '... (truncated)', 'result')
+                                    messageBuffer.addMessage(`Full: ${outputStr.length} chars (set DEBUG=1 for logs)`, 'system')
+                                    logger.debug('[TOOL_RESULT] Full output:', outputStr)
                                 } else {
                                     messageBuffer.addMessage(outputStr, 'result')
                                 }
@@ -80,6 +82,8 @@ export function formatClaudeMessageForInk(
                             const maxLength = 500
                             if (inputStr.length > maxLength) {
                                 messageBuffer.addMessage(`Input: ${inputStr.substring(0, maxLength)}... (truncated)`, 'tool')
+                                messageBuffer.addMessage(`Full: ${inputStr.length} chars (set DEBUG=1 for logs)`, 'system')
+                                logger.debug('[TOOL_INPUT] Full input:', inputStr)
                             } else {
                                 messageBuffer.addMessage(`Input: ${inputStr}`, 'tool')
                             }

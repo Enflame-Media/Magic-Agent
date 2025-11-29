@@ -173,7 +173,8 @@ export function startDaemonControlServer({
           return {
             success: true,
             sessionId: result.sessionId,
-            approvedNewDirectoryCreation: true
+            approvedNewDirectoryCreation: true,
+            message: result.message
           };
         
         case 'requestToApproveDirectoryCreation':

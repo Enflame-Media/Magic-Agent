@@ -29,12 +29,13 @@ import { logger } from '@/ui/logger'
 /**
  * Query class manages Claude Code process interaction
  */
-export class Query implements AsyncIterableIterator<SDKMessage> {
+export class Query implements AsyncIterableIterator<SDKMessage>, AsyncDisposable {
     private pendingControlResponses = new Map<string, ControlResponseHandler>()
     private cancelControllers = new Map<string, AbortController>()
     private sdkMessages: AsyncIterableIterator<SDKMessage>
-    private inputStream = new Stream<SDKMessage>()
+    private inputStream: Stream<SDKMessage>
     private canCallTool?: CanCallToolCallback
+    private isDisposed = false
 
     constructor(
         private childStdin: Writable | null,
@@ -43,6 +44,8 @@ export class Query implements AsyncIterableIterator<SDKMessage> {
         canCallTool?: CanCallToolCallback
     ) {
         this.canCallTool = canCallTool
+        // Pass cleanup callback to inputStream for early termination handling
+        this.inputStream = new Stream<SDKMessage>(() => this.cleanup())
         this.readMessages()
         this.sdkMessages = this.readSdkMessages()
     }
@@ -124,10 +127,16 @@ export class Query implements AsyncIterableIterator<SDKMessage> {
 
     /**
      * Async generator for SDK messages
+     * Uses try/finally to ensure cleanup on early termination (break, return, throw)
      */
     private async *readSdkMessages(): AsyncIterableIterator<SDKMessage> {
-        for await (const message of this.inputStream) {
-            yield message
+        try {
+            for await (const message of this.inputStream) {
+                yield message
+            }
+        } finally {
+            // Cleanup runs on break, return, throw, or natural completion
+            this.cleanup()
         }
     }
 
@@ -244,6 +253,30 @@ export class Query implements AsyncIterableIterator<SDKMessage> {
             controller.abort()
             this.cancelControllers.delete(requestId)
         }
+    }
+
+    /**
+     * Main cleanup method for resource management
+     * Called on early termination (break/return/throw) or natural completion
+     * Safe to call multiple times (idempotent)
+     */
+    private cleanup(): void {
+        if (this.isDisposed) {
+            return
+        }
+        this.isDisposed = true
+        this.cleanupControllers()
+        this.pendingControlResponses.clear()
+    }
+
+    /**
+     * Implements AsyncDisposable for modern async resource management
+     * Enables usage with `await using query = ...` syntax
+     */
+    async [Symbol.asyncDispose](): Promise<void> {
+        this.cleanup()
+        // Ensure inputStream is properly closed
+        await this.inputStream.return()
     }
 }
 

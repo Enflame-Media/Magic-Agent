@@ -118,7 +118,17 @@ export async function claudeRemote(opts: {
         appendSystemPrompt: initial.mode.appendSystemPrompt ? initial.mode.appendSystemPrompt + '\n\n' + systemPrompt : systemPrompt,
         allowedTools: initial.mode.allowedTools ? initial.mode.allowedTools.concat(opts.allowedTools) : opts.allowedTools,
         disallowedTools: initial.mode.disallowedTools,
-        canCallTool: (toolName: string, input: unknown, options: { signal: AbortSignal }) => opts.canCallTool(toolName, input, mode, options),
+        canCallTool: async (toolName: string, input: unknown, options: { signal: AbortSignal }) => {
+            try {
+                return await opts.canCallTool(toolName, input, mode, options);
+            } catch (error) {
+                logger.debug(`[claudeRemote] canCallTool error for ${toolName}:`, error);
+                return {
+                    behavior: 'deny' as const,
+                    message: `Permission check failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+                };
+            }
+        },
         executable: 'node',
         abort: opts.signal,
         pathToClaudeCodeExecutable: (() => {

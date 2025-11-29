@@ -38,67 +38,71 @@ export async function loop(opts: LoopOptions) {
 
     // Get log path for debug display
     const logPath = logger.logFilePath;
-    let session = new Session({
-        api: opts.api,
-        client: opts.session,
-        path: opts.path,
-        sessionId: null,
-        claudeEnvVars: opts.claudeEnvVars,
-        claudeArgs: opts.claudeArgs,
-        mcpServers: opts.mcpServers,
-        logPath: logPath,
-        messageQueue: opts.messageQueue,
-        allowedTools: opts.allowedTools,
-        onModeChange: opts.onModeChange
-    });
+    let session: Session | null = null;
 
-    // Notify that session is ready
-    if (opts.onSessionReady) {
-        opts.onSessionReady(session);
-    }
+    try {
+        session = new Session({
+            api: opts.api,
+            client: opts.session,
+            path: opts.path,
+            sessionId: null,
+            claudeEnvVars: opts.claudeEnvVars,
+            claudeArgs: opts.claudeArgs,
+            mcpServers: opts.mcpServers,
+            logPath: logPath,
+            messageQueue: opts.messageQueue,
+            allowedTools: opts.allowedTools,
+            onModeChange: opts.onModeChange
+        });
 
-    let mode: 'local' | 'remote' = opts.startingMode ?? 'local';
-    while (true) {
-        logger.debug(`[loop] Iteration with mode: ${mode}`);
-
-        // Run local mode if applicable
-        if (mode === 'local') {
-            let reason = await claudeLocalLauncher(session);
-            if (reason === 'exit') { // Normal exit - Exit loop
-                session.destroy();
-                return;
-            }
-
-            // Non "exit" reason means we need to switch to remote mode
-            mode = 'remote';
-
-            // Wait for cleanup to complete before notifying mode change
-            await new Promise(resolve => setTimeout(resolve, 50));
-
-            if (opts.onModeChange) {
-                opts.onModeChange(mode);
-            }
-            continue;
+        // Notify that session is ready
+        if (opts.onSessionReady) {
+            opts.onSessionReady(session);
         }
 
-        // Start remote mode
-        if (mode === 'remote') {
-            let reason = await claudeRemoteLauncher(session);
-            if (reason === 'exit') { // Normal exit - Exit loop
-                session.destroy();
-                return;
+        let mode: 'local' | 'remote' = opts.startingMode ?? 'local';
+        while (true) {
+            logger.debug(`[loop] Iteration with mode: ${mode}`);
+
+            // Run local mode if applicable
+            if (mode === 'local') {
+                let reason = await claudeLocalLauncher(session);
+                if (reason === 'exit') { // Normal exit - Exit loop
+                    return;
+                }
+
+                // Non "exit" reason means we need to switch to remote mode
+                mode = 'remote';
+
+                // Wait for cleanup to complete before notifying mode change
+                await new Promise(resolve => setTimeout(resolve, 50));
+
+                if (opts.onModeChange) {
+                    opts.onModeChange(mode);
+                }
+                continue;
             }
 
-            // Non "exit" reason means we need to switch to local mode
-            mode = 'local';
+            // Start remote mode
+            if (mode === 'remote') {
+                let reason = await claudeRemoteLauncher(session);
+                if (reason === 'exit') { // Normal exit - Exit loop
+                    return;
+                }
 
-            // Wait for cleanup to complete before notifying mode change
-            await new Promise(resolve => setTimeout(resolve, 50));
+                // Non "exit" reason means we need to switch to local mode
+                mode = 'local';
 
-            if (opts.onModeChange) {
-                opts.onModeChange(mode);
+                // Wait for cleanup to complete before notifying mode change
+                await new Promise(resolve => setTimeout(resolve, 50));
+
+                if (opts.onModeChange) {
+                    opts.onModeChange(mode);
+                }
+                continue;
             }
-            continue;
         }
+    } finally {
+        session?.destroy();
     }
 }

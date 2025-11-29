@@ -1,0 +1,247 @@
+/**
+ * Environment variable validation for happy-cli
+ *
+ * Unlike the server, the CLI has sensible defaults for all environment variables.
+ * This module provides validation and documentation of available configuration options.
+ */
+
+interface EnvConfig {
+  /** Variable name */
+  name: string
+  /** Description shown in warnings and documentation */
+  description: string
+  /** Default value if not set */
+  defaultValue?: string
+  /** Category for grouping */
+  category: 'server' | 'directories' | 'features' | 'debug' | 'tuning' | 'claude' | 'codex'
+}
+
+const envConfig: EnvConfig[] = [
+  // Server
+  {
+    name: 'HAPPY_SERVER_URL',
+    description: 'Happy server URL for syncing sessions',
+    defaultValue: 'https://api.cluster-fluster.com',
+    category: 'server',
+  },
+  {
+    name: 'HAPPY_WEBAPP_URL',
+    description: 'Happy web application URL',
+    defaultValue: 'https://app.happy.engineering',
+    category: 'server',
+  },
+
+  // Directories
+  {
+    name: 'HAPPY_HOME_DIR',
+    description: 'Directory for happy data and logs (supports ~ expansion)',
+    defaultValue: '~/.happy',
+    category: 'directories',
+  },
+  {
+    name: 'HAPPY_PROJECT_ROOT',
+    description: 'Project root directory for session context',
+    category: 'directories',
+  },
+
+  // Features
+  {
+    name: 'HAPPY_EXPERIMENTAL',
+    description: 'Enable experimental features (true/1/yes)',
+    defaultValue: 'false',
+    category: 'features',
+  },
+  {
+    name: 'HAPPY_DISABLE_CAFFEINATE',
+    description: 'Disable caffeinate (prevent sleep) on macOS (true/1/yes)',
+    defaultValue: 'false',
+    category: 'features',
+  },
+
+  // Debug
+  {
+    name: 'DEBUG',
+    description: 'Enable debug output and verbose logging',
+    category: 'debug',
+  },
+  {
+    name: 'DANGEROUSLY_LOG_TO_SERVER_FOR_AI_AUTO_DEBUGGING',
+    description: 'Send logs to server for debugging (dangerous - exposes session data)',
+    category: 'debug',
+  },
+  {
+    name: 'CI',
+    description: 'Indicates running in CI environment',
+    category: 'debug',
+  },
+  {
+    name: 'HEADLESS',
+    description: 'Run in headless mode (no browser opening)',
+    category: 'debug',
+  },
+
+  // Tuning
+  {
+    name: 'HAPPY_MEMORY_THRESHOLD_MB',
+    description: 'Memory threshold in MB for daemon monitoring',
+    category: 'tuning',
+  },
+  {
+    name: 'HAPPY_MEMORY_CHECK_INTERVAL_MS',
+    description: 'Interval in ms for memory checks',
+    category: 'tuning',
+  },
+  {
+    name: 'HAPPY_SESSION_SPAWN_TIMEOUT',
+    description: 'Timeout in ms for session spawning',
+    defaultValue: '30000',
+    category: 'tuning',
+  },
+  {
+    name: 'HAPPY_DAEMON_HEARTBEAT_INTERVAL',
+    description: 'Interval in ms for daemon heartbeat',
+    category: 'tuning',
+  },
+  {
+    name: 'HAPPY_DAEMON_HTTP_TIMEOUT',
+    description: 'HTTP timeout in ms for daemon control requests',
+    category: 'tuning',
+  },
+
+  // Claude-specific
+  {
+    name: 'CLAUDE_CONFIG_DIR',
+    description: 'Directory for Claude configuration',
+    defaultValue: '~/.claude',
+    category: 'claude',
+  },
+  {
+    name: 'CLAUDE_CODE_ENTRYPOINT',
+    description: 'Claude Code SDK entrypoint identifier',
+    category: 'claude',
+  },
+  {
+    name: 'CLAUDE_SDK_MCP_SERVERS',
+    description: 'MCP servers configuration for Claude SDK',
+    category: 'claude',
+  },
+
+  // Codex-specific
+  {
+    name: 'CODEX_HOME',
+    description: 'Directory for Codex data',
+    defaultValue: '~/.codex',
+    category: 'codex',
+  },
+  {
+    name: 'HAPPY_HTTP_MCP_URL',
+    description: 'HTTP MCP URL for Codex integration',
+    category: 'codex',
+  },
+]
+
+interface ValidationResult {
+  warnings: string[]
+  configured: string[]
+  usingDefaults: string[]
+}
+
+/**
+ * Checks environment variables and returns configuration status.
+ * Unlike the server, CLI env vars are all optional with sensible defaults.
+ */
+export function checkEnv(): ValidationResult {
+  const warnings: string[] = []
+  const configured: string[] = []
+  const usingDefaults: string[] = []
+
+  for (const config of envConfig) {
+    const value = process.env[config.name]
+    const isSet = value !== undefined && value !== ''
+
+    if (isSet) {
+      configured.push(config.name)
+    } else if (config.defaultValue) {
+      usingDefaults.push(config.name)
+    }
+  }
+
+  // Check for dangerous debug options in what looks like production
+  if (
+    process.env.DANGEROUSLY_LOG_TO_SERVER_FOR_AI_AUTO_DEBUGGING &&
+    !process.env.DEBUG
+  ) {
+    warnings.push(
+      'DANGEROUSLY_LOG_TO_SERVER_FOR_AI_AUTO_DEBUGGING is set without DEBUG mode - this may expose sensitive data'
+    )
+  }
+
+  // Check for mismatched server URLs
+  if (process.env.HAPPY_SERVER_URL && !process.env.HAPPY_WEBAPP_URL) {
+    warnings.push(
+      'HAPPY_SERVER_URL is set but HAPPY_WEBAPP_URL is not - you may be using a custom server with the wrong webapp URL'
+    )
+  }
+
+  return { warnings, configured, usingDefaults }
+}
+
+/**
+ * Validates environment and logs warnings.
+ * Does not exit - CLI has sensible defaults for everything.
+ */
+export function validateEnv(verbose = false): void {
+  const result = checkEnv()
+
+  for (const warning of result.warnings) {
+    console.warn(`[WARN] ${warning}`)
+  }
+
+  if (verbose && process.env.DEBUG) {
+    console.log('\nEnvironment configuration:')
+    console.log(`  Configured: ${result.configured.length} variables`)
+    console.log(`  Using defaults: ${result.usingDefaults.length} variables`)
+    if (result.configured.length > 0) {
+      console.log(`  Custom: ${result.configured.join(', ')}`)
+    }
+  }
+}
+
+/**
+ * Gets documentation for all environment variables
+ */
+export function getEnvDocs(): string {
+  const lines: string[] = ['# Happy CLI Environment Variables', '']
+
+  const categories: Record<string, EnvConfig[]> = {}
+  for (const config of envConfig) {
+    if (!categories[config.category]) {
+      categories[config.category] = []
+    }
+    categories[config.category].push(config)
+  }
+
+  const categoryTitles: Record<string, string> = {
+    server: 'Server Configuration',
+    directories: 'Directory Paths',
+    features: 'Feature Flags',
+    debug: 'Debug Options',
+    tuning: 'Performance Tuning',
+    claude: 'Claude Integration',
+    codex: 'Codex Integration',
+  }
+
+  for (const [category, configs] of Object.entries(categories)) {
+    lines.push(`## ${categoryTitles[category] || category}`, '')
+    for (const config of configs) {
+      lines.push(`### ${config.name}`)
+      lines.push(config.description)
+      if (config.defaultValue) {
+        lines.push(`Default: \`${config.defaultValue}\``)
+      }
+      lines.push('')
+    }
+  }
+
+  return lines.join('\n')
+}

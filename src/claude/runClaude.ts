@@ -104,12 +104,15 @@ export async function runClaude(credentials: Credentials, options: StartOptions 
         logger.debug('[START] Failed to report to daemon (may not be running):', error);
     }
 
+    // Create realtime session client (single instance to avoid resource leaks)
+    const session = api.sessionSyncClient(response);
+
     // Extract SDK metadata in background and update session when ready
     extractSDKMetadataAsync(async (sdkMetadata) => {
         logger.debug('[start] SDK metadata extracted, updating session:', sdkMetadata);
         try {
             // Update session metadata with tools and slash commands
-            api.sessionSyncClient(response).updateMetadata((currentMetadata) => ({
+            session.updateMetadata((currentMetadata) => ({
                 ...currentMetadata,
                 tools: sdkMetadata.tools,
                 slashCommands: sdkMetadata.slashCommands
@@ -119,9 +122,6 @@ export async function runClaude(credentials: Credentials, options: StartOptions 
             logger.debug('[start] Failed to update session metadata:', error);
         }
     });
-
-    // Create realtime session
-    const session = api.sessionSyncClient(response);
 
     // Start Happy MCP server
     const happyServer = await startHappyServer(session);
@@ -290,9 +290,21 @@ export async function runClaude(credentials: Credentials, options: StartOptions 
         logger.debugLargeJson('User message pushed to queue:', message)
     });
 
+    // Define named signal handlers (defined before cleanup so they can be removed in cleanup)
+    // These are assigned after cleanup is defined to avoid circular dependency
+    let handleSignal: () => void;
+    let handleException: (error: Error) => void;
+    let handleRejection: (reason: unknown) => void;
+
     // Setup signal handlers for graceful shutdown
     const cleanup = async () => {
         logger.debug('[START] Received termination signal, cleaning up...');
+
+        // Remove signal handlers first to prevent accumulation across multiple runClaude calls
+        process.removeListener('SIGTERM', handleSignal);
+        process.removeListener('SIGINT', handleSignal);
+        process.removeListener('uncaughtException', handleException);
+        process.removeListener('unhandledRejection', handleRejection);
 
         try {
             // Update lifecycle state to archived before closing
@@ -317,28 +329,37 @@ export async function runClaude(credentials: Credentials, options: StartOptions 
             // Stop Happy MCP server
             happyServer.stop();
 
+            // Report any logger write errors that occurred during session
+            logger.reportWriteErrorsIfAny();
+
             logger.debug('[START] Cleanup complete, exiting');
             process.exit(0);
         } catch (error) {
             logger.debug('[START] Error during cleanup:', error);
+            // Report any logger write errors even on cleanup failure
+            logger.reportWriteErrorsIfAny();
             process.exit(1);
         }
     };
 
-    // Handle termination signals
-    process.on('SIGTERM', cleanup);
-    process.on('SIGINT', cleanup);
-
-    // Handle uncaught exceptions and rejections
-    process.on('uncaughtException', (error) => {
+    // Assign handler implementations now that cleanup is defined
+    handleSignal = () => { cleanup(); };
+    handleException = (error: Error) => {
         logger.debug('[START] Uncaught exception:', error);
         cleanup();
-    });
-
-    process.on('unhandledRejection', (reason) => {
+    };
+    handleRejection = (reason: unknown) => {
         logger.debug('[START] Unhandled rejection:', reason);
         cleanup();
-    });
+    };
+
+    // Handle termination signals
+    process.on('SIGTERM', handleSignal);
+    process.on('SIGINT', handleSignal);
+
+    // Handle uncaught exceptions and rejections
+    process.on('uncaughtException', handleException);
+    process.on('unhandledRejection', handleRejection);
 
     registerKillSessionHandler(session.rpcHandlerManager, cleanup);
 
@@ -390,6 +411,9 @@ export async function runClaude(credentials: Credentials, options: StartOptions 
     // Stop Happy MCP server
     happyServer.stop();
     logger.debug('Stopped Happy MCP server');
+
+    // Report any logger write errors that occurred during session
+    logger.reportWriteErrorsIfAny();
 
     // Exit
     process.exit(0);

@@ -119,7 +119,16 @@ export class MessageQueue implements AsyncIterable<SDKUserMessage> {
                 return;
             }
 
-            const waiter = (value: SDKUserMessage) => resolve(value);
+            // Safe resolve pattern to prevent race condition between push() and close()
+            let resolved = false;
+            const safeResolve = (value: SDKUserMessage | undefined) => {
+                if (!resolved) {
+                    resolved = true;
+                    resolve(value);
+                }
+            };
+
+            const waiter = (value: SDKUserMessage) => safeResolve(value);
             this.waiters.push(waiter);
             logger.debug(`[MessageQueue] waitForNext() adding waiter. Total waiters: ${this.waiters.length}`);
 
@@ -129,7 +138,7 @@ export class MessageQueue implements AsyncIterable<SDKUserMessage> {
                 if (index !== -1) {
                     this.waiters.splice(index, 1);
                     logger.debug(`[MessageQueue] waitForNext() waiter removed due to close. Remaining waiters: ${this.waiters.length}`);
-                    resolve(undefined);
+                    safeResolve(undefined);
                 }
             });
         });
