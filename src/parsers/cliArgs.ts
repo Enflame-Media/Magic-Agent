@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import type { StartOptions } from '@/claude/runClaude'
 import { validateStartedBy } from '@/utils/validators'
+import { AppError, ErrorCodes } from '@/utils/errors'
 
 /**
  * Schema for --happy-starting-mode argument values
@@ -60,7 +61,7 @@ export function parseCliArgs(args: string[]): ParsedCliArgs {
       const value = argsCopy[++i]
       const result = startingModeSchema.safeParse(value)
       if (!result.success) {
-        throw new Error(`Invalid --happy-starting-mode value: "${value}". Must be one of: local, remote`)
+        throw new AppError(ErrorCodes.INVALID_INPUT, `Invalid --happy-starting-mode value: "${value}". Must be one of: local, remote`)
       }
       options.startingMode = result.data
     } else if (arg === '--yolo') {

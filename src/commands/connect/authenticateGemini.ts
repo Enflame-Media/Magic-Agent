@@ -10,6 +10,7 @@ import { randomBytes, createHash } from 'crypto';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { GeminiAuthTokens, PKCECodes } from './types';
+import { AppError, ErrorCodes } from '@/utils/errors';
 
 const execAsync = promisify(exec);
 
@@ -106,7 +107,7 @@ async function exchangeCodeForTokens(
     
     if (!response.ok) {
         const error = await response.text();
-        throw new Error(`Token exchange failed: ${error}`);
+        throw new AppError(ErrorCodes.TOKEN_EXCHANGE_FAILED, `Token exchange failed: ${error}`);
     }
     
     const data = await response.json() as GeminiAuthTokens;

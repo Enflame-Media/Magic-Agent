@@ -3,6 +3,8 @@
  * Provides a clean API for creating async iterables that can be pushed to from external sources
  */
 
+import { AppError, ErrorCodes } from '@/utils/errors'
+
 /**
  * A pushable async iterable implementation
  * Allows asynchronous pushing of values that can be consumed via for-await-of
@@ -24,7 +26,7 @@ export class PushableAsyncIterable<T> implements AsyncIterableIterator<T> {
      */
     push(value: T): void {
         if (this.isDone) {
-            throw new Error('Cannot push to completed iterable')
+            throw new AppError(ErrorCodes.QUEUE_CLOSED, 'Cannot push to completed iterable')
         }
         
         if (this.error) {
@@ -125,7 +127,7 @@ export class PushableAsyncIterable<T> implements AsyncIterableIterator<T> {
      */
     [Symbol.asyncIterator](): AsyncIterableIterator<T> {
         if (this.started) {
-            throw new Error('PushableAsyncIterable can only be iterated once')
+            throw new AppError(ErrorCodes.ALREADY_STARTED, 'PushableAsyncIterable can only be iterated once')
         }
         this.started = true
         return this

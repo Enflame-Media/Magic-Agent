@@ -1,14 +1,25 @@
 import chalk from 'chalk';
 import qrcode from 'qrcode-terminal';
+import { AppError, ErrorCodes } from '@/utils/errors';
 
 /**
- * Display a QR code in the terminal for the given URL.
+ * Display a QR code in the terminal for the given data.
  * Includes input validation and error handling for robust operation.
+ *
+ * @param data - The data to encode in the QR code (typically a URL)
+ * @throws {Error} If data is empty/invalid or exceeds QR code capacity (2953 bytes)
  */
-export function displayQRCode(url: string): void {
-  if (!url?.trim()) {
-    console.error(chalk.red('✗ Cannot display QR code: invalid URL'));
-    return;
+export function displayQRCode(data: string): void {
+  // Validate input data
+  if (!data?.trim()) {
+    throw new AppError(ErrorCodes.INVALID_INPUT, 'Cannot display QR code: data is empty or invalid');
+  }
+
+  // QR code capacity limit: version 40, binary mode, low error correction = 2953 bytes
+  // Using conservative limit to ensure compatibility across error correction levels
+  const QR_CODE_MAX_BYTES = 2953;
+  if (data.length > QR_CODE_MAX_BYTES) {
+    throw new AppError(ErrorCodes.INVALID_INPUT, `QR code data exceeds maximum capacity (${data.length} bytes, max ${QR_CODE_MAX_BYTES} bytes)`);
   }
 
   console.log('='.repeat(80));
@@ -16,7 +27,7 @@ export function displayQRCode(url: string): void {
   console.log('='.repeat(80));
 
   try {
-    qrcode.generate(url, { small: true }, (qr) => {
+    qrcode.generate(data, { small: true }, (qr) => {
       try {
         if (!qr) {
           console.error(chalk.red('✗ Failed to generate QR code'));

@@ -6,6 +6,8 @@
  * EMFILE (too many open files), and ENFILE (system file table overflow).
  */
 
+import { AppError, ErrorCodes } from '@/utils/errors';
+
 /**
  * Error codes that indicate transient file system conditions
  * that may succeed on retry.
@@ -123,7 +125,7 @@ export async function withRetry<T>(
   }
 
   // This should never be reached due to the throw in the loop
-  throw new Error('withRetry: unexpected code path');
+  throw new AppError(ErrorCodes.INTERNAL_ERROR, 'withRetry: unexpected code path');
 }
 
 /**

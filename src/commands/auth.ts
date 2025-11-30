@@ -7,6 +7,7 @@ import { createInterface } from 'node:readline';
 import { stopDaemon, checkIfDaemonRunningAndCleanupStaleState } from '@/daemon/controlClient';
 import { logger } from '@/ui/logger';
 import os from 'node:os';
+import { AppError, ErrorCodes } from '@/utils/errors';
 
 export async function handleAuthCommand(args: string[]): Promise<void> {
   const subcommand = args[0];
@@ -27,7 +28,7 @@ export async function handleAuthCommand(args: string[]): Promise<void> {
     //   await handleAuthShowBackup();
     //   break;
     case 'status':
-      await handleAuthStatus();
+      await handleAuthStatus(args.slice(1));
       break;
     default:
       console.error(chalk.red(`Unknown auth subcommand: ${subcommand}`));
@@ -41,14 +42,15 @@ function showAuthHelp(): void {
 ${chalk.bold('happy auth')} - Authentication management
 
 ${chalk.bold('Usage:')}
-  happy auth login [--force]    Authenticate with Happy
-  happy auth logout             Remove authentication and machine data  
-  happy auth status             Show authentication status
+  happy auth login [--force]        Authenticate with Happy
+  happy auth logout                 Remove authentication and machine data
+  happy auth status [--show-token]  Show authentication status
   happy auth show-backup        Display backup key for mobile/web clients
   happy auth help               Show this help message
 
 ${chalk.bold('Options:')}
-  --force    Clear credentials, machine ID, and stop daemon before re-auth
+  --force       Clear credentials, machine ID, and stop daemon before re-auth
+  --show-token  Display the full auth token (use with caution)
 `);
 }
 
@@ -156,7 +158,7 @@ async function handleAuthLogout(): Promise<void> {
       console.log(chalk.green('✓ Successfully logged out'));
       console.log(chalk.gray('  Run "happy auth login" to authenticate again'));
     } catch (error) {
-      throw new Error(`Failed to logout: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw AppError.fromUnknownSafe(ErrorCodes.AUTH_FAILED, 'Failed to logout', error);
     }
   } else {
     console.log(chalk.blue('Logout cancelled'));
@@ -199,7 +201,7 @@ async function handleAuthLogout(): Promise<void> {
 //   console.log(chalk.yellow('⚠️  Keep this key secure - it provides full access to your account'));
 // }
 
-async function handleAuthStatus(): Promise<void> {
+async function handleAuthStatus(args: string[]): Promise<void> {
   const credentials = await readCredentials();
   const settings = await readSettings();
 
@@ -213,9 +215,14 @@ async function handleAuthStatus(): Promise<void> {
 
   console.log(chalk.green('✓ Authenticated'));
 
-  // Token preview (first few chars for security)
-  const tokenPreview = credentials.token.substring(0, 30) + '...';
-  console.log(chalk.gray(`  Token: ${tokenPreview}`));
+  // Token display: masked by default, revealed with --show-token flag
+  const shouldRevealToken = args.includes('--show-token');
+  if (shouldRevealToken) {
+    console.log(chalk.gray(`  Token: ${credentials.token}`));
+    console.log(chalk.yellow('  ⚠️  Keep this token secure!'));
+  } else {
+    console.log(chalk.gray(`  Token: ${'*'.repeat(20)} (use --show-token to reveal)`));
+  }
 
   // Machine status
   if (settings?.machineId) {

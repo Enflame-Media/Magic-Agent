@@ -1,11 +1,14 @@
 /**
  * Outgoing Message Queue with strict ordering using incremental IDs
- * 
+ *
  * Ensures messages are always sent in the order they were received,
  * while allowing delayed messages to be released early when needed.
  */
 
 import { AsyncLock } from '@/utils/lock';
+import { SocketDisconnectedError } from '@/api/socketUtils';
+import { logger } from '@/ui/logger';
+import { EventEmitter } from 'node:events';
 
 interface QueueItem {
     id: number;                    // Incremental ID for ordering
@@ -17,14 +20,33 @@ interface QueueItem {
     sent: boolean;                 // Whether message has been sent
 }
 
-export class OutgoingMessageQueue {
+/**
+ * Event types emitted by OutgoingMessageQueue
+ */
+export interface OutgoingMessageQueueEvents {
+    /** Emitted when a send operation fails due to socket disconnection */
+    sendError: (error: SocketDisconnectedError) => void;
+}
+
+export class OutgoingMessageQueue extends EventEmitter {
     private queue: QueueItem[] = [];
     private nextId = 1;
     private lock = new AsyncLock();
     private processTimer?: NodeJS.Timeout;
     private delayTimers = new Map<number, NodeJS.Timeout>();
-    
-    constructor(private sendFunction: (message: any) => void) {}
+    /** Whether the queue is disabled due to socket disconnection */
+    private disabled = false;
+
+    constructor(private sendFunction: (message: any) => void) {
+        super();
+    }
+
+    /**
+     * Check if the queue is disabled (socket disconnected)
+     */
+    isDisabled(): boolean {
+        return this.disabled;
+    }
     
     /**
      * Add message to queue
@@ -107,26 +129,42 @@ export class OutgoingMessageQueue {
      * (Internal implementation without lock)
      */
     private processQueueInternal(): void {
+        // If disabled, don't process
+        if (this.disabled) {
+            return;
+        }
+
         // Sort by ID to ensure order
         this.queue.sort((a, b) => a.id - b.id);
-        
+
         // Process from front of queue
         while (this.queue.length > 0) {
             const item = this.queue[0];
-            
+
             // If not released yet, stop processing (maintain order)
             if (!item.released) {
                 break;
             }
-            
+
             // Send if not already sent
             if (!item.sent) {
                 if (item.logMessage.type !== 'system') {
-                    this.sendFunction(item.logMessage);
+                    try {
+                        this.sendFunction(item.logMessage);
+                    } catch (error) {
+                        if (error instanceof SocketDisconnectedError) {
+                            logger.warn('[QUEUE] Socket disconnected - disabling queue');
+                            this.disabled = true;
+                            this.emit('sendError', error);
+                            // Stop processing - queue is now disabled
+                            return;
+                        }
+                        throw error;
+                    }
                 }
                 item.sent = true;
             }
-            
+
             // Remove from queue
             this.queue.shift();
         }

@@ -14,6 +14,8 @@ import * as z from 'zod';
 import { encodeBase64 } from '@/api/encryption';
 import { withRetry } from '@/utils/retry';
 import { safeParseWithError } from '@/utils/zodErrors';
+import { AppError, ErrorCodes } from '@/utils/errors';
+import type { TelemetryConfig } from '@/telemetry/types';
 
 interface Settings {
   onboardingCompleted: boolean
@@ -22,6 +24,12 @@ interface Settings {
   machineId?: string
   machineIdConfirmedByServer?: boolean
   daemonAutoStartWhenRunningHappy?: boolean
+  /**
+   * Telemetry configuration for privacy-first data collection.
+   * When undefined, defaults to telemetry disabled.
+   * Can be overridden via HAPPY_TELEMETRY environment variable.
+   */
+  telemetry?: TelemetryConfig
 }
 
 const defaultSettings: Settings = {
@@ -169,7 +177,7 @@ export async function updateSettings(
     }
 
     if (!fileHandle) {
-      throw new Error(`Failed to acquire settings lock after ${MAX_LOCK_ATTEMPTS * LOCK_RETRY_INTERVAL_MS / 1000} seconds`);
+      throw new AppError(ErrorCodes.LOCK_ACQUISITION_FAILED, `Failed to acquire settings lock after ${MAX_LOCK_ATTEMPTS * LOCK_RETRY_INTERVAL_MS / 1000} seconds`);
     }
 
     // Read current settings with defaults

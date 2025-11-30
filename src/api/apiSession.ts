@@ -1,4 +1,5 @@
 import { logger } from '@/ui/logger'
+import { AppError, ErrorCodes } from '@/utils/errors'
 import { EventEmitter } from 'node:events'
 import { io, Socket } from 'socket.io-client'
 import { AgentState, ClientToServerEvents, MessageContent, Metadata, ServerToClientEvents, Session, Update, UserMessage, UserMessageSchema, Usage } from './types'
@@ -10,6 +11,7 @@ import { randomUUID } from 'node:crypto';
 import { AsyncLock } from '@/utils/lock';
 import { RpcHandlerManager } from './rpc/RpcHandlerManager';
 import { registerCommonHandlers } from '../modules/common/registerCommonHandlers';
+import { SocketDisconnectedError } from './socketUtils';
 
 /**
  * Event types emitted by ApiSessionClient
@@ -48,6 +50,8 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
     private encryptionVariant: 'legacy' | 'dataKey';
     /** Tracks if we've connected before to detect reconnections */
     private hasConnectedBefore = false;
+    /** Tracks if we've shown a disconnection warning to avoid spam */
+    private hasShownDisconnectWarning = false;
 
     constructor(token: string, session: Session) {
         super()
@@ -127,6 +131,11 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
             // On reconnection, request state sync to reconcile any changes that occurred during disconnection
             if (this.hasConnectedBefore) {
                 logger.debug('[API] Reconnected - requesting state reconciliation');
+                // Notify user of successful reconnection (only if we had warned about disconnect)
+                if (this.hasShownDisconnectWarning) {
+                    logger.info('[Happy] Reconnected to server');
+                    this.hasShownDisconnectWarning = false;
+                }
                 this.requestStateSync().catch((error) => {
                     logger.debug('[API] State reconciliation failed:', error);
                 });
@@ -142,6 +151,11 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
         this.socket.on('disconnect', (reason) => {
             logger.debug('[API] Socket disconnected:', reason);
             this.rpcHandlerManager.onSocketDisconnect();
+            // Notify user of disconnection (only once, avoid spam during reconnection attempts)
+            if (!this.hasShownDisconnectWarning && this.hasConnectedBefore) {
+                logger.warn('[Happy] Disconnected from server, reconnecting...');
+                this.hasShownDisconnectWarning = true;
+            }
         })
 
         this.socket.on('connect_error', (error) => {
@@ -255,6 +269,11 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
      * @param body - Message body (can be MessageContent or raw content for agent messages)
      */
     sendClaudeSessionMessage(body: RawJSONLines) {
+        if (!this.socket.connected) {
+            logger.debug('[SOCKET] Cannot send message - not connected');
+            throw new SocketDisconnectedError('send Claude session message');
+        }
+
         let content: MessageContent;
 
         // Check if body is already a MessageContent (has role property)
@@ -313,6 +332,11 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
     }
 
     sendCodexMessage(body: any) {
+        if (!this.socket.connected) {
+            logger.debug('[SOCKET] Cannot send Codex message - not connected');
+            throw new SocketDisconnectedError('send Codex message');
+        }
+
         let content = {
             role: 'agent',
             content: {
@@ -339,6 +363,11 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
     } | {
         type: 'ready'
     }, id?: string) {
+        if (!this.socket.connected) {
+            logger.debug('[SOCKET] Cannot send session event - not connected');
+            throw new SocketDisconnectedError('send session event');
+        }
+
         let content = {
             role: 'agent',
             content: {
@@ -358,6 +387,11 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
      * Send a ping message to keep the connection alive
      */
     keepAlive(thinking: boolean, mode: 'local' | 'remote') {
+        if (!this.socket.connected) {
+            logger.debug('[API] Skipping keep alive - not connected');
+            return;
+        }
+
         if (process.env.DEBUG) { // too verbose for production
             logger.debug(`[API] Sending keep alive message: ${thinking}`);
         }
@@ -373,6 +407,11 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
      * Send session death message
      */
     sendSessionDeath() {
+        if (!this.socket.connected) {
+            logger.warn('[SOCKET] Cannot send session death - not connected (best-effort notification skipped)');
+            return;
+        }
+
         this.socket.emit('session-end', { sid: this.sessionId, time: Date.now() });
     }
 
@@ -380,6 +419,11 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
      * Send usage data to the server
      */
     sendUsageData(usage: Usage) {
+        if (!this.socket.connected) {
+            logger.debug('[SOCKET] Skipping usage data - not connected');
+            return;
+        }
+
         // Calculate total tokens
         const totalTokens = usage.input_tokens + usage.output_tokens + (usage.cache_creation_input_tokens || 0) + (usage.cache_read_input_tokens || 0);
 
@@ -433,7 +477,7 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
                             this.metadata = decryptedMetadata;
                         }
                     }
-                    throw new Error('Metadata version mismatch');
+                    throw new AppError(ErrorCodes.VERSION_MISMATCH, 'Metadata version mismatch');
                 } else if (answer.result === 'error') {
                     // Hard error - ignore
                 }
@@ -481,7 +525,7 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
                             this.agentState = null;
                         }
                     }
-                    throw new Error('Agent state version mismatch');
+                    throw new AppError(ErrorCodes.VERSION_MISMATCH, 'Agent state version mismatch');
                 } else if (answer.result === 'error') {
                     // console.error('Agent state update error', answer);
                     // Hard error - ignore

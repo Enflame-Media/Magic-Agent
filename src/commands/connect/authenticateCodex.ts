@@ -9,6 +9,7 @@ import { createServer, IncomingMessage, ServerResponse } from 'http';
 import { randomBytes, createHash } from 'crypto';
 import { CodexAuthTokens, PKCECodes } from './types';
 import { openBrowser } from '@/utils/browser';
+import { AppError, ErrorCodes } from '@/utils/errors';
 
 // Configuration
 const CLIENT_ID = 'app_EMoamEEZ73f0CkXaXp7hrann';
@@ -48,7 +49,7 @@ function generateState(): string {
 function parseJWT(token: string): any {
     const parts = token.split('.');
     if (parts.length !== 3) {
-        throw new Error('Invalid JWT format');
+        throw new AppError(ErrorCodes.VALIDATION_FAILED, 'Invalid JWT format');
     }
 
     const payload = Buffer.from(parts[1], 'base64url').toString();
@@ -108,7 +109,7 @@ async function exchangeCodeForTokens(
 
     if (!response.ok) {
         const error = await response.text();
-        throw new Error(`Token exchange failed: ${error}`);
+        throw new AppError(ErrorCodes.TOKEN_EXCHANGE_FAILED, `Token exchange failed: ${error}`);
     }
 
     const data = (await response.json() as any);

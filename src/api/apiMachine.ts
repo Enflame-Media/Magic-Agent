@@ -4,6 +4,7 @@
  */
 
 import { io, Socket } from 'socket.io-client';
+import { AppError, ErrorCodes } from '@/utils/errors';
 import { logger } from '@/ui/logger';
 import { configuration } from '@/configuration';
 import { MachineMetadata, DaemonState, Machine, Update, UpdateMachineBody } from './types';
@@ -115,7 +116,7 @@ export class ApiMachineClient {
             logger.debug(`[API MACHINE] Spawning session with params: ${JSON.stringify(params)}`);
 
             if (!directory) {
-                throw new Error('Directory is required');
+                throw new AppError(ErrorCodes.DIRECTORY_REQUIRED, 'Directory is required');
             }
 
             const result = await spawnSession({ directory, sessionId, machineId, approvedNewDirectoryCreation, agent, token });
@@ -130,7 +131,7 @@ export class ApiMachineClient {
                     return { type: 'requestToApproveDirectoryCreation', directory: result.directory };
 
                 case 'error':
-                    throw new Error(result.errorMessage);
+                    throw new AppError(ErrorCodes.OPERATION_FAILED, result.errorMessage);
             }
         });
 
@@ -139,12 +140,12 @@ export class ApiMachineClient {
             const { sessionId } = params || {};
 
             if (!sessionId) {
-                throw new Error('Session ID is required');
+                throw new AppError(ErrorCodes.INVALID_INPUT, 'Session ID is required');
             }
 
             const success = stopSession(sessionId);
             if (!success) {
-                throw new Error('Session not found or failed to stop');
+                throw new AppError(ErrorCodes.SESSION_NOT_FOUND, 'Session not found or failed to stop');
             }
 
             logger.debug(`[API MACHINE] Stopped session ${sessionId}`);
@@ -199,7 +200,7 @@ export class ApiMachineClient {
                         this.machine.metadata = decryptedMetadata;
                     }
                 }
-                throw new Error('Metadata version mismatch'); // Triggers retry
+                throw new AppError(ErrorCodes.VERSION_MISMATCH, 'Metadata version mismatch'); // Triggers retry
             }
         });
     }
@@ -237,7 +238,7 @@ export class ApiMachineClient {
                         this.machine.daemonState = decryptedState;
                     }
                 }
-                throw new Error('Daemon state version mismatch'); // Triggers retry
+                throw new AppError(ErrorCodes.VERSION_MISMATCH, 'Daemon state version mismatch'); // Triggers retry
             }
         });
     }

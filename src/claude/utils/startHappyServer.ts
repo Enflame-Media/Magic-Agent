@@ -10,6 +10,7 @@ import { AddressInfo } from "node:net";
 import { logger } from "@/ui/logger";
 import { ApiSessionClient } from "@/api/apiSession";
 import { randomUUID } from "node:crypto";
+import { SocketDisconnectedError } from "@/api/socketUtils";
 
 export async function startHappyServer(client: ApiSessionClient) {
     const { z } = await import('zod');
@@ -25,9 +26,13 @@ export async function startHappyServer(client: ApiSessionClient) {
                 summary: title,
                 leafUuid: randomUUID()
             });
-            
+
             return { success: true };
         } catch (error) {
+            if (error instanceof SocketDisconnectedError) {
+                logger.warn('[happyMCP] Socket disconnected - cannot send title change');
+                return { success: false, error: 'Disconnected from server' };
+            }
             return { success: false, error: String(error) };
         }
     };

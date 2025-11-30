@@ -9,6 +9,7 @@ import { createServer, IncomingMessage, ServerResponse } from 'http';
 import { randomBytes, createHash } from 'crypto';
 import { openBrowser } from '@/utils/browser';
 import { ClaudeAuthTokens, PKCECodes } from './types';
+import { AppError, ErrorCodes } from '@/utils/errors';
 
 // Anthropic OAuth Configuration for Claude.ai
 const CLIENT_ID = '9d1c250a-e61b-44d9-88ed-5944d1962f5e';
@@ -119,7 +120,7 @@ async function exchangeCodeForTokens(
         if (debug) {
             console.log('  Error response body:', errorText);
         }
-        throw new Error(`Token exchange failed: ${tokenResponse.statusText} - ${errorText}`);
+        throw new AppError(ErrorCodes.TOKEN_EXCHANGE_FAILED, `Token exchange failed: ${tokenResponse.statusText} - ${errorText}`);
     }
 
     // {

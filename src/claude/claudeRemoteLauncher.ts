@@ -15,6 +15,7 @@ import { EnhancedMode } from "./loop";
 import { RawJSONLines } from "@/claude/types";
 import { OutgoingMessageQueue } from "./utils/OutgoingMessageQueue";
 import { getToolName } from "./utils/getToolName";
+import { SocketDisconnectedError } from "@/api/socketUtils";
 
 /** Debounce interval for ready notifications to prevent notification spam */
 const READY_DEBOUNCE_MS = 1000;
@@ -381,7 +382,15 @@ export async function claudeRemoteLauncher(session: Session): Promise<'switch' |
                     onMessage,
                     onCompletionEvent: (message: string) => {
                         logger.debug(`[remote]: Completion event: ${message}`);
-                        session.client.sendSessionEvent({ type: 'message', message });
+                        try {
+                            session.client.sendSessionEvent({ type: 'message', message });
+                        } catch (error) {
+                            if (error instanceof SocketDisconnectedError) {
+                                logger.warn('[remote] Socket disconnected - cannot send completion event');
+                            } else {
+                                throw error;
+                            }
+                        }
                     },
                     onSessionReset: () => {
                         logger.debug('[remote]: Session reset');
@@ -395,12 +404,23 @@ export async function claudeRemoteLauncher(session: Session): Promise<'switch' |
                             }
                             lastReadyTime = now;
 
-                            session.client.sendSessionEvent({ type: 'ready' });
+                            try {
+                                session.client.sendSessionEvent({ type: 'ready' });
+                            } catch (error) {
+                                if (error instanceof SocketDisconnectedError) {
+                                    logger.warn('[remote] Socket disconnected - cannot send ready event');
+                                    return;
+                                }
+                                throw error;
+                            }
+                            // Fire-and-forget push notification (daemon context)
                             session.api.push().sendToAllDevices(
                                 'It\'s ready!',
                                 `Claude is waiting for your command`,
                                 { sessionId: session.client.sessionId }
-                            );
+                            ).catch((error) => {
+                                logger.debug('[remote] Failed to send ready push notification:', error);
+                            });
                         }
                     },
                     signal: abortController.signal,
@@ -410,12 +430,28 @@ export async function claudeRemoteLauncher(session: Session): Promise<'switch' |
                 session.consumeOneTimeFlags();
                 
                 if (!exitReason && abortController.signal.aborted) {
-                    session.client.sendSessionEvent({ type: 'message', message: 'Aborted by user' });
+                    try {
+                        session.client.sendSessionEvent({ type: 'message', message: 'Aborted by user' });
+                    } catch (error) {
+                        if (error instanceof SocketDisconnectedError) {
+                            logger.warn('[remote] Socket disconnected - cannot send abort event');
+                        } else {
+                            throw error;
+                        }
+                    }
                 }
             } catch (e) {
                 logger.debug('[remote]: launch error', e);
                 if (!exitReason) {
-                    session.client.sendSessionEvent({ type: 'message', message: 'Process exited unexpectedly' });
+                    try {
+                        session.client.sendSessionEvent({ type: 'message', message: 'Process exited unexpectedly' });
+                    } catch (error) {
+                        if (error instanceof SocketDisconnectedError) {
+                            logger.warn('[remote] Socket disconnected - cannot send error event');
+                        } else {
+                            throw error;
+                        }
+                    }
                     continue;
                 }
             } finally {
@@ -427,7 +463,15 @@ export async function claudeRemoteLauncher(session: Session): Promise<'switch' |
                     const converted = sdkToLogConverter.generateInterruptedToolResult(toolCallId, parentToolCallId);
                     if (converted) {
                         logger.debug('[remote]: terminating tool call ' + toolCallId + ' parent: ' + parentToolCallId);
-                        session.client.sendClaudeSessionMessage(converted);
+                        try {
+                            session.client.sendClaudeSessionMessage(converted);
+                        } catch (error) {
+                            if (error instanceof SocketDisconnectedError) {
+                                logger.warn('[remote] Socket disconnected - cannot send interrupted tool result');
+                            } else {
+                                throw error;
+                            }
+                        }
                     }
                 }
                 ongoingToolCalls.clear();

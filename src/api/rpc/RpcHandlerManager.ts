@@ -14,6 +14,7 @@ import {
     RpcCancelRequest,
 } from './types';
 import { Socket } from 'socket.io-client';
+import { AppError, ErrorCodes } from '@/utils/errors';
 
 export class RpcHandlerManager {
     private handlers: RpcHandlerMap = new Map();
@@ -83,7 +84,7 @@ export class RpcHandlerManager {
 
             // Check if already cancelled before starting
             if (abortController?.signal.aborted) {
-                throw new Error('Request cancelled');
+                throw new AppError(ErrorCodes.OPERATION_CANCELLED, 'Request cancelled');
             }
 
             // Decrypt the incoming params
@@ -103,7 +104,7 @@ export class RpcHandlerManager {
 
             // Check if cancelled during execution
             if (abortController?.signal.aborted) {
-                throw new Error('Request cancelled');
+                throw new AppError(ErrorCodes.OPERATION_CANCELLED, 'Request cancelled');
             }
 
             // Encrypt and return the response

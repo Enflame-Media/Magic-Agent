@@ -2,6 +2,16 @@ import { logger } from '@/ui/logger';
 import httpProxy from 'http-proxy';
 import { createServer, IncomingMessage, ServerResponse, ClientRequest } from 'node:http';
 
+/**
+ * Represents a running HTTP proxy server with lifecycle management.
+ */
+export interface HTTPProxy {
+    /** The URL where the proxy is listening (e.g., "http://127.0.0.1:12345") */
+    url: string;
+    /** Closes the proxy server and releases all resources */
+    close: () => Promise<void>;
+}
+
 export interface HTTPProxyOptions {
     target: string;
     verbose?: boolean;
@@ -9,7 +19,7 @@ export interface HTTPProxyOptions {
     onResponse?: (req: IncomingMessage, proxyRes: IncomingMessage) => void;
 }
 
-export async function startHTTPDirectProxy(options: HTTPProxyOptions) {
+export async function startHTTPDirectProxy(options: HTTPProxyOptions): Promise<HTTPProxy> {
     const proxy = httpProxy.createProxyServer({
         target: options.target,
         changeOrigin: true,
@@ -81,5 +91,20 @@ export async function startHTTPDirectProxy(options: HTTPProxyOptions) {
         });
     });
 
-    return url;
+    return {
+        url,
+        close: async () => {
+            return new Promise<void>((resolve, reject) => {
+                server.close((err) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        proxy.close();
+                        logger.debug(`[HTTPProxy] Closed proxy on ${url}`);
+                        resolve();
+                    }
+                });
+            });
+        }
+    };
 }

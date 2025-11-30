@@ -6,6 +6,7 @@
  */
 
 import { ZodError, ZodIssue, ZodSchema, z } from 'zod'
+import { AppError, ErrorCodes } from '@/utils/errors'
 
 /**
  * Field name patterns considered sensitive - values will be redacted from errors.
@@ -132,7 +133,7 @@ export function parseWithFriendlyError<T>(
   const result = safeParseWithError(schema, data, contextName)
 
   if (!result.success) {
-    throw new Error(result.error)
+    throw new AppError(ErrorCodes.VALIDATION_FAILED, result.error)
   }
 
   return result.data

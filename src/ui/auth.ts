@@ -13,8 +13,9 @@ import { render } from 'ink';
 import React from 'react';
 import { randomUUID } from 'node:crypto';
 import { logger } from './logger';
+import { AppError, ErrorCodes } from '@/utils/errors';
 
-export async function doAuth(): Promise<Credentials | null> {
+export async function doAuth(options?: { signal?: AbortSignal }): Promise<Credentials | null> {
     console.clear();
 
     // Show authentication method selector
@@ -32,12 +33,24 @@ export async function doAuth(): Promise<Credentials | null> {
     try {
         console.log(`[AUTH DEBUG] Sending auth request to: ${configuration.serverUrl}/v1/auth/request`);
         console.log(`[AUTH DEBUG] Public key: ${encodeBase64(keypair.publicKey).substring(0, 20)}...`);
-        await axios.post(`${configuration.serverUrl}/v1/auth/request`, {
-            publicKey: encodeBase64(keypair.publicKey),
-            supportsV2: true
-        });
+        await axios.post(
+            `${configuration.serverUrl}/v1/auth/request`,
+            {
+                publicKey: encodeBase64(keypair.publicKey),
+                supportsV2: true
+            },
+            {
+                timeout: 30000,
+                signal: options?.signal
+            }
+        );
         console.log(`[AUTH DEBUG] Auth request sent successfully`);
     } catch (error) {
+        // Handle cancellation with a clean error message
+        if (axios.isCancel(error)) {
+            logger.debug('[AUTH] Auth request was cancelled');
+            throw AppError.fromUnknownSafe(ErrorCodes.OPERATION_CANCELLED, 'Auth request was cancelled', error);
+        }
         logger.debug('[AUTH] [ERROR] Failed to send auth request:', error);
         console.log('Failed to create authentication request, please try again later.');
         return null;
@@ -45,9 +58,9 @@ export async function doAuth(): Promise<Credentials | null> {
 
     // Handle authentication based on selected method
     if (authMethod === 'mobile') {
-        return await doMobileAuth(keypair);
+        return await doMobileAuth(keypair, options);
     } else {
-        return await doWebAuth(keypair);
+        return await doWebAuth(keypair, options);
     }
 }
 
@@ -84,7 +97,7 @@ function selectAuthenticationMethod(): Promise<AuthMethod | null> {
 /**
  * Handle mobile authentication flow
  */
-async function doMobileAuth(keypair: tweetnacl.BoxKeyPair): Promise<Credentials | null> {
+async function doMobileAuth(keypair: tweetnacl.BoxKeyPair, options?: { signal?: AbortSignal }): Promise<Credentials | null> {
     console.clear();
     console.log('\nMobile Authentication\n');
     console.log('Scan this QR code with your Happy mobile app:\n');
@@ -96,13 +109,13 @@ async function doMobileAuth(keypair: tweetnacl.BoxKeyPair): Promise<Credentials 
     console.log(authUrl);
     console.log('');
 
-    return await waitForAuthentication(keypair);
+    return await waitForAuthentication(keypair, options);
 }
 
 /**
  * Handle web authentication flow
  */
-async function doWebAuth(keypair: tweetnacl.BoxKeyPair): Promise<Credentials | null> {
+async function doWebAuth(keypair: tweetnacl.BoxKeyPair, options?: { signal?: AbortSignal }): Promise<Credentials | null> {
     console.clear();
     console.log('\nWeb Authentication\n');
 
@@ -126,13 +139,13 @@ async function doWebAuth(keypair: tweetnacl.BoxKeyPair): Promise<Credentials | n
     console.log(webUrl);
     console.log('');
 
-    return await waitForAuthentication(keypair);
+    return await waitForAuthentication(keypair, options);
 }
 
 /**
  * Wait for authentication to complete and return credentials
  */
-async function waitForAuthentication(keypair: tweetnacl.BoxKeyPair): Promise<Credentials | null> {
+async function waitForAuthentication(keypair: tweetnacl.BoxKeyPair, options?: { signal?: AbortSignal }): Promise<Credentials | null> {
     process.stdout.write('Waiting for authentication');
     let dots = 0;
     let cancelled = false;
@@ -147,12 +160,19 @@ async function waitForAuthentication(keypair: tweetnacl.BoxKeyPair): Promise<Cre
     process.on('SIGINT', handleInterrupt);
 
     try {
-        while (!cancelled) {
+        while (!cancelled && !options?.signal?.aborted) {
             try {
-                const response = await axios.post(`${configuration.serverUrl}/v1/auth/request`, {
-                    publicKey: encodeBase64(keypair.publicKey),
-                    supportsV2: true
-                });
+                const response = await axios.post(
+                    `${configuration.serverUrl}/v1/auth/request`,
+                    {
+                        publicKey: encodeBase64(keypair.publicKey),
+                        supportsV2: true
+                    },
+                    {
+                        timeout: 30000,
+                        signal: options?.signal
+                    }
+                );
                 if (response.data.state === 'authorized') {
                     let token = response.data.token as string;
                     let r = decodeBase64(response.data.response);
@@ -200,6 +220,11 @@ async function waitForAuthentication(keypair: tweetnacl.BoxKeyPair): Promise<Cre
                     }
                 }
             } catch (error) {
+                // Handle cancellation with a clean error message
+                if (axios.isCancel(error)) {
+                    logger.debug('[AUTH] Authentication polling was cancelled');
+                    throw AppError.fromUnknownSafe(ErrorCodes.OPERATION_CANCELLED, 'Authentication was cancelled', error);
+                }
                 console.log('\n\nFailed to check authentication status. Please try again.');
                 return null;
             }
@@ -208,10 +233,16 @@ async function waitForAuthentication(keypair: tweetnacl.BoxKeyPair): Promise<Cre
             process.stdout.write('\rWaiting for authentication' + '.'.repeat((dots % 3) + 1) + '   ');
             dots++;
 
-            await delay(1000);
+            await delay(1000, options?.signal);
         }
     } finally {
         process.off('SIGINT', handleInterrupt);
+    }
+
+    // Check if cancelled via signal
+    if (options?.signal?.aborted) {
+        logger.debug('[AUTH] Authentication was cancelled via signal');
+        throw new AppError(ErrorCodes.OPERATION_CANCELLED, 'Authentication was cancelled');
     }
 
     return null;
@@ -236,7 +267,7 @@ export function decryptWithEphemeralKey(encryptedBundle: Uint8Array, recipientSe
  * Ensure authentication and machine setup
  * This replaces the onboarding flow and ensures everything is ready
  */
-export async function authAndSetupMachineIfNeeded(): Promise<{
+export async function authAndSetupMachineIfNeeded(options?: { signal?: AbortSignal }): Promise<{
     credentials: Credentials;
     machineId: string;
 }> {
@@ -248,9 +279,9 @@ export async function authAndSetupMachineIfNeeded(): Promise<{
 
     if (!credentials) {
         logger.debug('[AUTH] No credentials found, starting authentication flow...');
-        const authResult = await doAuth();
+        const authResult = await doAuth(options);
         if (!authResult) {
-            throw new Error('Authentication failed or was cancelled');
+            throw new AppError(ErrorCodes.AUTH_FAILED, 'Authentication failed or was cancelled');
         }
         credentials = authResult;
         newAuth = true;

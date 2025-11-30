@@ -185,7 +185,7 @@ I do not like how
 - posts helpers for daemon do not return typed results
 - I don't like that daemonPost returns either response from daemon or { error: ... }. We should have consistent envelope type
 
-- we loose track of children processes when daemon exits / restarts - we should write them to the same state file? At least the pids should be there for doctor & cleanup
+- ✅ RESOLVED (HAP-71): Session PIDs are now persisted to `trackedSessionPids` in daemon.state.json during heartbeat and recovered on daemon startup. Dead PIDs are pruned during recovery.
 
 - caffeinate process is not tracked in state at all & might become runaway
 - caffeinate is also started by individual sesions - we should not do that for simpler cleanup

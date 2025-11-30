@@ -3,6 +3,8 @@
  * Provides an async iterable interface for processing SDK messages
  */
 
+import { AppError, ErrorCodes } from '@/utils/errors'
+
 /**
  * Generic async stream implementation
  * Handles queuing, error propagation, and proper cleanup
@@ -22,7 +24,7 @@ export class Stream<T> implements AsyncIterableIterator<T> {
      */
     [Symbol.asyncIterator](): AsyncIterableIterator<T> {
         if (this.started) {
-            throw new Error('Stream can only be iterated once')
+            throw new AppError(ErrorCodes.ALREADY_STARTED, 'Stream can only be iterated once')
         }
         this.started = true
         return this

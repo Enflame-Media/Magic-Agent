@@ -4,6 +4,7 @@
  */
 
 import { z } from 'zod'
+import { AppError, ErrorCodes } from '@/utils/errors'
 
 /**
  * Valid values for --started-by CLI argument
@@ -25,7 +26,8 @@ export const startedBySchema = z.enum(STARTED_BY_VALUES)
 export function validateStartedBy(value: string): StartedByValue {
   const result = startedBySchema.safeParse(value)
   if (!result.success) {
-    throw new Error(
+    throw new AppError(
+      ErrorCodes.INVALID_INPUT,
       `Invalid --started-by value: "${value}". Must be one of: ${STARTED_BY_VALUES.join(', ')}`
     )
   }
@@ -66,25 +68,28 @@ export function validatePositiveInteger(
     if (defaultValue !== undefined) {
       return defaultValue
     }
-    throw new Error(`${name} is required but was not provided`)
+    throw new AppError(ErrorCodes.INVALID_INPUT, `${name} is required but was not provided`)
   }
 
   const parsed = parseInt(value, 10)
 
   if (isNaN(parsed)) {
-    throw new Error(
+    throw new AppError(
+      ErrorCodes.INVALID_INPUT,
       `Invalid ${name}: "${value}". Must be a valid integer.`
     )
   }
 
   if (parsed < min) {
-    throw new Error(
+    throw new AppError(
+      ErrorCodes.INVALID_INPUT,
       `Invalid ${name}: ${parsed}. Must be at least ${min}.`
     )
   }
 
   if (max !== undefined && parsed > max) {
-    throw new Error(
+    throw new AppError(
+      ErrorCodes.INVALID_INPUT,
       `Invalid ${name}: ${parsed}. Must be at most ${max}.`
     )
   }

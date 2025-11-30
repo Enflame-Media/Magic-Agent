@@ -11,6 +11,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { configuration } from '@/configuration';
 import { validateTimeout } from '@/utils/validators';
+import { AppError, ErrorCodes } from '@/utils/errors';
 
 /**
  * Result envelope type for daemon communication.
@@ -74,6 +75,22 @@ export interface SessionStartedResponse {
  */
 export interface StopDaemonResponse {
   status: string;
+}
+
+/**
+ * Response type for /health endpoint
+ */
+export interface HealthResponse {
+  status: 'healthy' | 'degraded' | 'unhealthy';
+  uptime: number;
+  sessions: number;
+  memory: {
+    rss: number;
+    heapUsed: number;
+    heapTotal: number;
+    external: number;
+  };
+  timestamp: string;
 }
 
 /**
@@ -148,6 +165,62 @@ async function daemonPost<T>(path: string, body?: unknown): Promise<DaemonRespon
 }
 
 /**
+ * Make a GET request to the daemon HTTP server.
+ * Always returns a consistent DaemonResponse envelope for type safety.
+ */
+async function daemonGet<T>(path: string): Promise<DaemonResponse<T>> {
+  const state = await readDaemonState();
+  if (!state?.httpPort) {
+    const errorMessage = 'No daemon running, no state file found';
+    logger.debug(`[CONTROL CLIENT] ${errorMessage}`);
+    return { success: false, error: errorMessage };
+  }
+
+  try {
+    process.kill(state.pid, 0);
+  } catch {
+    const errorMessage = 'Daemon is not running, file is stale';
+    logger.debug(`[CONTROL CLIENT] ${errorMessage}`);
+    return { success: false, error: errorMessage };
+  }
+
+  const authToken = readDaemonAuthToken();
+  if (!authToken) {
+    const errorMessage = 'No daemon auth token found';
+    logger.debug(`[CONTROL CLIENT] ${errorMessage}`);
+    return { success: false, error: errorMessage };
+  }
+
+  try {
+    const timeout = validateTimeout(
+      process.env.HAPPY_DAEMON_HTTP_TIMEOUT,
+      'HAPPY_DAEMON_HTTP_TIMEOUT',
+      { defaultValue: 10_000, min: 100, max: 300_000 }
+    );
+    const response = await fetch(`http://127.0.0.1:${state.httpPort}${path}`, {
+      method: 'GET',
+      headers: {
+        'X-Daemon-Auth': authToken
+      },
+      signal: AbortSignal.timeout(timeout)
+    });
+
+    if (!response.ok) {
+      const errorMessage = `Request failed: ${path}, HTTP ${response.status}`;
+      logger.debug(`[CONTROL CLIENT] ${errorMessage}`);
+      return { success: false, error: errorMessage };
+    }
+
+    const data = await response.json() as T;
+    return { success: true, data };
+  } catch (error) {
+    const errorMessage = `Request failed: ${path}, ${error instanceof Error ? error.message : 'Unknown error'}`;
+    logger.debug(`[CONTROL CLIENT] ${errorMessage}`);
+    return { success: false, error: errorMessage };
+  }
+}
+
+/**
  * Notify daemon that a session has started.
  * Called by CLI sessions to register themselves with the daemon.
  */
@@ -194,6 +267,14 @@ export async function spawnDaemonSession(
  */
 export async function stopDaemonHttp(): Promise<DaemonResponse<StopDaemonResponse>> {
   return daemonPost<StopDaemonResponse>('/stop');
+}
+
+/**
+ * Get daemon health status.
+ * Returns health metrics including uptime, session count, and memory usage.
+ */
+export async function getDaemonHealth(): Promise<DaemonResponse<HealthResponse>> {
+  return daemonGet<HealthResponse>('/health');
 }
 
 /**
@@ -348,5 +429,5 @@ async function waitForProcessDeath(pid: number, timeout: number): Promise<void> 
       return; // Process is dead
     }
   }
-  throw new Error('Process did not die within timeout');
+  throw new AppError(ErrorCodes.PROCESS_TIMEOUT, 'Process did not die within timeout');
 }

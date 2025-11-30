@@ -31,6 +31,58 @@ Happy CLI (`handy-cli`) is a command-line tool that wraps Claude Code to enable 
 - Abort controllers for cancellable operations
 - Careful handling of process lifecycle and cleanup
 
+### Process Lifecycle Management
+
+Functions that register `process.on()` handlers must follow established patterns to prevent handler accumulation bugs. See HAP-52, HAP-75, HAP-132 for historical context.
+
+#### Per-Call Pattern (Functions Called Multiple Times)
+
+Functions invoked multiple times during the process lifecycle **MUST** remove handlers after use:
+
+```typescript
+// Store handler reference for removal
+const exitHandler = () => cleanup()
+process.on('exit', exitHandler)
+
+// In cleanup or finally block:
+process.removeListener('exit', exitHandler)
+```
+
+**Examples in codebase:**
+- `query.ts` - Removes exit handlers after each query completes
+- `runClaude.ts` - Removes SIGINT/SIGTERM handlers after each session
+
+#### Singleton Pattern (One-Time Setup)
+
+Utilities that run once per process lifetime do NOT need handler removal:
+
+```typescript
+let setupComplete = false
+function setupGlobalHandlers() {
+    if (setupComplete) return
+    setupComplete = true
+    process.on('exit', cleanup)  // Intentionally never removed
+}
+```
+
+**Examples in codebase:**
+- `caffeinate.ts` - Singleton process, handlers persist until exit
+- `daemon/run.ts` - Global daemon handlers, run until process termination
+
+#### Reference Equality Requirement
+
+Handlers can only be removed if you store the function reference:
+
+```typescript
+// ❌ WRONG - Anonymous functions cannot be removed
+process.on('exit', () => cleanup())
+
+// ✅ CORRECT - Store reference for removal
+const handler = () => cleanup()
+process.on('exit', handler)
+process.removeListener('exit', handler)
+```
+
 ### Testing
 - Unit tests using Vitest
 - No mocking - tests make real API calls

@@ -11,6 +11,7 @@
  */
 
 import { createHash } from 'crypto';
+import { AppError, ErrorCodes } from '@/utils/errors';
 
 /**
  * Options for deterministic JSON stringification
@@ -58,7 +59,7 @@ export function deterministicStringify(
             switch (undefinedBehavior) {
                 case 'omit': return undefined;
                 case 'null': return null;
-                case 'throw': throw new Error(`Undefined value at key: ${key}`);
+                case 'throw': throw new AppError(ErrorCodes.INVALID_INPUT, `Undefined value at key: ${key}`);
             }
         }
         if (typeof value === 'boolean' || typeof value === 'number' || typeof value === 'string') {
@@ -84,7 +85,7 @@ export function deterministicStringify(
 
         // Handle circular references
         if (seen.has(value)) {
-            throw new Error('Circular reference detected');
+            throw new AppError(ErrorCodes.INVALID_INPUT, 'Circular reference detected');
         }
         seen.add(value);
 

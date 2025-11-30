@@ -15,6 +15,7 @@ import { getToolName } from "./getToolName";
 import { EnhancedMode, PermissionMode } from "../loop";
 import { getToolDescriptor } from "./getToolDescriptor";
 import { delay } from "@/utils/time";
+import { AppError, ErrorCodes } from "@/utils/errors";
 
 /**
  * Default permission request timeout in milliseconds (30 seconds)
@@ -39,6 +40,10 @@ interface PendingRequest {
 }
 
 export class PermissionHandler {
+    private static readonly MAX_RESPONSES = 1000;
+
+    private static readonly MAX_TOOL_CALLS = 1000;
+
     private toolCalls: { id: string, name: string, input: any, used: boolean }[] = [];
     private responses = new Map<string, PermissionResponse>();
     private pendingRequests = new Map<string, PendingRequest>();
@@ -199,7 +204,7 @@ export class PermissionHandler {
             }
 
             if (!toolCallId) {
-                throw new Error(`Could not resolve tool call ID for ${toolName} after ${maxAttempts} attempts`);
+                throw new AppError(ErrorCodes.OPERATION_FAILED, `Could not resolve tool call ID for ${toolName} after ${maxAttempts} attempts`);
             }
         }
         return this.handlePermissionRequest(toolCallId, toolName, input, options.signal);
@@ -262,7 +267,7 @@ export class PermissionHandler {
                     };
                 });
 
-                // Send push notification about timeout
+                // Send push notification about timeout (fire-and-forget in daemon context)
                 this.session.api.push().sendToAllDevices(
                     'Permission Timeout',
                     `Permission request for ${getToolName(toolName)} timed out`,
@@ -272,7 +277,9 @@ export class PermissionHandler {
                         tool: toolName,
                         type: 'permission_timeout'
                     }
-                );
+                ).catch((error) => {
+                    logger.debug('[PermissionHandler] Failed to send timeout push notification:', error);
+                });
 
                 // Trigger timeout callback for UI feedback
                 if (this.onPermissionTimeoutCallback) {
@@ -340,7 +347,7 @@ export class PermissionHandler {
                 this.onPermissionRequestCallback(id);
             }
 
-            // Send push notification
+            // Send push notification (fire-and-forget in daemon context)
             this.session.api.push().sendToAllDevices(
                 'Permission Request',
                 `Claude wants to ${getToolName(toolName)}`,
@@ -350,7 +357,9 @@ export class PermissionHandler {
                     tool: toolName,
                     type: 'permission_request'
                 }
-            );
+            ).catch((error) => {
+                logger.debug('[PermissionHandler] Failed to send permission request push notification:', error);
+            });
 
             // Update agent state
             this.session.client.updateAgentState((currentState) => ({
@@ -436,6 +445,7 @@ export class PermissionHandler {
                         });
                     }
                 }
+                this.evictOldToolCalls();
             }
         }
         if (message.type === 'user') {
@@ -513,6 +523,38 @@ export class PermissionHandler {
     }
 
     /**
+     * Evicts the oldest responses when the map exceeds MAX_RESPONSES.
+     * Uses LRU (Least Recently Used) eviction based on receivedAt timestamp.
+     */
+    private evictOldResponses(): void {
+        if (this.responses.size <= PermissionHandler.MAX_RESPONSES) {
+            return;
+        }
+
+        const entries = Array.from(this.responses.entries())
+            .sort((a, b) => (a[1].receivedAt || 0) - (b[1].receivedAt || 0));
+
+        const entriesToDelete = entries.length - PermissionHandler.MAX_RESPONSES;
+        for (let i = 0; i < entriesToDelete; i++) {
+            this.responses.delete(entries[i][0]);
+        }
+    }
+
+
+    /**
+     * Evict oldest tool calls when the array exceeds MAX_TOOL_CALLS.
+     * Since tool calls are stored in insertion order, we remove from the beginning.
+     */
+    private evictOldToolCalls(): void {
+        if (this.toolCalls.length <= PermissionHandler.MAX_TOOL_CALLS) {
+            return;
+        }
+
+        const toRemove = this.toolCalls.length - PermissionHandler.MAX_TOOL_CALLS;
+        this.toolCalls.splice(0, toRemove);
+    }
+
+    /**
      * Sets up the client handler for permission responses
      */
     private setupClientHandler(): void {
@@ -527,8 +569,9 @@ export class PermissionHandler {
                 return;
             }
 
-            // Store the response with timestamp
+            // Store the response with timestamp and evict old entries if needed
             this.responses.set(id, { ...message, receivedAt: Date.now() });
+            this.evictOldResponses();
             this.pendingRequests.delete(id);
 
             // Handle the permission response based on tool type

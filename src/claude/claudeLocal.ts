@@ -9,6 +9,7 @@ import { getProjectPath } from "./utils/path";
 import { projectPath } from "@/projectPath";
 import { systemPrompt } from "./utils/systemPrompt";
 import { isValidSessionId } from "./utils/sessionValidation";
+import { AppError, ErrorCodes } from "@/utils/errors";
 
 
 // Get Claude CLI path from project root
@@ -111,7 +112,7 @@ export async function claudeLocal(opts: {
             }
 
             if (!claudeCliPath || !existsSync(claudeCliPath)) {
-                throw new Error('Claude local launcher not found. Please ensure HAPPY_PROJECT_ROOT is set correctly for development.');
+                throw new AppError(ErrorCodes.RESOURCE_NOT_FOUND, 'Claude local launcher not found. Please ensure HAPPY_PROJECT_ROOT is set correctly for development.');
             }
 
             // Prepare environment variables

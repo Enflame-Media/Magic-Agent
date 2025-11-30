@@ -13,6 +13,7 @@ import { configuration } from '@/configuration';
 import { startCaffeinate, stopCaffeinate, getCaffeinatePid } from '@/utils/caffeinate';
 import packageJson from '../../package.json';
 import { getEnvironmentInfo } from '@/ui/doctor';
+import { killOrphanedCaffeinate } from './doctor';
 import { spawnHappyCLI } from '@/utils/spawnHappyCLI';
 import { writeDaemonState, DaemonLocallyPersistedState, acquireDaemonLock } from '@/persistence';
 import { withRetry } from '@/utils/retry';
@@ -135,6 +136,13 @@ export async function startDaemon(): Promise<void> {
   // 2. Should not have another daemon process running
 
   try {
+    // Clean up orphaned caffeinate from previous crash (HAP-184)
+    // This handles cases where daemon was killed with SIGKILL or system crashed
+    const orphanResult = await killOrphanedCaffeinate();
+    if (orphanResult.killed) {
+      logger.debug('[DAEMON RUN] Cleaned up orphaned caffeinate from previous crash');
+    }
+
     // Start caffeinate
     const caffeinateStarted = startCaffeinate();
     if (caffeinateStarted) {
@@ -449,6 +457,9 @@ export async function startDaemon(): Promise<void> {
     await fs.writeFile(configuration.daemonAuthTokenFile, daemonAuthToken, { mode: 0o600 });
     logger.debug('[DAEMON RUN] Auth token generated and written to file with restricted permissions');
 
+    // Record daemon start time for health endpoint uptime calculation
+    const daemonStartTime = Date.now();
+
     // Start control server
     const { port: controlPort, stop: stopControlServer } = await startDaemonControlServer({
       getChildren: getCurrentChildren,
@@ -456,7 +467,8 @@ export async function startDaemon(): Promise<void> {
       spawnSession,
       requestShutdown: () => requestShutdown('happy-cli'),
       onHappySessionWebhook,
-      authToken: daemonAuthToken
+      authToken: daemonAuthToken,
+      startTime: daemonStartTime
     });
 
     // Write initial daemon state (no lock needed for state file)
@@ -503,107 +515,129 @@ export async function startDaemon(): Promise<void> {
     // Connect to server
     apiMachine.connect();
 
-    // Every 60 seconds:
+    // Heartbeat scheduling using setTimeout to prevent overlapping executions (HAP-70)
+    // Using setTimeout instead of setInterval ensures next heartbeat only schedules
+    // after current completes, preventing state corruption if heartbeat takes >60s.
+    //
+    // Every heartbeat:
     // 1. Prune stale sessions
     // 2. Check if daemon needs update
     // 3. If outdated, restart with latest version
-    // 4. Write heartbeat
+    // 4. Write heartbeat state
     const heartbeatIntervalMs = validateHeartbeatInterval(
       process.env.HAPPY_DAEMON_HEARTBEAT_INTERVAL,
       'HAPPY_DAEMON_HEARTBEAT_INTERVAL',
       { defaultValue: 60_000, min: 1000, max: 3600_000 }
     );
-    let heartbeatRunning = false
-    const restartOnStaleVersionAndHeartbeat = setInterval(async () => {
+
+    // Track timeout handle for cleanup, and guard as defense-in-depth
+    let heartbeatTimeoutHandle: ReturnType<typeof setTimeout> | null = null;
+    let heartbeatRunning = false;
+
+    // Run a single heartbeat iteration
+    const runHeartbeat = async (): Promise<boolean> => {
+      // Guard prevents concurrent execution (defense-in-depth, should not happen with setTimeout)
       if (heartbeatRunning) {
-        return;
+        logger.debug('[DAEMON RUN] Previous heartbeat still running, skipping');
+        return true; // Continue scheduling
       }
       heartbeatRunning = true;
 
-      if (process.env.DEBUG) {
-        logger.debug(`[DAEMON RUN] Health check started at ${new Date().toLocaleString()}`);
-      }
+      try {
+        if (process.env.DEBUG) {
+          logger.debug(`[DAEMON RUN] Health check started at ${new Date().toLocaleString()}`);
+        }
 
-      // Prune stale sessions
-      for (const [pid, session] of pidToTrackedSession.entries()) {
-        try {
-          // Check if process is still alive (signal 0 doesn't kill, just checks)
-          process.kill(pid, 0);
-        } catch (error) {
-          // Process is dead, clean up resources and remove from tracking
-          logger.debug(`[DAEMON RUN] Removing stale session with PID ${pid} (process no longer exists)`);
+        // Prune stale sessions - use centralized cleanup to ensure temp directories are cleaned
+        for (const [pid, _] of pidToTrackedSession.entries()) {
+          try {
+            // Check if process is still alive (signal 0 doesn't kill, just checks)
+            process.kill(pid, 0);
+          } catch (error) {
+            // Process is dead - use centralized cleanup which handles temp directories
+            logger.debug(`[DAEMON RUN] Removing stale session PID ${pid}`);
+            onChildExited(pid);
+          }
+        }
 
-          // Clean up Codex temp directory if it exists
-          if (session.codexTempDir) {
-            try {
-              session.codexTempDir.removeCallback();
-              logger.debug(`[DAEMON RUN] Cleaned up Codex temp directory for stale session PID ${pid}`);
-            } catch (cleanupError) {
-              logger.debug(`[DAEMON RUN] Failed to cleanup Codex temp dir for stale PID ${pid}:`, cleanupError);
-            }
+        // Check if daemon needs update
+        // If version on disk is different from the one in package.json - we need to restart
+        // BIG if - does this get updated from underneath us on npm upgrade?
+        const projectVersion = JSON.parse(readFileSync(join(projectPath(), 'package.json'), 'utf-8')).version;
+        if (projectVersion !== configuration.currentCliVersion) {
+          logger.debug('[DAEMON RUN] Daemon is outdated, triggering self-restart with latest version');
+
+          // Clear the timeout handle to prevent any further heartbeats
+          if (heartbeatTimeoutHandle) {
+            clearTimeout(heartbeatTimeoutHandle);
+            heartbeatTimeoutHandle = null;
           }
 
-          pidToTrackedSession.delete(pid);
+          // Spawn new daemon through the CLI
+          // We do not need to clean ourselves up - we will be killed by
+          // the CLI start command.
+          // 1. It will first check if daemon is running (yes in this case)
+          // 2. If the version is stale (it will read daemon.state.json file and check startedWithCliVersion) & compare it to its own version
+          // 3. Next it will start a new daemon with the latest version with daemon-sync :D
+          // Done!
+          try {
+            spawnHappyCLI(['daemon', 'start'], {
+              detached: true,
+              stdio: 'ignore'
+            });
+          } catch (error) {
+            logger.debug('[DAEMON RUN] Failed to spawn new daemon, this is quite likely to happen during integration tests as we are cleaning out dist/ directory', error);
+          }
+
+          // So we can just hang forever
+          logger.debug('[DAEMON RUN] Hanging for a bit - waiting for CLI to kill us because we are running outdated version of the code');
+          await new Promise(resolve => setTimeout(resolve, 10_000));
+          process.exit(0);
         }
-      }
 
-      // Check if daemon needs update
-      // If version on disk is different from the one in package.json - we need to restart
-      // BIG if - does this get updated from underneath us on npm upgrade?
-      const projectVersion = JSON.parse(readFileSync(join(projectPath(), 'package.json'), 'utf-8')).version;
-      if (projectVersion !== configuration.currentCliVersion) {
-        logger.debug('[DAEMON RUN] Daemon is outdated, triggering self-restart with latest version, clearing heartbeat interval');
-
-        clearInterval(restartOnStaleVersionAndHeartbeat);
-
-        // Spawn new daemon through the CLI
-        // We do not need to clean ourselves up - we will be killed by
-        // the CLI start command.
-        // 1. It will first check if daemon is running (yes in this case)
-        // 2. If the version is stale (it will read daemon.state.json file and check startedWithCliVersion) & compare it to its own version
-        // 3. Next it will start a new daemon with the latest version with daemon-sync :D
-        // Done!
+        // Don't check state file PID - lock file is the authority (HAP-51)
+        // If we hold the lock, we own the daemon state
+        // State file is just informational for CLI tools
+        // The previous check-then-act pattern was a TOCTOU race condition
         try {
-          spawnHappyCLI(['daemon', 'start'], {
-            detached: true,
-            stdio: 'ignore'
-          });
+          const updatedState: DaemonLocallyPersistedState = {
+            pid: process.pid,
+            httpPort: controlPort,
+            startTime: fileState.startTime,
+            startedWithCliVersion: packageJson.version,
+            lastHeartbeat: new Date().toLocaleString(),
+            daemonLogPath: fileState.daemonLogPath,
+            caffeinatePid: getCaffeinatePid()
+          };
+          writeDaemonState(updatedState);
+          if (process.env.DEBUG) {
+            logger.debug(`[DAEMON RUN] Health check completed at ${updatedState.lastHeartbeat}`);
+          }
         } catch (error) {
-          logger.debug('[DAEMON RUN] Failed to spawn new daemon, this is quite likely to happen during integration tests as we are cleaning out dist/ directory', error);
+          // If we can't write state, something is very wrong
+          logger.debug('[DAEMON RUN] Failed to write heartbeat - shutting down', error);
+          requestShutdown('exception', 'Lost ability to write daemon state');
+          return false; // Stop scheduling
         }
 
-        // So we can just hang forever
-        logger.debug('[DAEMON RUN] Hanging for a bit - waiting for CLI to kill us because we are running outdated version of the code');
-        await new Promise(resolve => setTimeout(resolve, 10_000));
-        process.exit(0);
+        return true; // Continue scheduling
+      } finally {
+        heartbeatRunning = false;
       }
+    };
 
-      // Don't check state file PID - lock file is the authority (HAP-51)
-      // If we hold the lock, we own the daemon state
-      // State file is just informational for CLI tools
-      // The previous check-then-act pattern was a TOCTOU race condition
-      try {
-        const updatedState: DaemonLocallyPersistedState = {
-          pid: process.pid,
-          httpPort: controlPort,
-          startTime: fileState.startTime,
-          startedWithCliVersion: packageJson.version,
-          lastHeartbeat: new Date().toLocaleString(),
-          daemonLogPath: fileState.daemonLogPath,
-          caffeinatePid: getCaffeinatePid()
-        };
-        writeDaemonState(updatedState);
-        if (process.env.DEBUG) {
-          logger.debug(`[DAEMON RUN] Health check completed at ${updatedState.lastHeartbeat}`);
+    // Schedule the next heartbeat after current completes (prevents overlapping)
+    const scheduleNextHeartbeat = () => {
+      heartbeatTimeoutHandle = setTimeout(async () => {
+        const shouldContinue = await runHeartbeat();
+        if (shouldContinue) {
+          scheduleNextHeartbeat();
         }
-      } catch (error) {
-        // If we can't write state, something is very wrong
-        logger.debug('[DAEMON RUN] Failed to write heartbeat - shutting down', error);
-        requestShutdown('exception', 'Lost ability to write daemon state');
-      }
+      }, heartbeatIntervalMs);
+    };
 
-      heartbeatRunning = false;
-    }, heartbeatIntervalMs); // Every 60 seconds in production
+    // Start the heartbeat cycle
+    scheduleNextHeartbeat();
 
     // Start memory pressure monitoring
     // Monitors heap usage and triggers cleanup when threshold exceeded
@@ -629,10 +663,11 @@ export async function startDaemon(): Promise<void> {
     const cleanupAndShutdown = async (source: 'happy-app' | 'happy-cli' | 'os-signal' | 'exception', errorMessage?: string) => {
       logger.debug(`[DAEMON RUN] Starting proper cleanup (source: ${source}, errorMessage: ${errorMessage})...`);
 
-      // Clear health check interval
-      if (restartOnStaleVersionAndHeartbeat) {
-        clearInterval(restartOnStaleVersionAndHeartbeat);
-        logger.debug('[DAEMON RUN] Health check interval cleared');
+      // Clear heartbeat timeout (HAP-70: using setTimeout instead of setInterval)
+      if (heartbeatTimeoutHandle) {
+        clearTimeout(heartbeatTimeoutHandle);
+        heartbeatTimeoutHandle = null;
+        logger.debug('[DAEMON RUN] Health check timeout cleared');
       }
 
       // Stop memory monitor

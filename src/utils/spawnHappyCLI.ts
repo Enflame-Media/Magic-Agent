@@ -54,6 +54,7 @@ import { join } from 'node:path';
 import { projectPath } from '@/projectPath';
 import { logger } from '@/ui/logger';
 import { existsSync } from 'node:fs';
+import { AppError, ErrorCodes } from '@/utils/errors';
 
 /**
  * Spawn the Happy CLI with the given arguments in a cross-platform way.
@@ -106,7 +107,7 @@ export function spawnHappyCLI(args: string[], options: SpawnOptions = {}): Child
       '  https://github.com/slopus/happy-cli/issues',
     ].join('\n');
     logger.debug(`[SPAWN HAPPY CLI] ${errorMessage}`);
-    throw new Error(errorMessage);
+    throw new AppError(ErrorCodes.RESOURCE_NOT_FOUND, errorMessage);
   }
   
   return spawn('node', nodeArgs, options);

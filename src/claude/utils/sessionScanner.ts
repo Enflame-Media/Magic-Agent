@@ -1,5 +1,5 @@
 import { InvalidateSync } from "@/utils/sync";
-import { RawJSONLines, RawJSONLinesSchema } from "../types";
+import { RawJSONLines, RawJSONLinesSchema, parseJsonWithContext, JsonParseError } from "../types";
 import { readFile } from "node:fs/promises";
 import { logger } from "@/ui/logger";
 import { startFileWatcher, FileWatchEvent } from "@/modules/watcher/startFileWatcher";
@@ -131,6 +131,26 @@ export async function createSessionScanner(opts: {
             }
             logger.debug(`[SESSION_SCANNER] New session: ${sessionId}`)
             currentSessionId = sessionId;
+
+            // FIX HAP-73: Set up watcher IMMEDIATELY before invalidating to prevent message loss
+            // Previously, the watcher was only set up inside the sync callback, creating a gap
+            // where messages could be lost between session switch and watcher setup
+            if (!watchers.has(sessionId)) {
+                try {
+                    const watchPath = getValidatedSessionPath(projectDir, sessionId);
+                    watchers.set(sessionId, startFileWatcher(watchPath, (_file: string, event: FileWatchEvent) => {
+                        logger.debug(`[SESSION_SCANNER] File event: ${event} for session ${sessionId}`);
+                        sync.invalidate();
+                    }));
+                } catch (error) {
+                    if (error instanceof InvalidSessionIdError) {
+                        logger.debug(`[SESSION_SCANNER] Invalid session ID rejected for watcher: ${error.message}`);
+                    } else {
+                        throw error;
+                    }
+                }
+            }
+
             sync.invalidate();
         },
     }
@@ -185,15 +205,23 @@ async function readSessionLog(projectDir: string, sessionId: string): Promise<Ra
             if (l.trim() === '') {
                 continue;
             }
-            let message = JSON.parse(l);
+            let message = parseJsonWithContext(l, {
+                context: 'session message',
+                logger
+            });
             let parsed = RawJSONLinesSchema.safeParse(message);
             if (!parsed.success) { // We can't deduplicate this message so we have to skip it
-                logger.debugLargeJson(`[SESSION_SCANNER] Failed to parse message`, message)
+                logger.debugLargeJson(`[SESSION_SCANNER] Failed to validate message schema`, message)
                 continue;
             }
             messages.push(parsed.data);
         } catch (e) {
-            logger.debug(`[SESSION_SCANNER] Error processing message: ${e}`);
+            // JsonParseError already logged the context, just log the error summary
+            if (e instanceof JsonParseError) {
+                logger.debug(`[SESSION_SCANNER] Skipping malformed message (length: ${e.inputLength})`);
+            } else {
+                logger.debug(`[SESSION_SCANNER] Error processing message: ${e}`);
+            }
             continue;
         }
     }

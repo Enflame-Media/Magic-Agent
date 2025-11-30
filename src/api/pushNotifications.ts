@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { logger } from '@/ui/logger'
 import { Expo, ExpoPushMessage } from 'expo-server-sdk'
-import { getSafeErrorMessage } from '@/utils/errors'
+import { AppError, ErrorCodes, getSafeErrorMessage } from '@/utils/errors'
 import { configuration } from '@/configuration'
 
 export interface PushToken {
@@ -48,7 +48,7 @@ export class PushNotificationClient {
             return response.data.tokens
         } catch (error) {
             logger.debug('[PUSH] [ERROR] Failed to fetch push tokens:', error)
-            throw new Error(`Failed to fetch push tokens: ${getSafeErrorMessage(error)}`)
+            throw AppError.fromUnknownSafe(ErrorCodes.CONNECT_FAILED, 'Failed to fetch push tokens', error)
         }
     }
 
@@ -74,6 +74,7 @@ export class PushNotificationClient {
 
         // Create chunks to respect Expo's rate limits
         const chunks = this.expo.chunkPushNotifications(validMessages)
+        let failedChunks = 0
 
         for (const chunk of chunks) {
             // Retry with exponential backoff for 5 minutes
@@ -94,7 +95,7 @@ export class PushNotificationClient {
                     
                     // If all notifications failed, throw to trigger retry
                     if (errors.length === ticketChunk.length) {
-                        throw new Error('All push notifications in chunk failed')
+                        throw new AppError(ErrorCodes.OPERATION_FAILED, 'All push notifications in chunk failed')
                     }
                     
                     // Success - break out of retry loop
@@ -102,7 +103,8 @@ export class PushNotificationClient {
                 } catch (error) {
                     const elapsed = Date.now() - startTime
                     if (elapsed >= timeout) {
-                        logger.debug('[PUSH] Timeout reached after 5 minutes, giving up on chunk')
+                        logger.warn('[PUSH] Timeout reached after 5 minutes, giving up on chunk')
+                        failedChunks++
                         break
                     }
                     
@@ -120,7 +122,11 @@ export class PushNotificationClient {
             }
         }
 
-        logger.debug(`Push notifications sent successfully`)
+        if (failedChunks > 0) {
+            logger.warn(`[PUSH] ${failedChunks}/${chunks.length} chunks failed after timeout`)
+        } else {
+            logger.debug('Push notifications sent successfully')
+        }
     }
 
     /**
@@ -128,48 +134,41 @@ export class PushNotificationClient {
      * @param title - Notification title
      * @param body - Notification body
      * @param data - Additional data to send with the notification
+     * @returns Promise that resolves when notifications are sent (or rejects on error)
      */
-    sendToAllDevices(title: string, body: string, data?: Record<string, any>): void {
+    async sendToAllDevices(title: string, body: string, data?: Record<string, any>): Promise<void> {
         logger.debug(`[PUSH] sendToAllDevices called with title: "${title}", body: "${body}"`);
-        
-        // Execute async operations without awaiting
-        (async () => {
-            try {
-                // Fetch all push tokens
-                logger.debug('[PUSH] Fetching push tokens...')
-                const tokens = await this.fetchPushTokens()
-                logger.debug(`[PUSH] Fetched ${tokens.length} push tokens`)
-                
-                // Log token details for debugging (FULL TOKENS FOR TESTING)
-                tokens.forEach((token, index) => {
-                    logger.debug(`[PUSH] Using token ${index + 1}: id=${token.id}, token=${token.token}`)
-                })
 
-                if (tokens.length === 0) {
-                    logger.debug('No push tokens found for user')
-                    return
-                }
+        // Fetch all push tokens
+        logger.debug('[PUSH] Fetching push tokens...')
+        const tokens = await this.fetchPushTokens()
+        logger.debug(`[PUSH] Fetched ${tokens.length} push tokens`)
 
-                // Create messages for all tokens
-                const messages: ExpoPushMessage[] = tokens.map((token, index) => {
-                    logger.debug(`[PUSH] Creating message ${index + 1} for token: ${token.token}`)
-                    return {
-                        to: token.token,
-                        title,
-                        body,
-                        data,
-                        sound: 'default',
-                        priority: 'high'
-                    }
-                })
+        // Log token details for debugging (FULL TOKENS FOR TESTING)
+        tokens.forEach((token, index) => {
+            logger.debug(`[PUSH] Using token ${index + 1}: id=${token.id}, token=${token.token}`)
+        })
 
-                // Send notifications
-                logger.debug(`[PUSH] Sending ${messages.length} push notifications...`)
-                await this.sendPushNotifications(messages)
-                logger.debug('[PUSH] Push notifications sent successfully')
-            } catch (error) {
-                logger.debug('[PUSH] Error sending to all devices:', error)
+        if (tokens.length === 0) {
+            logger.debug('No push tokens found for user')
+            return
+        }
+
+        // Create messages for all tokens
+        const messages: ExpoPushMessage[] = tokens.map((token, index) => {
+            logger.debug(`[PUSH] Creating message ${index + 1} for token: ${token.token}`)
+            return {
+                to: token.token,
+                title,
+                body,
+                data,
+                sound: 'default',
+                priority: 'high'
             }
-        })()
+        })
+
+        // Send notifications (sendPushNotifications handles its own success/failure logging)
+        logger.debug(`[PUSH] Sending ${messages.length} push notifications...`)
+        await this.sendPushNotifications(messages)
     }
 }

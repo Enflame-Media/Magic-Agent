@@ -55,6 +55,7 @@
     "package.json"
   ],
   "scripts": {
+    "help": "echo '\nHappy CLI - Available Scripts\n==============================\n\nDevelopment:\n  dev                      Run in development mode with tsx\n  dev:local-server         Run with local server (.env.dev-local-server)\n  dev:integration-test-env Run with integration test env\n\nBuild & Test:\n  build                    Compile TypeScript and bundle with pkgroll\n  typecheck                Type-check without emitting files\n  test                     Build and run all tests\n  start                    Build and run the CLI\n\nRelease:\n  prepublishOnly           Pre-publish validation (build + test)\n  release                  Create a new release with release-it\n\nNote: Build runs before tests because daemon commands execute the binary directly.\n'",
     "why do we need to build before running tests / dev?": "We need the binary to be built so we run daemon commands which directly run the binary - we don't want them to go out of sync or have custom spawn logic depending how we started happy",
     "typecheck": "tsc --noEmit",
     "build": "rm -rf dist && npx tsc --noEmit && pkgroll && node scripts/fix-mcp-imports.js",
@@ -68,9 +69,9 @@
     "postinstall": "node scripts/unpack-tools.cjs"
   },
   "dependencies": {
-    "@anthropic-ai/claude-code": "2.0.53",
+    "@anthropic-ai/claude-code": "2.0.55",
     "@anthropic-ai/sdk": "0.71.0",
-    "@modelcontextprotocol/sdk": "^1.22.0",
+    "@modelcontextprotocol/sdk": "^1.23.0",
     "@stablelib/base64": "^2.0.1",
     "@stablelib/hex": "^2.0.1",
     "@types/cross-spawn": "^6.0.6",
@@ -108,13 +109,13 @@
     "eslint-config-prettier": "^10.1.8",
     "glob": "^13.0.0",
     "openapi-types": "^12.1.3",
-    "pkgroll": "^2.21.3",
+    "pkgroll": "^2.21.4",
     "release-it": "^19.0.6",
     "shx": "^0.4.0",
     "ts-node": "^10.9.2",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.13"
+    "vitest": "^4.0.14"
   },
   "resolutions": {
     "whatwg-url": "15.1.0",
@@ -124,5 +125,5 @@
   "publishConfig": {
     "registry": "https://registry.npmjs.org"
   },
-  "packageManager": "yarn@4.11.0"
+  "packageManager": "yarn@4.12.0"
 }

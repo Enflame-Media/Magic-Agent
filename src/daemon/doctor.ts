@@ -7,6 +7,7 @@
 
 import psList from 'ps-list';
 import spawn from 'cross-spawn';
+import { AppError, ErrorCodes } from '@/utils/errors';
 
 /**
  * Find all Happy CLI processes (including current process)
@@ -93,7 +94,7 @@ export async function killRunawayHappyProcesses(): Promise<{ killed: number, err
         // Windows: use taskkill
         const result = spawn.sync('taskkill', ['/F', '/PID', pid.toString()], { stdio: 'pipe' });
         if (result.error) throw result.error;
-        if (result.status !== 0) throw new Error(`taskkill exited with code ${result.status}`);
+        if (result.status !== 0) throw new AppError(ErrorCodes.OPERATION_FAILED, `taskkill exited with code ${result.status}`);
       } else {
         // Unix: try SIGTERM first
         process.kill(pid, 'SIGTERM');

@@ -8,7 +8,7 @@ import { PushNotificationClient } from './pushNotifications';
 import { configuration } from '@/configuration';
 import chalk from 'chalk';
 import { Credentials } from '@/persistence';
-import { getSafeErrorMessage } from '@/utils/errors';
+import { AppError, ErrorCodes, getSafeErrorMessage } from '@/utils/errors';
 import { createDeduplicator, type Deduplicator } from '@/utils/requestDeduplication';
 
 export class ApiClient {
@@ -52,7 +52,8 @@ export class ApiClient {
   async getOrCreateSession(opts: {
     tag: string,
     metadata: Metadata,
-    state: AgentState | null
+    state: AgentState | null,
+    signal?: AbortSignal
   }): Promise<Session> {
 
     // Resolve encryption key
@@ -92,26 +93,48 @@ export class ApiClient {
             'Authorization': `Bearer ${this.credential.token}`,
             'Content-Type': 'application/json'
           },
-          timeout: 60000 // 1 minute timeout for very bad network connections
+          timeout: 60000, // 1 minute timeout for very bad network connections
+          signal: opts.signal
         }
       )
 
       logger.debug(`Session created/loaded: ${response.data.session.id} (tag: ${opts.tag})`)
       let raw = response.data.session;
+
+      // Decrypt metadata with null check
+      const decryptedMetadata = decrypt(encryptionKey, encryptionVariant, decodeBase64(raw.metadata));
+      if (decryptedMetadata === null) {
+        throw new AppError(ErrorCodes.ENCRYPTION_ERROR, 'Failed to decrypt session metadata - session may be corrupted');
+      }
+
+      // Decrypt agentState with null check (only if present)
+      let decryptedAgentState: AgentState | null = null;
+      if (raw.agentState) {
+        decryptedAgentState = decrypt(encryptionKey, encryptionVariant, decodeBase64(raw.agentState));
+        if (decryptedAgentState === null) {
+          throw new AppError(ErrorCodes.ENCRYPTION_ERROR, 'Failed to decrypt session agentState - session may be corrupted');
+        }
+      }
+
       let session: Session = {
         id: raw.id,
         seq: raw.seq,
-        metadata: decrypt(encryptionKey, encryptionVariant, decodeBase64(raw.metadata)),
+        metadata: decryptedMetadata,
         metadataVersion: raw.metadataVersion,
-        agentState: raw.agentState ? decrypt(encryptionKey, encryptionVariant, decodeBase64(raw.agentState)) : null,
+        agentState: decryptedAgentState,
         agentStateVersion: raw.agentStateVersion,
         encryptionKey: encryptionKey,
         encryptionVariant: encryptionVariant
       }
       return session;
     } catch (error) {
+      // Handle cancellation with a clean error message
+      if (axios.isCancel(error)) {
+        logger.debug('[API] Session creation was cancelled');
+        throw AppError.fromUnknownSafe(ErrorCodes.OPERATION_CANCELLED, 'Session creation was cancelled', error);
+      }
       logger.debug('[API] [ERROR] Failed to get or create session:', error);
-      throw new Error(`Failed to get or create session: ${getSafeErrorMessage(error)}`);
+      throw AppError.fromUnknownSafe(ErrorCodes.CONNECT_FAILED, 'Failed to get or create session', error);
     }
   }
 
@@ -126,6 +149,7 @@ export class ApiClient {
     machineId: string,
     metadata: MachineMetadata,
     daemonState?: DaemonState,
+    signal?: AbortSignal,
   }): Promise<Machine> {
     // Use deduplication to coalesce concurrent requests for the same machine
     return this.machineDeduplicator.request(`machine:${opts.machineId}`, async () => {
@@ -162,7 +186,8 @@ export class ApiClient {
               'Authorization': `Bearer ${this.credential.token}`,
               'Content-Type': 'application/json'
             },
-            timeout: 60000 // 1 minute timeout for very bad network connections
+            timeout: 60000, // 1 minute timeout for very bad network connections
+            signal: opts.signal
           }
         );
 
@@ -175,20 +200,43 @@ export class ApiClient {
         const raw = response.data.machine;
         logger.debug(`[API] Machine ${opts.machineId} registered/updated with server`);
 
+        // Decrypt metadata with null check (required field)
+        if (!raw.metadata) {
+          throw new AppError(ErrorCodes.VALIDATION_FAILED, 'Server returned machine without metadata - unexpected server response');
+        }
+        const decryptedMetadata: MachineMetadata | null = decrypt(encryptionKey, encryptionVariant, decodeBase64(raw.metadata));
+        if (decryptedMetadata === null) {
+          throw new AppError(ErrorCodes.ENCRYPTION_ERROR, 'Failed to decrypt machine metadata - machine state may be corrupted');
+        }
+
+        // Decrypt daemonState with null check (only if present)
+        let decryptedDaemonState: DaemonState | null = null;
+        if (raw.daemonState) {
+          decryptedDaemonState = decrypt(encryptionKey, encryptionVariant, decodeBase64(raw.daemonState));
+          if (decryptedDaemonState === null) {
+            throw new AppError(ErrorCodes.ENCRYPTION_ERROR, 'Failed to decrypt machine daemonState - machine state may be corrupted');
+          }
+        }
+
         // Return decrypted machine like we do for sessions
         const machine: Machine = {
           id: raw.id,
           encryptionKey: encryptionKey,
           encryptionVariant: encryptionVariant,
-          metadata: raw.metadata ? decrypt(encryptionKey, encryptionVariant, decodeBase64(raw.metadata)) : null,
+          metadata: decryptedMetadata,
           metadataVersion: raw.metadataVersion || 0,
-          daemonState: raw.daemonState ? decrypt(encryptionKey, encryptionVariant, decodeBase64(raw.daemonState)) : null,
+          daemonState: decryptedDaemonState,
           daemonStateVersion: raw.daemonStateVersion || 0,
         };
         return machine;
       } catch (error) {
+        // Handle cancellation with a clean error message
+        if (axios.isCancel(error)) {
+          logger.debug('[API] Machine creation was cancelled');
+          throw AppError.fromUnknownSafe(ErrorCodes.OPERATION_CANCELLED, 'Machine creation was cancelled', error);
+        }
         logger.debug('[API] [ERROR] Failed to get or create machine:', error);
-        throw new Error(`Failed to get or create machine: ${getSafeErrorMessage(error)}`);
+        throw AppError.fromUnknownSafe(ErrorCodes.CONNECT_FAILED, 'Failed to get or create machine', error);
       }
     });
   }
@@ -216,7 +264,11 @@ export class ApiClient {
    * Note: Concurrent calls for the same vendor are deduplicated - only one network
    * request is made and the result is shared among all callers.
    */
-  async registerVendorToken(vendor: 'openai' | 'anthropic' | 'gemini', apiKey: unknown): Promise<void> {
+  async registerVendorToken(
+    vendor: 'openai' | 'anthropic' | 'gemini',
+    apiKey: unknown,
+    options?: { signal?: AbortSignal }
+  ): Promise<void> {
     // Use deduplication to prevent duplicate registrations for the same vendor
     return this.vendorTokenDeduplicator.request(`vendor:${vendor}`, async () => {
       try {
@@ -230,18 +282,24 @@ export class ApiClient {
               'Authorization': `Bearer ${this.credential.token}`,
               'Content-Type': 'application/json'
             },
-            timeout: 5000
+            timeout: 5000,
+            signal: options?.signal
           }
         );
 
         if (response.status !== 200 && response.status !== 201) {
-          throw new Error(`Server returned status ${response.status}`);
+          throw new AppError(ErrorCodes.CONNECT_FAILED, `Server returned status ${response.status}`);
         }
 
         logger.debug(`[API] Vendor token for ${vendor} registered successfully`);
       } catch (error) {
+        // Handle cancellation with a clean error message
+        if (axios.isCancel(error)) {
+          logger.debug('[API] Vendor token registration was cancelled');
+          throw AppError.fromUnknownSafe(ErrorCodes.OPERATION_CANCELLED, 'Vendor token registration was cancelled', error);
+        }
         logger.debug('[API] [ERROR] Failed to register vendor token:', error);
-        throw new Error(`Failed to register vendor token: ${getSafeErrorMessage(error)}`);
+        throw AppError.fromUnknownSafe(ErrorCodes.CONNECT_FAILED, 'Failed to register vendor token', error);
       }
     });
   }

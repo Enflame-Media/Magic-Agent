@@ -1,4 +1,5 @@
 import { logger } from "@/ui/logger";
+import { AppError, ErrorCodes } from "@/utils/errors";
 
 interface QueueItem<T> {
     message: string;
@@ -39,7 +40,7 @@ export class MessageQueue2<T> {
      */
     push(message: string, mode: T): void {
         if (this.closed) {
-            throw new Error('Cannot push to closed queue');
+            throw new AppError(ErrorCodes.QUEUE_CLOSED, 'Cannot push to closed queue');
         }
 
         const modeHash = this.modeHasher(mode);
@@ -74,7 +75,7 @@ export class MessageQueue2<T> {
      */
     pushImmediate(message: string, mode: T): void {
         if (this.closed) {
-            throw new Error('Cannot push to closed queue');
+            throw new AppError(ErrorCodes.QUEUE_CLOSED, 'Cannot push to closed queue');
         }
 
         const modeHash = this.modeHasher(mode);
@@ -110,7 +111,7 @@ export class MessageQueue2<T> {
      */
     pushIsolateAndClear(message: string, mode: T): void {
         if (this.closed) {
-            throw new Error('Cannot push to closed queue');
+            throw new AppError(ErrorCodes.QUEUE_CLOSED, 'Cannot push to closed queue');
         }
 
         const modeHash = this.modeHasher(mode);
@@ -147,7 +148,7 @@ export class MessageQueue2<T> {
      */
     unshift(message: string, mode: T): void {
         if (this.closed) {
-            throw new Error('Cannot unshift to closed queue');
+            throw new AppError(ErrorCodes.QUEUE_CLOSED, 'Cannot unshift to closed queue');
         }
 
         const modeHash = this.modeHasher(mode);

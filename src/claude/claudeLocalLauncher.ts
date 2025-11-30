@@ -3,6 +3,7 @@ import { claudeLocal } from "./claudeLocal";
 import { Session } from "./session";
 import { Future } from "@/utils/future";
 import { createSessionScanner } from "./utils/sessionScanner";
+import { SocketDisconnectedError } from "@/api/socketUtils";
 
 export async function claudeLocalLauncher(session: Session): Promise<'switch' | 'exit'> {
 
@@ -10,10 +11,18 @@ export async function claudeLocalLauncher(session: Session): Promise<'switch' | 
     const scanner = await createSessionScanner({
         sessionId: session.sessionId,
         workingDirectory: session.path,
-        onMessage: (message) => { 
+        onMessage: (message) => {
             // Block SDK summary messages - we generate our own
             if (message.type !== 'summary') {
-                session.client.sendClaudeSessionMessage(message)
+                try {
+                    session.client.sendClaudeSessionMessage(message);
+                } catch (error) {
+                    if (error instanceof SocketDisconnectedError) {
+                        logger.warn('[local] Socket disconnected - cannot send message');
+                    } else {
+                        throw error;
+                    }
+                }
             }
         }
     });
@@ -115,7 +124,15 @@ export async function claudeLocalLauncher(session: Session): Promise<'switch' | 
             } catch (e) {
                 logger.debug('[local]: launch error', e);
                 if (!exitReason) {
-                    session.client.sendSessionEvent({ type: 'message', message: 'Process exited unexpectedly' });
+                    try {
+                        session.client.sendSessionEvent({ type: 'message', message: 'Process exited unexpectedly' });
+                    } catch (sendError) {
+                        if (sendError instanceof SocketDisconnectedError) {
+                            logger.warn('[local] Socket disconnected - cannot send error event');
+                        } else {
+                            throw sendError;
+                        }
+                    }
                     continue;
                 } else {
                     break;

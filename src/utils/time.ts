@@ -1,3 +1,5 @@
+import { AppError, ErrorCodes } from '@/utils/errors';
+
 export async function delay(ms: number, signal?: AbortSignal): Promise<void> {
     return new Promise((resolve, reject) => {
         if (signal?.aborted) {
@@ -19,38 +21,60 @@ export function exponentialBackoffDelay(currentFailureCount: number, minDelay: n
 
 export type BackoffFunc = <T>(callback: () => Promise<T>, signal?: AbortSignal) => Promise<T>;
 
-export function createBackoff(
-    opts?: {
-        onError?: (e: any, failuresCount: number) => void,
-        minDelay?: number,
-        maxDelay?: number,
-        maxFailureCount?: number
-    }): BackoffFunc {
+export function createBackoff(opts?: {
+    onError?: (e: any, failuresCount: number) => void | boolean,
+    minDelay?: number,
+    maxDelay?: number,
+    maxFailureCount?: number,
+    maxElapsedTime?: number
+}): BackoffFunc {
     return async <T>(callback: () => Promise<T>, signal?: AbortSignal): Promise<T> => {
+        const minDelay = opts?.minDelay ?? 250;
+        const maxDelay = opts?.maxDelay ?? 1000;
+        const maxFailureCount = opts?.maxFailureCount ?? 50;
+        const maxElapsedTime = opts?.maxElapsedTime ?? 300000; // 5 minutes default
+
+        const startTime = Date.now();
         let currentFailureCount = 0;
-        const minDelay = opts && opts.minDelay !== undefined ? opts.minDelay : 250;
-        const maxDelay = opts && opts.maxDelay !== undefined ? opts.maxDelay : 1000;
-        const maxFailureCount = opts && opts.maxFailureCount !== undefined ? opts.maxFailureCount : 50;
-        while (true) {
+        let lastError: any;
+
+        while (currentFailureCount < maxFailureCount) {
             if (signal?.aborted) {
                 throw new DOMException('Aborted', 'AbortError');
             }
+
+            // Check elapsed time before attempting
+            const elapsed = Date.now() - startTime;
+            if (elapsed >= maxElapsedTime) {
+                throw new AppError(ErrorCodes.PROCESS_TIMEOUT, `Backoff timeout after ${currentFailureCount} attempts (${elapsed}ms elapsed). Last error: ${lastError}`);
+            }
+
             try {
                 return await callback();
             } catch (e) {
+                lastError = e;
+
                 if (e instanceof DOMException && e.name === 'AbortError') {
                     throw e;
                 }
-                if (currentFailureCount < maxFailureCount) {
-                    currentFailureCount++;
+
+                currentFailureCount++;
+
+                // Allow onError to cancel retries by returning false
+                if (opts?.onError) {
+                    const result = opts.onError(e, currentFailureCount);
+                    if (result === false) {
+                        throw e;
+                    }
                 }
-                if (opts && opts.onError) {
-                    opts.onError(e, currentFailureCount);
-                }
-                let waitForRequest = exponentialBackoffDelay(currentFailureCount, minDelay, maxDelay, maxFailureCount);
-                await delay(waitForRequest, signal);
+
+                const waitFor = exponentialBackoffDelay(currentFailureCount, minDelay, maxDelay, maxFailureCount);
+                await delay(waitFor, signal);
             }
         }
+
+        // Max retries exceeded
+        throw new AppError(ErrorCodes.OPERATION_FAILED, `Backoff failed after ${maxFailureCount} attempts. Last error: ${lastError}`);
     };
 }
 

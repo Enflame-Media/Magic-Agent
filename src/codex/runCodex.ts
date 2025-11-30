@@ -28,6 +28,8 @@ import { registerKillSessionHandler } from "@/claude/registerKillSessionHandler"
 import { delay } from "@/utils/time";
 import { stopCaffeinate } from "@/utils/caffeinate";
 import { isValidSessionId } from "@/claude/utils/sessionValidation";
+import { SocketDisconnectedError } from "@/api/socketUtils";
+import { AppError, ErrorCodes } from "@/utils/errors";
 
 // Keep-alive timing configuration (prevents thundering herd on reconnection)
 const CODEX_KEEP_ALIVE_BASE_MS = 2000; // 2 seconds base interval
@@ -84,6 +86,24 @@ export async function runCodex(opts: {
     // Log startup options
     logger.debug(`[codex] Starting with options: startedBy=${opts.startedBy || 'terminal'}`);
 
+    // Create abort controller for startup phase (machine/session creation)
+    // This allows Ctrl+C to cancel startup instead of waiting for 60s network timeout
+    const startupAbortController = new AbortController();
+
+    // Handle Ctrl+C during startup
+    const startupAbortHandler = () => {
+        logger.debug('[codex] Received signal during startup, aborting...');
+        startupAbortController.abort();
+    };
+    process.once('SIGINT', startupAbortHandler);
+    process.once('SIGTERM', startupAbortHandler);
+
+    // Helper to clean up startup handlers
+    const cleanupStartupHandlers = () => {
+        process.removeListener('SIGINT', startupAbortHandler);
+        process.removeListener('SIGTERM', startupAbortHandler);
+    };
+
     //
     // Machine
     //
@@ -95,37 +115,63 @@ export async function runCodex(opts: {
         process.exit(1);
     }
     logger.debug(`Using machineId: ${machineId}`);
-    await api.getOrCreateMachine({
-        machineId,
-        metadata: initialMachineMetadata
-    });
 
     //
-    // Create session
+    // Create machine and session with abort signal support
     //
 
+    let response;
+    let metadata: Metadata;
     let state: AgentState = {
         controlledByUser: false,
-    }
-    let metadata: Metadata = {
-        path: process.cwd(),
-        host: os.hostname(),
-        version: packageJson.version,
-        os: os.platform(),
-        machineId: machineId,
-        homeDir: os.homedir(),
-        happyHomeDir: configuration.happyHomeDir,
-        happyLibDir: projectPath(),
-        happyToolsDir: resolve(projectPath(), 'tools', 'unpacked'),
-        startedFromDaemon: opts.startedBy === 'daemon',
-        hostPid: process.pid,
-        startedBy: opts.startedBy || 'terminal',
-        // Initialize lifecycle state
-        lifecycleState: 'running',
-        lifecycleStateSince: Date.now(),
-        flavor: 'codex'
     };
-    const response = await api.getOrCreateSession({ tag: sessionTag, metadata, state });
+
+    try {
+        await api.getOrCreateMachine({
+            machineId,
+            metadata: initialMachineMetadata,
+            signal: startupAbortController.signal
+        });
+
+        metadata = {
+            path: process.cwd(),
+            host: os.hostname(),
+            version: packageJson.version,
+            os: os.platform(),
+            machineId: machineId,
+            homeDir: os.homedir(),
+            happyHomeDir: configuration.happyHomeDir,
+            happyLibDir: projectPath(),
+            happyToolsDir: resolve(projectPath(), 'tools', 'unpacked'),
+            startedFromDaemon: opts.startedBy === 'daemon',
+            hostPid: process.pid,
+            startedBy: opts.startedBy || 'terminal',
+            // Initialize lifecycle state
+            lifecycleState: 'running',
+            lifecycleStateSince: Date.now(),
+            flavor: 'codex'
+        };
+        response = await api.getOrCreateSession({
+            tag: sessionTag,
+            metadata,
+            state,
+            signal: startupAbortController.signal
+        });
+
+        // Remove startup handlers after successful creation
+        cleanupStartupHandlers();
+    } catch (error) {
+        // Always clean up handlers on error
+        cleanupStartupHandlers();
+
+        // Handle cancellation with a clean exit
+        if (AppError.isAppError(error) && error.code === ErrorCodes.OPERATION_CANCELLED) {
+            console.log('Session creation cancelled.');
+            process.exit(0);
+        }
+        throw error;
+    }
+
     const session = api.sessionSyncClient(response);
 
     // Always report to daemon if it exists
@@ -206,16 +252,23 @@ export async function runCodex(opts: {
     }, keepAliveIntervalMs);
 
     const sendReady = () => {
-        session.sendSessionEvent({ type: 'ready' });
         try {
-            api.push().sendToAllDevices(
-                "It's ready!",
-                'Codex is waiting for your command',
-                { sessionId: session.sessionId }
-            );
-        } catch (pushError) {
-            logger.debug('[Codex] Failed to send ready push', pushError);
+            session.sendSessionEvent({ type: 'ready' });
+        } catch (error) {
+            if (error instanceof SocketDisconnectedError) {
+                logger.warn('[Codex] Socket disconnected - cannot send ready event');
+                return;
+            }
+            throw error;
         }
+        // Fire-and-forget push notification (daemon context)
+        api.push().sendToAllDevices(
+            "It's ready!",
+            'Codex is waiting for your command',
+            { sessionId: session.sessionId }
+        ).catch((pushError) => {
+            logger.debug('[Codex] Failed to send ready push', pushError);
+        });
     };
 
     // Debug helper: log active handles/requests if DEBUG is enabled
@@ -408,14 +461,41 @@ export async function runCodex(opts: {
             return null;
         }
     }
+
+    // Helper to safely send Codex messages with graceful socket disconnection handling
+    const safeSendCodexMessage = (message: any) => {
+        try {
+            session.sendCodexMessage(message);
+        } catch (error) {
+            if (error instanceof SocketDisconnectedError) {
+                logger.warn('[Codex] Socket disconnected - cannot send message');
+            } else {
+                throw error;
+            }
+        }
+    };
+
+    // Helper to safely send session events with graceful socket disconnection handling
+    const safeSendSessionEvent = (event: Parameters<typeof session.sendSessionEvent>[0]) => {
+        try {
+            session.sendSessionEvent(event);
+        } catch (error) {
+            if (error instanceof SocketDisconnectedError) {
+                logger.warn('[Codex] Socket disconnected - cannot send session event');
+            } else {
+                throw error;
+            }
+        }
+    };
+
     const permissionHandler = new CodexPermissionHandler(session);
     const reasoningProcessor = new ReasoningProcessor((message) => {
         // Callback to send messages directly from the processor
-        session.sendCodexMessage(message);
+        safeSendCodexMessage(message);
     });
     const diffProcessor = new DiffProcessor((message) => {
         // Callback to send messages directly from the processor
-        session.sendCodexMessage(message);
+        safeSendCodexMessage(message);
     });
     client.setPermissionHandler(permissionHandler);
     client.setHandler((msg) => {
@@ -476,7 +556,7 @@ export async function runCodex(opts: {
             reasoningProcessor.complete(msg.text);
         }
         if (msg.type === 'agent_message') {
-            session.sendCodexMessage({
+            safeSendCodexMessage({
                 type: 'message',
                 message: msg.message,
                 id: randomUUID()
@@ -484,7 +564,7 @@ export async function runCodex(opts: {
         }
         if (msg.type === 'exec_command_begin' || msg.type === 'exec_approval_request') {
             let { call_id, type, ...inputs } = msg;
-            session.sendCodexMessage({
+            safeSendCodexMessage({
                 type: 'tool-call',
                 name: 'CodexBash',
                 callId: call_id,
@@ -494,7 +574,7 @@ export async function runCodex(opts: {
         }
         if (msg.type === 'exec_command_end') {
             let { call_id, type, ...output } = msg;
-            session.sendCodexMessage({
+            safeSendCodexMessage({
                 type: 'tool-call-result',
                 callId: call_id,
                 output: output,
@@ -502,7 +582,7 @@ export async function runCodex(opts: {
             });
         }
         if (msg.type === 'token_count') {
-            session.sendCodexMessage({
+            safeSendCodexMessage({
                 ...msg,
                 id: randomUUID()
             });
@@ -517,7 +597,7 @@ export async function runCodex(opts: {
             messageBuffer.addMessage(`Modifying ${filesMsg}...`, 'tool');
 
             // Send tool call message
-            session.sendCodexMessage({
+            safeSendCodexMessage({
                 type: 'tool-call',
                 name: 'CodexPatch',
                 callId: call_id,
@@ -542,7 +622,7 @@ export async function runCodex(opts: {
             }
 
             // Send tool call result message
-            session.sendCodexMessage({
+            safeSendCodexMessage({
                 type: 'tool-call-result',
                 callId: call_id,
                 output: {
@@ -676,7 +756,7 @@ export async function runCodex(opts: {
                             const errorMsg = error instanceof Error ? error.message : 'Invalid model';
                             logger.warn(`[Codex] ${errorMsg}`);
                             messageBuffer.addMessage(`❌ ${errorMsg}`, 'status');
-                            session.sendSessionEvent({ type: 'message', message: errorMsg });
+                            safeSendSessionEvent({ type: 'message', message: errorMsg });
                             // Skip this message and continue waiting for valid input
                             continue;
                         }
@@ -726,7 +806,7 @@ export async function runCodex(opts: {
                 
                 if (isAbortError) {
                     messageBuffer.addMessage('Aborted by user', 'status');
-                    session.sendSessionEvent({ type: 'message', message: 'Aborted by user' });
+                    safeSendSessionEvent({ type: 'message', message: 'Aborted by user' });
                     // Session was already stored in handleAbort(), no need to store again
                     // Mark session as not created to force proper resume on next message
                     wasCreated = false;
@@ -734,7 +814,7 @@ export async function runCodex(opts: {
                     logger.debug('[Codex] Marked session as not created after abort for proper resume');
                 } else {
                     messageBuffer.addMessage('Process exited unexpectedly', 'status');
-                    session.sendSessionEvent({ type: 'message', message: 'Process exited unexpectedly' });
+                    safeSendSessionEvent({ type: 'message', message: 'Process exited unexpectedly' });
                     // For unexpected exits, try to store session for potential recovery
                     if (client.hasActiveSession()) {
                         storedSessionIdForResume = client.storeSessionForResume();

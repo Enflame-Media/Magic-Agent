@@ -2,6 +2,8 @@
  * Type definitions for Codex MCP integration
  */
 
+import { AppError, ErrorCodes } from '@/utils/errors';
+
 /**
  * Supported Codex model identifiers.
  * Keep in sync with OpenAI Codex CLI documentation.
@@ -33,7 +35,8 @@ export type CodexModel = (typeof SUPPORTED_CODEX_MODELS)[number];
  */
 export function validateCodexModel(model: string): CodexModel {
     if (!SUPPORTED_CODEX_MODELS.includes(model as CodexModel)) {
-        throw new Error(
+        throw new AppError(
+            ErrorCodes.VALIDATION_FAILED,
             `Unsupported Codex model: "${model}". ` +
             `Supported models: ${SUPPORTED_CODEX_MODELS.join(', ')}`
         );

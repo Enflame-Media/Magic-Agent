@@ -1,5 +1,6 @@
 import { SDKUserMessage } from "@/claude/sdk/types";
 import { logger } from "@/ui/logger";
+import { AppError, ErrorCodes } from "@/utils/errors";
 
 /**
  * An async iterable message queue that allows pushing messages and consuming them asynchronously
@@ -22,7 +23,7 @@ export class MessageQueue implements AsyncIterable<SDKUserMessage> {
      */
     push(message: string): void {
         if (this.closed) {
-            throw new Error('Cannot push to closed queue');
+            throw new AppError(ErrorCodes.QUEUE_CLOSED, 'Cannot push to closed queue');
         }
 
         logger.debug(`[MessageQueue] push() called. Waiters: ${this.waiters.length}, Queue size before: ${this.queue.length}`);

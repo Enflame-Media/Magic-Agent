@@ -10,6 +10,7 @@ import { z } from 'zod';
 import { ElicitRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { CodexPermissionHandler } from './utils/permissionHandler';
 import { execSync } from 'child_process';
+import { AppError, ErrorCodes } from '@/utils/errors';
 
 const DEFAULT_TIMEOUT = 14 * 24 * 60 * 60 * 1000; // 14 days, which is the half of the maximum possible timeout (~28 days for int32 value in NodeJS)
 
@@ -187,7 +188,7 @@ export class CodexMcpClient {
         if (!this.connected) await this.connect();
 
         if (!this.sessionId) {
-            throw new Error('No active session. Call startSession first.');
+            throw new AppError(ErrorCodes.SESSION_NOT_FOUND, 'No active session. Call startSession first.');
         }
 
         if (!this.conversationId) {

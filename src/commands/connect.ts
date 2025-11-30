@@ -4,6 +4,7 @@ import { ApiClient } from '@/api/api';
 import { authenticateCodex } from './connect/authenticateCodex';
 import { authenticateClaude } from './connect/authenticateClaude';
 import { authenticateGemini } from './connect/authenticateGemini';
+import { AppError, ErrorCodes } from '@/utils/errors';
 
 /**
  * Handle connect subcommand
@@ -103,6 +104,6 @@ async function handleConnectVendor(vendor: 'codex' | 'claude' | 'gemini', displa
         console.log('✅ Gemini token registered with server');
         process.exit(0);
     } else {
-        throw new Error(`Unsupported vendor: ${vendor}`);
+        throw new AppError(ErrorCodes.UNSUPPORTED_OPERATION, `Unsupported vendor: ${vendor}`);
     }
 }

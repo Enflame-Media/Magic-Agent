@@ -117,6 +117,21 @@ export function isCaffeinateRunning(): boolean {
 }
 
 /**
+ * Synchronously kill the caffeinate process.
+ * This is used for exit handlers where async operations are not allowed.
+ */
+function killCaffeinateSync(): void {
+    if (caffeinateProcess && !caffeinateProcess.killed) {
+        try {
+            caffeinateProcess.kill('SIGTERM')
+            caffeinateProcess = null
+        } catch {
+            // Ignore errors during cleanup - process may already be dead
+        }
+    }
+}
+
+/**
  * Set up cleanup handlers to ensure caffeinate is stopped on exit
  */
 let cleanupHandlersSet = false
@@ -125,25 +140,46 @@ function setupCleanupHandlers(): void {
     if (cleanupHandlersSet) {
         return
     }
-    
+
     cleanupHandlersSet = true
-    
-    // Clean up on various exit conditions
-    const cleanup = () => {
-        stopCaffeinate()
-    }
-    
-    process.on('exit', cleanup)
-    process.on('SIGINT', cleanup)
-    process.on('SIGTERM', cleanup)
-    process.on('SIGUSR1', cleanup)
-    process.on('SIGUSR2', cleanup)
+
+    // Synchronous cleanup for exit event (async not allowed in 'exit' handler)
+    process.on('exit', killCaffeinateSync)
+
+    // Signal handlers - use once() to avoid handler accumulation
+    // These need to exit the process after cleanup
+    process.once('SIGINT', () => {
+        logger.debug('[caffeinate] SIGINT received, cleaning up')
+        killCaffeinateSync()
+        process.exit(130) // Standard exit code for SIGINT
+    })
+
+    process.once('SIGTERM', () => {
+        logger.debug('[caffeinate] SIGTERM received, cleaning up')
+        killCaffeinateSync()
+        process.exit(143) // Standard exit code for SIGTERM
+    })
+
+    process.once('SIGUSR1', () => {
+        logger.debug('[caffeinate] SIGUSR1 received, cleaning up')
+        killCaffeinateSync()
+    })
+
+    process.once('SIGUSR2', () => {
+        logger.debug('[caffeinate] SIGUSR2 received, cleaning up')
+        killCaffeinateSync()
+    })
+
+    // Exception handlers - cleanup but let the error propagate
     process.on('uncaughtException', (error) => {
         logger.debug('[caffeinate] Uncaught exception, cleaning up:', error)
-        cleanup()
+        killCaffeinateSync()
+        // Don't swallow the exception - let Node's default handler deal with it
     })
-    process.on('unhandledRejection', (reason, promise) => {
+
+    process.on('unhandledRejection', (reason) => {
         logger.debug('[caffeinate] Unhandled rejection, cleaning up:', reason)
-        cleanup()
+        killCaffeinateSync()
+        // Don't swallow the rejection - let Node's default handler deal with it
     })
 }

@@ -22,6 +22,8 @@ import { startHappyServer } from '@/claude/utils/startHappyServer';
 import { registerKillSessionHandler } from './registerKillSessionHandler';
 import { projectPath } from '../projectPath';
 import { resolve } from 'node:path';
+import { SocketDisconnectedError } from '@/api/socketUtils';
+import { AppError, ErrorCodes } from '@/utils/errors';
 
 export interface StartOptions {
     model?: string
@@ -49,6 +51,24 @@ export async function runClaude(credentials: Credentials, options: StartOptions 
         // throw new Error('Daemon-spawned sessions cannot use local/interactive mode');
     }
 
+    // Create abort controller for startup phase (machine/session creation)
+    // This allows Ctrl+C to cancel startup instead of waiting for 60s network timeout
+    const startupAbortController = new AbortController();
+
+    // Handle Ctrl+C during startup
+    const startupAbortHandler = () => {
+        logger.debug('[START] Received signal during startup, aborting...');
+        startupAbortController.abort();
+    };
+    process.once('SIGINT', startupAbortHandler);
+    process.once('SIGTERM', startupAbortHandler);
+
+    // Helper to clean up startup handlers
+    const cleanupStartupHandlers = () => {
+        process.removeListener('SIGINT', startupAbortHandler);
+        process.removeListener('SIGTERM', startupAbortHandler);
+    };
+
     // Create session service
     const api = await ApiClient.create(credentials);
 
@@ -64,32 +84,57 @@ export async function runClaude(credentials: Credentials, options: StartOptions 
     }
     logger.debug(`Using machineId: ${machineId}`);
 
-    // Create machine if it doesn't exist
-    await api.getOrCreateMachine({
-        machineId,
-        metadata: initialMachineMetadata
-    });
+    // Create machine and session with abort signal support
+    // Wrapped in try-catch to handle cancellation gracefully
+    let response;
+    let metadata: Metadata;
+    try {
+        // Create machine if it doesn't exist
+        await api.getOrCreateMachine({
+            machineId,
+            metadata: initialMachineMetadata,
+            signal: startupAbortController.signal
+        });
 
-    let metadata: Metadata = {
-        path: workingDirectory,
-        host: os.hostname(),
-        version: packageJson.version,
-        os: os.platform(),
-        machineId: machineId,
-        homeDir: os.homedir(),
-        happyHomeDir: configuration.happyHomeDir,
-        happyLibDir: projectPath(),
-        happyToolsDir: resolve(projectPath(), 'tools', 'unpacked'),
-        startedFromDaemon: options.startedBy === 'daemon',
-        hostPid: process.pid,
-        startedBy: options.startedBy || 'terminal',
-        // Initialize lifecycle state
-        lifecycleState: 'running',
-        lifecycleStateSince: Date.now(),
-        flavor: 'claude'
-    };
-    const response = await api.getOrCreateSession({ tag: sessionTag, metadata, state });
-    logger.debug(`Session created: ${response.id}`);
+        metadata = {
+            path: workingDirectory,
+            host: os.hostname(),
+            version: packageJson.version,
+            os: os.platform(),
+            machineId: machineId,
+            homeDir: os.homedir(),
+            happyHomeDir: configuration.happyHomeDir,
+            happyLibDir: projectPath(),
+            happyToolsDir: resolve(projectPath(), 'tools', 'unpacked'),
+            startedFromDaemon: options.startedBy === 'daemon',
+            hostPid: process.pid,
+            startedBy: options.startedBy || 'terminal',
+            // Initialize lifecycle state
+            lifecycleState: 'running',
+            lifecycleStateSince: Date.now(),
+            flavor: 'claude'
+        };
+        response = await api.getOrCreateSession({
+            tag: sessionTag,
+            metadata,
+            state,
+            signal: startupAbortController.signal
+        });
+        logger.debug(`Session created: ${response.id}`);
+
+        // Remove startup handlers after successful creation
+        cleanupStartupHandlers();
+    } catch (error) {
+        // Always clean up handlers on error
+        cleanupStartupHandlers();
+
+        // Handle cancellation with a clean exit
+        if (AppError.isAppError(error) && error.code === ErrorCodes.OPERATION_CANCELLED) {
+            console.log('Session creation cancelled.');
+            process.exit(0);
+        }
+        throw error;
+    }
 
     // Always report to daemon if it exists
     try {
@@ -373,7 +418,15 @@ export async function runClaude(credentials: Credentials, options: StartOptions 
         api,
         allowedTools: happyServer.toolNames.map(toolName => `mcp__happy__${toolName}`),
         onModeChange: (newMode) => {
-            session.sendSessionEvent({ type: 'switch', mode: newMode });
+            try {
+                session.sendSessionEvent({ type: 'switch', mode: newMode });
+            } catch (error) {
+                if (error instanceof SocketDisconnectedError) {
+                    logger.warn('[runClaude] Socket disconnected - cannot send mode change event');
+                } else {
+                    throw error;
+                }
+            }
             session.updateAgentState((currentState) => ({
                 ...currentState,
                 controlledByUser: newMode === 'local'

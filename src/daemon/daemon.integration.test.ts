@@ -19,13 +19,14 @@ import { execSync, spawn } from 'child_process';
 import { existsSync, unlinkSync, readFileSync, writeFileSync, readdirSync } from 'fs';
 import path, { join } from 'path';
 import { configuration } from '@/configuration';
-import { 
-  listDaemonSessions, 
-  stopDaemonSession, 
-  spawnDaemonSession, 
-  stopDaemonHttp, 
-  notifyDaemonSessionStarted, 
-  stopDaemon
+import {
+  listDaemonSessions,
+  stopDaemonSession,
+  spawnDaemonSession,
+  stopDaemonHttp,
+  notifyDaemonSessionStarted,
+  stopDaemon,
+  getDaemonHealth
 } from '@/daemon/controlClient';
 import { readDaemonState, clearDaemonState } from '@/persistence';
 import { Metadata } from '@/api/types';
@@ -111,6 +112,35 @@ describe.skipIf(!await isServerHealthy())('Daemon Integration Tests', { timeout:
     expect(result.success).toBe(true);
     if (!result.success) throw new Error(result.error);
     expect(result.data.children).toEqual([]);
+  });
+
+  it('should return health status from running daemon', async () => {
+    const result = await getDaemonHealth();
+
+    expect(result.success).toBe(true);
+    if (!result.success) throw new Error(result.error);
+
+    // Verify response structure matches HealthResponse interface
+    expect(result.data.status).toBe('healthy');
+    expect(result.data.uptime).toBeGreaterThan(0);
+    expect(result.data.sessions).toBeGreaterThanOrEqual(0);
+
+    // Verify memory usage structure
+    expect(result.data.memory).toHaveProperty('rss');
+    expect(result.data.memory).toHaveProperty('heapTotal');
+    expect(result.data.memory).toHaveProperty('heapUsed');
+    expect(result.data.memory).toHaveProperty('external');
+
+    // All memory values should be positive numbers
+    expect(result.data.memory.rss).toBeGreaterThan(0);
+    expect(result.data.memory.heapTotal).toBeGreaterThan(0);
+    expect(result.data.memory.heapUsed).toBeGreaterThan(0);
+    expect(result.data.memory.external).toBeGreaterThanOrEqual(0);
+
+    // Timestamp should be a valid ISO string
+    expect(result.data.timestamp).toBeDefined();
+    expect(typeof result.data.timestamp).toBe('string');
+    expect(new Date(result.data.timestamp).getTime()).not.toBeNaN();
   });
 
   it('should track session-started webhook from terminal session', async () => {
@@ -499,8 +529,282 @@ describe.skipIf(!await isServerHealthy())('Daemon Integration Tests', { timeout:
   });
 
   // TODO: Add a test to see if a corrupted file will work
-  
+
   // TODO: Test npm uninstall scenario - daemon should gracefully handle when happy-coder is uninstalled
   // Current behavior: daemon tries to spawn new daemon on version mismatch but dist/index.mjs is gone
   // Expected: daemon should detect missing entrypoint and either exit cleanly or at minimum not respawn infinitely
+});
+
+/**
+ * Daemon Lock Race Condition Tests (HAP-156)
+ *
+ * These tests validate the fix from HAP-59 which ensures the daemon lock is released
+ * atomically by the OS when the process exits, rather than being manually released
+ * before process.exit(). This eliminates a race window where a new daemon could fail
+ * to acquire the lock.
+ *
+ * The lock mechanism relies on:
+ * - O_EXCL flag for atomic lock file creation
+ * - OS releasing file handle atomically on process.exit()
+ * - acquireDaemonLock() detecting stale locks via process.kill(pid, 0)
+ * - Lock file containing PID allows new daemons to detect dead holders
+ */
+describe.skipIf(!await isServerHealthy())('Daemon Lock Race Condition Tests (HAP-156)', { timeout: 60_000 }, () => {
+
+  // Helper to check if a process is running
+  function isProcessRunning(pid: number): boolean {
+    try {
+      process.kill(pid, 0);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  // Helper to verify daemon state file is valid JSON with expected fields
+  async function verifyDaemonStateIntegrity(): Promise<{ valid: boolean; pid?: number; error?: string }> {
+    try {
+      const state = await readDaemonState();
+      if (!state) {
+        return { valid: false, error: 'State file not found or empty' };
+      }
+      if (typeof state.pid !== 'number' || state.pid <= 0) {
+        return { valid: false, error: `Invalid PID: ${state.pid}` };
+      }
+      if (typeof state.httpPort !== 'number' || state.httpPort <= 0) {
+        return { valid: false, error: `Invalid httpPort: ${state.httpPort}` };
+      }
+      return { valid: true, pid: state.pid };
+    } catch (error) {
+      return { valid: false, error: `Parse error: ${error}` };
+    }
+  }
+
+  // Helper to count running daemon processes
+  async function countRunningDaemons(): Promise<number> {
+    const state = await readDaemonState();
+    if (!state) return 0;
+    return isProcessRunning(state.pid) ? 1 : 0;
+  }
+
+  afterEach(async () => {
+    // Ensure cleanup after each test
+    await stopDaemon();
+    await clearDaemonState();
+  });
+
+  /**
+   * Test 1: Rapid stop/start cycles
+   *
+   * Validates that rapidly stopping and starting the daemon doesn't cause:
+   * - Lock acquisition failures
+   * - State file corruption
+   * - Multiple daemons running simultaneously
+   */
+  it('should handle rapid stop/start cycles without lock conflicts', async () => {
+    const CYCLE_COUNT = 5;
+    const previousPids: number[] = [];
+
+    for (let cycle = 0; cycle < CYCLE_COUNT; cycle++) {
+      console.log(`[TEST] Cycle ${cycle + 1}/${CYCLE_COUNT}: Starting daemon...`);
+
+      // Start daemon
+      void spawnHappyCLI(['daemon', 'start'], { stdio: 'ignore' });
+
+      // Wait for daemon to be fully running
+      await waitFor(async () => {
+        const state = await readDaemonState();
+        return state !== null && isProcessRunning(state.pid);
+      }, 10_000, 250);
+
+      // Verify state integrity
+      const stateCheck = await verifyDaemonStateIntegrity();
+      expect(stateCheck.valid, `Cycle ${cycle + 1}: ${stateCheck.error}`).toBe(true);
+
+      // Verify this is a new PID (not reusing old one)
+      if (stateCheck.pid) {
+        expect(previousPids.includes(stateCheck.pid),
+          `Cycle ${cycle + 1}: PID ${stateCheck.pid} was already used`).toBe(false);
+        previousPids.push(stateCheck.pid);
+      }
+
+      // Verify only one daemon is running
+      const runningCount = await countRunningDaemons();
+      expect(runningCount, `Cycle ${cycle + 1}: Expected 1 daemon, found ${runningCount}`).toBe(1);
+
+      console.log(`[TEST] Cycle ${cycle + 1}/${CYCLE_COUNT}: Stopping daemon (PID: ${stateCheck.pid})...`);
+
+      // Stop daemon - this should release lock atomically via OS on exit
+      await stopDaemon();
+
+      // Brief pause to ensure process fully exits
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
+
+    console.log('[TEST] All rapid stop/start cycles completed successfully');
+  });
+
+  /**
+   * Test 2: Parallel start attempts
+   *
+   * Validates that when multiple daemons try to start simultaneously,
+   * only one succeeds in acquiring the lock and running.
+   */
+  it('should allow only one daemon when multiple start attempts occur simultaneously', async () => {
+    // Ensure no daemon is running
+    await stopDaemon();
+    await clearDaemonState();
+
+    // Brief pause to ensure clean slate
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    console.log('[TEST] Spawning 3 daemons simultaneously...');
+
+    // Spawn 3 daemons at the same time
+    spawnHappyCLI(['daemon', 'start'], { stdio: 'ignore' });
+    spawnHappyCLI(['daemon', 'start'], { stdio: 'ignore' });
+    spawnHappyCLI(['daemon', 'start'], { stdio: 'ignore' });
+
+    // Wait for things to settle - at least one should succeed
+    await waitFor(async () => {
+      const state = await readDaemonState();
+      return state !== null;
+    }, 15_000, 250);
+
+    // Give extra time for competing daemons to exit
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // Verify state integrity
+    const stateCheck = await verifyDaemonStateIntegrity();
+    expect(stateCheck.valid, `State invalid: ${stateCheck.error}`).toBe(true);
+
+    // The critical check: only ONE daemon should be running
+    const runningCount = await countRunningDaemons();
+    expect(runningCount, `Expected exactly 1 daemon, found ${runningCount}`).toBe(1);
+
+    // Verify the running daemon matches the state file
+    const state = await readDaemonState();
+    expect(state).not.toBeNull();
+    expect(isProcessRunning(state!.pid), 'State file PID should be running').toBe(true);
+
+    console.log(`[TEST] Parallel start test passed: Only daemon PID ${state!.pid} is running`);
+  });
+
+  /**
+   * Test 3: Crash (SIGKILL) + immediate restart
+   *
+   * Validates that when a daemon is killed with SIGKILL (no cleanup),
+   * a new daemon can detect the stale lock and take over.
+   *
+   * This is the scenario HAP-59 specifically addresses:
+   * - Old daemon dies without releasing lock
+   * - Lock file remains with dead PID
+   * - New daemon detects stale lock via process.kill(pid, 0)
+   * - New daemon cleans up stale lock and acquires new one
+   */
+  it('should recover from crashed daemon (SIGKILL) and acquire lock', async () => {
+    // Start initial daemon
+    void spawnHappyCLI(['daemon', 'start'], { stdio: 'ignore' });
+
+    await waitFor(async () => {
+      const state = await readDaemonState();
+      return state !== null && isProcessRunning(state.pid);
+    }, 10_000, 250);
+
+    const initialState = await readDaemonState();
+    expect(initialState).not.toBeNull();
+    const crashedPid = initialState!.pid;
+
+    console.log(`[TEST] Initial daemon running with PID ${crashedPid}`);
+
+    // Verify lock file exists
+    expect(existsSync(configuration.daemonLockFile), 'Lock file should exist').toBe(true);
+
+    // SIGKILL the daemon - this simulates a crash with no cleanup
+    console.log(`[TEST] Sending SIGKILL to daemon PID ${crashedPid}...`);
+    process.kill(crashedPid, 'SIGKILL');
+
+    // Wait for process to die
+    await waitFor(async () => !isProcessRunning(crashedPid), 2000, 100);
+    expect(isProcessRunning(crashedPid), 'Crashed daemon should be dead').toBe(false);
+
+    // Lock file should still exist (no cleanup on SIGKILL)
+    // Note: The lock file might be cleaned up by the OS releasing the file handle
+    // but the state file should still show the old PID
+    console.log('[TEST] Daemon crashed. Lock file exists:', existsSync(configuration.daemonLockFile));
+
+    // Immediately try to start a new daemon
+    console.log('[TEST] Immediately starting new daemon...');
+    void spawnHappyCLI(['daemon', 'start'], { stdio: 'ignore' });
+
+    // Wait for new daemon to start
+    await waitFor(async () => {
+      const state = await readDaemonState();
+      return state !== null && state.pid !== crashedPid && isProcessRunning(state.pid);
+    }, 15_000, 250);
+
+    // Verify new daemon took over
+    const newState = await readDaemonState();
+    expect(newState).not.toBeNull();
+    expect(newState!.pid, 'New daemon should have different PID').not.toBe(crashedPid);
+    expect(isProcessRunning(newState!.pid), 'New daemon should be running').toBe(true);
+
+    // Verify state integrity
+    const stateCheck = await verifyDaemonStateIntegrity();
+    expect(stateCheck.valid, `State invalid after recovery: ${stateCheck.error}`).toBe(true);
+
+    console.log(`[TEST] Successfully recovered: New daemon PID ${newState!.pid} replaced crashed PID ${crashedPid}`);
+  });
+
+  /**
+   * Test 4: Multiple SIGKILL + restart cycles
+   *
+   * Stress test that repeatedly crashes and restarts the daemon to ensure
+   * the lock recovery mechanism is robust.
+   */
+  it('should handle multiple crash/restart cycles reliably', async () => {
+    const CRASH_CYCLES = 3;
+
+    for (let cycle = 0; cycle < CRASH_CYCLES; cycle++) {
+      console.log(`[TEST] Crash cycle ${cycle + 1}/${CRASH_CYCLES}`);
+
+      // Start daemon
+      void spawnHappyCLI(['daemon', 'start'], { stdio: 'ignore' });
+
+      await waitFor(async () => {
+        const state = await readDaemonState();
+        return state !== null && isProcessRunning(state.pid);
+      }, 10_000, 250);
+
+      const state = await readDaemonState();
+      expect(state).not.toBeNull();
+      const pid = state!.pid;
+
+      // Verify it's running
+      expect(isProcessRunning(pid), `Cycle ${cycle + 1}: Daemon should be running`).toBe(true);
+
+      // Crash it
+      process.kill(pid, 'SIGKILL');
+
+      // Wait for death
+      await waitFor(async () => !isProcessRunning(pid), 2000, 100);
+
+      // Small delay before next cycle
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    // Final verification: start one more daemon and ensure it works
+    void spawnHappyCLI(['daemon', 'start'], { stdio: 'ignore' });
+
+    await waitFor(async () => {
+      const state = await readDaemonState();
+      return state !== null && isProcessRunning(state.pid);
+    }, 10_000, 250);
+
+    const finalState = await readDaemonState();
+    expect(finalState).not.toBeNull();
+    expect(isProcessRunning(finalState!.pid), 'Final daemon should be running').toBe(true);
+
+    console.log(`[TEST] All crash cycles completed. Final daemon PID: ${finalState!.pid}`);
+  });
 });

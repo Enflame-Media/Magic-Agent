@@ -24,9 +24,10 @@ import { install } from './daemon/install'
 import { uninstall } from './daemon/uninstall'
 import { ApiClient } from './api/api'
 import { runDoctorCommand, getDaemonStatusJson } from './ui/doctor'
-import { listDaemonSessions, stopDaemonSession } from './daemon/controlClient'
+import { listDaemonSessions, stopDaemonSession, getDaemonHealth } from './daemon/controlClient'
 import { handleAuthCommand } from './commands/auth'
 import { handleConnectCommand } from './commands/connect'
+import { generateMainHelp, generateCommandHelp } from './commands/registry'
 import { spawnHappyCLI } from './utils/spawnHappyCLI'
 import { claudeCliPath } from './claude/claudeLocal'
 import { execFileSync } from 'node:child_process'
@@ -263,6 +264,69 @@ import { execFileSync } from 'node:child_process'
         await runDoctorCommand('daemon');
         process.exit(0);
       }
+    } else if (daemonSubcommand === 'health') {
+      // Check for --json flag
+      const useJson = args.slice(2).includes('--json');
+
+      const result = await getDaemonHealth();
+
+      if (!result.success) {
+        if (useJson) {
+          console.log(JSON.stringify({ status: 'error', error: result.error }, null, 2));
+        } else {
+          console.log(chalk.red('✗ Daemon is not running'));
+          console.log(chalk.gray(`  ${result.error}`));
+          console.log(chalk.gray('  Start with: happy daemon start'));
+        }
+        process.exit(1);
+      }
+
+      const health = result.data;
+
+      if (useJson) {
+        console.log(JSON.stringify(health, null, 2));
+      } else {
+        // Format uptime as human-readable
+        const uptimeMs = health.uptime;
+        const hours = Math.floor(uptimeMs / 3600000);
+        const minutes = Math.floor((uptimeMs % 3600000) / 60000);
+        const seconds = Math.floor((uptimeMs % 60000) / 1000);
+        const uptimeStr = hours > 0
+          ? `${hours}h ${minutes}m ${seconds}s`
+          : minutes > 0
+            ? `${minutes}m ${seconds}s`
+            : `${seconds}s`;
+
+        // Format memory in MB
+        const formatMB = (bytes: number) => (bytes / 1024 / 1024).toFixed(1);
+        const heapPercent = ((health.memory.heapUsed / health.memory.heapTotal) * 100).toFixed(1);
+
+        // Status with color and symbol
+        const statusColor = health.status === 'healthy'
+          ? chalk.green
+          : health.status === 'degraded'
+            ? chalk.yellow
+            : chalk.red;
+        const statusSymbol = health.status === 'healthy' ? '✓' : health.status === 'degraded' ? '⚠' : '✗';
+
+        console.log(`
+${chalk.bold('🏥 Daemon Health Status')}
+
+${chalk.bold('Status:')}     ${statusColor(`${health.status} ${statusSymbol}`)}
+${chalk.bold('Uptime:')}     ${uptimeStr}
+${chalk.bold('Sessions:')}   ${health.sessions} active
+${chalk.bold('Memory:')}
+  RSS:      ${formatMB(health.memory.rss)} MB
+  Heap:     ${formatMB(health.memory.heapUsed)} MB / ${formatMB(health.memory.heapTotal)} MB (${heapPercent}%)
+  External: ${formatMB(health.memory.external)} MB
+
+${chalk.gray(`Last checked: ${new Date(health.timestamp).toLocaleString()}`)}
+`);
+      }
+
+      // Exit codes: 0 for healthy, 1 for degraded, 2 for unhealthy
+      const exitCode = health.status === 'healthy' ? 0 : health.status === 'degraded' ? 1 : 2;
+      process.exit(exitCode);
     } else if (daemonSubcommand === 'logs') {
       // Simply print the path to the latest daemon log file
       const latest = await getLatestDaemonLog()
@@ -287,28 +351,12 @@ import { execFileSync } from 'node:child_process'
         process.exit(1)
       }
     } else {
-      console.log(`
-${chalk.bold('happy daemon')} - Daemon management
-
-${chalk.bold('Usage:')}
-  happy daemon start              Start the daemon (detached)
-  happy daemon stop               Stop the daemon (sessions stay alive)
-  happy daemon status             Show daemon status (human-readable)
-  happy daemon status --json      Show daemon status (JSON for scripting)
-  happy daemon list               List active sessions
-
-  If you want to kill all happy related processes run
-  ${chalk.cyan('happy doctor clean')}
-
-${chalk.bold('Exit Codes for "daemon status --json":')}
-  0 - Daemon is running
-  1 - Daemon is not running
-  2 - Stale state (state file exists but process not found)
-
-${chalk.bold('Note:')} The daemon runs in the background and manages Claude sessions.
-
-${chalk.bold('To clean up runaway processes:')} Use ${chalk.cyan('happy doctor clean')}
-`)
+      const help = generateCommandHelp('daemon')
+      if (help) {
+        console.log(help)
+      } else {
+        console.error(chalk.red('Error: Help text not available for daemon command'))
+      }
     }
     return;
   } else {
@@ -318,35 +366,9 @@ ${chalk.bold('To clean up runaway processes:')} Use ${chalk.cyan('happy doctor c
 
     // Show help
     if (showHelp) {
-      console.log(`
-${chalk.bold('happy')} - Claude Code On the Go
+      // Use auto-generated help text from command registry
+      console.log(generateMainHelp())
 
-${chalk.bold('Usage:')}
-  happy [options]         Start Claude with mobile control
-  happy auth              Manage authentication
-  happy codex             Start Codex mode
-  happy connect           Connect AI vendor API keys
-  happy notify            Send push notification
-  happy daemon            Manage background service that allows
-                            to spawn new sessions away from your computer
-  happy doctor            System diagnostics & troubleshooting
-
-${chalk.bold('Examples:')}
-  happy                    Start session
-  happy --yolo             Start with bypassing permissions 
-                            happy sugar for --dangerously-skip-permissions
-  happy auth login --force Authenticate
-  happy doctor             Run diagnostics
-
-${chalk.bold('Happy supports ALL Claude options!')}
-  Use any claude flag with happy as you would with claude. Our favorite:
-
-  happy --resume
-
-${chalk.gray('─'.repeat(60))}
-${chalk.bold.cyan('Claude Code Options (from `claude --help`):')}
-`)
-      
       // Run claude --help and display its output
       // Use execFileSync with the current Node executable for cross-platform compatibility
       try {
@@ -355,7 +377,7 @@ ${chalk.bold.cyan('Claude Code Options (from `claude --help`):')}
       } catch (e) {
         console.log(chalk.yellow('Could not retrieve claude help. Make sure claude is installed.'))
       }
-      
+
       process.exit(0)
     }
 
@@ -427,22 +449,12 @@ async function handleNotifyCommand(args: string[]): Promise<void> {
   }
 
   if (showHelp) {
-    console.log(`
-${chalk.bold('happy notify')} - Send notification
-
-${chalk.bold('Usage:')}
-  happy notify -p <message> [-t <title>]    Send notification with custom message and optional title
-  happy notify -h, --help                   Show this help
-
-${chalk.bold('Options:')}
-  -p <message>    Notification message (required)
-  -t <title>      Notification title (optional, defaults to "Happy")
-
-${chalk.bold('Examples:')}
-  happy notify -p "Deployment complete!"
-  happy notify -p "System update complete" -t "Server Status"
-  happy notify -t "Alert" -p "Database connection restored"
-`)
+    const help = generateCommandHelp('notify')
+    if (help) {
+      console.log(help)
+    } else {
+      console.error(chalk.red('Error: Help text not available for notify command'))
+    }
     return
   }
 
@@ -468,8 +480,8 @@ ${chalk.bold('Examples:')}
     // Use custom title or default to "Happy"
     const notificationTitle = title || 'Happy'
 
-    // Send the push notification
-    api.push().sendToAllDevices(
+    // Send the push notification and await completion
+    await api.push().sendToAllDevices(
       notificationTitle,
       message,
       {
@@ -482,9 +494,6 @@ ${chalk.bold('Examples:')}
     console.log(chalk.gray(`  Title: ${notificationTitle}`))
     console.log(chalk.gray(`  Message: ${message}`))
     console.log(chalk.gray('  Check your mobile device for the notification.'))
-
-    // Give a moment for the async operation to start
-    await new Promise(resolve => setTimeout(resolve, 1000))
 
   } catch (error) {
     console.error(chalk.red('✗ Failed to send push notification'))

@@ -25,6 +25,8 @@ import {
 import { getDefaultClaudeCodePath, logDebug, streamToStdin } from './utils'
 import type { Writable } from 'node:stream'
 import { logger } from '@/ui/logger'
+import { AppError, ErrorCodes } from '@/utils/errors'
+import { parseJsonWithContext, JsonParseError } from '@/claude/types'
 
 /**
  * Query class manages Claude Code process interaction
@@ -92,7 +94,10 @@ export class Query implements AsyncIterableIterator<SDKMessage>, AsyncDisposable
             for await (const line of rl) {
                 if (line.trim()) {
                     try {
-                        const message = JSON.parse(line) as SDKMessage | SDKControlResponse
+                        const message = parseJsonWithContext<SDKMessage | SDKControlResponse>(line, {
+                            context: 'SDK message',
+                            logger
+                        })
 
                         if (message.type === 'control_response') {
                             const controlResponse = message as SDKControlResponse
@@ -111,7 +116,12 @@ export class Query implements AsyncIterableIterator<SDKMessage>, AsyncDisposable
 
                         this.inputStream.enqueue(message)
                     } catch (e) {
-                        logger.debug(line)
+                        // JsonParseError already logged with context, just log summary
+                        if (e instanceof JsonParseError) {
+                            logger.debug(`[SDK_QUERY] Skipping malformed SDK message (length: ${e.inputLength})`)
+                        } else {
+                            logger.debug(`[SDK_QUERY] Error processing message: ${e}`)
+                        }
                     }
                 }
             }
@@ -145,7 +155,7 @@ export class Query implements AsyncIterableIterator<SDKMessage>, AsyncDisposable
      */
     async interrupt(): Promise<void> {
         if (!this.childStdin) {
-            throw new Error('Interrupt requires --input-format stream-json')
+            throw new AppError(ErrorCodes.INVALID_INPUT, 'Interrupt requires --input-format stream-json')
         }
 
         await this.request({
@@ -235,14 +245,14 @@ export class Query implements AsyncIterableIterator<SDKMessage>, AsyncDisposable
     private async processControlRequest(request: CanUseToolControlRequest, signal: AbortSignal): Promise<PermissionResult> {
         if (request.request.subtype === 'can_use_tool') {
             if (!this.canCallTool) {
-                throw new Error('canCallTool callback is not provided.')
+                throw new AppError(ErrorCodes.INVALID_INPUT, 'canCallTool callback is not provided.')
             }
             return this.canCallTool(request.request.tool_name, request.request.input, {
                 signal
             })
         }
-        
-        throw new Error('Unsupported control request subtype: ' + request.request.subtype)
+
+        throw new AppError(ErrorCodes.UNSUPPORTED_OPERATION, 'Unsupported control request subtype: ' + request.request.subtype)
     }
 
     /**
@@ -324,7 +334,7 @@ export function query(config: {
     if (model) args.push('--model', model)
     if (canCallTool) {
         if (typeof prompt === 'string') {
-            throw new Error('canCallTool callback requires --input-format stream-json. Please set prompt as an AsyncIterable.')
+            throw new AppError(ErrorCodes.INVALID_INPUT, 'canCallTool callback requires --input-format stream-json. Please set prompt as an AsyncIterable.')
         }
         args.push('--permission-prompt-tool', 'stdio')
     }
@@ -340,7 +350,7 @@ export function query(config: {
 
     if (fallbackModel) {
         if (model && fallbackModel === model) {
-            throw new Error('Fallback model cannot be the same as the main model. Please specify a different model for fallbackModel option.')
+            throw new AppError(ErrorCodes.INVALID_INPUT, 'Fallback model cannot be the same as the main model. Please specify a different model for fallbackModel option.')
         }
         args.push('--fallback-model', fallbackModel)
     }

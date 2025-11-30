@@ -18,7 +18,8 @@ export function startDaemonControlServer({
   spawnSession,
   requestShutdown,
   onHappySessionWebhook,
-  authToken
+  authToken,
+  startTime
 }: {
   getChildren: () => TrackedSession[];
   stopSession: (sessionId: string) => boolean;
@@ -26,8 +27,9 @@ export function startDaemonControlServer({
   requestShutdown: () => void;
   onHappySessionWebhook: (sessionId: string, metadata: Metadata) => void;
   authToken: string;
+  startTime: number;
 }): Promise<{ port: number; stop: () => Promise<void> }> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const app = fastify({
       logger: false // We use our own logger
     });
@@ -216,10 +218,60 @@ export function startDaemonControlServer({
       return { status: 'stopping' };
     });
 
+    // Health check endpoint
+    typed.get('/health', {
+      schema: {
+        response: {
+          200: z.object({
+            status: z.enum(['healthy', 'degraded', 'unhealthy']),
+            uptime: z.number(),
+            sessions: z.number(),
+            memory: z.object({
+              rss: z.number(),
+              heapUsed: z.number(),
+              heapTotal: z.number(),
+              external: z.number()
+            }),
+            timestamp: z.string()
+          })
+        }
+      }
+    }, async () => {
+      const children = getChildren();
+      const memoryUsage = process.memoryUsage();
+      const uptime = Date.now() - startTime;
+
+      // Determine health status based on memory pressure
+      // Consider unhealthy if heap usage exceeds 90% of total
+      const heapPercent = memoryUsage.heapUsed / memoryUsage.heapTotal;
+      let status: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';
+      if (heapPercent > 0.9) {
+        status = 'unhealthy';
+      } else if (heapPercent > 0.75) {
+        status = 'degraded';
+      }
+
+      logger.debug(`[CONTROL SERVER] Health check: status=${status}, sessions=${children.length}`);
+
+      return {
+        status,
+        uptime,
+        sessions: children.length,
+        memory: {
+          rss: memoryUsage.rss,
+          heapUsed: memoryUsage.heapUsed,
+          heapTotal: memoryUsage.heapTotal,
+          external: memoryUsage.external
+        },
+        timestamp: new Date().toISOString()
+      };
+    });
+
     app.listen({ port: 0, host: '127.0.0.1' }, (err, address) => {
       if (err) {
         logger.debug('[CONTROL SERVER] Failed to start:', err);
-        throw err;
+        reject(err);
+        return;
       }
 
       const port = parseInt(address.split(':').pop()!);
