@@ -1,10 +1,10 @@
 import { createRoute, OpenAPIHono } from '@hono/zod-openapi';
-import { authMiddleware } from '@/middleware/auth';
+import { authMiddleware, type AuthVariables } from '@/middleware/auth';
 import { getDb } from '@/db/client';
 import { schema } from '@/db/schema';
-import { createId } from '@paralleldrive/cuid2';
 import * as privacyKit from 'privacy-kit';
 import { eq, desc, and } from 'drizzle-orm';
+import type { Context } from 'hono';
 import {
     RegisterMachineRequestSchema,
     RegisterMachineResponseSchema,
@@ -16,7 +16,6 @@ import {
     UpdateMachineStatusResponseSchema,
     NotFoundErrorSchema,
     UnauthorizedErrorSchema,
-    BadRequestErrorSchema,
 } from '@/schemas/machines';
 
 /**
@@ -81,8 +80,9 @@ const registerMachineRoute = createRoute({
     description: 'Register a new machine or return existing machine with same ID. Composite key: (accountId + id).',
 });
 
+// @ts-expect-error - OpenAPI handler type inference doesn't account for auth middleware Variables
 machineRoutes.openapi(registerMachineRoute, async (c) => {
-    const userId = c.get('userId');
+    const userId = (c as unknown as Context<{ Bindings: Env; Variables: AuthVariables }>).get('userId');
     const { id, metadata, daemonState, dataEncryptionKey } = c.req.valid('json');
     const db = getDb(c.env.DB);
 
@@ -125,7 +125,7 @@ machineRoutes.openapi(registerMachineRoute, async (c) => {
             daemonState: daemonState || null,
             daemonStateVersion: daemonState ? 1 : 0,
             dataEncryptionKey: dataEncryptionKey
-                ? privacyKit.decodeBase64(dataEncryptionKey)
+                ? Buffer.from(privacyKit.decodeBase64(dataEncryptionKey))
                 : null,
             seq: 0,
             active: false, // Default to offline until status update
@@ -191,8 +191,9 @@ const listMachinesRoute = createRoute({
     description: 'Returns machines ordered by most recently active. Optional activeOnly filter.',
 });
 
+// @ts-expect-error - OpenAPI handler type inference doesn't account for auth middleware Variables
 machineRoutes.openapi(listMachinesRoute, async (c) => {
-    const userId = c.get('userId');
+    const userId = (c as unknown as Context<{ Bindings: Env; Variables: AuthVariables }>).get('userId');
     const { limit = 50, activeOnly = false } = c.req.valid('query');
     const db = getDb(c.env.DB);
 
@@ -270,8 +271,9 @@ const getMachineRoute = createRoute({
     description: 'Get a single machine by ID. User must own the machine.',
 });
 
+// @ts-expect-error - OpenAPI handler type inference doesn't account for auth middleware Variables
 machineRoutes.openapi(getMachineRoute, async (c) => {
-    const userId = c.get('userId');
+    const userId = (c as unknown as Context<{ Bindings: Env; Variables: AuthVariables }>).get('userId');
     const { id } = c.req.valid('param');
     const db = getDb(c.env.DB);
 
@@ -352,8 +354,9 @@ const updateMachineStatusRoute = createRoute({
     description: 'Update machine active status, metadata, or daemon state. User must own the machine.',
 });
 
+// @ts-expect-error - OpenAPI handler type inference doesn't account for auth middleware Variables
 machineRoutes.openapi(updateMachineStatusRoute, async (c) => {
-    const userId = c.get('userId');
+    const userId = (c as unknown as Context<{ Bindings: Env; Variables: AuthVariables }>).get('userId');
     const { id } = c.req.valid('param');
     const { active, metadata, daemonState } = c.req.valid('json');
     const db = getDb(c.env.DB);
@@ -369,7 +372,15 @@ machineRoutes.openapi(updateMachineStatusRoute, async (c) => {
     }
 
     // Build update object
-    const updates: any = {
+    const updates: {
+        updatedAt: Date;
+        lastActiveAt: Date;
+        active?: boolean;
+        metadata?: string;
+        metadataVersion?: number;
+        daemonState?: string | null;
+        daemonStateVersion?: number;
+    } = {
         updatedAt: new Date(),
         lastActiveAt: new Date(), // Always update lastActiveAt
     };

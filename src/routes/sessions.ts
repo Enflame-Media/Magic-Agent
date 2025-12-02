@@ -1,5 +1,6 @@
 import { createRoute, OpenAPIHono } from '@hono/zod-openapi';
-import { authMiddleware } from '@/middleware/auth';
+import type { Context } from 'hono';
+import { authMiddleware, type AuthVariables } from '@/middleware/auth';
 import { getDb } from '@/db/client';
 import { schema } from '@/db/schema';
 import { createId } from '@paralleldrive/cuid2';
@@ -80,8 +81,9 @@ const listSessionsRoute = createRoute({
     description: 'Returns up to 150 sessions ordered by most recent. Use GET /v2/sessions for pagination.',
 });
 
+// @ts-expect-error - OpenAPI handler type inference doesn't carry Variables from middleware
 sessionRoutes.openapi(listSessionsRoute, async (c) => {
-    const userId = c.get('userId');
+    const userId = (c as unknown as Context<{ Bindings: Env; Variables: AuthVariables }>).get('userId');
     const db = getDb(c.env.DB);
 
     const sessions = await db.query.sessions.findMany({
@@ -151,8 +153,9 @@ const paginatedSessionsRoute = createRoute({
     description: 'Cursor-based pagination with optional changedSince filter. Always sorted by ID descending.',
 });
 
+// @ts-expect-error - OpenAPI handler type inference doesn't carry Variables from middleware
 sessionRoutes.openapi(paginatedSessionsRoute, async (c) => {
-    const userId = c.get('userId');
+    const userId = (c as unknown as Context<{ Bindings: Env; Variables: AuthVariables }>).get('userId');
     const { cursor, limit = 50, changedSince } = c.req.valid('query');
     const db = getDb(c.env.DB);
 
@@ -193,8 +196,10 @@ sessionRoutes.openapi(paginatedSessionsRoute, async (c) => {
 
     // Generate next cursor
     let nextCursor: string | null = null;
-    if (hasNext && resultSessions.length > 0) {
-        const lastSession = resultSessions[resultSessions.length - 1];
+    const lastSession = resultSessions[resultSessions.length - 1];
+    // Defensive check: ensures lastSession is not undefined when resultSessions is unexpectedly empty.
+    // This prevents runtime errors when accessing lastSession.id.
+    if (hasNext && lastSession) {
         nextCursor = `cursor_v1_${lastSession.id}`;
     }
 
@@ -252,8 +257,9 @@ const activeSessionsRoute = createRoute({
     description: 'Returns sessions active in the last 15 minutes, ordered by most recent activity.',
 });
 
+// @ts-expect-error - OpenAPI handler type inference doesn't carry Variables from middleware
 sessionRoutes.openapi(activeSessionsRoute, async (c) => {
-    const userId = c.get('userId');
+    const userId = (c as unknown as Context<{ Bindings: Env; Variables: AuthVariables }>).get('userId');
     const { limit = 150 } = c.req.valid('query');
     const db = getDb(c.env.DB);
 
@@ -330,8 +336,9 @@ const createSessionRoute = createRoute({
     description: 'Create a new session with tag-based deduplication. If a session with the same tag exists for the user, returns existing session.',
 });
 
+// @ts-expect-error - OpenAPI handler type inference doesn't carry Variables from middleware
 sessionRoutes.openapi(createSessionRoute, async (c) => {
-    const userId = c.get('userId');
+    const userId = (c as unknown as Context<{ Bindings: Env; Variables: AuthVariables }>).get('userId');
     const { tag, metadata, agentState, dataEncryptionKey } = c.req.valid('json');
     const db = getDb(c.env.DB);
 
@@ -375,7 +382,7 @@ sessionRoutes.openapi(createSessionRoute, async (c) => {
             agentState: agentState || null,
             agentStateVersion: agentState ? 1 : 0,
             dataEncryptionKey: dataEncryptionKey
-                ? privacyKit.decodeBase64(dataEncryptionKey)
+                ? Buffer.from(privacyKit.decodeBase64(dataEncryptionKey))
                 : null,
             seq: 0,
             active: true,
@@ -449,8 +456,9 @@ const getSessionRoute = createRoute({
     description: 'Get a single session by ID. User must own the session.',
 });
 
+// @ts-expect-error - OpenAPI handler type inference doesn't carry Variables from middleware
 sessionRoutes.openapi(getSessionRoute, async (c) => {
-    const userId = c.get('userId');
+    const userId = (c as unknown as Context<{ Bindings: Env; Variables: AuthVariables }>).get('userId');
     const { id } = c.req.valid('param');
     const db = getDb(c.env.DB);
 
@@ -524,8 +532,9 @@ const deleteSessionRoute = createRoute({
     description: 'Soft delete a session (sets active=false). User must own the session.',
 });
 
+// @ts-expect-error - OpenAPI handler type inference doesn't carry Variables from middleware
 sessionRoutes.openapi(deleteSessionRoute, async (c) => {
-    const userId = c.get('userId');
+    const userId = (c as unknown as Context<{ Bindings: Env; Variables: AuthVariables }>).get('userId');
     const { id } = c.req.valid('param');
     const db = getDb(c.env.DB);
 
@@ -599,8 +608,9 @@ const createSessionMessageRoute = createRoute({
     description: 'Create a new message in a session. User must own the session.',
 });
 
+// @ts-expect-error - OpenAPI handler type inference doesn't carry Variables from middleware
 sessionRoutes.openapi(createSessionMessageRoute, async (c) => {
-    const userId = c.get('userId');
+    const userId = (c as unknown as Context<{ Bindings: Env; Variables: AuthVariables }>).get('userId');
     const { id: sessionId } = c.req.valid('param');
     const { localId, content } = c.req.valid('json');
     const db = getDb(c.env.DB);

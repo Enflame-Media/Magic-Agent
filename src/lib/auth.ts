@@ -1,11 +1,16 @@
 import * as privacyKit from 'privacy-kit';
 
 /**
+ * Token extras type - matches privacy-kit's expected type
+ */
+export type TokenExtras = Record<string, unknown>;
+
+/**
  * Token cache entry interface
  */
 interface TokenCacheEntry {
     userId: string;
-    extras?: any;
+    extras?: TokenExtras;
     cachedAt: number;
 }
 
@@ -93,12 +98,12 @@ export async function initAuth(masterSecret: string): Promise<void> {
  * // Returns: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
  * ```
  */
-export async function createToken(userId: string, extras?: any): Promise<string> {
+export async function createToken(userId: string, extras?: TokenExtras): Promise<string> {
     if (!tokens) {
         throw new Error('Auth module not initialized - call initAuth() first');
     }
 
-    const payload: any = { user: userId };
+    const payload: { user: string; extras?: TokenExtras } = { user: userId };
     if (extras) {
         payload.extras = extras;
     }
@@ -138,7 +143,7 @@ export async function createToken(userId: string, extras?: any): Promise<string>
  * }
  * ```
  */
-export async function verifyToken(token: string): Promise<{ userId: string; extras?: any } | null> {
+export async function verifyToken(token: string): Promise<{ userId: string; extras?: TokenExtras } | null> {
     // Check cache first
     const cached = tokenCache.get(token);
     if (cached) {

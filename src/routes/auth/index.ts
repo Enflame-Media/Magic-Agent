@@ -5,7 +5,8 @@ import { getDb } from '@/db/client';
 import { schema } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
-import { authMiddleware } from '@/middleware/auth';
+import { authMiddleware, type AuthVariables } from '@/middleware/auth';
+import type { Context } from 'hono';
 import {
     DirectAuthRequestSchema,
     AuthSuccessResponseSchema,
@@ -339,8 +340,8 @@ authRoutes.use('/v1/auth/response', authMiddleware());
 authRoutes.openapi(terminalAuthResponseRoute, async (c) => {
     const { publicKey, response } = c.req.valid('json');
 
-    // Get authenticated user ID from middleware (cast context to AuthEnv to access Variables)
-    const userId = (c as any).get('userId') as string;
+    // Get authenticated user ID from middleware (combine Bindings and Variables for proper typing)
+    const userId = (c as unknown as Context<{ Bindings: Env; Variables: AuthVariables }>).get('userId');
 
     // Import TweetNaCl for key validation
     const tweetnacl = (await import('tweetnacl')).default;
@@ -516,8 +517,8 @@ authRoutes.use('/v1/auth/account/response', authMiddleware());
 authRoutes.openapi(accountAuthResponseRoute, async (c) => {
     const { publicKey, response } = c.req.valid('json');
 
-    // Get authenticated user ID from middleware (cast context to access Variables)
-    const userId = (c as any).get('userId') as string;
+    // Get authenticated user ID from middleware (combine Bindings and Variables for proper typing)
+    const userId = (c as unknown as Context<{ Bindings: Env; Variables: AuthVariables }>).get('userId');
 
     // Import TweetNaCl for key validation
     const tweetnacl = (await import('tweetnacl')).default;

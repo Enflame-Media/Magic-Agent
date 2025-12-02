@@ -116,9 +116,9 @@ export const RegisterMachineResponseSchema = z
 export const ListMachinesQuerySchema = z.object({
     limit: z
         .string()
+        .default('50')
         .transform((v) => parseInt(v, 10))
-        .pipe(z.number().int().min(1).max(200).default(50))
-        .optional()
+        .pipe(z.number().int().min(1).max(200))
         .openapi({
             param: {
                 name: 'limit',

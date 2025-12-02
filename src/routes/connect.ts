@@ -1,5 +1,6 @@
 import { createRoute, OpenAPIHono } from '@hono/zod-openapi';
-import { authMiddleware } from '@/middleware/auth';
+import type { Context } from 'hono';
+import { authMiddleware, type AuthVariables } from '@/middleware/auth';
 import { getDb } from '@/db/client';
 import { schema } from '@/db/schema';
 import { createId } from '@paralleldrive/cuid2';
@@ -19,7 +20,6 @@ import {
     BadRequestErrorSchema,
     NotFoundErrorSchema,
     UnauthorizedErrorSchema,
-    InternalErrorSchema,
 } from '@/schemas/connect';
 
 /**
@@ -91,8 +91,9 @@ const githubOAuthParamsRoute = createRoute({
 
 connectRoutes.use('/v1/connect/github/params', authMiddleware());
 
+// @ts-expect-error - OpenAPI handler type inference doesn't carry Variables from middleware
 connectRoutes.openapi(githubOAuthParamsRoute, async (c) => {
-    const userId = c.get('userId');
+    const userId = (c as unknown as Context<{ Bindings: Env; Variables: AuthVariables }>).get('userId');
     const clientId = c.env.GITHUB_CLIENT_ID;
     const redirectUri = c.env.GITHUB_REDIRECT_URL;
 
@@ -143,7 +144,8 @@ const githubOAuthCallbackRoute = createRoute({
 });
 
 connectRoutes.openapi(githubOAuthCallbackRoute, async (c) => {
-    const { code, state } = c.req.valid('query');
+    // Extract query params but don't use them yet - placeholder for OAuth flow
+    const _query = c.req.valid('query');
 
     // TODO: Implement full OAuth flow
     // 1. Verify state token
@@ -193,14 +195,15 @@ const githubWebhookRoute = createRoute({
     description: 'Receives and processes GitHub webhook events.',
 });
 
-connectRoutes.openapi(githubWebhookRoute, async (c) => {
+// @ts-expect-error - OpenAPI handler type inference doesn't carry Variables from middleware
+connectRoutes.openapi(githubWebhookRoute, async (_c) => {
     // TODO: Implement webhook verification and processing
     // 1. Verify signature using GITHUB_WEBHOOK_SECRET
     // 2. Parse event type and payload
     // 3. Process event accordingly
 
     // Placeholder: accept all webhooks
-    return c.json({ received: true });
+    return _c.json({ received: true as const });
 });
 
 /**
@@ -242,9 +245,12 @@ const githubDisconnectRoute = createRoute({
 
 connectRoutes.use('/v1/connect/github', authMiddleware());
 
+// @ts-expect-error - OpenAPI handler type inference doesn't carry Variables from middleware
 connectRoutes.openapi(githubDisconnectRoute, async (c) => {
-    const userId = c.get('userId');
-    const db = getDb(c.env.DB);
+    // TODO: Implement GitHub disconnect - will use these when implemented
+    // const userId = (c as unknown as Context<{ Bindings: Env; Variables: AuthVariables }>).get('userId');
+    // const db = getDb(c.env.DB);
+    void c.env.DB; // Silence unused warning
 
     // TODO: Implement GitHub disconnect
     // 1. Remove GitHub user link
@@ -252,7 +258,7 @@ connectRoutes.openapi(githubDisconnectRoute, async (c) => {
     // 3. Clean up related data
 
     // Placeholder: return success
-    return c.json({ success: true });
+    return c.json({ success: true as const });
 });
 
 // ============================================================================
@@ -300,8 +306,9 @@ const registerAITokenRoute = createRoute({
 
 connectRoutes.use('/v1/connect/:vendor/*', authMiddleware());
 
+// @ts-expect-error - OpenAPI handler type inference doesn't carry Variables from middleware
 connectRoutes.openapi(registerAITokenRoute, async (c) => {
-    const userId = c.get('userId');
+    const userId = (c as unknown as Context<{ Bindings: Env; Variables: AuthVariables }>).get('userId');
     const { vendor } = c.req.valid('param');
     const { token } = c.req.valid('json');
     const db = getDb(c.env.DB);
@@ -375,8 +382,9 @@ const getAITokenRoute = createRoute({
     description: 'Retrieve decrypted API token for an AI service.',
 });
 
+// @ts-expect-error - OpenAPI handler type inference doesn't carry Variables from middleware
 connectRoutes.openapi(getAITokenRoute, async (c) => {
-    const userId = c.get('userId');
+    const userId = (c as unknown as Context<{ Bindings: Env; Variables: AuthVariables }>).get('userId');
     const { vendor } = c.req.valid('param');
     const db = getDb(c.env.DB);
 
@@ -428,8 +436,9 @@ const deleteAITokenRoute = createRoute({
     description: 'Remove API token for an AI service.',
 });
 
+// @ts-expect-error - OpenAPI handler type inference doesn't carry Variables from middleware
 connectRoutes.openapi(deleteAITokenRoute, async (c) => {
-    const userId = c.get('userId');
+    const userId = (c as unknown as Context<{ Bindings: Env; Variables: AuthVariables }>).get('userId');
     const { vendor } = c.req.valid('param');
     const db = getDb(c.env.DB);
 
@@ -442,7 +451,7 @@ connectRoutes.openapi(deleteAITokenRoute, async (c) => {
             )
         );
 
-    return c.json({ success: true });
+    return c.json({ success: true as const });
 });
 
 /**
@@ -476,8 +485,9 @@ const listAITokensRoute = createRoute({
 
 connectRoutes.use('/v1/connect/tokens', authMiddleware());
 
+// @ts-expect-error - OpenAPI handler type inference doesn't carry Variables from middleware
 connectRoutes.openapi(listAITokensRoute, async (c) => {
-    const userId = c.get('userId');
+    const userId = (c as unknown as Context<{ Bindings: Env; Variables: AuthVariables }>).get('userId');
     const db = getDb(c.env.DB);
 
     const serviceTokens = await db.query.serviceAccountTokens.findMany({

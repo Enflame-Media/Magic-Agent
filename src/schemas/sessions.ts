@@ -61,7 +61,7 @@ export const SessionSchema = z
             description: 'Base64-encoded data encryption key or null',
             example: 'YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXo=',
         }),
-        lastMessage: z.any().nullable().openapi({
+        lastMessage: z.unknown().nullable().openapi({
             description: 'Last message in session (legacy, always null)',
             example: null,
         }),
@@ -89,7 +89,7 @@ export const SessionMessageSchema = z
             description: 'Message sequence number within session',
             example: 42,
         }),
-        content: z.any().openapi({
+        content: z.unknown().openapi({
             description: 'Message content (JSON object)',
             example: { type: 'text', text: 'Hello world' },
         }),
@@ -133,9 +133,9 @@ export const PaginatedSessionsQuerySchema = z.object({
     }),
     limit: z
         .string()
+        .default('50')
         .transform((v) => parseInt(v, 10))
-        .pipe(z.number().int().min(1).max(200).default(50))
-        .optional()
+        .pipe(z.number().int().min(1).max(200))
         .openapi({
             param: {
                 name: 'limit',
@@ -184,9 +184,9 @@ export const PaginatedSessionsResponseSchema = z
 export const ActiveSessionsQuerySchema = z.object({
     limit: z
         .string()
+        .default('150')
         .transform((v) => parseInt(v, 10))
-        .pipe(z.number().int().min(1).max(500).default(150))
-        .optional()
+        .pipe(z.number().int().min(1).max(500))
         .openapi({
             param: {
                 name: 'limit',
@@ -305,7 +305,7 @@ export const CreateSessionMessageRequestSchema = z
             description: 'Client-side local identifier for deduplication',
             example: 'local_msg_001',
         }),
-        content: z.any().openapi({
+        content: z.unknown().openapi({
             description: 'Message content (JSON object)',
             example: { type: 'text', text: 'Hello world' },
         }),

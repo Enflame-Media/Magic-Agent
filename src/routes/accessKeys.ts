@@ -1,5 +1,6 @@
 import { createRoute, OpenAPIHono } from '@hono/zod-openapi';
-import { authMiddleware } from '@/middleware/auth';
+import type { Context } from 'hono';
+import { authMiddleware, type AuthVariables } from '@/middleware/auth';
 import { getDb } from '@/db/client';
 import { schema } from '@/db/schema';
 import { createId } from '@paralleldrive/cuid2';
@@ -14,7 +15,6 @@ import {
     NotFoundErrorSchema,
     ConflictErrorSchema,
     UnauthorizedErrorSchema,
-    InternalErrorSchema,
 } from '@/schemas/accessKeys';
 
 /**
@@ -82,8 +82,9 @@ const getAccessKeyRoute = createRoute({
     description: 'Get an access key by session and machine ID. Returns null if not found.',
 });
 
+// @ts-expect-error - OpenAPI handler type inference doesn't carry Variables from middleware
 accessKeyRoutes.openapi(getAccessKeyRoute, async (c) => {
-    const userId = c.get('userId');
+    const userId = (c as unknown as Context<{ Bindings: Env; Variables: AuthVariables }>).get('userId');
     const { sessionId, machineId } = c.req.valid('param');
     const db = getDb(c.env.DB);
 
@@ -183,8 +184,9 @@ const createAccessKeyRoute = createRoute({
     description: 'Create a new access key for a session-machine pair. Fails if already exists.',
 });
 
+// @ts-expect-error - OpenAPI handler type inference doesn't carry Variables from middleware
 accessKeyRoutes.openapi(createAccessKeyRoute, async (c) => {
-    const userId = c.get('userId');
+    const userId = (c as unknown as Context<{ Bindings: Env; Variables: AuthVariables }>).get('userId');
     const { sessionId, machineId } = c.req.valid('param');
     const { data } = c.req.valid('json');
     const db = getDb(c.env.DB);
@@ -234,7 +236,10 @@ accessKeyRoutes.openapi(createAccessKeyRoute, async (c) => {
 
     const accessKey = newAccessKeys[0];
     if (!accessKey) {
-        return c.json({ error: 'Failed to create access key' }, 500);
+        return c.json(
+            { error: `Database insert operation returned no rows when creating access key for session ${sessionId} and machine ${machineId}` },
+            500
+        );
     }
 
     return c.json({
@@ -296,8 +301,9 @@ const updateAccessKeyRoute = createRoute({
     description: 'Update an access key with optimistic locking. Returns version-mismatch on conflict.',
 });
 
+// @ts-expect-error - OpenAPI handler type inference doesn't carry Variables from middleware
 accessKeyRoutes.openapi(updateAccessKeyRoute, async (c) => {
-    const userId = c.get('userId');
+    const userId = (c as unknown as Context<{ Bindings: Env; Variables: AuthVariables }>).get('userId');
     const { sessionId, machineId } = c.req.valid('param');
     const { data, expectedVersion } = c.req.valid('json');
     const db = getDb(c.env.DB);

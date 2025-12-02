@@ -1,8 +1,8 @@
 import { createRoute, OpenAPIHono } from '@hono/zod-openapi';
-import { authMiddleware } from '@/middleware/auth';
+import type { Context } from 'hono';
+import { authMiddleware, type AuthVariables } from '@/middleware/auth';
 import { getDb } from '@/db/client';
 import { schema } from '@/db/schema';
-import { createId } from '@paralleldrive/cuid2';
 import * as privacyKit from 'privacy-kit';
 import { eq, desc, and } from 'drizzle-orm';
 import {
@@ -17,7 +17,6 @@ import {
     NotFoundErrorSchema,
     ConflictErrorSchema,
     UnauthorizedErrorSchema,
-    InternalErrorSchema,
 } from '@/schemas/artifacts';
 
 /**
@@ -74,8 +73,9 @@ const listArtifactsRoute = createRoute({
     description: 'Returns artifact headers without body content, ordered by most recent.',
 });
 
+// @ts-expect-error - OpenAPI handler type inference doesn't carry Variables from middleware
 artifactRoutes.openapi(listArtifactsRoute, async (c) => {
-    const userId = c.get('userId');
+    const userId = (c as unknown as Context<{ Bindings: Env; Variables: AuthVariables }>).get('userId');
     const db = getDb(c.env.DB);
 
     const artifacts = await db
@@ -146,8 +146,9 @@ const getArtifactRoute = createRoute({
     description: 'Get a single artifact with full body content. User must own the artifact.',
 });
 
+// @ts-expect-error - OpenAPI handler type inference doesn't carry Variables from middleware
 artifactRoutes.openapi(getArtifactRoute, async (c) => {
-    const userId = c.get('userId');
+    const userId = (c as unknown as Context<{ Bindings: Env; Variables: AuthVariables }>).get('userId');
     const { id } = c.req.valid('param');
     const db = getDb(c.env.DB);
 
@@ -222,8 +223,9 @@ const createArtifactRoute = createRoute({
     description: 'Create a new artifact. Idempotent by ID - returns existing artifact if ID matches.',
 });
 
+// @ts-expect-error - OpenAPI handler type inference doesn't carry Variables from middleware
 artifactRoutes.openapi(createArtifactRoute, async (c) => {
-    const userId = c.get('userId');
+    const userId = (c as unknown as Context<{ Bindings: Env; Variables: AuthVariables }>).get('userId');
     const { id, header, body, dataEncryptionKey } = c.req.valid('json');
     const db = getDb(c.env.DB);
 
@@ -265,18 +267,23 @@ artifactRoutes.openapi(createArtifactRoute, async (c) => {
         .values({
             id,
             accountId: userId,
-            header: privacyKit.decodeBase64(header),
+            header: Buffer.from(privacyKit.decodeBase64(header)),
             headerVersion: 1,
-            body: privacyKit.decodeBase64(body),
+            body: Buffer.from(privacyKit.decodeBase64(body)),
             bodyVersion: 1,
-            dataEncryptionKey: privacyKit.decodeBase64(dataEncryptionKey),
+            dataEncryptionKey: Buffer.from(privacyKit.decodeBase64(dataEncryptionKey)),
             seq: 0,
         })
         .returning();
 
     const artifact = newArtifacts[0];
     if (!artifact) {
-        return c.json({ error: 'Failed to create artifact' }, 500);
+        // Log detailed error server-side for debugging
+        console.error(`Database insert operation returned no rows when creating artifact with id: ${id}`);
+        return c.json(
+            { error: 'Failed to create artifact due to a server error.' },
+            500
+        );
     }
 
     return c.json({
@@ -342,8 +349,9 @@ const updateArtifactRoute = createRoute({
     description: 'Update artifact header and/or body with optimistic locking. Returns version-mismatch on conflict.',
 });
 
+// @ts-expect-error - OpenAPI handler type inference doesn't carry Variables from middleware
 artifactRoutes.openapi(updateArtifactRoute, async (c) => {
-    const userId = c.get('userId');
+    const userId = (c as unknown as Context<{ Bindings: Env; Variables: AuthVariables }>).get('userId');
     const { id } = c.req.valid('param');
     const { header, expectedHeaderVersion, body, expectedBodyVersion } = c.req.valid('json');
     const db = getDb(c.env.DB);
@@ -385,7 +393,14 @@ artifactRoutes.openapi(updateArtifactRoute, async (c) => {
     }
 
     // Build update data
-    const updates: any = {
+    const updates: {
+        updatedAt: Date;
+        seq: number;
+        header?: Uint8Array;
+        headerVersion?: number;
+        body?: Uint8Array;
+        bodyVersion?: number;
+    } = {
         updatedAt: new Date(),
         seq: currentArtifact.seq + 1,
     };
@@ -405,10 +420,31 @@ artifactRoutes.openapi(updateArtifactRoute, async (c) => {
         newBodyVersion = expectedBodyVersion + 1;
     }
 
+    // Convert Uint8Array to Buffer for Drizzle blob columns
+    const drizzleUpdates: {
+        updatedAt: Date;
+        seq: number;
+        header?: Buffer;
+        headerVersion?: number;
+        body?: Buffer;
+        bodyVersion?: number;
+    } = {
+        updatedAt: updates.updatedAt,
+        seq: updates.seq,
+        ...(updates.headerVersion !== undefined && {
+            header: Buffer.from(updates.header!),
+            headerVersion: updates.headerVersion,
+        }),
+        ...(updates.bodyVersion !== undefined && {
+            body: Buffer.from(updates.body!),
+            bodyVersion: updates.bodyVersion,
+        }),
+    };
+
     // Update artifact
     await db
         .update(schema.artifacts)
-        .set(updates)
+        .set(drizzleUpdates)
         .where(and(eq(schema.artifacts.id, id), eq(schema.artifacts.accountId, userId)));
 
     return c.json({
@@ -459,8 +495,9 @@ const deleteArtifactRoute = createRoute({
     description: 'Delete an artifact. User must own the artifact.',
 });
 
+// @ts-expect-error - OpenAPI handler type inference doesn't carry Variables from middleware
 artifactRoutes.openapi(deleteArtifactRoute, async (c) => {
-    const userId = c.get('userId');
+    const userId = (c as unknown as Context<{ Bindings: Env; Variables: AuthVariables }>).get('userId');
     const { id } = c.req.valid('param');
     const db = getDb(c.env.DB);
 

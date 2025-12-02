@@ -5,11 +5,14 @@
   "type": "module",
   "main": "src/index.ts",
   "scripts": {
+    "help": "echo '\nHappy Server Workers - Available Scripts\n=========================================\n\nDevelopment:\n  dev                Start Wrangler dev server\n  deploy             Deploy to Cloudflare Workers\n\nCode Quality:\n  typecheck          Type-check TypeScript\n  lint               Run ESLint\n  lint:fix           Run ESLint with auto-fix\n  format             Format code with Prettier\n\nTesting:\n  test               Run tests once\n  test:watch         Run tests in watch mode\n\nDatabase (D1/Drizzle):\n  db:generate        Generate Drizzle migrations\n  db:migrate         Apply migrations to local D1\n  db:studio          Open Drizzle Studio GUI\n  db:seed            Seed test data\n  db:compare         Validate schema parity with Prisma\n'",
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix",
+    "lint:oxlint": "oxlint src --config oxlint.json",
+    "lint:oxlint:fix": "oxlint src --config oxlint.json --fix",
     "format": "prettier --write \"src/**/*.ts\"",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -29,26 +32,29 @@
   "license": "MIT",
   "private": true,
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20251121.0",
+    "@cloudflare/workers-types": "^4.20251128.0",
     "@types/node": "^24.10.1",
-    "@typescript-eslint/eslint-plugin": "^8.47.0",
-    "@typescript-eslint/parser": "^8.47.0",
+    "@typescript-eslint/eslint-plugin": "^8.48.0",
+    "@typescript-eslint/parser": "^8.48.0",
+    "@vitest/coverage-v8": "^4.0.14",
     "drizzle-kit": "^0.31.7",
     "eslint": "^9.39.1",
-    "prettier": "^3.6.2",
-    "tsx": "^4.20.6",
+    "oxlint": "^1.31.0",
+    "prettier": "^3.7.3",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.13",
-    "wrangler": "^4.50.0"
+    "vitest": "^4.0.14",
+    "wrangler": "^4.51.0"
   },
   "dependencies": {
     "@hono/zod-openapi": "^1.1.5",
     "@libsql/client": "^0.15.15",
     "@paralleldrive/cuid2": "^3.1.0",
     "drizzle-orm": "^0.44.7",
-    "hono": "^4.10.6",
+    "hono": "^4.10.7",
     "privacy-kit": "0.0.23",
     "tweetnacl": "^1.0.3",
-    "zod": "^4.1.12"
-  }
+    "zod": "^4.1.13"
+  },
+  "packageManager": "yarn@4.12.0"
 }

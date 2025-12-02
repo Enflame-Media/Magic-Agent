@@ -1,12 +1,12 @@
 import type { MiddlewareHandler } from 'hono';
-import { verifyToken } from '@/lib/auth';
+import { verifyToken, type TokenExtras } from '@/lib/auth';
 
 /**
  * Extended context with authenticated user information
  */
 export interface AuthVariables {
     userId: string;
-    sessionExtras?: any;
+    sessionExtras?: TokenExtras;
 }
 
 /**

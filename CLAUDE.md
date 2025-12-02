@@ -833,6 +833,526 @@ Once HAP-10 (Better-Auth Custom Provider POC) is complete and proves Better-Auth
 
 **Current state:** privacy-kit auth is production-ready and fully functional. Better-Auth migration is an optimization, not a blocker.
 
+## Core API Routes (HAP-13)
+
+The following routes handle the core business logic for sessions, machines, artifacts, access keys, and third-party integrations. All routes use OpenAPI documentation and Zod validation schemas.
+
+### Session Routes
+
+**Location:** `src/routes/sessions.ts`
+
+Sessions track Claude Code/Codex work sessions with encrypted metadata and message history.
+
+#### GET /v1/sessions - List Sessions (Legacy)
+
+**Auth Required:** Yes (Bearer token)
+
+Returns up to 150 sessions ordered by most recent. Use v2 endpoint for pagination.
+
+**Response (200):**
+```json
+{
+  "sessions": [{
+    "id": "session_id",
+    "seq": 0,
+    "createdAt": 1701432000000,
+    "updatedAt": 1701432000000,
+    "active": true,
+    "activeAt": 1701432000000,
+    "metadata": "encrypted_metadata_string",
+    "metadataVersion": 1,
+    "agentState": "encrypted_agent_state",
+    "agentStateVersion": 1,
+    "dataEncryptionKey": "base64_encoded_key",
+    "lastMessage": null
+  }]
+}
+```
+
+#### GET /v2/sessions - List Sessions with Pagination
+
+**Auth Required:** Yes (Bearer token)
+
+**Query Parameters:**
+- `cursor`: Pagination cursor (format: `cursor_v1_{sessionId}`)
+- `limit`: Results per page (default: 50, max: 200)
+- `changedSince`: ISO timestamp to filter by update time
+
+**Response (200):**
+```json
+{
+  "sessions": [...],
+  "nextCursor": "cursor_v1_abc123"
+}
+```
+
+#### GET /v2/sessions/active - List Active Sessions
+
+**Auth Required:** Yes (Bearer token)
+
+Returns sessions active in the last 15 minutes, ordered by most recent activity.
+
+**Query Parameters:**
+- `limit`: Max results (default: 150)
+
+#### POST /v1/sessions - Create Session
+
+**Auth Required:** Yes (Bearer token)
+
+Creates a new session with tag-based deduplication. If a session with the same tag exists, returns the existing session.
+
+**Request:**
+```json
+{
+  "tag": "unique_session_tag",
+  "metadata": "encrypted_metadata_string",
+  "agentState": "encrypted_agent_state",
+  "dataEncryptionKey": "base64_encoded_key"
+}
+```
+
+**Response (200):**
+```json
+{
+  "session": { ... }
+}
+```
+
+#### GET /v1/sessions/:id - Get Session
+
+**Auth Required:** Yes (Bearer token)
+
+Returns a single session by ID. User must own the session.
+
+**Response (200/404):**
+```json
+{
+  "session": { ... }
+}
+```
+
+#### DELETE /v1/sessions/:id - Delete Session (Soft Delete)
+
+**Auth Required:** Yes (Bearer token)
+
+Soft deletes a session by setting `active=false`. User must own the session.
+
+**Response (200):**
+```json
+{
+  "success": true
+}
+```
+
+#### POST /v1/sessions/:id/messages - Create Session Message
+
+**Auth Required:** Yes (Bearer token)
+
+Creates a new message in a session. User must own the session.
+
+**Request:**
+```json
+{
+  "localId": "optional_client_id",
+  "content": { "encrypted": "message_content" }
+}
+```
+
+**Response (200):**
+```json
+{
+  "message": {
+    "id": "message_id",
+    "sessionId": "session_id",
+    "localId": "client_id",
+    "seq": 0,
+    "content": { ... },
+    "createdAt": 1701432000000
+  }
+}
+```
+
+### Machine Routes
+
+**Location:** `src/routes/machines.ts`
+
+Machines represent CLI devices (terminals) that connect to the Happy platform.
+
+#### POST /v1/machines - Register Machine
+
+**Auth Required:** Yes (Bearer token)
+
+Registers a new machine or returns existing machine with same ID. Composite key: (accountId + machineId).
+
+**Request:**
+```json
+{
+  "id": "machine_uuid",
+  "metadata": "encrypted_metadata",
+  "daemonState": "encrypted_daemon_state",
+  "dataEncryptionKey": "base64_encoded_key"
+}
+```
+
+**Response (200):**
+```json
+{
+  "machine": {
+    "id": "machine_uuid",
+    "accountId": "user_id",
+    "metadata": "encrypted_metadata",
+    "metadataVersion": 1,
+    "daemonState": "encrypted_daemon_state",
+    "daemonStateVersion": 1,
+    "dataEncryptionKey": "base64_encoded_key",
+    "seq": 0,
+    "active": false,
+    "lastActiveAt": 1701432000000,
+    "createdAt": 1701432000000,
+    "updatedAt": 1701432000000
+  }
+}
+```
+
+#### GET /v1/machines - List Machines
+
+**Auth Required:** Yes (Bearer token)
+
+**Query Parameters:**
+- `limit`: Max results (default: 50)
+- `activeOnly`: Filter to active machines only (default: false)
+
+#### GET /v1/machines/:id - Get Machine
+
+**Auth Required:** Yes (Bearer token)
+
+Returns a single machine by ID. User must own the machine.
+
+#### PUT /v1/machines/:id/status - Update Machine Status
+
+**Auth Required:** Yes (Bearer token)
+
+Updates machine status, metadata, or daemon state. Always updates `lastActiveAt`.
+
+**Request:**
+```json
+{
+  "active": true,
+  "metadata": "new_encrypted_metadata",
+  "daemonState": "new_encrypted_daemon_state"
+}
+```
+
+### Artifact Routes
+
+**Location:** `src/routes/artifacts.ts`
+
+Artifacts store encrypted files/outputs from Claude Code sessions.
+
+#### GET /v1/artifacts - List Artifacts
+
+**Auth Required:** Yes (Bearer token)
+
+Returns artifact headers (without body content) ordered by most recent.
+
+**Response (200):**
+```json
+{
+  "artifacts": [{
+    "id": "artifact_id",
+    "header": "base64_encrypted_header",
+    "headerVersion": 1,
+    "dataEncryptionKey": "base64_encoded_key",
+    "seq": 0,
+    "createdAt": 1701432000000,
+    "updatedAt": 1701432000000
+  }]
+}
+```
+
+#### GET /v1/artifacts/:id - Get Artifact
+
+**Auth Required:** Yes (Bearer token)
+
+Returns full artifact including body content. User must own the artifact.
+
+**Response (200):**
+```json
+{
+  "artifact": {
+    "id": "artifact_id",
+    "header": "base64_encrypted_header",
+    "headerVersion": 1,
+    "body": "base64_encrypted_body",
+    "bodyVersion": 1,
+    "dataEncryptionKey": "base64_encoded_key",
+    "seq": 0,
+    "createdAt": 1701432000000,
+    "updatedAt": 1701432000000
+  }
+}
+```
+
+#### POST /v1/artifacts - Create Artifact
+
+**Auth Required:** Yes (Bearer token)
+
+Creates a new artifact. Idempotent by ID - returns existing artifact if ID matches for same user.
+
+**Request:**
+```json
+{
+  "id": "artifact_id",
+  "header": "base64_encrypted_header",
+  "body": "base64_encrypted_body",
+  "dataEncryptionKey": "base64_encoded_key"
+}
+```
+
+**Response (200/409):**
+- 200: Artifact created or existing returned
+- 409: Artifact ID exists for different user
+
+#### POST /v1/artifacts/:id - Update Artifact
+
+**Auth Required:** Yes (Bearer token)
+
+Updates artifact header and/or body with optimistic locking.
+
+**Request:**
+```json
+{
+  "header": "new_base64_encrypted_header",
+  "expectedHeaderVersion": 1,
+  "body": "new_base64_encrypted_body",
+  "expectedBodyVersion": 1
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "headerVersion": 2,
+  "bodyVersion": 2
+}
+```
+
+Or on version mismatch:
+```json
+{
+  "success": false,
+  "error": "version-mismatch",
+  "currentHeaderVersion": 2,
+  "currentHeader": "base64_current_header"
+}
+```
+
+#### DELETE /v1/artifacts/:id - Delete Artifact
+
+**Auth Required:** Yes (Bearer token)
+
+Permanently deletes an artifact. User must own the artifact.
+
+### Access Key Routes
+
+**Location:** `src/routes/accessKeys.ts`
+
+Access keys store encrypted session-machine access credentials.
+
+#### GET /v1/access-keys/:sessionId/:machineId - Get Access Key
+
+**Auth Required:** Yes (Bearer token)
+
+Returns access key for a session-machine pair, or null if not found.
+
+**Response (200):**
+```json
+{
+  "accessKey": {
+    "data": "encrypted_access_data",
+    "dataVersion": 1,
+    "createdAt": 1701432000000,
+    "updatedAt": 1701432000000
+  }
+}
+```
+
+Or if not found:
+```json
+{
+  "accessKey": null
+}
+```
+
+#### POST /v1/access-keys/:sessionId/:machineId - Create Access Key
+
+**Auth Required:** Yes (Bearer token)
+
+Creates a new access key. Fails if key already exists.
+
+**Request:**
+```json
+{
+  "data": "encrypted_access_data"
+}
+```
+
+**Response (200/409):**
+- 200: Access key created
+- 409: Access key already exists
+
+#### PUT /v1/access-keys/:sessionId/:machineId - Update Access Key
+
+**Auth Required:** Yes (Bearer token)
+
+Updates access key with optimistic locking.
+
+**Request:**
+```json
+{
+  "data": "new_encrypted_access_data",
+  "expectedVersion": 1
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "version": 2
+}
+```
+
+### Connect Routes
+
+**Location:** `src/routes/connect.ts`
+
+Connect routes handle third-party integrations (GitHub OAuth, AI service tokens).
+
+**Note:** Device pairing (CLI ↔ Mobile) is handled by auth routes (`/v1/auth/request`, `/v1/auth/response`), not connect routes.
+
+#### GitHub OAuth Integration
+
+##### GET /v1/connect/github/params 🔒
+
+**Auth Required:** Yes
+
+Returns GitHub OAuth authorization URL with state token.
+
+**Response (200):**
+```json
+{
+  "url": "https://github.com/login/oauth/authorize?client_id=...&state=..."
+}
+```
+
+##### GET /v1/connect/github/callback
+
+Handles GitHub OAuth redirect. Exchanges code for token and stores user data.
+
+##### POST /v1/connect/github/webhook
+
+Receives GitHub webhook events. Verifies signature and processes events.
+
+##### DELETE /v1/connect/github 🔒
+
+**Auth Required:** Yes
+
+Disconnects user's GitHub account and clears stored tokens.
+
+#### AI Service Token Management
+
+Stores encrypted API tokens for AI services (OpenAI, Anthropic, Gemini).
+
+##### POST /v1/connect/:vendor/register 🔒
+
+**Auth Required:** Yes
+
+**Path Parameters:**
+- `vendor`: `openai` | `anthropic` | `gemini`
+
+**Request:**
+```json
+{
+  "token": "sk-..."
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true
+}
+```
+
+##### GET /v1/connect/:vendor/token 🔒
+
+**Auth Required:** Yes
+
+Returns decrypted token for the specified vendor, or null if not registered.
+
+**Response (200):**
+```json
+{
+  "token": "sk-..."
+}
+```
+
+##### DELETE /v1/connect/:vendor 🔒
+
+**Auth Required:** Yes
+
+Removes the stored token for the specified vendor.
+
+##### GET /v1/connect/tokens 🔒
+
+**Auth Required:** Yes
+
+Lists all registered AI service tokens for the user.
+
+**Response (200):**
+```json
+{
+  "tokens": [
+    { "vendor": "openai", "token": "sk-..." },
+    { "vendor": "anthropic", "token": "sk-ant-..." }
+  ]
+}
+```
+
+### Common Error Responses
+
+All routes follow consistent error response patterns:
+
+**401 Unauthorized:**
+```json
+{
+  "error": "Unauthorized"
+}
+```
+
+**404 Not Found:**
+```json
+{
+  "error": "Session not found"
+}
+```
+
+**400 Bad Request:**
+```json
+{
+  "error": "Invalid cursor format"
+}
+```
+
+**409 Conflict:**
+```json
+{
+  "error": "Access key already exists"
+}
+```
+
 ## Resources
 
 - [Hono Documentation](https://hono.dev/)

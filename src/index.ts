@@ -10,6 +10,9 @@ import machinesRoutes from '@/routes/machines';
 import artifactsRoutes from '@/routes/artifacts';
 import accessKeysRoutes from '@/routes/accessKeys';
 import connectRoutes from '@/routes/connect';
+import accountRoutes from '@/routes/account';
+import userRoutes from '@/routes/user';
+import feedRoutes from '@/routes/feed';
 
 /**
  * Environment bindings interface for Cloudflare Workers
@@ -87,6 +90,11 @@ app.route('/', machinesRoutes);
 app.route('/', artifactsRoutes);
 app.route('/', accessKeysRoutes);
 app.route('/', connectRoutes);
+
+// Mount user profile and social routes (HAP-14)
+app.route('/', accountRoutes);
+app.route('/', userRoutes);
+app.route('/', feedRoutes);
 
 // Mount test routes
 app.route('/test', testRoutes);
