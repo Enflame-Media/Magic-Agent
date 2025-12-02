@@ -5,19 +5,26 @@ on:
     branches:
       - main
     paths:
-      - 'happy-app/**'
+      - 'sources/**'
+      - 'public/**'
+      - 'app.config.js'
+      - 'package.json'
+      - 'yarn.lock'
+      - 'wrangler.toml'
   pull_request:
     branches:
       - main
     paths:
-      - 'happy-app/**'
+      - 'sources/**'
+      - 'public/**'
+      - 'app.config.js'
+      - 'package.json'
+      - 'yarn.lock'
+      - 'wrangler.toml'
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: happy-app
 
     steps:
       - uses: actions/checkout@v4
@@ -27,7 +34,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'yarn'
-          cache-dependency-path: happy-app/yarn.lock
+          cache-dependency-path: yarn.lock
 
       - name: Install dependencies
         run: yarn install --frozen-lockfile
