@@ -102,7 +102,7 @@ const tokenizeCode = (code: string, language: string | null) => {
     
     // Strings and regex
     { regex: /(r?["'`])((?:(?!\1)[^\\]|\\.)*)(\1)/g, type: 'string' },
-    { regex: /(\/(?:[^\/\\\n]|\\.)+\/[gimuy]*)/g, type: 'regex' },
+    { regex: /(\/(?:[^/\\\n]|\\.)+\/[gimuy]*)/g, type: 'regex' },
     
     // Numbers (including hex, binary, floats)
     { regex: /\b(0x[0-9a-fA-F]+|0b[01]+|0o[0-7]+|\d+\.?\d*(?:[eE][+-]?\d+)?)\b/g, type: 'number' },
@@ -129,8 +129,8 @@ const tokenizeCode = (code: string, language: string | null) => {
     // Operators by category
     { regex: /(===|!==|==|!=|<=|>=|<|>)/g, type: 'comparison' },
     { regex: /(&&|\|\||!)/g, type: 'logical' },
-    { regex: /(=|\+=|\-=|\*=|\/=|%=|\|=|&=|\^=)/g, type: 'assignment' },
-    { regex: /(\+|\-|\*|\/|%|\*\*)/g, type: 'operator' },
+    { regex: /(=|\+=|-=|\*=|\/=|%=|\|=|&=|\^=)/g, type: 'assignment' },
+    { regex: /(\+|-|\*|\/|%|\*\*)/g, type: 'operator' },
     { regex: /(\?|:)/g, type: 'operator' },
     
     // Brackets and punctuation

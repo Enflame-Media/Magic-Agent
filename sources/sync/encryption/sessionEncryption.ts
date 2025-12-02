@@ -25,7 +25,7 @@ export class SessionEncryption {
      */
     async decryptMessages(messages: ApiMessage[]): Promise<(DecryptedMessage | null)[]> {
         // Check cache for all messages first
-        const results: (DecryptedMessage | null)[] = new Array(messages.length);
+        const results: (DecryptedMessage | null)[] = Array.from<DecryptedMessage | null>({ length: messages.length });
         const toDecrypt: { index: number; message: ApiMessage }[] = [];
 
         for (let i = 0; i < messages.length; i++) {

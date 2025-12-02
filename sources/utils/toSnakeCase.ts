@@ -23,7 +23,8 @@ export function toSnakeCase(text: string): string {
     // First, replace file-system unsafe characters with underscores
     // These are characters that are problematic on Windows/Unix/macOS
     // : < > " / \ | ? * and control characters
-    result = result.replace(/[:<>"\/\\|?*\x00-\x1f]/g, '_');
+    // eslint-disable-next-line no-control-regex -- Intentionally matching control chars for filename sanitization
+    result = result.replace(/[:<>"/\\|?*\x00-\x1f]/g, '_');
     
     // Replace other non-letter, non-digit characters with underscores
     // \p{L} matches any Unicode letter, \p{N} matches any Unicode digit

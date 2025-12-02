@@ -163,7 +163,7 @@ describe('toSnakeCase', () => {
             const windowsUnsafe = 'file<name>:test"path"/back\\slash|pipe?mark*star';
             const result = toSnakeCase(windowsUnsafe);
             expect(result).toBe('file_name_test_path_back_slash_pipe_mark_star');
-            expect(result).not.toMatch(/[<>:"\/\\|?*]/);
+            expect(result).not.toMatch(/[<>:"/\\|?*]/);
         });
 
         it('should handle reserved Windows filenames', () => {
