@@ -30,82 +30,105 @@ export function useSearch<T>(
     // Timeout ref for debouncing
     const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     
-    // Perform the search with retry logic
-    const performSearch = useCallback(async (searchQuery: string) => {
-        // Skip if already searching
-        if (isSearchingRef.current) {
+    // Perform the search with retry logic and abort support
+    const performSearch = useCallback(async (searchQuery: string, signal: AbortSignal) => {
+        // Skip if already searching or aborted
+        if (isSearchingRef.current || signal.aborted) {
             return;
         }
-        
+
         // Check cache first
         const cached = cacheRef.current.get(searchQuery);
         if (cached) {
             setResults(cached);
             return;
         }
-        
+
         // Mark as searching
         isSearchingRef.current = true;
         setIsSearching(true);
-        
+
         // Retry logic with exponential backoff
         let retryDelay = 1000; // Start with 1 second
-        
-        while (true) {
-            try {
-                const searchResults = await searchFn(searchQuery);
-                
-                // Cache the results
-                cacheRef.current.set(searchQuery, searchResults);
-                
-                // Update state
-                setResults(searchResults);
-                break; // Success, exit the retry loop
-                
-            } catch {
-                // Search failed - retry with exponential backoff
-                await new Promise(resolve => setTimeout(resolve, retryDelay));
-                retryDelay = Math.min(retryDelay * 2, 30000);
+
+        try {
+            while (true) {
+                // Check if aborted before each iteration
+                if (signal.aborted) {
+                    return;
+                }
+
+                try {
+                    const searchResults = await searchFn(searchQuery);
+
+                    // Check if aborted before state updates
+                    if (signal.aborted) {
+                        return;
+                    }
+
+                    // Cache the results
+                    cacheRef.current.set(searchQuery, searchResults);
+
+                    // Update state
+                    setResults(searchResults);
+                    break; // Success, exit the retry loop
+
+                } catch {
+                    // Check if aborted before retry delay
+                    if (signal.aborted) {
+                        return;
+                    }
+
+                    // Search failed - retry with exponential backoff
+                    await new Promise(resolve => setTimeout(resolve, retryDelay));
+                    retryDelay = Math.min(retryDelay * 2, 30000);
+                }
+            }
+        } finally {
+            // Only update state if not aborted
+            if (!signal.aborted) {
+                isSearchingRef.current = false;
+                setIsSearching(false);
             }
         }
-        
-        // Mark as not searching
-        isSearchingRef.current = false;
-        setIsSearching(false);
     }, [searchFn]);
     
     // Effect to handle debounced search
     useEffect(() => {
+        // Create abort controller for cleanup
+        const abortController = new AbortController();
+
         // Clear previous timeout
         if (timeoutRef.current) {
             clearTimeout(timeoutRef.current);
         }
-        
+
         // If query is empty, clear results immediately
         if (!query.trim()) {
             setResults([]);
             setIsSearching(false);
-            return;
+            return () => abortController.abort();
         }
-        
+
         // Check cache immediately
         const cached = cacheRef.current.get(query);
         if (cached) {
             setResults(cached);
             setIsSearching(false);
-            return;
+            return () => abortController.abort();
         }
-        
+
         // Set searching state immediately for better UX
         setIsSearching(true);
-        
+
         // Debounce the actual search
         timeoutRef.current = setTimeout(() => {
-            performSearch(query);
+            performSearch(query, abortController.signal);
         }, 300); // Hardcoded 300ms debounce
-        
-        // Cleanup
+
+        // Cleanup: abort any in-progress search and clear timeout
         return () => {
+            abortController.abort();
             if (timeoutRef.current) {
                 clearTimeout(timeoutRef.current);
             }
