@@ -16,7 +16,7 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { execSync, spawn } from 'child_process';
-import { existsSync, readFileSync, writeFileSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync, unlinkSync, copyFileSync } from 'fs';
 import path, { join } from 'path';
 import { configuration } from '@/configuration';
 import {
@@ -528,11 +528,230 @@ describe.skipIf(!await isServerHealthy())('Daemon Integration Tests', { timeout:
     }
   });
 
-  // TODO: Add a test to see if a corrupted file will work
+  /**
+   * Corrupted Daemon State File Tests (HAP-216)
+   *
+   * These tests verify that the daemon gracefully handles corrupted state files.
+   * When daemon.state.json is corrupted (malformed JSON, invalid schema, empty, etc.),
+   * the daemon should:
+   * 1. Log appropriate warnings
+   * 2. Clean up the corrupted file
+   * 3. Start fresh as if no state file existed
+   */
+  describe('Corrupted daemon state file handling', () => {
+    beforeEach(async () => {
+      // Stop any running daemon first
+      await stopDaemon();
+      // Ensure no state file exists
+      await clearDaemonState();
+    });
 
-  // TODO: Test npm uninstall scenario - daemon should gracefully handle when happy-coder is uninstalled
-  // Current behavior: daemon tries to spawn new daemon on version mismatch but dist/index.mjs is gone
-  // Expected: daemon should detect missing entrypoint and either exit cleanly or at minimum not respawn infinitely
+    afterEach(async () => {
+      await stopDaemon();
+      await clearDaemonState();
+    });
+
+    it('should handle malformed JSON in daemon.state.json', async () => {
+      // Write malformed JSON to the state file
+      const malformedJson = '{ "pid": 12345, "httpPort": invalid json here';
+      writeFileSync(configuration.daemonStateFile, malformedJson);
+      expect(existsSync(configuration.daemonStateFile)).toBe(true);
+
+      // readDaemonState should return null and clean up the file
+      const state = await readDaemonState();
+      expect(state).toBeNull();
+      expect(existsSync(configuration.daemonStateFile)).toBe(false);
+
+      console.log('[TEST] Malformed JSON handled - file cleaned up');
+    });
+
+    it('should handle empty state file', async () => {
+      // Write empty file
+      writeFileSync(configuration.daemonStateFile, '');
+      expect(existsSync(configuration.daemonStateFile)).toBe(true);
+
+      // readDaemonState should return null and clean up the file
+      const state = await readDaemonState();
+      expect(state).toBeNull();
+      expect(existsSync(configuration.daemonStateFile)).toBe(false);
+
+      console.log('[TEST] Empty file handled - file cleaned up');
+    });
+
+    it('should handle state file with invalid schema (missing required fields)', async () => {
+      // Write JSON that's valid but missing required fields (pid, httpPort, startTime, startedWithCliVersion)
+      const invalidSchema = JSON.stringify({
+        someRandomField: 'value',
+        anotherField: 123
+      });
+      writeFileSync(configuration.daemonStateFile, invalidSchema);
+      expect(existsSync(configuration.daemonStateFile)).toBe(true);
+
+      // readDaemonState should return null and clean up the file
+      const state = await readDaemonState();
+      expect(state).toBeNull();
+      expect(existsSync(configuration.daemonStateFile)).toBe(false);
+
+      console.log('[TEST] Invalid schema handled - file cleaned up');
+    });
+
+    it('should handle partially written state file (simulating crash during write)', async () => {
+      // Simulate a partial write - truncated JSON (crash mid-write scenario)
+      const truncatedJson = '{"pid":12345,"httpPort":8080,"startTime":"2025-01-01T00:00:00.000Z","startedWithCli';
+      writeFileSync(configuration.daemonStateFile, truncatedJson);
+      expect(existsSync(configuration.daemonStateFile)).toBe(true);
+
+      // readDaemonState should return null and clean up the file
+      const state = await readDaemonState();
+      expect(state).toBeNull();
+      expect(existsSync(configuration.daemonStateFile)).toBe(false);
+
+      console.log('[TEST] Partially written file handled - file cleaned up');
+    });
+
+    it('should handle state file with wrong field types', async () => {
+      // Write JSON with correct field names but wrong types
+      const wrongTypes = JSON.stringify({
+        pid: 'not-a-number',  // Should be number
+        httpPort: 'also-not-a-number',  // Should be number
+        startTime: 12345,  // Should be string
+        startedWithCliVersion: null  // Should be string
+      });
+      writeFileSync(configuration.daemonStateFile, wrongTypes);
+      expect(existsSync(configuration.daemonStateFile)).toBe(true);
+
+      // readDaemonState should return null and clean up the file
+      const state = await readDaemonState();
+      expect(state).toBeNull();
+      expect(existsSync(configuration.daemonStateFile)).toBe(false);
+
+      console.log('[TEST] Wrong field types handled - file cleaned up');
+    });
+
+    it('should start daemon fresh after cleaning up corrupted state file', async () => {
+      // Write corrupted state file
+      const malformedJson = '{ this is not valid json at all }}}';
+      writeFileSync(configuration.daemonStateFile, malformedJson);
+      expect(existsSync(configuration.daemonStateFile)).toBe(true);
+
+      // Start daemon - it should clean up corrupted file and start fresh
+      void spawnHappyCLI(['daemon', 'start'], { stdio: 'ignore' });
+
+      // Wait for daemon to start successfully
+      await waitFor(async () => {
+        const state = await readDaemonState();
+        return state !== null && state.pid > 0;
+      }, 10_000, 250);
+
+      // Verify daemon started with valid state
+      const state = await readDaemonState();
+      expect(state).not.toBeNull();
+      expect(state!.pid).toBeGreaterThan(0);
+      expect(state!.httpPort).toBeGreaterThan(0);
+      expect(state!.startedWithCliVersion).toBeDefined();
+
+      console.log(`[TEST] Daemon started fresh after corrupted state - PID: ${state!.pid}`);
+    });
+  });
+
+  /**
+   * NPM Uninstall Scenario Test (HAP-217)
+   *
+   * This test validates that the daemon gracefully shuts down when the CLI binary
+   * is deleted (simulating npm uninstall). The scenario is:
+   *
+   * 1. Daemon is running with version X
+   * 2. Package.json is modified to version Y (simulating npm upgrade)
+   * 3. dist/index.mjs is deleted (simulating corrupted or uninstalled state)
+   * 4. Daemon heartbeat detects version mismatch and tries to spawn new daemon
+   * 5. spawnHappyCLI throws RESOURCE_NOT_FOUND error because binary is missing
+   * 6. Daemon should detect this and shut down gracefully instead of hanging
+   * 7. Daemon state file should be cleared on shutdown
+   *
+   * This prevents the daemon from leaving orphaned state files when uninstalled.
+   */
+  it('[takes 1 minute to run] should gracefully shutdown when binary is missing (npm uninstall scenario)', { timeout: 100_000 }, async () => {
+    // Read current package.json to get version
+    const packagePath = path.join(process.cwd(), 'package.json');
+    const entrypointPath = path.join(process.cwd(), 'dist', 'index.mjs');
+    const entrypointBackupPath = path.join(process.cwd(), 'dist', 'index.mjs.backup');
+
+    const packageJsonOriginalRawText = readFileSync(packagePath, 'utf8');
+    const originalPackage = JSON.parse(packageJsonOriginalRawText);
+    const originalVersion = originalPackage.version;
+    const testVersion = `0.0.0-uninstall-test-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`;
+
+    expect(originalVersion).not.toBe(testVersion);
+
+    try {
+      // Get initial daemon state
+      const initialState = await readDaemonState();
+      expect(initialState).toBeDefined();
+      expect(initialState!.startedWithCliVersion).toBe(originalVersion);
+      const initialPid = initialState!.pid;
+
+      console.log(`[TEST] Current daemon running with version ${originalVersion}, PID: ${initialPid}`);
+
+      // Backup the entrypoint before deleting
+      expect(existsSync(entrypointPath)).toBe(true);
+      copyFileSync(entrypointPath, entrypointBackupPath);
+      console.log(`[TEST] Backed up entrypoint to ${entrypointBackupPath}`);
+
+      // Modify package.json version to trigger version mismatch detection
+      const modifiedPackage = { ...originalPackage, version: testVersion };
+      writeFileSync(packagePath, JSON.stringify(modifiedPackage, null, 2));
+      console.log(`[TEST] Changed package.json version to ${testVersion}`);
+
+      // Delete the entrypoint to simulate uninstall
+      unlinkSync(entrypointPath);
+      expect(existsSync(entrypointPath)).toBe(false);
+      console.log(`[TEST] Deleted entrypoint ${entrypointPath}`);
+
+      // Wait for heartbeat to detect version mismatch and attempt to spawn new daemon
+      // The spawn will fail due to missing binary, triggering graceful shutdown
+      const heartbeatInterval = parseInt(process.env.HAPPY_DAEMON_HEARTBEAT_INTERVAL || '30000');
+      const waitTime = heartbeatInterval + 15_000; // Wait for heartbeat + buffer for shutdown
+      console.log(`[TEST] Waiting ${waitTime}ms for heartbeat and graceful shutdown...`);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+
+      // Check if daemon process is dead
+      let isDead = false;
+      try {
+        process.kill(initialPid, 0);
+      } catch {
+        isDead = true;
+      }
+      expect(isDead).toBe(true);
+      console.log('[TEST] Daemon process is dead as expected');
+
+      // Check that daemon state file was cleaned up (graceful shutdown)
+      const finalState = await readDaemonState();
+      expect(finalState).toBeNull();
+      console.log('[TEST] Daemon state file was cleaned up');
+
+      // Check daemon log for graceful shutdown messages
+      const logFile = await getLatestDaemonLog();
+      expect(logFile).toBeDefined();
+      const logContent = readFileSync(logFile!.path, 'utf8');
+      expect(logContent).toContain('Binary missing');
+      expect(logContent).toContain('Initiating graceful shutdown');
+      console.log('[TEST] Daemon log contains graceful shutdown messages');
+
+      console.log('[TEST] NPM uninstall scenario handled gracefully');
+    } finally {
+      // CRITICAL: Restore entrypoint and package.json
+      if (existsSync(entrypointBackupPath)) {
+        copyFileSync(entrypointBackupPath, entrypointPath);
+        unlinkSync(entrypointBackupPath);
+        console.log(`[TEST] Restored entrypoint from backup`);
+      }
+      writeFileSync(packagePath, packageJsonOriginalRawText);
+      console.log(`[TEST] Restored package.json version to ${originalVersion}`);
+
+      // Clean up any orphaned state files
+      await clearDaemonState();
+    }
+  });
 });
 
 /**

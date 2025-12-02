@@ -102,7 +102,7 @@ export class ApiClient {
       let raw = response.data.session;
 
       // Decrypt metadata with null check
-      const decryptedMetadata = decrypt(encryptionKey, encryptionVariant, decodeBase64(raw.metadata));
+      const decryptedMetadata = decrypt<Metadata>(encryptionKey, encryptionVariant, decodeBase64(raw.metadata));
       if (decryptedMetadata === null) {
         throw new AppError(ErrorCodes.ENCRYPTION_ERROR, 'Failed to decrypt session metadata - session may be corrupted');
       }
@@ -110,7 +110,7 @@ export class ApiClient {
       // Decrypt agentState with null check (only if present)
       let decryptedAgentState: AgentState | null = null;
       if (raw.agentState) {
-        decryptedAgentState = decrypt(encryptionKey, encryptionVariant, decodeBase64(raw.agentState));
+        decryptedAgentState = decrypt<AgentState>(encryptionKey, encryptionVariant, decodeBase64(raw.agentState));
         if (decryptedAgentState === null) {
           throw new AppError(ErrorCodes.ENCRYPTION_ERROR, 'Failed to decrypt session agentState - session may be corrupted');
         }
@@ -204,7 +204,7 @@ export class ApiClient {
         if (!raw.metadata) {
           throw new AppError(ErrorCodes.VALIDATION_FAILED, 'Server returned machine without metadata - unexpected server response');
         }
-        const decryptedMetadata: MachineMetadata | null = decrypt(encryptionKey, encryptionVariant, decodeBase64(raw.metadata));
+        const decryptedMetadata = decrypt<MachineMetadata>(encryptionKey, encryptionVariant, decodeBase64(raw.metadata));
         if (decryptedMetadata === null) {
           throw new AppError(ErrorCodes.ENCRYPTION_ERROR, 'Failed to decrypt machine metadata - machine state may be corrupted');
         }
@@ -212,7 +212,7 @@ export class ApiClient {
         // Decrypt daemonState with null check (only if present)
         let decryptedDaemonState: DaemonState | null = null;
         if (raw.daemonState) {
-          decryptedDaemonState = decrypt(encryptionKey, encryptionVariant, decodeBase64(raw.daemonState));
+          decryptedDaemonState = decrypt<DaemonState>(encryptionKey, encryptionVariant, decodeBase64(raw.daemonState));
           if (decryptedDaemonState === null) {
             throw new AppError(ErrorCodes.ENCRYPTION_ERROR, 'Failed to decrypt machine daemonState - machine state may be corrupted');
           }

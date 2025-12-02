@@ -100,9 +100,9 @@ export class SocketDisconnectedError extends Error {
  * ```
  */
 export async function emitWithTimeout<T>(
-    socket: Socket<any, any>,
+    socket: Socket,
     event: string,
-    data: any,
+    data: unknown,
     timeoutMs: number = DEFAULT_SOCKET_ACK_TIMEOUT_MS
 ): Promise<T> {
     return new Promise<T>((resolve, reject) => {

@@ -169,7 +169,7 @@ export class CodexPermissionHandler {
                     ...currentState.requests,
                     [toolCallId]: {
                         tool: toolName,
-                        arguments: input,
+                        arguments: (input as Record<string, unknown>) ?? {},
                         createdAt: Date.now()
                     }
                 }

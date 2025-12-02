@@ -8,6 +8,7 @@ describe('parseCliArgs', () => {
       expect(result.unknownArgs).toEqual([])
       expect(result.showHelp).toBe(false)
       expect(result.showVersion).toBe(false)
+      expect(result.verbose).toBe(false)
     })
 
     it('should handle help flag', () => {
@@ -42,6 +43,20 @@ describe('parseCliArgs', () => {
   })
 
   describe('happy-specific flags', () => {
+    it('should parse --verbose flag', () => {
+      const result = parseCliArgs(['--verbose'])
+      expect(result.verbose).toBe(true)
+      // --verbose should NOT be passed through to Claude
+      expect(result.unknownArgs).toEqual([])
+      expect(result.options.claudeArgs).toBeUndefined()
+    })
+
+    it('should parse --verbose with other flags', () => {
+      const result = parseCliArgs(['--verbose', '--model', 'claude-3'])
+      expect(result.verbose).toBe(true)
+      expect(result.unknownArgs).toEqual(['--model', 'claude-3'])
+    })
+
     it('should parse --happy-starting-mode local', () => {
       const result = parseCliArgs(['--happy-starting-mode', 'local'])
       expect(result.options.startingMode).toBe('local')

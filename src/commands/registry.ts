@@ -203,6 +203,7 @@ export const defaultCommand: CommandDefinition = {
   options: [
     { flags: '--yolo', description: 'Bypass permissions (sugar for --dangerously-skip-permissions)' },
     { flags: '--resume [session]', description: 'Resume a previous session' },
+    { flags: '--verbose', description: 'Enable verbose output (equivalent to DEBUG=1)' },
     { flags: '--version', description: 'Show version information' },
     { flags: '--help, -h', description: 'Show help message' },
   ],

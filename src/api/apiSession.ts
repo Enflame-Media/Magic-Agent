@@ -3,7 +3,8 @@ import { AppError, ErrorCodes } from '@/utils/errors'
 import { EventEmitter } from 'node:events'
 import { io, Socket } from 'socket.io-client'
 import { AgentState, ClientToServerEvents, MessageContent, Metadata, ServerToClientEvents, Session, Update, UserMessage, UserMessageSchema, Usage } from './types'
-import { decodeBase64, decrypt, encodeBase64, encrypt } from './encryption';
+import { calculateCost } from './pricing'
+import { decodeBase64, decrypt, encodeBase64, encrypt, JsonSerializable } from './encryption';
 import { backoff } from '@/utils/time';
 import { configuration } from '@/configuration';
 import { RawJSONLines } from '@/claude/types';
@@ -190,7 +191,7 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
                 }
 
                 if (data.body.t === 'new-message' && data.body.message.content.t === 'encrypted') {
-                    const body = decrypt(this.encryptionKey, this.encryptionVariant, decodeBase64(data.body.message.content.c));
+                    const body = decrypt<MessageContent>(this.encryptionKey, this.encryptionVariant, decodeBase64(data.body.message.content.c));
 
                     if (body === null) {
                         logger.debug('[SOCKET] [UPDATE] [ERROR] Failed to decrypt message - skipping');
@@ -219,7 +220,7 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
                         await this.metadataLock.inLock(async () => {
                             // Re-check version inside lock to avoid stale updates
                             if (data.body.t === 'update-session' && data.body.metadata && data.body.metadata.version > this.metadataVersion) {
-                                const decryptedMetadata = decrypt(this.encryptionKey, this.encryptionVariant, decodeBase64(data.body.metadata.value));
+                                const decryptedMetadata = decrypt<Metadata>(this.encryptionKey, this.encryptionVariant, decodeBase64(data.body.metadata.value));
                                 if (decryptedMetadata === null) {
                                     logger.debug('[SOCKET] [UPDATE] [ERROR] Failed to decrypt metadata - skipping update');
                                     return;
@@ -234,7 +235,7 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
                             // Re-check version inside lock to avoid stale updates
                             if (data.body.t === 'update-session' && data.body.agentState && data.body.agentState.version > this.agentStateVersion) {
                                 if (data.body.agentState.value) {
-                                    const decryptedAgentState = decrypt(this.encryptionKey, this.encryptionVariant, decodeBase64(data.body.agentState.value));
+                                    const decryptedAgentState = decrypt<AgentState>(this.encryptionKey, this.encryptionVariant, decodeBase64(data.body.agentState.value));
                                     if (decryptedAgentState === null) {
                                         logger.debug('[SOCKET] [UPDATE] [ERROR] Failed to decrypt agent state - skipping update');
                                         return;
@@ -327,7 +328,9 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
         // Track usage from assistant messages
         if (body.type === 'assistant' && body.message.usage) {
             try {
-                this.sendUsageData(body.message.usage);
+                // Extract model from message if available (model is passed through by zod's .passthrough())
+                const model = (body.message as Record<string, unknown>).model as string | undefined;
+                this.sendUsageData(body.message.usage, model);
             } catch (error) {
                 logger.debug('[SOCKET] Failed to send usage data:', error);
             }
@@ -345,17 +348,21 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
         }
     }
 
-    sendCodexMessage(body: any) {
+    /**
+     * Send Codex message to session
+     * @param body - Codex message content (JSON-serializable)
+     */
+    sendCodexMessage(body: JsonSerializable) {
         if (!this.socket.connected) {
             logger.debug('[SOCKET] Cannot send Codex message - not connected');
             throw new SocketDisconnectedError('send Codex message');
         }
 
-        let content = {
-            role: 'agent',
+        const content = {
+            role: 'agent' as const,
             content: {
-                type: 'codex',
-                data: body  // This wraps the entire Claude message
+                type: 'codex' as const,
+                data: body  // This wraps the entire Codex message
             },
             meta: {
                 sentFrom: 'cli'
@@ -432,7 +439,7 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
     /**
      * Send usage data to the server
      */
-    sendUsageData(usage: Usage) {
+    sendUsageData(usage: Usage, model: string | undefined) {
         if (!this.socket.connected) {
             logger.debug('[SOCKET] Skipping usage data - not connected');
             return;
@@ -441,10 +448,14 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
         // Calculate total tokens
         const totalTokens = usage.input_tokens + usage.output_tokens + (usage.cache_creation_input_tokens || 0) + (usage.cache_read_input_tokens || 0);
 
+        // Calculate actual costs based on model pricing
+        const costs = calculateCost(usage, model);
+
         // Transform Claude usage format to backend expected format
         const usageReport = {
             key: 'claude-session',
             sessionId: this.sessionId,
+            model: model || 'unknown',
             tokens: {
                 total: totalTokens,
                 input: usage.input_tokens,
@@ -453,11 +464,11 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
                 cache_read: usage.cache_read_input_tokens || 0
             },
             cost: {
-                // TODO: Calculate actual costs based on pricing
-                // For now, using placeholder values
-                total: 0,
-                input: 0,
-                output: 0
+                total: costs.total,
+                input: costs.input,
+                output: costs.output,
+                cache_creation: costs.cacheCreation,
+                cache_read: costs.cacheRead
             }
         }
         logger.debugLargeJson('[SOCKET] Sending usage data:', usageReport)
@@ -474,7 +485,7 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
                 let updated = handler(this.metadata!); // Weird state if metadata is null - should never happen but here we are
                 const answer = await this.socket.emitWithAck('update-metadata', { sid: this.sessionId, expectedVersion: this.metadataVersion, metadata: encodeBase64(encrypt(this.encryptionKey, this.encryptionVariant, updated)) });
                 if (answer.result === 'success') {
-                    const decryptedMetadata = decrypt(this.encryptionKey, this.encryptionVariant, decodeBase64(answer.metadata));
+                    const decryptedMetadata = decrypt<Metadata>(this.encryptionKey, this.encryptionVariant, decodeBase64(answer.metadata));
                     if (decryptedMetadata === null) {
                         logger.debug('[API] [UPDATE-METADATA] [ERROR] Failed to decrypt metadata response - keeping local state');
                     } else {
@@ -483,7 +494,7 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
                     }
                 } else if (answer.result === 'version-mismatch') {
                     if (answer.version > this.metadataVersion) {
-                        const decryptedMetadata = decrypt(this.encryptionKey, this.encryptionVariant, decodeBase64(answer.metadata));
+                        const decryptedMetadata = decrypt<Metadata>(this.encryptionKey, this.encryptionVariant, decodeBase64(answer.metadata));
                         if (decryptedMetadata === null) {
                             logger.debug('[API] [UPDATE-METADATA] [ERROR] Failed to decrypt metadata on version-mismatch - keeping local state');
                         } else {
@@ -511,7 +522,7 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
                 const answer = await this.socket.emitWithAck('update-state', { sid: this.sessionId, expectedVersion: this.agentStateVersion, agentState: updated ? encodeBase64(encrypt(this.encryptionKey, this.encryptionVariant, updated)) : null });
                 if (answer.result === 'success') {
                     if (answer.agentState) {
-                        const decryptedState = decrypt(this.encryptionKey, this.encryptionVariant, decodeBase64(answer.agentState));
+                        const decryptedState = decrypt<AgentState>(this.encryptionKey, this.encryptionVariant, decodeBase64(answer.agentState));
                         if (decryptedState === null) {
                             logger.debug('[API] [UPDATE-STATE] [ERROR] Failed to decrypt agent state response - keeping local state');
                         } else {
@@ -527,7 +538,7 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
                 } else if (answer.result === 'version-mismatch') {
                     if (answer.version > this.agentStateVersion) {
                         if (answer.agentState) {
-                            const decryptedState = decrypt(this.encryptionKey, this.encryptionVariant, decodeBase64(answer.agentState));
+                            const decryptedState = decrypt<AgentState>(this.encryptionKey, this.encryptionVariant, decodeBase64(answer.agentState));
                             if (decryptedState === null) {
                                 logger.debug('[API] [UPDATE-STATE] [ERROR] Failed to decrypt agent state on version-mismatch - keeping local state');
                             } else {
@@ -641,7 +652,7 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
                     if (answer.version > this.agentStateVersion) {
                         const previousVersion = this.agentStateVersion;
                         if (answer.agentState) {
-                            const decryptedState = decrypt(this.encryptionKey, this.encryptionVariant, decodeBase64(answer.agentState));
+                            const decryptedState = decrypt<AgentState>(this.encryptionKey, this.encryptionVariant, decodeBase64(answer.agentState));
                             if (decryptedState === null) {
                                 logger.debug('[API] [RECONCILE] [ERROR] Failed to decrypt agent state from server - skipping reconciliation');
                             } else {
@@ -712,7 +723,7 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
                     // Server has newer metadata - apply it
                     if (answer.version > this.metadataVersion) {
                         const previousVersion = this.metadataVersion;
-                        const decryptedMetadata = decrypt(this.encryptionKey, this.encryptionVariant, decodeBase64(answer.metadata));
+                        const decryptedMetadata = decrypt<Metadata>(this.encryptionKey, this.encryptionVariant, decodeBase64(answer.metadata));
                         if (decryptedMetadata === null) {
                             logger.debug('[API] [RECONCILE] [ERROR] Failed to decrypt metadata from server - skipping reconciliation');
                         } else {

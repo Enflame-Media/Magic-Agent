@@ -368,7 +368,7 @@ export class PermissionHandler {
                     ...currentState.requests,
                     [id]: {
                         tool: toolName,
-                        arguments: input,
+                        arguments: (input as Record<string, unknown>) ?? {},
                         createdAt: Date.now()
                     }
                 }

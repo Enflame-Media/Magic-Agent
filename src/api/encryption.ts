@@ -147,12 +147,32 @@ export function libsodiumEncryptForPublicKey(data: Uint8Array, recipientPublicKe
 }
 
 /**
+ * JSON-serializable value type for encryption functions.
+ * Represents any value that can be safely passed to JSON.stringify().
+ * Uses a more permissive definition to allow complex object structures.
+ */
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | undefined
+  | JsonValue[]
+  | { [key: string]: JsonValue };
+
+/**
+ * Type for data that can be encrypted/decrypted.
+ * More permissive than strict JSON to allow complex TypeScript types.
+ */
+export type JsonSerializable = JsonValue | Record<string, unknown> | unknown[];
+
+/**
  * Encrypt data using the secret key
- * @param data - The data to encrypt
+ * @param data - The data to encrypt (must be JSON-serializable)
  * @param secret - The secret key to use for encryption
  * @returns The encrypted data
  */
-export function encryptLegacy(data: any, secret: Uint8Array): Uint8Array {
+export function encryptLegacy(data: JsonSerializable, secret: Uint8Array): Uint8Array {
   // Generate hybrid nonce (24 bytes for secretbox: 16 random + 8 counter)
   const nonce = generateHybridNonce(tweetnacl.secretbox.nonceLength);
   const encrypted = tweetnacl.secretbox(new TextEncoder().encode(JSON.stringify(data)), nonce, secret);
@@ -166,9 +186,10 @@ export function encryptLegacy(data: any, secret: Uint8Array): Uint8Array {
  * Decrypt data using the secret key
  * @param data - The data to decrypt
  * @param secret - The secret key to use for decryption
- * @returns The decrypted data
+ * @returns The decrypted data, or null if decryption fails
+ * @template T - The expected type of the decrypted data (defaults to unknown)
  */
-export function decryptLegacy(data: Uint8Array, secret: Uint8Array): any | null {
+export function decryptLegacy<T = unknown>(data: Uint8Array, secret: Uint8Array): T | null {
   const nonce = data.slice(0, tweetnacl.secretbox.nonceLength);
   const encrypted = data.slice(tweetnacl.secretbox.nonceLength);
   const decrypted = tweetnacl.secretbox.open(encrypted, nonce, secret);
@@ -182,12 +203,12 @@ export function decryptLegacy(data: Uint8Array, secret: Uint8Array): any | null 
 
 /**
  * Encrypt data using AES-256-GCM with the data encryption key
- * @param data - The data to encrypt
+ * @param data - The data to encrypt (must be JSON-serializable)
  * @param dataKey - The 32-byte AES-256 key
  * @returns The encrypted data bundle (nonce + ciphertext + auth tag)
  * @throws Error if dataKey is not exactly 32 bytes
  */
-export function encryptWithDataKey(data: any, dataKey: Uint8Array): Uint8Array {
+export function encryptWithDataKey(data: JsonSerializable, dataKey: Uint8Array): Uint8Array {
   if (dataKey.length !== 32) {
     throw new AppError(ErrorCodes.ENCRYPTION_ERROR, `Invalid encryption key length: expected 32 bytes, got ${dataKey.length} bytes`);
   }
@@ -218,10 +239,11 @@ export function encryptWithDataKey(data: any, dataKey: Uint8Array): Uint8Array {
  * Decrypt data using AES-256-GCM with the data encryption key
  * @param bundle - The encrypted data bundle
  * @param dataKey - The 32-byte AES-256 key
- * @returns The decrypted data or null if decryption fails
+ * @returns The decrypted data, or null if decryption fails
  * @throws Error if dataKey is not exactly 32 bytes
+ * @template T - The expected type of the decrypted data (defaults to unknown)
  */
-export function decryptWithDataKey(bundle: Uint8Array, dataKey: Uint8Array): any | null {
+export function decryptWithDataKey<T = unknown>(bundle: Uint8Array, dataKey: Uint8Array): T | null {
   if (dataKey.length !== 32) {
     throw new AppError(ErrorCodes.ENCRYPTION_ERROR, `Invalid decryption key length: expected 32 bytes, got ${dataKey.length} bytes`);
   }
@@ -291,7 +313,7 @@ export function decryptWithDataKey(bundle: Uint8Array, dataKey: Uint8Array): any
   return null;
 }
 
-export function encrypt(key: Uint8Array, variant: 'legacy' | 'dataKey', data: any): Uint8Array {
+export function encrypt(key: Uint8Array, variant: 'legacy' | 'dataKey', data: JsonSerializable): Uint8Array {
   if (variant === 'legacy') {
     return encryptLegacy(data, key);
   } else {
@@ -299,7 +321,7 @@ export function encrypt(key: Uint8Array, variant: 'legacy' | 'dataKey', data: an
   }
 }
 
-export function decrypt(key: Uint8Array, variant: 'legacy' | 'dataKey', data: Uint8Array): any | null {
+export function decrypt<T = unknown>(key: Uint8Array, variant: 'legacy' | 'dataKey', data: Uint8Array): T | null {
   if (variant === 'legacy') {
     return decryptLegacy(data, key);
   } else {
@@ -550,28 +572,29 @@ export class KeyVersionManager {
 
   /**
    * Encrypts data using the current key version.
-   * 
+   *
    * The encrypted bundle includes the key version, allowing future decryption
    * even after key rotation.
-   * 
-   * @param data - The data to encrypt (will be JSON serialized)
+   *
+   * @param data - The data to encrypt (must be JSON-serializable)
    * @returns Encrypted bundle with embedded key version
    */
-  encrypt(data: any): Uint8Array {
+  encrypt(data: JsonSerializable): Uint8Array {
     return encryptWithKeyVersion(data, this.getCurrentKey(), this.currentVersion);
   }
 
   /**
    * Decrypts data using the appropriate key version.
-   * 
+   *
    * Automatically determines the correct key from the bundle's embedded version.
    * Supports both versioned (0x01) and legacy (0x00) bundle formats.
-   * 
+   *
    * @param bundle - The encrypted bundle
    * @param legacyKey - Optional key to use for legacy (0x00) bundles
    * @returns Decrypted data, or null if decryption fails
+   * @template T - The expected type of the decrypted data (defaults to unknown)
    */
-  decrypt(bundle: Uint8Array, legacyKey?: Uint8Array): any | null {
+  decrypt<T = unknown>(bundle: Uint8Array, legacyKey?: Uint8Array): T | null {
     if (bundle.length < 1) {
       return null;
     }
@@ -684,14 +707,14 @@ export class KeyVersionManager {
 
 /**
  * Encrypts data with a specific key version embedded in the bundle.
- * 
- * @param data - The data to encrypt (will be JSON serialized)
+ *
+ * @param data - The data to encrypt (must be JSON-serializable)
  * @param dataKey - The 32-byte encryption key
  * @param keyVersion - The key version number (1-65535)
  * @returns Encrypted bundle with embedded key version
  * @throws Error if dataKey is not 32 bytes or keyVersion is out of range
  */
-export function encryptWithKeyVersion(data: any, dataKey: Uint8Array, keyVersion: number): Uint8Array {
+export function encryptWithKeyVersion(data: JsonSerializable, dataKey: Uint8Array, keyVersion: number): Uint8Array {
   if (dataKey.length !== 32) {
     throw new AppError(ErrorCodes.ENCRYPTION_ERROR, `Invalid encryption key length: expected 32 bytes, got ${dataKey.length} bytes`);
   }
@@ -725,13 +748,14 @@ export function encryptWithKeyVersion(data: any, dataKey: Uint8Array, keyVersion
 
 /**
  * Decrypts a versioned bundle (format version 0x01).
- * 
+ *
  * @param bundle - The encrypted bundle
  * @param dataKey - The 32-byte encryption key for this version
  * @returns Decrypted data, or null if decryption fails
+ * @template T - The expected type of the decrypted data (defaults to unknown)
  * @internal
  */
-function decryptVersionedBundle(bundle: Uint8Array, dataKey: Uint8Array): any | null {
+function decryptVersionedBundle<T = unknown>(bundle: Uint8Array, dataKey: Uint8Array): T | null {
   if (dataKey.length !== 32) {
     throw new AppError(ErrorCodes.ENCRYPTION_ERROR, `Invalid decryption key length: expected 32 bytes, got ${dataKey.length} bytes`);
   }

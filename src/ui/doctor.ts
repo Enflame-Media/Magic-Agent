@@ -88,19 +88,22 @@ export interface DaemonStatusResult {
  * - 2: Daemon state is stale (process not found)
  */
 export async function getDaemonStatusJson(): Promise<{ status: DaemonStatusResult; exitCode: number }> {
-    const isRunning = await checkIfDaemonRunningAndCleanupStaleState();
+    const daemonCheck = await checkIfDaemonRunningAndCleanupStaleState();
     const state = await readDaemonState();
+
+    const isRunning = daemonCheck.status === 'running';
+    const isStale = daemonCheck.status === 'stale';
 
     const result: DaemonStatusResult = {
         running: isRunning,
-        pid: state?.pid ?? null,
-        httpPort: state?.httpPort ?? null,
+        pid: daemonCheck.pid ?? state?.pid ?? null,
+        httpPort: daemonCheck.httpPort ?? state?.httpPort ?? null,
         startTime: state?.startTime ?? null,
-        cliVersion: state?.startedWithCliVersion ?? null,
+        cliVersion: daemonCheck.version ?? state?.startedWithCliVersion ?? null,
         lastHeartbeat: state?.lastHeartbeat ?? null,
         daemonLogPath: state?.daemonLogPath ?? null,
         stateFileLocation: configuration.daemonStateFile,
-        stale: state !== null && !isRunning,
+        stale: isStale,
     };
 
     // Exit codes for scripting:
@@ -108,7 +111,7 @@ export async function getDaemonStatusJson(): Promise<{ status: DaemonStatusResul
     let exitCode: number;
     if (isRunning) {
         exitCode = 0;
-    } else if (result.stale) {
+    } else if (isStale) {
         exitCode = 2;
     } else {
         exitCode = 1;
@@ -196,19 +199,27 @@ export async function runDoctorCommand(filter?: 'all' | 'daemon'): Promise<void>
     // Daemon status - shown for both 'all' and 'daemon' filters
     console.log(chalk.bold('\n🤖 Daemon Status'));
     try {
-        const isRunning = await checkIfDaemonRunningAndCleanupStaleState();
+        const daemonCheck = await checkIfDaemonRunningAndCleanupStaleState();
         const state = await readDaemonState();
 
-        if (isRunning && state) {
+        if (daemonCheck.status === 'running') {
             console.log(chalk.green('✓ Daemon is running'));
-            console.log(`  PID: ${state.pid}`);
-            console.log(`  Started: ${new Date(state.startTime).toLocaleString()}`);
-            console.log(`  CLI Version: ${state.startedWithCliVersion}`);
-            if (state.httpPort) {
-                console.log(`  HTTP Port: ${state.httpPort}`);
+            console.log(`  PID: ${daemonCheck.pid}`);
+            if (state?.startTime) {
+                console.log(`  Started: ${new Date(state.startTime).toLocaleString()}`);
             }
-        } else if (state && !isRunning) {
+            console.log(`  CLI Version: ${daemonCheck.version}`);
+            if (daemonCheck.httpPort) {
+                console.log(`  HTTP Port: ${daemonCheck.httpPort}`);
+            }
+            if (daemonCheck.uptime !== undefined) {
+                const uptimeMinutes = Math.floor(daemonCheck.uptime / 60000);
+                console.log(`  Uptime: ${uptimeMinutes} minutes`);
+            }
+        } else if (daemonCheck.status === 'stale') {
             console.log(chalk.yellow('⚠️  Daemon state exists but process not running (stale)'));
+        } else if (daemonCheck.status === 'error') {
+            console.log(chalk.red(`❌ Error checking daemon: ${daemonCheck.error}`));
         } else {
             console.log(chalk.red('❌ Daemon is not running'));
         }

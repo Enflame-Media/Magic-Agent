@@ -10,7 +10,7 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 import packageJson from '../package.json'
 
-class Configuration {
+export class Configuration {
   public readonly serverUrl: string
   public readonly webappUrl: string
   public readonly isDaemonProcess: boolean

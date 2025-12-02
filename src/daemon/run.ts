@@ -13,10 +13,11 @@ import { configuration } from '@/configuration';
 import { startCaffeinate, stopCaffeinate, getCaffeinatePid } from '@/utils/caffeinate';
 import packageJson from '../../package.json';
 import { getEnvironmentInfo } from '@/ui/doctor';
-import { killOrphanedCaffeinate } from './doctor';
+import { killOrphanedCaffeinate, cleanupOrphanedCodexTempDirs } from './doctor';
 import { spawnHappyCLI } from '@/utils/spawnHappyCLI';
 import { writeDaemonState, DaemonLocallyPersistedState, acquireDaemonLock } from '@/persistence';
 import { withRetry } from '@/utils/retry';
+import { AppError, ErrorCodes } from '@/utils/errors';
 
 import { cleanupDaemonState, isDaemonRunningCurrentlyInstalledHappyVersion, stopDaemon } from './controlClient';
 import { startDaemonControlServer } from './controlServer';
@@ -143,6 +144,16 @@ export async function startDaemon(): Promise<void> {
       logger.debug('[DAEMON RUN] Cleaned up orphaned caffeinate from previous crash');
     }
 
+    // Clean up orphaned Codex temp directories from previous crash (HAP-225)
+    // These directories may contain auth.json with OAuth tokens
+    const tempDirCleanupResult = await cleanupOrphanedCodexTempDirs();
+    if (tempDirCleanupResult.cleaned > 0) {
+      logger.debug(`[DAEMON RUN] Cleaned up ${tempDirCleanupResult.cleaned} orphaned Codex temp directories from previous crash`);
+    }
+    if (tempDirCleanupResult.errors.length > 0) {
+      logger.debug(`[DAEMON RUN] Errors cleaning up orphaned Codex temp dirs: ${tempDirCleanupResult.errors.join(', ')}`);
+    }
+
     // Start caffeinate
     const caffeinateStarted = startCaffeinate();
     if (caffeinateStarted) {
@@ -162,6 +173,18 @@ export async function startDaemon(): Promise<void> {
     // Helper functions
     const getCurrentChildren = () => Array.from(pidToTrackedSession.values());
 
+    // Get current Codex temp directory paths for daemon state persistence (HAP-225)
+    // This enables cleanup of orphaned temp dirs if daemon crashes
+    const getCodexTempDirPaths = (): string[] => {
+      const paths: string[] = [];
+      for (const session of pidToTrackedSession.values()) {
+        if (session.codexTempDir?.name) {
+          paths.push(session.codexTempDir.name);
+        }
+      }
+      return paths;
+    };
+
     // Handle webhook from happy session reporting itself
     const onHappySessionWebhook = (sessionId: string, sessionMetadata: Metadata) => {
       logger.debugLargeJson(`[DAEMON RUN] Session reported`, sessionMetadata);
@@ -180,6 +203,8 @@ export async function startDaemon(): Promise<void> {
 
       if (existingSession && existingSession.startedBy === 'daemon') {
         // Update daemon-spawned session with reported data
+        // Note: When using --resume, this happySessionId will be the NEW forked session ID,
+        // not the original sessionId passed to --resume (Claude creates a new session when forking)
         existingSession.happySessionId = sessionId;
         existingSession.happySessionMetadataFromLocalWebhook = sessionMetadata;
         logger.debug(`[DAEMON RUN] Updated daemon-spawned session ${sessionId} with metadata`);
@@ -204,11 +229,11 @@ export async function startDaemon(): Promise<void> {
       }
     };
 
-    // Spawn a new session (sessionId reserved for future --resume functionality)
+    // Spawn a new session (sessionId enables --resume for continuing existing Claude sessions)
     const spawnSession = async (options: SpawnSessionOptions): Promise<SpawnSessionResult> => {
       logger.debugLargeJson('[DAEMON RUN] Spawning session', options);
 
-      const { directory, sessionId: _sessionId, machineId: _machineId, approvedNewDirectoryCreation = true } = options;
+      const { directory, machineId: _machineId, approvedNewDirectoryCreation = true } = options;
       let directoryCreated = false;
 
       try {
@@ -267,8 +292,10 @@ export async function startDaemon(): Promise<void> {
             // unsafeCleanup: true allows removing non-empty directories
             codexTempDir = tmp.dirSync({ unsafeCleanup: true });
 
-            // Write the token to the temporary directory
-            await withRetry(() => fs.writeFile(join(codexTempDir!.name, 'auth.json'), token));
+            // Write the OAuth token to the temporary directory with secure permissions
+            // Security: mode 0o600 restricts file to owner-only read/write (no group/other access)
+            // This prevents other processes on the system from reading the sensitive token
+            await withRetry(() => fs.writeFile(join(codexTempDir!.name, 'auth.json'), token, { mode: 0o600 }));
 
             // Set the environment variable for Codex
             extraEnv = {
@@ -288,8 +315,28 @@ export async function startDaemon(): Promise<void> {
           '--started-by', 'daemon'
         ];
 
-        // TODO: In future, sessionId could be used with --resume to continue existing sessions
-        // For now, we ignore it - each spawn creates a new session
+        // Add --resume flag to continue an existing session (Claude only - Codex doesn't support this)
+        // When sessionId is provided, Claude will fork the session, creating a new session ID
+        // with the full conversation history from the original session
+        if (options.sessionId) {
+          if (options.agent === 'codex') {
+            logger.debug(`[DAEMON RUN] Ignoring sessionId for Codex (resume not supported)`);
+          } else {
+            // Validate UUID format (Claude uses UUIDs for session IDs)
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            if (!uuidRegex.test(options.sessionId)) {
+              logger.debug(`[DAEMON RUN] Invalid sessionId format: ${options.sessionId}`);
+              return {
+                type: 'error',
+                errorMessage: `Invalid session ID format. Expected UUID, got: ${options.sessionId}`
+              };
+            }
+
+            args.push('--resume', options.sessionId);
+            logger.debug(`[DAEMON RUN] Resuming session with --resume ${options.sessionId}`);
+          }
+        }
+
         const happyProcess = spawnHappyCLI(args, {
           cwd: directory,
           detached: true,  // Sessions stay alive when daemon stops
@@ -300,15 +347,13 @@ export async function startDaemon(): Promise<void> {
           }
         });
 
-        // Log output for debugging
-        if (process.env.DEBUG) {
-          happyProcess.stdout?.on('data', (data) => {
-            logger.debug(`[DAEMON RUN] Child stdout: ${data.toString()}`);
-          });
-          happyProcess.stderr?.on('data', (data) => {
-            logger.debug(`[DAEMON RUN] Child stderr: ${data.toString()}`);
-          });
-        }
+        // Log child process output to file for debugging
+        happyProcess.stdout?.on('data', (data) => {
+          logger.debug(`[DAEMON RUN] Child stdout: ${data.toString()}`);
+        });
+        happyProcess.stderr?.on('data', (data) => {
+          logger.debug(`[DAEMON RUN] Child stderr: ${data.toString()}`);
+        });
 
         if (!happyProcess.pid) {
           logger.debug('[DAEMON RUN] Failed to spawn process - no PID returned');
@@ -478,7 +523,8 @@ export async function startDaemon(): Promise<void> {
       startTime: new Date().toLocaleString(),
       startedWithCliVersion: packageJson.version,
       daemonLogPath: logger.logFilePath,
-      caffeinatePid: getCaffeinatePid()
+      caffeinatePid: getCaffeinatePid(),
+      codexTempDirs: [] // Empty initially, populated during heartbeat when sessions are active
     };
     writeDaemonState(fileState);
     logger.debug('[DAEMON RUN] Daemon state written');
@@ -544,9 +590,7 @@ export async function startDaemon(): Promise<void> {
       heartbeatRunning = true;
 
       try {
-        if (process.env.DEBUG) {
-          logger.debug(`[DAEMON RUN] Health check started at ${new Date().toLocaleString()}`);
-        }
+        logger.debug(`[DAEMON RUN] Health check started at ${new Date().toLocaleString()}`);
 
         // Prune stale sessions - use centralized cleanup to ensure temp directories are cleaned
         for (const [pid, _] of pidToTrackedSession.entries()) {
@@ -586,10 +630,22 @@ export async function startDaemon(): Promise<void> {
               stdio: 'ignore'
             });
           } catch (error) {
-            logger.debug('[DAEMON RUN] Failed to spawn new daemon, this is quite likely to happen during integration tests as we are cleaning out dist/ directory', error);
+            logger.debug('[DAEMON RUN] Failed to spawn new daemon during version update', error);
+
+            // If the binary is missing (npm uninstall scenario), shut down gracefully
+            // instead of hanging and exiting abruptly. This ensures the daemon state file
+            // is properly cleaned up and the API is notified of the shutdown.
+            if (AppError.isAppError(error) && error.code === ErrorCodes.RESOURCE_NOT_FOUND) {
+              logger.debug('[DAEMON RUN] Binary missing - installation appears uninstalled. Initiating graceful shutdown.');
+              requestShutdown('exception', 'Installation uninstalled - binary missing');
+              return false; // Stop heartbeat scheduling
+            }
+
+            // For other spawn errors, continue with the original behavior
+            logger.debug('[DAEMON RUN] Spawn failed but not due to missing binary, continuing with hang behavior');
           }
 
-          // So we can just hang forever
+          // So we can just hang forever - waiting for the new daemon to kill us
           logger.debug('[DAEMON RUN] Hanging for a bit - waiting for CLI to kill us because we are running outdated version of the code');
           await new Promise(resolve => setTimeout(resolve, 10_000));
           process.exit(0);
@@ -607,12 +663,11 @@ export async function startDaemon(): Promise<void> {
             startedWithCliVersion: packageJson.version,
             lastHeartbeat: new Date().toLocaleString(),
             daemonLogPath: fileState.daemonLogPath,
-            caffeinatePid: getCaffeinatePid()
+            caffeinatePid: getCaffeinatePid(),
+            codexTempDirs: getCodexTempDirPaths() // Track temp dirs for orphan cleanup on crash (HAP-225)
           };
           writeDaemonState(updatedState);
-          if (process.env.DEBUG) {
-            logger.debug(`[DAEMON RUN] Health check completed at ${updatedState.lastHeartbeat}`);
-          }
+          logger.debug(`[DAEMON RUN] Health check completed at ${updatedState.lastHeartbeat}`);
         } catch (error) {
           // If we can't write state, something is very wrong
           logger.debug('[DAEMON RUN] Failed to write heartbeat - shutting down', error);

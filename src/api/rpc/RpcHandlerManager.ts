@@ -21,7 +21,7 @@ export class RpcHandlerManager {
     private readonly scopePrefix: string;
     private readonly encryptionKey: Uint8Array;
     private readonly encryptionVariant: 'legacy' | 'dataKey';
-    private readonly logger: (message: string, data?: any) => void;
+    private readonly logger: (message: string, data?: unknown) => void;
     private socket: Socket | null = null;
 
     // Track pending requests for cancellation support
@@ -42,14 +42,15 @@ export class RpcHandlerManager {
      * @param method - The method name (without prefix)
      * @param handler - The handler function
      */
-    registerHandler<TRequest = any, TResponse = any>(
+    registerHandler<TRequest, TResponse>(
         method: string,
         handler: RpcHandler<TRequest, TResponse>
     ): void {
         const prefixedMethod = this.getPrefixedMethod(method);
 
-        // Store the handler
-        this.handlers.set(prefixedMethod, handler);
+        // Store the handler (cast needed due to Map type variance)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        this.handlers.set(prefixedMethod, handler as RpcHandler<any, any>);
 
         if (this.socket) {
             this.socket.emit('rpc-register', { method: prefixedMethod });
@@ -59,10 +60,11 @@ export class RpcHandlerManager {
     /**
      * Handle an incoming RPC request
      * @param request - The RPC request data
+     * @returns Encrypted response string
      */
     async handleRequest(
         request: RpcRequest,
-    ): Promise<any> {
+    ): Promise<string> {
         const requestId = request.requestId;
         let abortController: AbortController | undefined;
 
@@ -108,7 +110,8 @@ export class RpcHandlerManager {
             }
 
             // Encrypt and return the response
-            const encryptedResponse = encodeBase64(encrypt(this.encryptionKey, this.encryptionVariant, result));
+            // Handler result is assumed to be JSON-serializable
+            const encryptedResponse = encodeBase64(encrypt(this.encryptionKey, this.encryptionVariant, result as Record<string, unknown>));
             return encryptedResponse;
         } catch (error) {
             const isCancelled = abortController?.signal.aborted ?? false;

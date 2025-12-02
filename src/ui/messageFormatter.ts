@@ -53,7 +53,7 @@ export function formatClaudeMessage(
                                 const maxLength = 200;
                                 if (outputStr.length > maxLength) {
                                     console.log(outputStr.substring(0, maxLength) + chalk.gray('\n... (truncated)'));
-                                    console.log(chalk.gray(`Full: ${outputStr.length} chars (set DEBUG=1 for logs)`));
+                                    console.log(chalk.gray(`Full: ${outputStr.length} chars (use --verbose for logs)`));
                                     logger.debug('[TOOL_RESULT] Full output:', outputStr);
                                 } else {
                                     console.log(outputStr);
@@ -86,7 +86,7 @@ export function formatClaudeMessage(
                             const maxLength = 500;
                             if (inputStr.length > maxLength) {
                                 console.log(chalk.gray('Input:'), inputStr.substring(0, maxLength) + chalk.gray('\n... (truncated)'));
-                                console.log(chalk.gray(`Full: ${inputStr.length} chars (set DEBUG=1 for logs)`));
+                                console.log(chalk.gray(`Full: ${inputStr.length} chars (use --verbose for logs)`));
                                 logger.debug('[TOOL_INPUT] Full input:', inputStr);
                             } else {
                                 console.log(chalk.gray('Input:'), inputStr);

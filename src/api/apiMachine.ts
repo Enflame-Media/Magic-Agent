@@ -70,9 +70,9 @@ interface DaemonToServerEvents {
 
     'rpc-register': (data: { method: string }) => void;
     'rpc-unregister': (data: { method: string }) => void;
-    'rpc-call': (data: { method: string, params: any }, callback: (response: {
+    'rpc-call': (data: { method: string, params: unknown }, callback: (response: {
         ok: boolean
-        result?: any
+        result?: unknown
         error?: string
     }) => void) => void;
 }
@@ -111,8 +111,16 @@ export class ApiMachineClient {
         requestShutdown
     }: MachineRpcHandlers) {
         // Register spawn session handler
-        this.rpcHandlerManager.registerHandler('spawn-happy-session', async (params: any, _signal) => {
-            const { directory, sessionId, machineId, approvedNewDirectoryCreation, agent, token } = params || {};
+        type SpawnSessionParams = {
+            directory?: string;
+            sessionId?: string;
+            machineId?: string;
+            approvedNewDirectoryCreation?: boolean;
+            agent?: 'claude' | 'codex';
+            token?: string;
+        };
+        this.rpcHandlerManager.registerHandler<SpawnSessionParams, { type: string; sessionId?: string; message?: string; directory?: string }>('spawn-happy-session', async (params, _signal) => {
+            const { directory, sessionId, machineId, approvedNewDirectoryCreation, agent, token } = params ?? {};
             logger.debug(`[API MACHINE] Spawning session with params: ${JSON.stringify(params)}`);
 
             if (!directory) {
@@ -135,9 +143,10 @@ export class ApiMachineClient {
             }
         });
 
-        // Register stop session handler  
-        this.rpcHandlerManager.registerHandler('stop-session', (params: any, _signal) => {
-            const { sessionId } = params || {};
+        // Register stop session handler
+        type StopSessionParams = { sessionId?: string };
+        this.rpcHandlerManager.registerHandler<StopSessionParams, { message: string }>('stop-session', (params, _signal) => {
+            const { sessionId } = params ?? {};
 
             if (!sessionId) {
                 throw new AppError(ErrorCodes.INVALID_INPUT, 'Session ID is required');
@@ -182,7 +191,7 @@ export class ApiMachineClient {
             });
 
             if (answer.result === 'success') {
-                const decryptedMetadata = decrypt(this.machine.encryptionKey, this.machine.encryptionVariant, decodeBase64(answer.metadata));
+                const decryptedMetadata = decrypt<MachineMetadata>(this.machine.encryptionKey, this.machine.encryptionVariant, decodeBase64(answer.metadata));
                 if (decryptedMetadata === null) {
                     logger.debug('[API MACHINE] [ERROR] Failed to decrypt metadata response - keeping local state');
                 } else {
@@ -192,7 +201,7 @@ export class ApiMachineClient {
                 }
             } else if (answer.result === 'version-mismatch') {
                 if (answer.version > this.machine.metadataVersion) {
-                    const decryptedMetadata = decrypt(this.machine.encryptionKey, this.machine.encryptionVariant, decodeBase64(answer.metadata));
+                    const decryptedMetadata = decrypt<MachineMetadata>(this.machine.encryptionKey, this.machine.encryptionVariant, decodeBase64(answer.metadata));
                     if (decryptedMetadata === null) {
                         logger.debug('[API MACHINE] [ERROR] Failed to decrypt metadata on version-mismatch - keeping local state');
                     } else {
@@ -220,7 +229,7 @@ export class ApiMachineClient {
             });
 
             if (answer.result === 'success') {
-                const decryptedState = decrypt(this.machine.encryptionKey, this.machine.encryptionVariant, decodeBase64(answer.daemonState));
+                const decryptedState = decrypt<DaemonState>(this.machine.encryptionKey, this.machine.encryptionVariant, decodeBase64(answer.daemonState));
                 if (decryptedState === null) {
                     logger.debug('[API MACHINE] [ERROR] Failed to decrypt daemon state response - keeping local state');
                 } else {
@@ -230,7 +239,7 @@ export class ApiMachineClient {
                 }
             } else if (answer.result === 'version-mismatch') {
                 if (answer.version > this.machine.daemonStateVersion) {
-                    const decryptedState = decrypt(this.machine.encryptionKey, this.machine.encryptionVariant, decodeBase64(answer.daemonState));
+                    const decryptedState = decrypt<DaemonState>(this.machine.encryptionKey, this.machine.encryptionVariant, decodeBase64(answer.daemonState));
                     if (decryptedState === null) {
                         logger.debug('[API MACHINE] [ERROR] Failed to decrypt daemon state on version-mismatch - keeping local state');
                     } else {
@@ -313,7 +322,7 @@ export class ApiMachineClient {
                 // Handle machine metadata or daemon state updates from other clients (e.g., mobile app)
                 if (update.metadata) {
                     logger.debug('[API MACHINE] Received external metadata update');
-                    const decryptedMetadata = decrypt(this.machine.encryptionKey, this.machine.encryptionVariant, decodeBase64(update.metadata.value));
+                    const decryptedMetadata = decrypt<MachineMetadata>(this.machine.encryptionKey, this.machine.encryptionVariant, decodeBase64(update.metadata.value));
                     if (decryptedMetadata === null) {
                         logger.debug('[API MACHINE] [ERROR] Failed to decrypt external metadata update - skipping');
                     } else {
@@ -324,7 +333,7 @@ export class ApiMachineClient {
 
                 if (update.daemonState) {
                     logger.debug('[API MACHINE] Received external daemon state update');
-                    const decryptedState = decrypt(this.machine.encryptionKey, this.machine.encryptionVariant, decodeBase64(update.daemonState.value));
+                    const decryptedState = decrypt<DaemonState>(this.machine.encryptionKey, this.machine.encryptionVariant, decodeBase64(update.daemonState.value));
                     if (decryptedState === null) {
                         logger.debug('[API MACHINE] [ERROR] Failed to decrypt external daemon state update - skipping');
                     } else {
@@ -351,7 +360,7 @@ export class ApiMachineClient {
             logger.debug(`[API MACHINE] Connection error: ${error.message}`);
         });
 
-        this.socket.io.on('error', (error: any) => {
+        this.socket.io.on('error', (error: Error) => {
             logger.debug('[API MACHINE] Socket error:', error);
         });
     }

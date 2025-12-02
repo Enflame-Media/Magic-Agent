@@ -79,11 +79,7 @@ import { checkForUpdatesAndNotify } from './utils/checkForUpdates'
     try {
       await handleAuthCommand(args.slice(1));
     } catch (error) {
-      console.error(chalk.red('Error:'), error instanceof Error ? error.message : 'Unknown error')
-      if (process.env.DEBUG) {
-        console.error(error)
-      }
-      process.exit(1)
+      logger.errorAndExit('Authentication command failed', error)
     }
     return;
   } else if (subcommand === 'connect') {
@@ -91,11 +87,7 @@ import { checkForUpdatesAndNotify } from './utils/checkForUpdates'
     try {
       await handleConnectCommand(args.slice(1));
     } catch (error) {
-      console.error(chalk.red('Error:'), error instanceof Error ? error.message : 'Unknown error')
-      if (process.env.DEBUG) {
-        console.error(error)
-      }
-      process.exit(1)
+      logger.errorAndExit('Connect command failed', error)
     }
     return;
   } else if (subcommand === 'codex') {
@@ -117,11 +109,7 @@ import { checkForUpdatesAndNotify } from './utils/checkForUpdates'
       await runCodex({credentials, startedBy});
       // Do not force exit here; allow instrumentation to show lingering handles
     } catch (error) {
-      console.error(chalk.red('Error:'), error instanceof Error ? error.message : 'Unknown error')
-      if (process.env.DEBUG) {
-        console.error(error)
-      }
-      process.exit(1)
+      logger.errorAndExit('Codex command failed', error)
     }
     return;
   } else if (subcommand === 'logout') {
@@ -130,11 +118,7 @@ import { checkForUpdatesAndNotify } from './utils/checkForUpdates'
     try {
       await handleAuthCommand(['logout']);
     } catch (error) {
-      console.error(chalk.red('Error:'), error instanceof Error ? error.message : 'Unknown error')
-      if (process.env.DEBUG) {
-        console.error(error)
-      }
-      process.exit(1)
+      logger.errorAndExit('Logout command failed', error)
     }
     return;
   } else if (subcommand === 'notify') {
@@ -142,11 +126,7 @@ import { checkForUpdatesAndNotify } from './utils/checkForUpdates'
     try {
       await handleNotifyCommand(args.slice(1));
     } catch (error) {
-      console.error(chalk.red('Error:'), error instanceof Error ? error.message : 'Unknown error')
-      if (process.env.DEBUG) {
-        console.error(error)
-      }
-      process.exit(1)
+      logger.errorAndExit('Notification command failed', error)
     }
     return;
   } else if (subcommand === 'daemon') {
@@ -213,7 +193,8 @@ import { checkForUpdatesAndNotify } from './utils/checkForUpdates'
       let started = false;
       const maxAttempts = 50;
       for (let i = 0; i < maxAttempts; i++) {
-        if (await checkIfDaemonRunningAndCleanupStaleState()) {
+        const daemonCheck = await checkIfDaemonRunningAndCleanupStaleState();
+        if (daemonCheck.status === 'running') {
           started = true;
           break;
         }
@@ -345,15 +326,13 @@ ${chalk.gray(`Last checked: ${new Date(health.timestamp).toLocaleString()}`)}
       try {
         await install()
       } catch (error) {
-        console.error(chalk.red('Error:'), error instanceof Error ? error.message : 'Unknown error')
-        process.exit(1)
+        logger.errorAndExit('Daemon install failed', error)
       }
     } else if (daemonSubcommand === 'uninstall') {
       try {
         await uninstall()
       } catch (error) {
-        console.error(chalk.red('Error:'), error instanceof Error ? error.message : 'Unknown error')
-        process.exit(1)
+        logger.errorAndExit('Daemon uninstall failed', error)
       }
     } else {
       const help = generateCommandHelp('daemon')
@@ -367,7 +346,13 @@ ${chalk.gray(`Last checked: ${new Date(health.timestamp).toLocaleString()}`)}
   } else {
 
     // Parse command line arguments
-    const { options, showHelp, showVersion } = parseCliArgs(args)
+    const { options, showHelp, showVersion, verbose } = parseCliArgs(args)
+
+    // Enable verbose output if --verbose flag is present
+    // This sets DEBUG=1 which enables detailed logging throughout the codebase
+    if (verbose) {
+      process.env.DEBUG = '1'
+    }
 
     // Show help
     if (showHelp) {
@@ -419,11 +404,7 @@ ${chalk.gray(`Last checked: ${new Date(health.timestamp).toLocaleString()}`)}
     try {
       await runClaude(credentials, options);
     } catch (error) {
-      console.error(chalk.red('Error:'), error instanceof Error ? error.message : 'Unknown error')
-      if (process.env.DEBUG) {
-        console.error(error)
-      }
-      process.exit(1)
+      logger.errorAndExit('Claude session failed', error)
     }
   }
 })();

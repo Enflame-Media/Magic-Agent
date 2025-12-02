@@ -199,8 +199,8 @@ async function handleAuthStatus(args: string[]): Promise<void> {
 
   // Daemon status
   try {
-    const running = await checkIfDaemonRunningAndCleanupStaleState();
-    if (running) {
+    const daemonCheck = await checkIfDaemonRunningAndCleanupStaleState();
+    if (daemonCheck.status === 'running') {
       console.log(chalk.green('✓ Daemon running'));
     } else {
       console.log(chalk.gray('✗ Daemon not running'));

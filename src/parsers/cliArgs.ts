@@ -15,6 +15,7 @@ export interface ParsedCliArgs {
   options: StartOptions
   showHelp: boolean
   showVersion: boolean
+  verbose: boolean
   unknownArgs: string[]
 }
 
@@ -44,6 +45,7 @@ export function parseCliArgs(args: string[]): ParsedCliArgs {
   const options: StartOptions = {}
   let showHelp = false
   let showVersion = false
+  let verbose = false
   const unknownArgs: string[] = []
 
   for (let i = 0; i < argsCopy.length; i++) {
@@ -57,6 +59,9 @@ export function parseCliArgs(args: string[]): ParsedCliArgs {
       showVersion = true
       // Also pass through to claude (will show after our version)
       unknownArgs.push(arg)
+    } else if (arg === '--verbose') {
+      verbose = true
+      // Don't pass to claude - this is happy-specific
     } else if (arg === '--happy-starting-mode') {
       const value = argsCopy[++i]
       const result = startingModeSchema.safeParse(value)
@@ -88,6 +93,7 @@ export function parseCliArgs(args: string[]): ParsedCliArgs {
     options,
     showHelp,
     showVersion,
+    verbose,
     unknownArgs,
   }
 }

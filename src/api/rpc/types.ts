@@ -17,15 +17,17 @@
  * 3. Listen to signal.addEventListener('abort', ...) to stop async operations
  * 4. Throw an error or return early if aborted
  */
-export type RpcHandler<TRequest = any, TResponse = any> = (
+export type RpcHandler<TRequest = unknown, TResponse = unknown> = (
     data: TRequest,
     signal: AbortSignal
 ) => TResponse | Promise<TResponse>;
 
 /**
  * Map of method names to their handlers
+ * Uses RpcHandler<unknown, unknown> to allow handlers with any specific types
  */
-export type RpcHandlerMap = Map<string, RpcHandler>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type RpcHandlerMap = Map<string, RpcHandler<any, any>>;
 
 /**
  * RPC request data from server
@@ -56,12 +58,12 @@ export interface RpcHandlerConfig {
     scopePrefix: string;
     encryptionKey: Uint8Array;
     encryptionVariant: 'legacy' | 'dataKey';
-    logger?: (message: string, data?: any) => void;
+    logger?: (message: string, data?: unknown) => void;
 }
 
 /**
  * Result of RPC handler execution
  */
-export type RpcHandlerResult<T = any> =
+export type RpcHandlerResult<T = unknown> =
     | { success: true; data: T }
     | { success: false; error: string };

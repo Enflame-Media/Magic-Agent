@@ -191,3 +191,76 @@ export async function killOrphanedCaffeinate(): Promise<{ killed: boolean, error
     return { killed: false, error: errorMessage };
   }
 }
+
+
+/**
+ * Clean up orphaned Codex temp directories if any exist in daemon state.
+ * This handles the case where the daemon crashed and left temp directories
+ * containing auth.json files lingering in /tmp.
+ * 
+ * Security note: These directories may contain OAuth tokens in auth.json files.
+ * While HAP-221 ensures these files have 0o600 permissions (owner-only access),
+ * cleaning them up on daemon restart provides defense-in-depth by reducing
+ * the window of exposure.
+ */
+export async function cleanupOrphanedCodexTempDirs(): Promise<{ cleaned: number, errors: string[] }> {
+  // Dynamically import to avoid circular dependencies
+  const { readDaemonState } = await import('@/persistence');
+  const { rm, stat } = await import('node:fs/promises');
+  
+  const errors: string[] = [];
+  let cleaned = 0;
+  
+  try {
+    const daemonState = await readDaemonState();
+    
+    if (!daemonState?.codexTempDirs || daemonState.codexTempDirs.length === 0) {
+      return { cleaned: 0, errors: [] };
+    }
+    
+    const tempDirs = daemonState.codexTempDirs;
+    console.log(`Found ${tempDirs.length} orphaned Codex temp directories to clean up`);
+    
+    for (const dirPath of tempDirs) {
+      try {
+        // Verify the directory exists before attempting removal
+        const stats = await stat(dirPath);
+        
+        if (!stats.isDirectory()) {
+          // Not a directory - skip but log
+          console.log(`Skipping ${dirPath}: not a directory`);
+          continue;
+        }
+        
+        // Security check: Only clean up paths that look like temp directories
+        // This prevents accidental deletion of user data if state file is corrupted
+        if (!dirPath.includes('/tmp/') && !dirPath.includes('\\temp\\')) {
+          console.log(`Skipping ${dirPath}: not in temp directory`);
+          errors.push(`Skipping ${dirPath}: not in temp directory`);
+          continue;
+        }
+        
+        // Remove the directory and all contents (recursive)
+        await rm(dirPath, { recursive: true, force: true });
+        console.log(`Cleaned up orphaned Codex temp directory: ${dirPath}`);
+        cleaned++;
+      } catch (error) {
+        // ENOENT means directory doesn't exist - that's fine, it was already cleaned up
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+          console.log(`Codex temp directory already removed: ${dirPath}`);
+          continue;
+        }
+        
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.log(`Failed to clean up Codex temp directory ${dirPath}: ${errorMessage}`);
+        errors.push(`${dirPath}: ${errorMessage}`);
+      }
+    }
+    
+    return { cleaned, errors };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.log(`Failed to read daemon state for temp dir cleanup: ${errorMessage}`);
+    return { cleaned: 0, errors: [errorMessage] };
+  }
+}

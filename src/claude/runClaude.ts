@@ -43,12 +43,9 @@ export async function runClaude(credentials: Credentials, options: StartOptions 
     logger.debugLargeJson('[START] Happy process started', getEnvironmentInfo());
     logger.debug(`[START] Options: startedBy=${options.startedBy}, startingMode=${options.startingMode}`);
 
-    // Validate daemon spawn requirements
+    // Validate daemon spawn requirements - daemon-spawned sessions cannot use local/interactive mode
     if (options.startedBy === 'daemon' && options.startingMode === 'local') {
-        logger.debug('Daemon spawn requested with local mode - forcing remote mode');
-        options.startingMode = 'remote';
-        // TODO: Eventually we should error here instead of silently switching
-        // throw new Error('Daemon-spawned sessions cannot use local/interactive mode');
+        throw new Error('Daemon-spawned sessions cannot use local/interactive mode. Use --happy-starting-mode remote or omit the flag.');
     }
 
     // Create abort controller for startup phase (machine/session creation)
@@ -79,7 +76,7 @@ export async function runClaude(credentials: Credentials, options: StartOptions 
     const settings = await readSettings();
     let machineId = settings?.machineId
     if (!machineId) {
-        console.error(`[START] No machine ID found in settings, which is unexepcted since authAndSetupMachineIfNeeded should have created it. Please report this issue on https://github.com/slopus/happy-cli/issues`);
+        console.error(`[START] No machine ID found in settings, which is unexpected since authAndSetupMachineIfNeeded should have created it. Please report this issue on https://github.com/slopus/happy-cli/issues`);
         process.exit(1);
     }
     logger.debug(`Using machineId: ${machineId}`);

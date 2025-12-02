@@ -12,6 +12,7 @@ import { randomUUID } from 'node:crypto'
 import { configuration } from '@/configuration'
 import * as z from 'zod';
 import { encodeBase64 } from '@/api/encryption';
+import { logger } from '@/ui/logger';
 import { withRetry } from '@/utils/retry';
 import { safeParseWithError } from '@/utils/zodErrors';
 import { AppError, ErrorCodes } from '@/utils/errors';
@@ -48,6 +49,8 @@ const DaemonStateSchema = z.object({
   lastHeartbeat: z.string().optional(),
   daemonLogPath: z.string().optional(),
   caffeinatePid: z.number().optional(),
+  /** Paths to Codex temp directories containing auth.json (for orphan cleanup on daemon restart) */
+  codexTempDirs: z.array(z.string()).optional(),
 });
 
 /**
@@ -238,9 +241,7 @@ export async function readCredentials(): Promise<Credentials | null> {
     const result = safeParseWithError(credentialsSchema, parsed, 'credentials');
     if (!result.success) {
       // Log validation error for debugging but don't expose sensitive details
-      if (process.env.DEBUG) {
-        console.log(`[PERSISTENCE] Credentials validation failed: ${result.error}`);
-      }
+      logger.errorTechnical(`[PERSISTENCE] Credentials validation failed: ${result.error}`);
       return null;
     }
     const credentials = result.data;
@@ -316,10 +317,8 @@ export async function readDaemonState(): Promise<DaemonLocallyPersistedState | n
     const validated = DaemonStateSchema.safeParse(parsed);
 
     if (!validated.success) {
-      if (process.env.DEBUG) {
-        console.log(`[PERSISTENCE] Daemon state validation failed: ${validated.error.message}`);
-        console.log(`[PERSISTENCE] Removing corrupted state file: ${configuration.daemonStateFile}`);
-      }
+      logger.errorTechnical(`[PERSISTENCE] Daemon state validation failed: ${validated.error.message}`);
+      logger.debug(`[PERSISTENCE] Removing corrupted state file: ${configuration.daemonStateFile}`);
       await unlink(configuration.daemonStateFile);
       return null;
     }
@@ -327,15 +326,11 @@ export async function readDaemonState(): Promise<DaemonLocallyPersistedState | n
     return validated.data;
   } catch (error) {
     // JSON parse error or file read error - remove corrupted file
-    if (process.env.DEBUG) {
-      console.log(`[PERSISTENCE] Daemon state file corrupted: ${configuration.daemonStateFile}`, error);
-    }
+    logger.errorTechnical(`[PERSISTENCE] Daemon state file corrupted: ${configuration.daemonStateFile}`, error);
     try {
       if (existsSync(configuration.daemonStateFile)) {
         await unlink(configuration.daemonStateFile);
-        if (process.env.DEBUG) {
-          console.log(`[PERSISTENCE] Removed corrupted state file`);
-        }
+        logger.debug(`[PERSISTENCE] Removed corrupted state file`);
       }
     } catch {
       // Ignore cleanup errors - file might already be gone
@@ -456,9 +451,7 @@ function tryRemoveStaleLock(): boolean {
       content = readFileSync(lockPath, 'utf-8');
     } catch (readError: any) {
       // Can't read file - might be permission issue or race condition
-      if (process.env.DEBUG) {
-        console.log(`[PERSISTENCE] Cannot read lock file: ${readError.message}`);
-      }
+      logger.debug(`[PERSISTENCE] Cannot read lock file: ${readError.message}`);
       return false;
     }
 
@@ -466,18 +459,14 @@ function tryRemoveStaleLock(): boolean {
 
     if (!lockData) {
       // Empty or corrupted lock file - remove it immediately
-      if (process.env.DEBUG) {
-        console.log('[PERSISTENCE] Lock file is empty or corrupted, removing');
-      }
+      logger.debug('[PERSISTENCE] Lock file is empty or corrupted, removing');
       unlinkSync(lockPath);
       return true;
     }
 
     // Check if the process is still running (fastest check for crashed daemons)
     if (!isProcessRunning(lockData.pid)) {
-      if (process.env.DEBUG) {
-        console.log(`[PERSISTENCE] Lock held by dead process (PID ${lockData.pid}), removing stale lock`);
-      }
+      logger.debug(`[PERSISTENCE] Lock held by dead process (PID ${lockData.pid}), removing stale lock`);
       unlinkSync(lockPath);
       return true;
     }
@@ -487,17 +476,13 @@ function tryRemoveStaleLock(): boolean {
     const lockAge = Date.now() - stats.mtimeMs;
 
     if (lockAge > STALE_LOCK_AGE_MS) {
-      if (process.env.DEBUG) {
-        console.log(`[PERSISTENCE] Lock file is ${Math.round(lockAge / 1000)}s old but process ${lockData.pid} still running, removing stale lock`);
-      }
+      logger.debug(`[PERSISTENCE] Lock file is ${Math.round(lockAge / 1000)}s old but process ${lockData.pid} still running, removing stale lock`);
       unlinkSync(lockPath);
       return true;
     }
 
     // Lock is valid - held by a running process and not too old
-    if (process.env.DEBUG) {
-      console.log(`[PERSISTENCE] Lock held by running process (PID ${lockData.pid})`);
-    }
+    logger.debug(`[PERSISTENCE] Lock held by running process (PID ${lockData.pid})`);
     return false;
 
   } catch (err: any) {
@@ -505,9 +490,7 @@ function tryRemoveStaleLock(): boolean {
     if (err.code === 'ENOENT') {
       return true; // File doesn't exist, can retry acquisition
     }
-    if (process.env.DEBUG) {
-      console.log(`[PERSISTENCE] Error checking lock file: ${err.message}`);
-    }
+    logger.debug(`[PERSISTENCE] Error checking lock file: ${err.message}`);
     return false;
   }
 }
@@ -550,9 +533,7 @@ export async function acquireDaemonLock(
       }
 
       if (attempt === maxAttempts) {
-        if (process.env.DEBUG) {
-          console.log(`[PERSISTENCE] Failed to acquire daemon lock after ${maxAttempts} attempts`);
-        }
+        logger.debug(`[PERSISTENCE] Failed to acquire daemon lock after ${maxAttempts} attempts`);
         return null;
       }
       const delayMs = attempt * delayIncrementMs;

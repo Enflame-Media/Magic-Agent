@@ -86,6 +86,17 @@ export const NewSessionBodySchema = z.object({
 export type NewSessionBody = z.infer<typeof NewSessionBodySchema>
 
 /**
+ * GitHub profile data from OAuth
+ */
+export const GitHubProfileSchema = z.object({
+  id: z.number(),
+  login: z.string(),
+  name: z.string().nullable().optional(),
+  email: z.string().nullable().optional(),
+  avatar_url: z.string().optional(),
+}).passthrough(); // Allow additional fields from GitHub API
+
+/**
  * Update body for account changes
  */
 export const UpdateAccountBodySchema = z.object({
@@ -95,7 +106,7 @@ export const UpdateAccountBodySchema = z.object({
     value: z.string().nullable(),
     version: z.number()
   }).nullish(),
-  github: z.any().nullish() // GitHubProfile type
+  github: GitHubProfileSchema.nullish()
 })
 
 export type UpdateAccountBody = z.infer<typeof UpdateAccountBodySchema>
@@ -158,7 +169,7 @@ export interface ServerToClientEvents {
  * Socket events from client to server
  */
 export interface ClientToServerEvents {
-  message: (data: { sid: string, message: any }) => void
+  message: (data: { sid: string, message: string }) => void // Base64-encoded encrypted message
   'session-alive': (data: {
     sid: string;
     time: number;
@@ -333,7 +344,7 @@ export const AgentMessageSchema = z.object({
   role: z.literal('agent'),
   content: z.object({
     type: z.literal('output'),
-    data: z.any()
+    data: z.unknown() // Claude SDK message data - structure varies by message type
   }),
   meta: MessageMetaSchema.optional()
 })
@@ -373,19 +384,24 @@ export type Metadata = {
   flavor?: string
 };
 
+/**
+ * Tool arguments type - JSON-serializable object
+ */
+export type ToolArguments = Record<string, unknown>;
+
 export type AgentState = {
   controlledByUser?: boolean | null | undefined
   requests?: {
     [id: string]: {
       tool: string,
-      arguments: any,
+      arguments: ToolArguments,
       createdAt: number
     }
   }
   completedRequests?: {
     [id: string]: {
       tool: string,
-      arguments: any,
+      arguments: ToolArguments,
       createdAt: number,
       completedAt: number,
       status: 'canceled' | 'denied' | 'approved' | 'timeout',

@@ -518,6 +518,113 @@ class Logger {
 
     return true
   }
+
+  /**
+   * Reports an error to the user with improved messaging.
+   * 
+   * Key behaviors:
+   * - Always shows user-friendly message to console
+   * - Always logs full error details (stack trace, etc.) to file
+   * - Shows actionable suggestions when provided
+   * - In DEBUG mode, shows full stack trace to console
+   * 
+   * @param message - User-friendly error message
+   * @param error - The error object (optional)
+   * @param options - Additional options for error display
+   */
+  error(
+    message: string,
+    error?: Error | unknown,
+    options: {
+      /** Whether to suggest running with DEBUG=1 for more details (default: true) */
+      suggestDebug?: boolean;
+      /** Whether to show stack trace even without DEBUG (default: false) */
+      showStack?: boolean;
+      /** Optional hint for user action */
+      actionHint?: string;
+      /** Whether this is a technical/internal error (default: false) */
+      technical?: boolean;
+    } = {}
+  ): void {
+    const { suggestDebug = true, showStack = false, actionHint, technical = false } = options
+    
+    // Extract error details
+    const errorMessage = error instanceof Error ? error.message : error ? String(error) : undefined
+    const errorStack = error instanceof Error ? error.stack : undefined
+    
+    // Always log full details to file
+    this.logToFile(
+      `[${this.localTimezoneTimestamp()}] [ERROR]`,
+      message,
+      errorMessage ? `\nError: ${errorMessage}` : '',
+      errorStack ? `\nStack: ${errorStack}` : ''
+    )
+    
+    // For technical errors, only show in DEBUG mode
+    if (technical) {
+      if (process.env.DEBUG) {
+        console.error(chalk.gray('[DEBUG]'), chalk.red(message))
+        if (errorMessage) {
+          console.error(chalk.gray('  →'), errorMessage)
+        }
+      }
+      return
+    }
+    
+    // Show user-friendly error to console
+    console.error(chalk.red('Error:'), message)
+    
+    // Show error message if different from the main message
+    if (errorMessage && errorMessage !== message) {
+      console.error(chalk.gray('  →'), errorMessage)
+    }
+    
+    // Show stack trace if DEBUG mode or explicitly requested
+    if (showStack || process.env.DEBUG) {
+      if (errorStack) {
+        console.error(chalk.gray(errorStack))
+      }
+    }
+    
+    // Show action hint if provided
+    if (actionHint) {
+      console.error(chalk.gray(`  ${actionHint}`))
+    }
+    
+    // Suggest DEBUG mode if appropriate and not already in DEBUG
+    if (suggestDebug && !process.env.DEBUG && !showStack) {
+      console.error(chalk.gray(`  Run with --verbose or DEBUG=1 for more details. Logs: ${this.logFilePath}`))
+    }
+  }
+
+  /**
+   * Reports an error and exits the process.
+   * 
+   * This is a convenience method for the common pattern of:
+   * - Log error to user
+   * - Exit with error code
+   * 
+   * @param message - User-friendly error message
+   * @param error - The error object (optional)
+   * @param exitCode - Exit code (default: 1)
+   */
+  errorAndExit(message: string, error?: Error | unknown, exitCode: number = 1): never {
+    this.error(message, error, { suggestDebug: true })
+    process.exit(exitCode)
+  }
+
+  /**
+   * Logs a technical/internal error that users typically don't need to see.
+   * 
+   * These are logged to file always, but only shown in console when DEBUG=1.
+   * Use for internal implementation details, verbose debugging info, etc.
+   * 
+   * @param message - Technical error description
+   * @param error - The error object (optional)
+   */
+  errorTechnical(message: string, error?: Error | unknown): void {
+    this.error(message, error, { technical: true, suggestDebug: false })
+  }
   
   private logToConsole(level: 'debug' | 'error' | 'info' | 'warn', prefix: string, message: string, ...args: unknown[]): void {
     switch (level) {

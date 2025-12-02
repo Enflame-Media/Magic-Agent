@@ -93,6 +93,31 @@ export interface HealthResponse {
   timestamp: string;
 }
 
+
+/**
+ * Result of checking if the daemon is running and its current state.
+ * Provides comprehensive state information for scripting and debugging.
+ *
+ * Status values:
+ * - 'running': Daemon process is alive and responding
+ * - 'stopped': No daemon state file exists (daemon was never started or cleanly stopped)
+ * - 'stale': State file exists but process is not running (crashed or killed)
+ * - 'error': Failed to read or parse daemon state
+ */
+export interface DaemonCheckResult {
+  status: 'running' | 'stopped' | 'stale' | 'error';
+  /** Process ID of the daemon (if state file exists) */
+  pid?: number;
+  /** HTTP port the daemon is listening on (if state file exists) */
+  httpPort?: number;
+  /** Milliseconds since daemon started (if running) */
+  uptime?: number;
+  /** CLI version the daemon was started with */
+  version?: string;
+  /** Error message if status is 'error' */
+  error?: string;
+}
+
 /**
  * Read daemon auth token from file
  * Returns null if file doesn't exist or can't be read
@@ -296,28 +321,53 @@ export async function getDaemonHealth(): Promise<DaemonResponse<HealthResponse>>
  * our daemon is always alive and running the latest version.
  * 
  * That seems like an overkill and yet another process to manage - lets not do this :D
- * 
- * TODO: This function should return a state object with
- * clear state - if it is running / or errored out or something else.
- * Not just a boolean.
- * 
- * We can destructure the response on the caller for richer output.
- * For instance when running `happy daemon status` we can show more information.
  */
-export async function checkIfDaemonRunningAndCleanupStaleState(): Promise<boolean> {
-  const state = await readDaemonState();
-  if (!state) {
-    return false;
+export async function checkIfDaemonRunningAndCleanupStaleState(): Promise<DaemonCheckResult> {
+  let state;
+  try {
+    state = await readDaemonState();
+  } catch (error) {
+    return {
+      status: 'error',
+      error: error instanceof Error ? error.message : 'Failed to read daemon state',
+    };
   }
 
-  // Check if the daemon is running
+  if (!state) {
+    return { status: 'stopped' };
+  }
+
+  // Calculate uptime from startTime
+  let uptime: number | undefined;
+  try {
+    const startTimeMs = new Date(state.startTime).getTime();
+    if (!isNaN(startTimeMs)) {
+      uptime = Date.now() - startTimeMs;
+      if (uptime < 0) uptime = undefined;
+    }
+  } catch {
+    uptime = undefined;
+  }
+
+  // Check if the daemon process is running
   try {
     process.kill(state.pid, 0);
-    return true;
+    return {
+      status: 'running',
+      pid: state.pid,
+      httpPort: state.httpPort,
+      uptime,
+      version: state.startedWithCliVersion,
+    };
   } catch {
     logger.debug('[DAEMON RUN] Daemon PID not running, cleaning up state');
     await cleanupDaemonState();
-    return false;
+    return {
+      status: 'stale',
+      pid: state.pid,
+      httpPort: state.httpPort,
+      version: state.startedWithCliVersion,
+    };
   }
 }
 
@@ -330,26 +380,21 @@ export async function checkIfDaemonRunningAndCleanupStaleState(): Promise<boolea
  */
 export async function isDaemonRunningCurrentlyInstalledHappyVersion(): Promise<boolean> {
   logger.debug('[DAEMON CONTROL] Checking if daemon is running same version');
-  const runningDaemon = await checkIfDaemonRunningAndCleanupStaleState();
-  if (!runningDaemon) {
-    logger.debug('[DAEMON CONTROL] No daemon running, returning false');
+  const daemonCheck = await checkIfDaemonRunningAndCleanupStaleState();
+  
+  if (daemonCheck.status !== 'running') {
+    logger.debug(`[DAEMON CONTROL] Daemon not running (status: ${daemonCheck.status}), returning false`);
     return false;
   }
 
-  const state = await readDaemonState();
-  if (!state) {
-    logger.debug('[DAEMON CONTROL] No daemon state found, returning false');
-    return false;
-  }
-  
   try {
     // Read package.json on demand from disk - so we are guaranteed to get the latest version
     const packageJsonPath = join(projectPath(), 'package.json');
     const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
     const currentCliVersion = packageJson.version;
     
-    logger.debug(`[DAEMON CONTROL] Current CLI version: ${currentCliVersion}, Daemon started with version: ${state.startedWithCliVersion}`);
-    return currentCliVersion === state.startedWithCliVersion;
+    logger.debug(`[DAEMON CONTROL] Current CLI version: ${currentCliVersion}, Daemon started with version: ${daemonCheck.version}`);
+    return currentCliVersion === daemonCheck.version;
     
     // PREVIOUS IMPLEMENTATION - Keeping this commented in case we need it
     // Kirill does not understand how the upgrade of npm packages happen and whether 
