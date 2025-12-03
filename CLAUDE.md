@@ -405,6 +405,24 @@ yarn db:generate
 # Apply migrations to local D1 database
 yarn db:migrate
 
+# Apply migrations to remote dev database
+yarn db:migrate:remote
+
+# Apply migrations to remote production database
+yarn db:migrate:prod
+
+# Create remote dev D1 database (first time only)
+yarn db:create
+
+# Create remote prod D1 database (first time only)
+yarn db:create:prod
+
+# Show local database status (tables and row counts)
+yarn db:status
+
+# Reset local database (DESTRUCTIVE - deletes all data)
+yarn db:reset
+
 # Open Drizzle Studio (database GUI)
 yarn db:studio
 
@@ -414,6 +432,79 @@ yarn db:seed
 # Validate schema parity with Prisma
 yarn db:compare
 ```
+
+### D1 Database Setup
+
+#### Initial Setup (One-time per environment)
+
+1. **Create the D1 database:**
+   ```bash
+   # Development database
+   yarn db:create
+
+   # Production database
+   yarn db:create:prod
+   ```
+
+2. **Update wrangler.toml** with the database ID printed by the create command:
+   ```toml
+   [[env.dev.d1_databases]]
+   binding = "DB"
+   database_name = "happy-dev"
+   database_id = "YOUR_ACTUAL_DATABASE_ID"  # From yarn db:create output
+   ```
+
+3. **Apply migrations:**
+   ```bash
+   # Local development (auto-created by wrangler dev)
+   yarn db:migrate
+
+   # Remote dev database
+   yarn db:migrate:remote
+
+   # Remote production database
+   yarn db:migrate:prod
+   ```
+
+#### Development Workflow
+
+1. **Start local development** (D1 is auto-created locally):
+   ```bash
+   yarn dev
+   ```
+
+2. **Make schema changes** in `src/db/schema.ts`
+
+3. **Generate new migration:**
+   ```bash
+   yarn db:generate
+   ```
+
+4. **Apply migration locally:**
+   ```bash
+   yarn db:migrate
+   ```
+
+5. **Test changes, then apply to remote:**
+   ```bash
+   yarn db:migrate:remote  # dev environment
+   yarn db:migrate:prod    # production (after testing)
+   ```
+
+#### Idempotent Migration Application
+
+Migrations are idempotent:
+- Running `yarn db:migrate` multiple times is safe
+- The script applies each migration file in order
+- D1 tracks which migrations have been applied via the drizzle `_journal`
+
+#### Environment-Specific Configuration
+
+| Environment | Database Name | Binding | Usage |
+|-------------|---------------|---------|-------|
+| Local | auto-created | DB | `wrangler dev` |
+| dev | happy-dev | DB | `wrangler deploy --env dev` |
+| prod | happy-prod | DB | `wrangler deploy --env prod` |
 
 ### Key Schema Changes from Prisma
 
