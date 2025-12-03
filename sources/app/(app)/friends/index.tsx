@@ -6,7 +6,6 @@ import { UserCard } from '@/components/UserCard';
 import { removeFriend, sendFriendRequest } from '@/sync/apiFriends';
 import { useAuth } from '@/auth/AuthContext';
 import { storage } from '@/sync/storage';
-import { Modal } from '@/modal';
 import { t } from '@/text';
 import { ItemList } from '@/components/ItemList';
 import { ItemGroup } from '@/components/ItemGroup';
@@ -56,45 +55,21 @@ function FriendsScreen() {
         setProcessingId(null);
     });
 
-    const [removeLoading, doRemove] = useHappyAction(async () => {
-        if (!credentials || !processingId) return;
-        
-        const friendId = processingId;
-        const confirmed = await Modal.confirm(
-            t('friends.confirmRemove'),
-            t('friends.confirmRemoveMessage')
-        );
-        
-        if (!confirmed) {
-            setProcessingId(null);
-            return;
-        }
-        
-        await removeFriend(credentials, friendId);
-        // Update will come through real-time sync
-        setProcessingId(null);
-    });
-
-    const _handleAcceptRequest = React.useCallback((fromUserId: string) => {
+    const handleAcceptRequest = React.useCallback((fromUserId: string) => {
         setProcessingId(fromUserId);
         doAccept();
     }, [doAccept]);
 
-    const _handleRejectRequest = React.useCallback((fromUserId: string) => {
+    const handleRejectRequest = React.useCallback((fromUserId: string) => {
         setProcessingId(fromUserId);
         doReject();
     }, [doReject]);
 
-    const _handleRemoveFriend = React.useCallback((friendId: string) => {
-        setProcessingId(friendId);
-        doRemove();
-    }, [doRemove]);
-
-    const _isProcessing = (id: string) => processingId === id && (acceptLoading || rejectLoading || removeLoading);
+    const isProcessing = (id: string) => processingId === id && (acceptLoading || rejectLoading);
 
     return (
         <ItemList style={{ paddingTop: 0 }}>
-            {/* Friend Requests Section */}
+            {/* Friend Requests Section - incoming requests with inline accept/reject */}
             {friendRequests.length > 0 && (
                 <ItemGroup
                     title={t('friends.pendingRequests')}
@@ -105,6 +80,9 @@ function FriendsScreen() {
                             key={friend.id}
                             user={friend}
                             onPress={() => router.push(`/user/${friend.id}`)}
+                            onAccept={() => handleAcceptRequest(friend.id)}
+                            onReject={() => handleRejectRequest(friend.id)}
+                            isProcessing={isProcessing(friend.id)}
                         />
                     ))}
                 </ItemGroup>

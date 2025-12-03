@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { View, Text, ScrollView, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/auth/AuthContext';
@@ -7,7 +7,6 @@ import { Typography } from '@/constants/Typography';
 import { encodeBase64 } from '@/encryption/base64';
 import { generateAuthKeyPair, authQRStart } from '@/auth/authQRStart';
 import { authQRWait } from '@/auth/authQRWait';
-import { layout } from '@/components/layout';
 import { Modal } from '@/modal';
 import { t } from '@/text';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
@@ -23,42 +22,12 @@ const stylesheet = StyleSheet.create((theme) => ({
         alignItems: 'center',
         paddingHorizontal: 24,
     },
-    contentWrapper: {
-        width: '100%',
-        maxWidth: layout.maxWidth,
-        paddingVertical: 24,
-    },
-    instructionText: {
-        fontSize: 20,
-        color: theme.colors.text,
-        marginBottom: 24,
-        ...Typography.default(),
-    },
     secondInstructionText: {
         fontSize: 16,
         color: theme.colors.textSecondary,
         marginBottom: 20,
         marginTop: 30,
         ...Typography.default(),
-    },
-    qrInstructions: {
-        fontSize: 14,
-        color: theme.colors.textSecondary,
-        marginBottom: 16,
-        lineHeight: 22,
-        textAlign: 'center',
-        ...Typography.default(),
-    },
-    textInput: {
-        backgroundColor: theme.colors.input.background,
-        padding: 16,
-        borderRadius: 8,
-        marginBottom: 24,
-        fontFamily: 'IBMPlexMono-Regular',
-        fontSize: 14,
-        minHeight: 120,
-        textAlignVertical: 'top',
-        color: theme.colors.input.text,
     },
 }));
 
@@ -67,10 +36,7 @@ function Restore() {
     const styles = stylesheet;
     const auth = useAuth();
     const router = useRouter();
-    const [_restoreKey, _setRestoreKey] = useState('');
-    const [_isWaitingForAuth, setIsWaitingForAuth] = useState(false);
-    const [authReady, setAuthReady] = useState(false);
-    const [_waitingDots, setWaitingDots] = useState(0);
+    const [authReady, setAuthReady] = React.useState(false);
     const isCancelledRef = useRef(false);
 
     // Memoize keypair generation to prevent re-creating on re-renders
@@ -80,22 +46,19 @@ function Restore() {
     useEffect(() => {
         const startQRAuth = async () => {
             try {
-                setIsWaitingForAuth(true);
-
                 // Send authentication request
                 const success = await authQRStart(keypair);
                 if (!success) {
                     Modal.alert(t('common.error'), t('errors.authenticationFailed'));
-                    setIsWaitingForAuth(false);
                     return;
                 }
 
                 setAuthReady(true);
 
-                // Start waiting for authentication
+                // Start waiting for authentication (callback is unused but required by API)
                 const credentials = await authQRWait(
                     keypair,
-                    (dots) => setWaitingDots(dots),
+                    () => {},
                     () => isCancelledRef.current
                 );
 
@@ -117,7 +80,6 @@ function Restore() {
                 }
             } finally {
                 if (!isCancelledRef.current) {
-                    setIsWaitingForAuth(false);
                     setAuthReady(false);
                 }
             }
