@@ -33,11 +33,15 @@ database_id = "REPLACE_WITH_ACTUAL_DATABASE_ID"  # Run: wrangler d1 create happy
 binding = "UPLOADS"
 bucket_name = "happy-dev-uploads"
 
-# Durable Objects bindings (development) - uncomment when needed
-# [[env.dev.durable_objects.bindings]]
-# name = "WEBSOCKET_SESSIONS"
-# class_name = "WebSocketSession"
-# script_name = "happy-server-workers-dev"
+# Durable Objects bindings (development)
+[[env.dev.durable_objects.bindings]]
+name = "CONNECTION_MANAGER"
+class_name = "ConnectionManager"
+
+# Durable Objects migrations (development) - required for new DO classes
+[[env.dev.migrations]]
+tag = "v1"
+new_classes = ["ConnectionManager"]
 
 #############################
 # Production Environment
@@ -61,11 +65,15 @@ database_id = "REPLACE_WITH_ACTUAL_DATABASE_ID"  # Run: wrangler d1 create happy
 binding = "UPLOADS"
 bucket_name = "happy-prod-uploads"
 
-# Durable Objects bindings (production) - uncomment when needed
-# [[env.prod.durable_objects.bindings]]
-# name = "WEBSOCKET_SESSIONS"
-# class_name = "WebSocketSession"
-# script_name = "happy-server-workers-prod"
+# Durable Objects bindings (production)
+[[env.prod.durable_objects.bindings]]
+name = "CONNECTION_MANAGER"
+class_name = "ConnectionManager"
+
+# Durable Objects migrations (production) - required for new DO classes
+[[env.prod.migrations]]
+tag = "v1"
+new_classes = ["ConnectionManager"]
 
 #############################
 # Resource Limits (Paid Plan)
