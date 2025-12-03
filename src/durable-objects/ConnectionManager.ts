@@ -249,6 +249,23 @@ export class ConnectionManager extends DurableObject<ConnectionManagerEnv> {
             // Queue the message to be sent after the connection is established
             server.send(JSON.stringify(connectedMsg));
 
+            // Broadcast machine online status to user-scoped connections (mobile apps)
+            // This allows the UI to show daemon online/offline status
+            if (handshake.clientType === 'machine-scoped' && handshake.machineId) {
+                this.broadcast(
+                    {
+                        type: 'machine-update',
+                        payload: {
+                            machineId: handshake.machineId,
+                            active: true,
+                            timestamp: Date.now(),
+                        },
+                        timestamp: Date.now(),
+                    },
+                    { type: 'user-scoped-only' }
+                );
+            }
+
             // Log connection (avoid excessive logging in production)
             if (this.env.ENVIRONMENT !== 'production') {
                 console.log(
