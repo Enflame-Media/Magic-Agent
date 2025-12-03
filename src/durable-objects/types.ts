@@ -159,6 +159,107 @@ export interface WebSocketMessage<T = unknown> {
     messageId?: string;
 }
 
+
+/**
+ * Client message format (happy-cli and happy-app)
+ *
+ * This matches the format used by Socket.io-style clients:
+ * - event: Event name (similar to type in server format)
+ * - data: Payload data
+ * - ackId: UUID for request-response correlation
+ * - ack: Response data for acknowledgements
+ *
+ * @see HAP-271 - Protocol alignment between clients and Workers backend
+ */
+export interface ClientMessage {
+    /** Event name (e.g., 'sessionUpdate', 'rpc-call', 'ping') */
+    event: string;
+
+    /** Event payload */
+    data?: unknown;
+
+    /** Acknowledgement ID for request-response pattern */
+    ackId?: string;
+
+    /** Response data (present in ack responses) */
+    ack?: unknown;
+}
+
+/**
+ * Unified message format that normalizes both client and server messages.
+ *
+ * The ConnectionManager accepts both formats:
+ * - Server format: { type, payload, timestamp, messageId }
+ * - Client format: { event, data, ackId, ack }
+ *
+ * This interface represents the parsed/normalized form used internally.
+ */
+export interface NormalizedMessage {
+    /** Message type (from server `type` or client `event`) */
+    type: string;
+
+    /** Message payload (from server `payload` or client `data`) */
+    payload?: unknown;
+
+    /** Timestamp when message was created (server format only) */
+    timestamp?: number;
+
+    /** Message ID for correlation (server `messageId` or client `ackId`) */
+    messageId?: string;
+
+    /** Acknowledgement response data (client format only) */
+    ack?: unknown;
+}
+
+/**
+ * Type guard to check if a raw message is in client format
+ */
+export function isClientMessage(msg: unknown): msg is ClientMessage {
+    return (
+        typeof msg === 'object' &&
+        msg !== null &&
+        'event' in msg &&
+        typeof (msg as ClientMessage).event === 'string'
+    );
+}
+
+/**
+ * Type guard to check if a raw message is in server format
+ */
+export function isServerMessage(msg: unknown): msg is WebSocketMessage {
+    return (
+        typeof msg === 'object' &&
+        msg !== null &&
+        'type' in msg &&
+        typeof (msg as WebSocketMessage).type === 'string'
+    );
+}
+
+/**
+ * Normalize a message from either client or server format to unified format
+ */
+export function normalizeMessage(msg: unknown): NormalizedMessage | null {
+    if (isClientMessage(msg)) {
+        return {
+            type: msg.event,
+            payload: msg.data,
+            messageId: msg.ackId,
+            ack: msg.ack,
+        };
+    }
+
+    if (isServerMessage(msg)) {
+        return {
+            type: msg.type,
+            payload: msg.payload,
+            timestamp: msg.timestamp,
+            messageId: msg.messageId,
+        };
+    }
+
+    return null;
+}
+
 /**
  * Error message sent to clients
  */

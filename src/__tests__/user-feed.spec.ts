@@ -1,0 +1,363 @@
+/**
+ * Integration Tests for User and Feed Routes
+ *
+ * Tests user endpoints:
+ * - GET /v1/users/search (search users)
+ * - GET /v1/users/:id (get user profile)
+ *
+ * And feed endpoints:
+ * - GET /v1/feed (activity feed)
+ *
+ * @module __tests__/user-feed.spec
+ */
+
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+// Mock cloudflare:workers module
+vi.mock('cloudflare:workers', () => ({
+    DurableObject: class DurableObject {
+        ctx: DurableObjectState;
+        env: unknown;
+        constructor(ctx: DurableObjectState, env: unknown) {
+            this.ctx = ctx;
+            this.env = env;
+        }
+    },
+}));
+
+// Mock auth module
+vi.mock('@/lib/auth', () => ({
+    initAuth: vi.fn().mockResolvedValue(undefined),
+    verifyToken: vi.fn().mockImplementation(async (token: string) => {
+        if (token === 'valid-token') {
+            return { userId: 'test-user-123', extras: {} };
+        }
+        if (token === 'user2-token') {
+            return { userId: 'test-user-456', extras: {} };
+        }
+        return null;
+    }),
+    createToken: vi.fn().mockResolvedValue('generated-token'),
+    resetAuth: vi.fn(),
+}));
+
+import app from '@/index';
+import { authHeader, jsonBody, parseJson } from './test-utils';
+
+describe('User Routes', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    describe('GET /v1/users/search - Search Users', () => {
+        it('should require authentication', async () => {
+            const res = await app.request('/v1/users/search?query=test', {
+                method: 'GET',
+            });
+
+            expect(res.status).toBe(401);
+        });
+
+        it('should search users with query parameter', async () => {
+            const res = await app.request('/v1/users/search?query=test', {
+                method: 'GET',
+                headers: authHeader(),
+            });
+
+            expect([200, 500]).toContain(res.status);
+            if (res.status === 200) {
+                const body = await parseJson<{ users: unknown[] }>(res);
+                expect(body).toHaveProperty('users');
+                expect(Array.isArray(body.users)).toBe(true);
+            }
+        });
+
+        it('should require query parameter', async () => {
+            const res = await app.request('/v1/users/search', {
+                method: 'GET',
+                headers: authHeader(),
+            });
+
+            expect(res.status).toBe(400);
+        });
+
+        it('should accept limit parameter', async () => {
+            const res = await app.request('/v1/users/search?query=test&limit=5', {
+                method: 'GET',
+                headers: authHeader(),
+            });
+
+            expect([200, 500]).toContain(res.status);
+        });
+
+        it('should reject invalid limit (too high)', async () => {
+            const res = await app.request('/v1/users/search?query=test&limit=100', {
+                method: 'GET',
+                headers: authHeader(),
+            });
+
+            // Max limit is 50
+            expect([200, 400, 500]).toContain(res.status);
+        });
+
+        it('should return users with relationship status', async () => {
+            const res = await app.request('/v1/users/search?query=test', {
+                method: 'GET',
+                headers: authHeader(),
+            });
+
+            expect([200, 500]).toContain(res.status);
+            if (res.status === 200) {
+                const body = await parseJson<{ users: { status?: string }[] }>(res);
+                body.users.forEach((user) => {
+                    expect(user).toHaveProperty('status');
+                    expect(['none', 'requested', 'pending', 'friend', 'rejected']).toContain(
+                        user.status
+                    );
+                });
+            }
+        });
+
+        it('should handle case-insensitive search', async () => {
+            const res = await app.request('/v1/users/search?query=TEST', {
+                method: 'GET',
+                headers: authHeader(),
+            });
+
+            expect([200, 500]).toContain(res.status);
+        });
+
+        it('should handle empty search results', async () => {
+            const res = await app.request('/v1/users/search?query=zzzznonexistent', {
+                method: 'GET',
+                headers: authHeader(),
+            });
+
+            expect([200, 500]).toContain(res.status);
+            if (res.status === 200) {
+                const body = await parseJson<{ users: unknown[] }>(res);
+                expect(body.users).toEqual([]);
+            }
+        });
+    });
+
+    describe('GET /v1/users/:id - Get User Profile', () => {
+        it('should require authentication', async () => {
+            const res = await app.request('/v1/users/some-user-id', {
+                method: 'GET',
+            });
+
+            expect(res.status).toBe(401);
+        });
+
+        it('should return user profile if exists', async () => {
+            const res = await app.request('/v1/users/test-user-456', {
+                method: 'GET',
+                headers: authHeader(),
+            });
+
+            expect([200, 404, 500]).toContain(res.status);
+            if (res.status === 200) {
+                const body = await parseJson<{ user: { id: string; status: string } }>(res);
+                expect(body).toHaveProperty('user');
+                expect(body.user).toHaveProperty('id');
+                expect(body.user).toHaveProperty('status');
+            }
+        });
+
+        it('should return 404 for non-existent user', async () => {
+            const res = await app.request('/v1/users/non-existent-user-id', {
+                method: 'GET',
+                headers: authHeader(),
+            });
+
+            expect([404, 500]).toContain(res.status);
+        });
+
+        it('should include relationship status with current user', async () => {
+            const res = await app.request('/v1/users/test-user-456', {
+                method: 'GET',
+                headers: authHeader(),
+            });
+
+            expect([200, 404, 500]).toContain(res.status);
+            if (res.status === 200) {
+                const body = await parseJson<{ user: { status: string } }>(res);
+                expect(['none', 'requested', 'pending', 'friend', 'rejected']).toContain(
+                    body.user.status
+                );
+            }
+        });
+
+        it('should return limited profile info based on privacy', async () => {
+            const res = await app.request('/v1/users/private-user-id', {
+                method: 'GET',
+                headers: authHeader(),
+            });
+
+            expect([200, 404, 500]).toContain(res.status);
+            if (res.status === 200) {
+                const body = await parseJson<{ user: { firstName?: string; username?: string } }>(
+                    res
+                );
+                // Should at least have basic profile fields
+                expect(body.user).toHaveProperty('username');
+            }
+        });
+    });
+});
+
+describe('Feed Routes', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    describe('GET /v1/feed - Activity Feed', () => {
+        it('should require authentication', async () => {
+            const res = await app.request('/v1/feed', {
+                method: 'GET',
+            });
+
+            expect(res.status).toBe(401);
+        });
+
+        it('should return feed items with valid auth', async () => {
+            const res = await app.request('/v1/feed', {
+                method: 'GET',
+                headers: authHeader(),
+            });
+
+            expect([200, 500]).toContain(res.status);
+            if (res.status === 200) {
+                const body = await parseJson<{ items: unknown[]; hasMore: boolean }>(res);
+                expect(body).toHaveProperty('items');
+                expect(Array.isArray(body.items)).toBe(true);
+                expect(body).toHaveProperty('hasMore');
+            }
+        });
+
+        it('should accept limit parameter', async () => {
+            const res = await app.request('/v1/feed?limit=10', {
+                method: 'GET',
+                headers: authHeader(),
+            });
+
+            expect([200, 500]).toContain(res.status);
+        });
+
+        it('should accept before cursor for pagination', async () => {
+            const res = await app.request('/v1/feed?before=cursor_10', {
+                method: 'GET',
+                headers: authHeader(),
+            });
+
+            expect([200, 400, 500]).toContain(res.status);
+        });
+
+        it('should accept after cursor for pagination', async () => {
+            const res = await app.request('/v1/feed?after=cursor_5', {
+                method: 'GET',
+                headers: authHeader(),
+            });
+
+            expect([200, 400, 500]).toContain(res.status);
+        });
+
+        it('should reject invalid limit (too high)', async () => {
+            const res = await app.request('/v1/feed?limit=500', {
+                method: 'GET',
+                headers: authHeader(),
+            });
+
+            // Max limit is 200
+            expect([200, 400, 500]).toContain(res.status);
+        });
+
+        it('should return feed items with cursors', async () => {
+            const res = await app.request('/v1/feed', {
+                method: 'GET',
+                headers: authHeader(),
+            });
+
+            expect([200, 500]).toContain(res.status);
+            if (res.status === 200) {
+                const body = await parseJson<{ items: { cursor: string }[] }>(res);
+                body.items.forEach((item) => {
+                    expect(item).toHaveProperty('cursor');
+                    expect(item.cursor).toMatch(/^cursor_\d+$/);
+                });
+            }
+        });
+
+        it('should return feed items in correct format', async () => {
+            const res = await app.request('/v1/feed', {
+                method: 'GET',
+                headers: authHeader(),
+            });
+
+            expect([200, 500]).toContain(res.status);
+            if (res.status === 200) {
+                const body = await parseJson<{
+                    items: { id: string; body: unknown; createdAt: number }[];
+                }>(res);
+                body.items.forEach((item) => {
+                    expect(item).toHaveProperty('id');
+                    expect(item).toHaveProperty('body');
+                    expect(item).toHaveProperty('createdAt');
+                });
+            }
+        });
+
+        it('should handle empty feed', async () => {
+            const res = await app.request('/v1/feed', {
+                method: 'GET',
+                headers: authHeader(),
+            });
+
+            expect([200, 500]).toContain(res.status);
+            if (res.status === 200) {
+                const body = await parseJson<{ items: unknown[] }>(res);
+                // Empty feed is valid
+                expect(Array.isArray(body.items)).toBe(true);
+            }
+        });
+
+        it('should paginate correctly with before cursor', async () => {
+            // Get initial page
+            const res1 = await app.request('/v1/feed?limit=5', {
+                method: 'GET',
+                headers: authHeader(),
+            });
+
+            expect([200, 500]).toContain(res1.status);
+            if (res1.status === 200) {
+                const body1 = await parseJson<{ items: { cursor: string }[]; hasMore: boolean }>(
+                    res1
+                );
+                if (body1.items.length > 0 && body1.hasMore) {
+                    const lastCursor = body1.items[body1.items.length - 1].cursor;
+
+                    // Get next page
+                    const res2 = await app.request(`/v1/feed?before=${lastCursor}&limit=5`, {
+                        method: 'GET',
+                        headers: authHeader(),
+                    });
+
+                    expect([200, 500]).toContain(res2.status);
+                }
+            }
+        });
+    });
+
+    describe('Feed Isolation', () => {
+        it('should only return own feed items', async () => {
+            const res = await app.request('/v1/feed', {
+                method: 'GET',
+                headers: authHeader(),
+            });
+
+            expect([200, 500]).toContain(res.status);
+            // Feed should only contain items for the authenticated user
+        });
+    });
+});

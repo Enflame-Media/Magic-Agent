@@ -26,7 +26,11 @@
     "db:reset": "./scripts/db-init.sh reset --local",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx src/db/seed.ts",
+    "db:seed:test": "tsx scripts/seed-test-data.ts | wrangler d1 execute DB --local --file=-",
+    "db:seed:staging": "tsx scripts/seed-test-data.ts | wrangler d1 execute DB --env dev --remote --file=-",
     "db:compare": "tsx src/db/comparison-tool.ts",
+    "test:integration": "vitest run src/__tests__/",
+    "test:coverage": "vitest run --coverage",
     "knip": "knip"
   },
   "keywords": [

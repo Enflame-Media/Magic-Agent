@@ -25,8 +25,10 @@ import type {
     MessageFilter,
     ConnectionStats,
     ConnectionManagerConfig,
+    ClientMessage,
+    NormalizedMessage,
 } from './types';
-import { CloseCode, DEFAULT_CONFIG } from './types';
+import { CloseCode, DEFAULT_CONFIG, normalizeMessage } from './types';
 import { verifyToken, initAuth } from '@/lib/auth';
 
 /**
@@ -299,32 +301,50 @@ export class ConnectionManager extends DurableObject<ConnectionManagerEnv> {
             ws.serializeAttachment(metadata);
         }
 
-        // Parse the message
-        let parsed: WebSocketMessage;
+        // Parse the message - accept both client and server formats
+        let raw: unknown;
         try {
             const messageStr = typeof message === 'string' ? message : new TextDecoder().decode(message);
-            parsed = JSON.parse(messageStr);
+            raw = JSON.parse(messageStr);
         } catch {
             this.sendError(ws, CloseCode.PROTOCOL_ERROR, 'Invalid JSON message');
             return;
         }
 
-        // Handle message by type
-        switch (parsed.type) {
+        // Normalize to unified format (supports both {event, data, ackId} and {type, payload, timestamp})
+        const normalized = normalizeMessage(raw);
+        if (!normalized) {
+            this.sendError(ws, CloseCode.PROTOCOL_ERROR, 'Invalid message format');
+            return;
+        }
+
+        // Handle acknowledgement responses from server-to-client (for emitWithAck pattern)
+        // Client sends: { event, data, ackId }
+        // Server responds: { event: 'ack', ackId, ack: responseData }
+        if (normalized.ack !== undefined && normalized.messageId) {
+            // This is an acknowledgement - forward it to the appropriate connection
+            // For now, just log and continue (acks are typically responses, not requests)
+            return;
+        }
+
+        // Handle message by type (normalized from either format)
+        switch (normalized.type) {
             case 'ping':
-                // Respond with pong (also handled by auto-response during hibernation)
-                ws.send(JSON.stringify({ type: 'pong', timestamp: Date.now() }));
+                // Respond with pong in client-compatible format
+                ws.send(JSON.stringify({
+                    event: 'pong',
+                    data: { timestamp: Date.now() },
+                }));
                 break;
 
             case 'broadcast':
                 // Client requests to broadcast a message to other connections
                 // Note: Most broadcasts should come from the Worker via /broadcast endpoint
                 if (metadata) {
-                    this.broadcast(
+                    this.broadcastClientMessage(
                         {
-                            type: 'broadcast',
-                            payload: parsed.payload,
-                            timestamp: Date.now(),
+                            event: 'broadcast',
+                            data: normalized.payload,
                         },
                         {
                             type: 'exclude',
@@ -334,11 +354,91 @@ export class ConnectionManager extends DurableObject<ConnectionManagerEnv> {
                 }
                 break;
 
-            default:
-                // Forward unhandled message types to all user-scoped connections
-                // This allows the mobile app to receive events from CLI
+            case 'rpc-call':
+            case 'rpc-request':
+                // Forward RPC requests to the appropriate session/machine scoped connection
+                // The RPC message should contain target info in payload
                 if (metadata?.clientType !== 'user-scoped') {
-                    this.broadcast(parsed, { type: 'user-scoped-only' });
+                    // Forward to user-scoped connections (mobile app handles RPC routing)
+                    this.broadcastClientMessage(
+                        {
+                            event: normalized.type,
+                            data: normalized.payload,
+                            ackId: normalized.messageId,
+                        },
+                        { type: 'user-scoped-only' }
+                    );
+                } else {
+                    // User-scoped client sending RPC - forward to session/machine scoped
+                    const rpcPayload = normalized.payload as { method?: string } | undefined;
+                    if (rpcPayload?.method) {
+                        // Extract target from method (format: "sessionId:methodName" or "machineId:methodName")
+                        const [targetId] = rpcPayload.method.split(':');
+                        // Try to find matching session or machine connection
+                        this.broadcastClientMessage(
+                            {
+                                event: 'rpc-request',
+                                data: normalized.payload,
+                                ackId: normalized.messageId,
+                            },
+                            { type: 'interested-in-session', sessionId: targetId }
+                        );
+                    }
+                }
+                break;
+
+            case 'rpc-response':
+                // Forward RPC response back to the requesting client
+                // The ackId identifies the original request
+                if (normalized.messageId) {
+                    // Broadcast to all connections - the one with matching pending ack will handle it
+                    this.broadcastClientMessage(
+                        {
+                            event: 'rpc-response',
+                            ackId: normalized.messageId,
+                            ack: normalized.payload,
+                        },
+                        { type: 'all' }
+                    );
+                }
+                break;
+
+            default:
+                // Forward unhandled message types to appropriate connections
+                // This allows the mobile app to receive events from CLI and vice versa
+                if (metadata?.clientType !== 'user-scoped') {
+                    // Non-user-scoped (CLI) → forward to user-scoped (mobile)
+                    this.broadcastClientMessage(
+                        {
+                            event: normalized.type,
+                            data: normalized.payload,
+                            ackId: normalized.messageId,
+                        },
+                        { type: 'user-scoped-only' }
+                    );
+                } else {
+                    // User-scoped (mobile) sending event → forward based on payload content
+                    // Try to extract sessionId or machineId from payload for targeted delivery
+                    const payload = normalized.payload as { sessionId?: string; machineId?: string } | undefined;
+                    if (payload?.sessionId) {
+                        this.broadcastClientMessage(
+                            {
+                                event: normalized.type,
+                                data: normalized.payload,
+                                ackId: normalized.messageId,
+                            },
+                            { type: 'session', sessionId: payload.sessionId }
+                        );
+                    } else if (payload?.machineId) {
+                        this.broadcastClientMessage(
+                            {
+                                event: normalized.type,
+                                data: normalized.payload,
+                                ackId: normalized.messageId,
+                            },
+                            { type: 'machine', machineId: payload.machineId }
+                        );
+                    }
                 }
                 break;
         }
@@ -544,6 +644,40 @@ export class ConnectionManager extends DurableObject<ConnectionManagerEnv> {
      * @returns Number of connections the message was delivered to
      */
     private broadcast(message: WebSocketMessage, filter?: MessageFilter): number {
+        const messageStr = JSON.stringify(message);
+        let delivered = 0;
+
+        for (const [ws, metadata] of this.connections.entries()) {
+            if (this.matchesFilter(metadata, filter)) {
+                try {
+                    ws.send(messageStr);
+                    delivered++;
+                } catch {
+                    // Connection may be dead, will be cleaned up on next close event
+                }
+            }
+        }
+
+        return delivered;
+    }
+
+
+    /**
+     * Broadcast a client-format message to connections matching the filter
+     *
+     * This method sends messages in the client-compatible format:
+     * { event, data, ackId?, ack? }
+     *
+     * Used for forwarding messages between clients (CLI ↔ Mobile) where
+     * both sides expect the Socket.io-style format.
+     *
+     * @param message Client-format message to broadcast
+     * @param filter Optional filter to target specific connections
+     * @returns Number of connections the message was delivered to
+     *
+     * @see HAP-271 - Protocol alignment between clients and Workers backend
+     */
+    private broadcastClientMessage(message: ClientMessage, filter?: MessageFilter): number {
         const messageStr = JSON.stringify(message);
         let delivered = 0;
 
