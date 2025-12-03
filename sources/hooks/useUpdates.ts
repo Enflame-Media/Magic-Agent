@@ -49,7 +49,7 @@ export function useUpdates() {
         };
     }, [handleAppStateChange, checkForUpdates]);
 
-    const reloadApp = async () => {
+    const reloadApp = useCallback(async () => {
         if (Platform.OS === 'web') {
             window.location.reload();
         } else {
@@ -59,7 +59,7 @@ export function useUpdates() {
                 console.error('Error reloading app:', error);
             }
         }
-    };
+    }, []);
 
     return {
         updateAvailable,

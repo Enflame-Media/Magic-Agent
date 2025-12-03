@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { 
     getLastViewedVersion, 
     setLastViewedVersion, 
@@ -35,12 +35,12 @@ export function useChangelog() {
         initialize();
     }, []);
 
-    const markAsRead = () => {
+    const markAsRead = useCallback(() => {
         if (latestVersion > 0) {
             setLastViewedVersion(latestVersion);
             setHasUnread(false);
         }
-    };
+    }, [latestVersion]);
 
     return {
         isInitialized,
