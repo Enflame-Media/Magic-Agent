@@ -2,6 +2,7 @@ import { Context } from "@/context";
 import { FeedOptions, FeedResult } from "./types";
 import { Prisma } from "@prisma/client";
 import { Tx } from "@/storage/inTx";
+import { AppError, ErrorCodes } from "@/utils/errors";
 
 /**
  * Fetch user's feed with pagination.
@@ -23,13 +24,13 @@ export async function feedGet(
         if (cursor.before.startsWith('0-')) {
             where.counter = { lt: parseInt(cursor.before.substring(2), 10) };
         } else {
-            throw new Error('Invalid cursor format');
+            throw new AppError(ErrorCodes.INVALID_INPUT, 'Invalid cursor format');
         }
     } else if (cursor?.after !== undefined) {
         if (cursor.after.startsWith('0-')) {
             where.counter = { gt: parseInt(cursor.after.substring(2), 10) };
         } else {
-            throw new Error('Invalid cursor format');
+            throw new AppError(ErrorCodes.INVALID_INPUT, 'Invalid cursor format');
         }
     }
 

@@ -1,5 +1,6 @@
 import * as privacyKit from "privacy-kit";
 import { log } from "@/utils/log";
+import { AppError, ErrorCodes } from "@/utils/errors";
 
 interface TokenCacheEntry {
     userId: string;
@@ -55,9 +56,9 @@ class AuthModule {
     
     async createToken(userId: string, extras?: any): Promise<string> {
         if (!this.tokens) {
-            throw new Error('Auth module not initialized');
+            throw new AppError(ErrorCodes.AUTH_NOT_INITIALIZED, 'Auth module not initialized');
         }
-        
+
         const payload: any = { user: userId };
         if (extras) {
             payload.extras = extras;
@@ -87,7 +88,7 @@ class AuthModule {
         
         // Cache miss - verify token
         if (!this.tokens) {
-            throw new Error('Auth module not initialized');
+            throw new AppError(ErrorCodes.AUTH_NOT_INITIALIZED, 'Auth module not initialized');
         }
         
         try {
@@ -150,7 +151,7 @@ class AuthModule {
     
     async createGithubToken(userId: string): Promise<string> {
         if (!this.tokens) {
-            throw new Error('Auth module not initialized');
+            throw new AppError(ErrorCodes.AUTH_NOT_INITIALIZED, 'Auth module not initialized');
         }
         
         const payload = { user: userId, purpose: 'github-oauth' };
@@ -161,7 +162,7 @@ class AuthModule {
 
     async verifyGithubToken(token: string): Promise<{ userId: string } | null> {
         if (!this.tokens) {
-            throw new Error('Auth module not initialized');
+            throw new AppError(ErrorCodes.AUTH_NOT_INITIALIZED, 'Auth module not initialized');
         }
         
         try {

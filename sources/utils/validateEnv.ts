@@ -5,6 +5,8 @@
  * clear error messages for missing configuration.
  */
 
+import { AppError, ErrorCodes } from "@/utils/errors";
+
 interface EnvConfig {
     /** Variable name */
     name: string;
@@ -159,7 +161,7 @@ export function getEnv(name: string, defaultValue?: string): string | undefined 
 export function requireEnv(name: string): string {
     const value = process.env[name];
     if (value === undefined || value === '') {
-        throw new Error(`Required environment variable ${name} is not set`);
+        throw new AppError(ErrorCodes.CONFIG_ERROR, `Required environment variable ${name} is not set`);
     }
     return value;
 }

@@ -1,6 +1,8 @@
+import { AppError, ErrorCodes } from "@/utils/errors";
+
 export function thumbhash(w: number, h: number, rgba: Buffer) {
     // Encoding an image larger than 100x100 is slow with no benefit
-    if (w > 100 || h > 100) throw new Error(`${w}x${h} doesn't fit in 100x100`)
+    if (w > 100 || h > 100) throw new AppError(ErrorCodes.INVALID_INPUT, `${w}x${h} doesn't fit in 100x100`)
     let { PI, round, max, cos, abs } = Math
 
     // Determine the average color

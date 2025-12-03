@@ -1,5 +1,6 @@
 import sharp from "sharp";
 import { thumbhash } from "./thumbhash";
+import { AppError, ErrorCodes } from "@/utils/errors";
 
 export async function processImage(src: Buffer) {
 
@@ -8,7 +9,7 @@ export async function processImage(src: Buffer) {
     let width = meta.width!;
     let height = meta.height!;
     if (meta.format !== 'png' && meta.format !== 'jpeg') {
-        throw new Error('Unsupported image format');
+        throw new AppError(ErrorCodes.INVALID_INPUT, 'Unsupported image format');
     }
 
     // Resize

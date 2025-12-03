@@ -1,3 +1,5 @@
+import { AppError, ErrorCodes } from "@/utils/errors";
+
 class Node<T> {
     constructor(
         public value: T,
@@ -14,7 +16,7 @@ export class LRUSet<T> {
 
     constructor(maxSize: number) {
         if (maxSize <= 0) {
-            throw new Error('LRUSet maxSize must be greater than 0');
+            throw new AppError(ErrorCodes.INVALID_INPUT, 'LRUSet maxSize must be greater than 0');
         }
         this.maxSize = maxSize;
         this.map = new Map();

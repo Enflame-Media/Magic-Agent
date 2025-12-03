@@ -3,6 +3,7 @@ import { Context } from "@/context";
 import { allocateUserSeq } from "@/storage/seq";
 import { buildUpdateAccountUpdate, eventRouter } from "@/app/events/eventRouter";
 import { randomKeyNaked } from "@/utils/randomKeyNaked";
+import { AppError, ErrorCodes } from "@/utils/errors";
 
 export async function usernameUpdate(ctx: Context, username: string): Promise<void> {
     const userId = ctx.uid;
@@ -15,7 +16,7 @@ export async function usernameUpdate(ctx: Context, username: string): Promise<vo
         }
     });
     if (existingUser) { // Should never happen
-        throw new Error('Username is already taken');
+        throw new AppError(ErrorCodes.VALIDATION_FAILED, 'Username is already taken');
     }
 
     // Update username
