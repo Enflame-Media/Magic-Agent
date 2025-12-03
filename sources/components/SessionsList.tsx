@@ -184,7 +184,7 @@ export function SessionsList() {
         if (data && data.length > 0) {
             requestReview();
         }
-    }, [data && data.length > 0]);
+    }, [data?.length]);
 
     // Early return if no data yet
     if (!data) {
