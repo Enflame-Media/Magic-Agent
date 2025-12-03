@@ -3,7 +3,9 @@ import type { Context } from 'hono';
 import { authMiddleware, type AuthVariables } from '@/middleware/auth';
 import { getDb } from '@/db/client';
 import { schema } from '@/db/schema';
-import * as privacyKit from 'privacy-kit';
+// TODO: HAP-264 - Replace with jose-based implementation
+// privacy-kit fails in Workers due to createRequire(import.meta.url)
+import * as privacyKit from '@/lib/privacy-kit-shim';
 import { eq, desc, and } from 'drizzle-orm';
 import {
     ListArtifactsResponseSchema,

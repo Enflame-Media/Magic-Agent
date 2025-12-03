@@ -1,5 +1,7 @@
 import { createRoute, OpenAPIHono } from '@hono/zod-openapi';
-import * as privacyKit from 'privacy-kit';
+// TODO: HAP-264 - Replace with jose-based implementation
+// privacy-kit fails in Workers due to createRequire(import.meta.url)
+import * as privacyKit from '@/lib/privacy-kit-shim';
 import { createToken } from '@/lib/auth';
 import { getDb } from '@/db/client';
 import { schema } from '@/db/schema';

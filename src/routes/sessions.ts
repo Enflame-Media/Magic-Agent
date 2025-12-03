@@ -4,7 +4,9 @@ import { authMiddleware, type AuthVariables } from '@/middleware/auth';
 import { getDb } from '@/db/client';
 import { schema } from '@/db/schema';
 import { createId } from '@paralleldrive/cuid2';
-import * as privacyKit from 'privacy-kit';
+// TODO: HAP-264 - Replace with jose-based implementation
+// privacy-kit fails in Workers due to createRequire(import.meta.url)
+import * as privacyKit from '@/lib/privacy-kit-shim';
 import { eq, desc, lt, gt, and } from 'drizzle-orm';
 import {
     ListSessionsResponseSchema,

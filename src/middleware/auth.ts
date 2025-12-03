@@ -31,7 +31,7 @@ export interface AuthVariables {
  * @remarks
  * **Token Format:**
  * - Header: `Authorization: Bearer <token>`
- * - The token is a privacy-kit persistent token containing user ID
+ * - The token is a jose JWT (EdDSA/Ed25519) containing user ID
  *
  * **Failure Modes:**
  * - 401 if no Authorization header
