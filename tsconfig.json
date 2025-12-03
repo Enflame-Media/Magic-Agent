@@ -5,6 +5,9 @@
     "paths": {
       "@/*": [
         "./sources/*"
+      ],
+      "@react-navigation/native-stack": [
+        "./node_modules/expo-router/node_modules/@react-navigation/native-stack"
       ]
     }
   },
