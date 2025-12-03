@@ -122,7 +122,7 @@ testRoutes.get('/privacy-kit', async (c) => {
             throw new Error('TEST_AUTH_SECRET not set in environment - add to .dev.vars');
         }
 
-        await initAuth(testSecret, 100); // 100ms TTL for testing expiration
+        await initAuth(testSecret, 5000); // 5s TTL for basic tests (expiration tested separately)
 
         results.tests.initialization = {
             passed: true,
@@ -181,8 +181,8 @@ testRoutes.get('/privacy-kit', async (c) => {
         results.tests.ephemeralGenerator = {
             passed: true,
             publicKey: ephemeralPublicKey,
-            ttl: 100,
-            message: 'Ephemeral token generator created with 100ms TTL',
+            ttl: 5000,
+            message: 'Ephemeral token generator created with 5s TTL',
         };
 
         // Test 5: Generate and verify ephemeral token
@@ -219,8 +219,10 @@ testRoutes.get('/privacy-kit', async (c) => {
 
         // Test 6: Ephemeral token expiration
         // Reset auth with short TTL for expiration test
+        // Note: JWT exp uses seconds precision, so TTL must be at least 1500ms
+        // to reliably survive the Math.floor rounding at second boundaries
         resetAuth();
-        await initAuth(testSecret, 100); // 100ms TTL
+        await initAuth(testSecret, 1500); // 1.5s TTL (safe for second-boundary rounding)
 
         const shortLivedToken = await createEphemeralToken('expired-test', 'expiration-test');
 
@@ -236,8 +238,8 @@ testRoutes.get('/privacy-kit', async (c) => {
             throw new Error(errorMsg);
         }
 
-        // Wait for expiration
-        await new Promise((resolve) => setTimeout(resolve, 150));
+        // Wait for expiration (2s to ensure we pass the 1.5s TTL)
+        await new Promise((resolve) => setTimeout(resolve, 2000));
 
         // Verify after expiration (should fail)
         const expiredVerify = await verifyEphemeralToken(shortLivedToken);

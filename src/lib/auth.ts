@@ -57,10 +57,54 @@ const EPHEMERAL_SERVICE_NAME = 'github-happy';
 const DEFAULT_EPHEMERAL_TTL = 5 * 60 * 1000; // 5 minutes
 
 /**
+ * Ed25519 PKCS8 prefix for wrapping a 32-byte private key seed
+ *
+ * This is the ASN.1 DER encoding for:
+ * SEQUENCE {
+ *   INTEGER 0 (version)
+ *   SEQUENCE { OID 1.3.101.112 (Ed25519) }
+ *   OCTET STRING containing OCTET STRING of 32-byte seed
+ * }
+ *
+ * The prefix is 16 bytes, followed by the 32-byte seed = 48 bytes total
+ */
+const ED25519_PKCS8_PREFIX = new Uint8Array([
+    0x30, 0x2e, // SEQUENCE, 46 bytes
+    0x02, 0x01, 0x00, // INTEGER 0 (version)
+    0x30, 0x05, // SEQUENCE, 5 bytes (AlgorithmIdentifier)
+    0x06, 0x03, 0x2b, 0x65, 0x70, // OID 1.3.101.112 (Ed25519)
+    0x04, 0x22, // OCTET STRING, 34 bytes
+    0x04, 0x20, // OCTET STRING, 32 bytes (the actual key seed)
+]);
+
+/**
+ * Wrap a 32-byte Ed25519 seed in PKCS8 format
+ *
+ * Cloudflare Workers doesn't support raw import of Ed25519 private keys,
+ * but does support PKCS8 format. This function wraps the seed in the
+ * correct ASN.1 DER structure.
+ *
+ * @param seed - 32-byte Ed25519 private key seed
+ * @returns PKCS8-formatted key (48 bytes)
+ */
+function wrapEd25519SeedAsPkcs8(seed: Uint8Array): Uint8Array {
+    if (seed.length !== 32) {
+        throw new Error(`Ed25519 seed must be 32 bytes, got ${seed.length}`);
+    }
+    const pkcs8 = new Uint8Array(48);
+    pkcs8.set(ED25519_PKCS8_PREFIX);
+    pkcs8.set(seed, 16);
+    return pkcs8;
+}
+
+/**
  * Derive a deterministic Ed25519 key pair from a seed string
  *
  * Uses HKDF to derive key material from the seed, then imports as Ed25519 key.
  * This ensures the same seed always produces the same key pair.
+ *
+ * Note: Cloudflare Workers doesn't support raw import of Ed25519 private keys,
+ * so we wrap the derived seed in PKCS8 format before importing.
  *
  * @param seed - The master secret seed
  * @param salt - Salt for key derivation (uses service name for domain separation)
@@ -86,11 +130,14 @@ async function deriveKeyPair(seed: string, salt: string): Promise<CryptoKeyPair>
         256
     );
 
-    // Import as Ed25519 private key
-    // Cloudflare Workers supports Ed25519 via the Web Crypto API
+    // Wrap the 32-byte seed in PKCS8 format
+    // Cloudflare Workers doesn't support raw import of Ed25519 private keys
+    const pkcs8Key = wrapEd25519SeedAsPkcs8(new Uint8Array(derivedBits));
+
+    // Import as Ed25519 private key using PKCS8 format
     const privateKey = await crypto.subtle.importKey(
-        'raw',
-        derivedBits,
+        'pkcs8',
+        pkcs8Key,
         { name: 'Ed25519' },
         true, // extractable - needed to derive public key
         ['sign']
