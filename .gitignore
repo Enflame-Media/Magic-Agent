@@ -14,9 +14,18 @@ oclif.manifest.json
 
 pnpm-lock.yaml
 
-# Environment variables
+# Environment variables (protect production secrets)
 .env
-.env*.local
+.env.local
+.env.*.local
+.env.production
+
+# Keep templates and development configs committed to repo
+!.env.example
+!.env.dev
+!.env.dev-local-server
+!.env.integration-test
+!.env.staging
 
 # Claude code session level settings
 .claude/settings.local.json
