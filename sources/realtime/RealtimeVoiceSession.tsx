@@ -88,29 +88,29 @@ class RealtimeVoiceSessionImpl implements VoiceSession {
 export const RealtimeVoiceSession: React.FC = () => {
     const conversation = useConversation({
         clientTools: realtimeClientTools,
-        onConnect: (data) => {
-            // console.log('Realtime session connected:', data);
+        onConnect: (_data) => {
+            // console.log('Realtime session connected:', _data);
             storage.getState().setRealtimeStatus('connected');
         },
         onDisconnect: () => {
             // console.log('Realtime session disconnected');
             storage.getState().setRealtimeStatus('disconnected');
         },
-        onMessage: (data) => {
-            // console.log('Realtime message:', data);
+        onMessage: (_data) => {
+            // console.log('Realtime message:', _data);
         },
-        onError: (error) => {
-            // console.error('Realtime error:', error);
+        onError: (_error) => {
+            // console.error('Realtime error:', _error);
             storage.getState().setRealtimeStatus('error');
         },
-        onStatusChange: (data) => {
-            // console.log('Realtime status change:', data);
+        onStatusChange: (_data) => {
+            // console.log('Realtime status change:', _data);
         },
-        onModeChange: (data) => {
-            // console.log('Realtime mode change:', data);
+        onModeChange: (_data) => {
+            // console.log('Realtime mode change:', _data);
         },
-        onDebug: (message) => {
-            // console.debug('Realtime debug:', message);
+        onDebug: (_message) => {
+            // console.debug('Realtime debug:', _message);
         }
     });
 

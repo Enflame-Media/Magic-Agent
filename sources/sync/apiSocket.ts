@@ -394,8 +394,8 @@ class ApiSocket {
             }
         });
 
-        this.socket.on('disconnect', (reason) => {
-            // console.log('🔌 SyncSocket: Disconnected', reason);
+        this.socket.on('disconnect', (_reason) => {
+            // console.log('🔌 SyncSocket: Disconnected', _reason);
             this.updateStatus('disconnected');
         });
 

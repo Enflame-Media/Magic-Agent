@@ -5,7 +5,7 @@ import { CommandView } from '@/components/CommandView';
 import { knownTools } from '@/components/tools/knownTools';
 import { Metadata } from '@/sync/storageTypes';
 
-export const BashView = React.memo((props: { tool: ToolCall, metadata: Metadata | null }) => {
+export const BashView = React.memo((props: { tool: ToolCall, metadata?: Metadata | null }) => {
     const { input, result, state } = props.tool;
 
     let parsedResult: { stdout?: string; stderr?: string } | null = null;

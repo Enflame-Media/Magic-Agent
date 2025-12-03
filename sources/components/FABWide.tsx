@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { t } from '@/text';
 
-const stylesheet = StyleSheet.create((theme, runtime) => ({
+const stylesheet = StyleSheet.create((theme) => ({
     container: {
         position: 'absolute',
         left: 16,

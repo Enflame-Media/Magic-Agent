@@ -11,7 +11,7 @@ import { Image } from 'expo-image';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { t } from '@/text';
 
-const stylesheet = StyleSheet.create((theme, runtime) => ({
+const stylesheet = StyleSheet.create((theme) => ({
     headerButton: {
         // marginHorizontal: 4,
         width: 32,

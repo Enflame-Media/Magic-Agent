@@ -14,7 +14,7 @@ interface MultiEditViewFullProps {
     metadata: Metadata | null;
 }
 
-export const MultiEditViewFull = React.memo<MultiEditViewFullProps>(({ tool, metadata }) => {
+export const MultiEditViewFull = React.memo<MultiEditViewFullProps>(({ tool, metadata: _metadata }) => {
     const { input } = tool;
     const wrapLinesInDiffs = useSetting('wrapLinesInDiffs');
 

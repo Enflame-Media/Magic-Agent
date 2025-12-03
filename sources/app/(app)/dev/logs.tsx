@@ -68,7 +68,7 @@ function LogsScreen() {
         log.log(`Test log entry at ${timestamp}`);
     };
 
-    const renderLogItem = ({ item, index }: { item: string; index: number }) => (
+    const renderLogItem = ({ item, index: _index }: { item: string; index: number }) => (
         <View style={{
             paddingHorizontal: 16,
             paddingVertical: 8,

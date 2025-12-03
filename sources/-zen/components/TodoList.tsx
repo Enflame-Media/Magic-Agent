@@ -42,7 +42,7 @@ const AnimatedTodoItem = React.memo<AnimatedTodoItemProps>(({
     todo,
     index,
     positions,
-    scrollY,
+    scrollY: _scrollY,
     onToggle,
     onReorder
 }) => {
@@ -68,7 +68,7 @@ const AnimatedTodoItem = React.memo<AnimatedTodoItemProps>(({
 
     const panGesture = Gesture.Pan()
         .activateAfterLongPress(500)
-        .onStart((e) => {
+        .onStart((_e) => {
             'worklet';
             isDragging.value = true;
             hasDragged.value = true;

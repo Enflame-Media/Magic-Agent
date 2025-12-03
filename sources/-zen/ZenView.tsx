@@ -243,7 +243,7 @@ export const ZenView = React.memo(() => {
                             <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
                                 Linked Sessions
                             </Text>
-                            {linkedSessions.map((link, index) => (
+                            {linkedSessions.map((link, _index) => (
                                 <Pressable
                                     key={link.sessionId}
                                     onPress={() => { router.dismissAll(); router.push(`/session/${link.sessionId}`); }}

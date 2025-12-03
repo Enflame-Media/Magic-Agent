@@ -15,7 +15,7 @@ import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { t } from '@/text';
 import { useInboxHasContent } from '@/hooks/useInboxHasContent';
 
-const stylesheet = StyleSheet.create((theme, runtime) => ({
+const stylesheet = StyleSheet.create((theme) => ({
     container: {
         flex: 1,
         borderStyle: 'solid',

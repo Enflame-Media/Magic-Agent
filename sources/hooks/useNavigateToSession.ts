@@ -4,7 +4,7 @@ export function useNavigateToSession() {
     const router = useRouter();
     return (sessionId: string) => {
         router.navigate(`/session/${sessionId}`, {
-            dangerouslySingular(name, params) {
+            dangerouslySingular(_name, _params) {
                 return 'session'
             },
         });

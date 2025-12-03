@@ -7,9 +7,9 @@ interface CodeViewProps {
     language?: string;
 }
 
-export const CodeView = React.memo<CodeViewProps>(({ 
-    code, 
-    language
+export const CodeView = React.memo<CodeViewProps>(({
+    code,
+    language: _language
 }) => {
     return (
         <View style={styles.codeBlock}>

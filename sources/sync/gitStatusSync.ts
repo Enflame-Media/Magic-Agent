@@ -101,7 +101,7 @@ export class GitStatusSync {
     /**
      * Fetch git status for a project using any session in that project
      */
-    private async fetchGitStatusForProject(sessionId: string, projectKey: string): Promise<void> {
+    private async fetchGitStatusForProject(sessionId: string, _projectKey: string): Promise<void> {
         try {
             // Check if we have a session with valid metadata
             const session = storage.getState().sessions[sessionId];

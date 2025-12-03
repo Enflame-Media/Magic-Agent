@@ -41,7 +41,7 @@ export interface ItemProps {
     copy?: boolean | string;
 }
 
-const stylesheet = StyleSheet.create((theme, runtime) => ({
+const stylesheet = StyleSheet.create((theme) => ({
     container: {
         flexDirection: 'row',
         alignItems: 'center',

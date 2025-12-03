@@ -11,7 +11,7 @@ interface BashViewFullProps {
     metadata: Metadata | null;
 }
 
-export const BashViewFull = React.memo<BashViewFullProps>(({ tool, metadata }) => {
+export const BashViewFull = React.memo<BashViewFullProps>(({ tool, metadata: _metadata }) => {
     const { input, result, state } = tool;
 
     // Parse the result

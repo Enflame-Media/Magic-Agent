@@ -488,7 +488,7 @@ function FileScreen() {
 
 export default React.memo(FileScreen);
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((_theme) => ({
     container: {
         flex: 1,
         maxWidth: layout.maxWidth,

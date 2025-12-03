@@ -110,15 +110,15 @@ export function formatSessionFull(session: Session, messages: Message[]): string
     return lines.join('\n\n');
 }
 
-export function formatSessionOffline(sessionId: string, metadata?: SessionMetadata): string {
+export function formatSessionOffline(sessionId: string, _metadata?: SessionMetadata): string {
     return `Session went offline: ${sessionId}`;
 }
 
-export function formatSessionOnline(sessionId: string, metadata?: SessionMetadata): string {
+export function formatSessionOnline(sessionId: string, _metadata?: SessionMetadata): string {
     return `Session came online: ${sessionId}`;
 }
 
-export function formatSessionFocus(sessionId: string, metadata?: SessionMetadata): string {
+export function formatSessionFocus(sessionId: string, _metadata?: SessionMetadata): string {
     return `Session became focused: ${sessionId}`;
 }
 

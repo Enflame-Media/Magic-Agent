@@ -97,7 +97,7 @@ export async function removeSessionLink(sessionId: string): Promise<void> {
 /**
  * Remove all links for a task (when task is deleted)
  */
-export function removeTaskLinks(taskId: string): void {
+export function removeTaskLinks(_taskId: string): void {
     // No action needed - links are stored in the task itself
     // When task is deleted, its linkedSessions are deleted with it
 }

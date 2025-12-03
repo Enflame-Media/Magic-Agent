@@ -28,7 +28,7 @@ export interface ItemGroupProps {
     containerStyle?: StyleProp<ViewStyle>;
 }
 
-const stylesheet = StyleSheet.create((theme, runtime) => ({
+const stylesheet = StyleSheet.create((theme) => ({
     wrapper: {
         alignItems: 'center',
     },

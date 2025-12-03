@@ -13,7 +13,7 @@ const sizes: { [key in RoundButtonSize]: { height: number, fontSize: number, hit
 
 export type RoundButtonDisplay = 'default' | 'inverted';
 
-const stylesheet = StyleSheet.create((theme) => ({
+const stylesheet = StyleSheet.create((_theme) => ({
     loadingContainer: {
         position: 'absolute',
         top: 0,

@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 const { width: screenWidth } = Dimensions.get('window');
 
-const stylesheet = StyleSheet.create((theme, runtime) => ({
+const stylesheet = StyleSheet.create((theme) => ({
     container: {
         flex: 1,
         backgroundColor: theme.colors.surface,
@@ -258,7 +258,7 @@ function UnistylesDemo() {
                         Padding and border radius adapt to screen size
                     </Text>
 
-                    {['Tiny', 'Small', 'Medium', 'Large', 'Extra Large'].map((size, index) => (
+                    {['Tiny', 'Small', 'Medium', 'Large', 'Extra Large'].map((size, _index) => (
                         <View key={size} style={styles.adaptiveBox}>
                             <Text style={styles.adaptiveText}>
                                 {size} - Adapts to {rt.breakpoint}

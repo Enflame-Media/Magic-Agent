@@ -69,7 +69,7 @@ interface AgentInputProps {
 
 const MAX_CONTEXT_SIZE = 190000;
 
-const stylesheet = StyleSheet.create((theme, runtime) => ({
+const stylesheet = StyleSheet.create((theme) => ({
     container: {
         alignItems: 'center',
         paddingBottom: 8,

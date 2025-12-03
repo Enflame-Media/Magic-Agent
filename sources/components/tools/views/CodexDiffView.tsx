@@ -75,7 +75,7 @@ function parseUnifiedDiff(unifiedDiff: string): { oldText: string; newText: stri
     };
 }
 
-export const CodexDiffView = React.memo<CodexDiffViewProps>(({ tool, metadata }) => {
+export const CodexDiffView = React.memo<CodexDiffViewProps>(({ tool, metadata: _metadata }) => {
     const { theme } = useUnistyles();
     const showLineNumbersInToolViews = useSetting('showLineNumbersInToolViews');
     const { input } = tool;

@@ -12,7 +12,7 @@ interface EditViewFullProps {
     metadata: Metadata | null;
 }
 
-export const EditViewFull = React.memo<EditViewFullProps>(({ tool, metadata }) => {
+export const EditViewFull = React.memo<EditViewFullProps>(({ tool, metadata: _metadata }) => {
     const { input } = tool;
 
     // Parse the input

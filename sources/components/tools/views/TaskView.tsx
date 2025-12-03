@@ -13,7 +13,7 @@ interface FilteredTool {
     state: 'running' | 'completed' | 'error';
 }
 
-export const TaskView = React.memo<ToolViewProps>(({ tool, metadata, messages }) => {
+export const TaskView = React.memo<ToolViewProps>(({ tool: _tool, metadata, messages }) => {
     const { theme } = useUnistyles();
     const filtered: FilteredTool[] = [];
 

@@ -192,7 +192,7 @@ export const createHeader = (props: NativeStackHeaderProps) => {
     return <NavigationHeaderComponent {...props} />;
 };
 
-const stylesheet = StyleSheet.create((theme, runtime) => ({
+const stylesheet = StyleSheet.create((theme) => ({
     container: {
         position: 'relative',
         zIndex: 100,

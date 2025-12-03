@@ -21,7 +21,7 @@ export const AgentContentView: React.FC<AgentContentViewProps> = React.memo(({ i
             'worklet';
             animatedPadding.value = e.progress === 1 ? (-height.height.value - safeArea.bottom) : 0;
         },
-        onStart(e) {
+        onStart(_e) {
             'worklet';
             animatedPadding.value = 0;
         },
