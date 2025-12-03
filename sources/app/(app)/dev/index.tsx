@@ -339,7 +339,7 @@ function DevScreen() {
                     detailStyle={{ flex: 1, textAlign: 'right', minWidth: '70%' }}
                 />
                 <Item
-                    title="Socket.IO Status"
+                    title="WebSocket Status"
                     subtitle={getSocketStatusSubtitle()}
                     detail={socketStatus.status}
                     rightElement={<SocketStatusIndicator />}
