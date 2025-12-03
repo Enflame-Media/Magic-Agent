@@ -47,10 +47,10 @@ describe('reducer', () => {
 
             const result = reducer(state, messages);
             expect(result.messages).toHaveLength(1);
-            expect(result.messages[0].kind).toBe('user-text');
-            if (result.messages[0].kind === 'user-text') {
-                expect(result.messages[0].text).toBe('Hello');
-            }
+            expect(result.messages[0]).toMatchObject({
+                kind: 'user-text',
+                text: 'Hello'
+            });
             expect(state.localIds.has('local123')).toBe(true);
         });
 
@@ -153,15 +153,18 @@ describe('reducer', () => {
 
             const result = reducer(state, messages);
             expect(result.messages).toHaveLength(3);
-            if (result.messages[0].kind === 'user-text') {
-                expect(result.messages[0].text).toBe('First');
-            }
-            if (result.messages[1].kind === 'user-text') {
-                expect(result.messages[1].text).toBe('Second');
-            }
-            if (result.messages[2].kind === 'user-text') {
-                expect(result.messages[2].text).toBe('Third');
-            }
+            expect(result.messages[0]).toMatchObject({
+                kind: 'user-text',
+                text: 'First'
+            });
+            expect(result.messages[1]).toMatchObject({
+                kind: 'user-text',
+                text: 'Second'
+            });
+            expect(result.messages[2]).toMatchObject({
+                kind: 'user-text',
+                text: 'Third'
+            });
         });
     });
 
@@ -186,10 +189,10 @@ describe('reducer', () => {
 
             const result = reducer(state, messages);
             expect(result.messages).toHaveLength(1);
-            expect(result.messages[0].kind).toBe('agent-text');
-            if (result.messages[0].kind === 'agent-text') {
-                expect(result.messages[0].text).toBe('Hello from Claude!');
-            }
+            expect(result.messages[0]).toMatchObject({
+                kind: 'agent-text',
+                text: 'Hello from Claude!'
+            });
         });
 
         it('should process multiple text blocks in one agent message', () => {
@@ -220,12 +223,14 @@ describe('reducer', () => {
 
             const result = reducer(state, messages);
             expect(result.messages).toHaveLength(2);
-            if (result.messages[0].kind === 'agent-text') {
-                expect(result.messages[0].text).toBe('Part 1');
-            }
-            if (result.messages[1].kind === 'agent-text') {
-                expect(result.messages[1].text).toBe('Part 2');
-            }
+            expect(result.messages[0]).toMatchObject({
+                kind: 'agent-text',
+                text: 'Part 1'
+            });
+            expect(result.messages[1]).toMatchObject({
+                kind: 'agent-text',
+                text: 'Part 2'
+            });
         });
     });
 
@@ -279,22 +284,22 @@ describe('reducer', () => {
 
             const result = reducer(state, messages);
             expect(result.messages).toHaveLength(4);
-            expect(result.messages[0].kind).toBe('user-text');
-            if (result.messages[0].kind === 'user-text') {
-                expect(result.messages[0].text).toBe('Question 1');
-            }
-            expect(result.messages[1].kind).toBe('agent-text');
-            if (result.messages[1].kind === 'agent-text') {
-                expect(result.messages[1].text).toBe('Answer 1');
-            }
-            expect(result.messages[2].kind).toBe('user-text');
-            if (result.messages[2].kind === 'user-text') {
-                expect(result.messages[2].text).toBe('Question 2');
-            }
-            expect(result.messages[3].kind).toBe('agent-text');
-            if (result.messages[3].kind === 'agent-text') {
-                expect(result.messages[3].text).toBe('Answer 2');
-            }
+            expect(result.messages[0]).toMatchObject({
+                kind: 'user-text',
+                text: 'Question 1'
+            });
+            expect(result.messages[1]).toMatchObject({
+                kind: 'agent-text',
+                text: 'Answer 1'
+            });
+            expect(result.messages[2]).toMatchObject({
+                kind: 'user-text',
+                text: 'Question 2'
+            });
+            expect(result.messages[3]).toMatchObject({
+                kind: 'agent-text',
+                text: 'Answer 2'
+            });
         });
     });
 
@@ -349,9 +354,10 @@ describe('reducer', () => {
 
             const result = reducer(state, messages);
             expect(result.messages).toHaveLength(1);
-            if (result.messages[0].kind === 'user-text') {
-                expect(result.messages[0].text).toBe('Valid');
-            }
+            expect(result.messages[0]).toMatchObject({
+                kind: 'user-text',
+                text: 'Valid'
+            });
         });
 
         it('should handle summary messages', () => {
@@ -390,17 +396,19 @@ describe('reducer', () => {
             };
 
             const result = reducer(state, [], agentState);
-            
+
             expect(result.messages).toHaveLength(1);
-            expect(result.messages[0].kind).toBe('tool-call');
-            if (result.messages[0].kind === 'tool-call') {
-                expect(result.messages[0].tool.name).toBe('Bash');
-                expect(result.messages[0].tool.state).toBe('running');
-                expect(result.messages[0].tool.permission).toEqual({
-                    id: 'tool-1',
-                    status: 'pending'
-                });
-            }
+            expect(result.messages[0]).toMatchObject({
+                kind: 'tool-call',
+                tool: {
+                    name: 'Bash',
+                    state: 'running',
+                    permission: {
+                        id: 'tool-1',
+                        status: 'pending'
+                    }
+                }
+            });
         });
 
         it('should update permission status for completed requests', () => {
@@ -436,11 +444,16 @@ describe('reducer', () => {
 
             const result2 = reducer(state, [], agentState2);
             expect(result2.messages).toHaveLength(1);
-            if (result2.messages[0].kind === 'tool-call') {
-                expect(result2.messages[0].tool.state).toBe('error');
-                expect(result2.messages[0].tool.permission?.status).toBe('denied');
-                expect(result2.messages[0].tool.permission?.reason).toBe('User denied permission');
-            }
+            expect(result2.messages[0]).toMatchObject({
+                kind: 'tool-call',
+                tool: {
+                    state: 'error',
+                    permission: {
+                        status: 'denied',
+                        reason: 'User denied permission'
+                    }
+                }
+            });
         });
 
         it('should match incoming tool calls to approved permission messages', () => {
@@ -483,15 +496,18 @@ describe('reducer', () => {
             ];
 
             const result2 = reducer(state, messages, agentState);
-            
+
             // The tool call should be matched to the existing permission message
             // So we should get an update to the existing message, not a new one
             expect(result2.messages).toHaveLength(1);
-            if (result2.messages[0].kind === 'tool-call') {
-                expect(result2.messages[0].tool.permission?.status).toBe('approved');
-                expect(result2.messages[0].tool.state).toBe('running');
-                expect(result2.messages[0].tool.name).toBe('Bash');
-            }
+            expect(result2.messages[0]).toMatchObject({
+                kind: 'tool-call',
+                tool: {
+                    permission: { status: 'approved' },
+                    state: 'running',
+                    name: 'Bash'
+                }
+            });
         });
 
         it('should match tool calls by ID regardless of arguments', () => {
@@ -560,15 +576,17 @@ describe('reducer', () => {
 
             // Pass agentState2 - it's always provided as current state
             const result3 = reducer(state, messages, agentState2);
-            
+
             // Should return the updated permission message (ID match)
             expect(result3.messages).toHaveLength(1);
-            expect(result3.messages[0].kind).toBe('tool-call');
-            if (result3.messages[0].kind === 'tool-call') {
-                // With ID matching, keeps original permission arguments
-                expect(result3.messages[0].tool.input).toEqual({ command: 'ls -la' });
-            }
-            
+            expect(result3.messages[0]).toMatchObject({
+                kind: 'tool-call',
+                tool: {
+                    // With ID matching, keeps original permission arguments
+                    input: { command: 'ls -la' }
+                }
+            });
+
             // Verify that tool-1 is in the map
             expect(state.toolIdToMessageId.has('tool-1')).toBe(true);
             // Should have both tool IDs in the map
@@ -630,11 +648,13 @@ describe('reducer', () => {
             
             // Should only return the updated message that matched
             expect(result2.messages).toHaveLength(1);
-            expect(result2.messages[0].kind).toBe('tool-call');
-            if (result2.messages[0].kind === 'tool-call') {
-                expect(result2.messages[0].tool.input).toEqual({ command: 'ls' });
-            }
-            
+            expect(result2.messages[0]).toMatchObject({
+                kind: 'tool-call',
+                tool: {
+                    input: { command: 'ls' }
+                }
+            });
+
             // With new design, tool-1 creates a new message since it doesn't match tool-old or tool-new
             expect(state.toolIdToMessageId.has('tool-1')).toBe(true);
             expect(state.toolIdToMessageId.has('tool-old')).toBe(true);
@@ -744,21 +764,23 @@ describe('reducer', () => {
             
             // Process both simultaneously
             const result = reducer(state, messages, agentState);
-            
+
             // Should create only one message (the tool call takes priority)
             expect(result.messages).toHaveLength(1);
-            expect(result.messages[0].kind).toBe('tool-call');
-            if (result.messages[0].kind === 'tool-call') {
+            expect(result.messages[0]).toMatchObject({
+                kind: 'tool-call',
                 // Should use tool call's timestamp, not permission's
-                expect(result.messages[0].createdAt).toBe(5000);
-                expect(result.messages[0].id).toBeDefined();
-                
-                // Should have permission info from AgentState (it was skipped in Phase 0 but attached in Phase 2)
-                expect(result.messages[0].tool.permission).toBeDefined();
-                expect(result.messages[0].tool.permission?.id).toBe('tool-1');
-                expect(result.messages[0].tool.permission?.status).toBe('approved');
-            }
-            
+                createdAt: 5000,
+                tool: {
+                    // Should have permission info from AgentState (it was skipped in Phase 0 but attached in Phase 2)
+                    permission: {
+                        id: 'tool-1',
+                        status: 'approved'
+                    }
+                }
+            });
+            expect(result.messages[0].id).toBeDefined();
+
             // Verify only the tool message was created, not a separate permission message
             expect(state.toolIdToMessageId.has('tool-1')).toBe(true);
             expect(state.toolIdToMessageId.has('tool-1')).toBe(true);
@@ -985,21 +1007,26 @@ describe('reducer', () => {
             
             // Process both simultaneously
             const result = reducer(state, messages, agentState);
-            
+
             // Should update the existing permission message
             expect(result.messages).toHaveLength(1);
-            
+
             // Verify the message was updated with tool execution details
-            if (result.messages[0].kind === 'tool-call') {
-                // Should keep original permission data
-                expect(result.messages[0].tool.permission?.id).toBe('tool-1');
-                expect(result.messages[0].tool.permission?.status).toBe('pending');
-                // Should keep original arguments from permission
-                expect(result.messages[0].tool.input).toEqual({ command: 'ls -la' });
+            expect(result.messages[0]).toMatchObject({
+                kind: 'tool-call',
                 // Should keep original timestamp
-                expect(result.messages[0].createdAt).toBe(1000);
-            }
-            
+                createdAt: 1000,
+                tool: {
+                    // Should keep original permission data
+                    permission: {
+                        id: 'tool-1',
+                        status: 'pending'
+                    },
+                    // Should keep original arguments from permission
+                    input: { command: 'ls -la' }
+                }
+            });
+
             // Verify internal state - should be the same message
             expect(state.toolIdToMessageId.has('tool-1')).toBe(true);
             expect(state.toolIdToMessageId.has('tool-1')).toBe(true);
@@ -1042,15 +1069,17 @@ describe('reducer', () => {
             ];
             
             const result2 = reducer(state, messages2, agentState2);
-            
+
             // Should update the permission message
             expect(result2.messages).toHaveLength(1);
-            expect(result2.messages[0].kind).toBe('tool-call');
-            if (result2.messages[0].kind === 'tool-call') {
-                expect(result2.messages[0].tool.input).toEqual({ command: 'ls -la' });
-                expect(result2.messages[0].tool.permission?.status).toBe('approved');
-            }
-            
+            expect(result2.messages[0]).toMatchObject({
+                kind: 'tool-call',
+                tool: {
+                    input: { command: 'ls -la' },
+                    permission: { status: 'approved' }
+                }
+            });
+
             // Verify it matched to the correct permission (same ID now)
             // Should resolve to the permission message since it was created first
             expect(state.toolIdToMessageId.get('tool-1')).toBe(permMsgId);
@@ -1072,12 +1101,14 @@ describe('reducer', () => {
             
             const result1 = reducer(state, [], agentState1);
             expect(result1.messages).toHaveLength(1);
-            expect(result1.messages[0].kind).toBe('tool-call');
-            if (result1.messages[0].kind === 'tool-call') {
-                expect(result1.messages[0].tool.state).toBe('running');
-                expect(result1.messages[0].tool.permission?.status).toBe('pending');
-            }
-            
+            expect(result1.messages[0]).toMatchObject({
+                kind: 'tool-call',
+                tool: {
+                    state: 'running',
+                    permission: { status: 'pending' }
+                }
+            });
+
             // Step 2: Approve permission
             const agentState2: AgentState = {
                 completedRequests: {
@@ -1093,11 +1124,14 @@ describe('reducer', () => {
             
             const result2 = reducer(state, [], agentState2);
             expect(result2.messages).toHaveLength(1);
-            if (result2.messages[0].kind === 'tool-call') {
-                expect(result2.messages[0].tool.permission?.status).toBe('approved');
-                expect(result2.messages[0].tool.state).toBe('running');
-            }
-            
+            expect(result2.messages[0]).toMatchObject({
+                kind: 'tool-call',
+                tool: {
+                    permission: { status: 'approved' },
+                    state: 'running'
+                }
+            });
+
             // Step 3: Tool call arrives
             const toolMessages: NormalizedMessage[] = [
                 {
@@ -1120,10 +1154,11 @@ describe('reducer', () => {
             
             const result3 = reducer(state, toolMessages, agentState2);
             expect(result3.messages).toHaveLength(1);
-            if (result3.messages[0].kind === 'tool-call') {
-                expect(result3.messages[0].tool.startedAt).toBe(3000);
-            }
-            
+            expect(result3.messages[0]).toMatchObject({
+                kind: 'tool-call',
+                tool: { startedAt: 3000 }
+            });
+
             // Step 4: Tool result arrives
             const resultMessages: NormalizedMessage[] = [
                 {
@@ -1145,11 +1180,14 @@ describe('reducer', () => {
             
             const result4 = reducer(state, resultMessages, agentState2);
             expect(result4.messages).toHaveLength(1);
-            if (result4.messages[0].kind === 'tool-call') {
-                expect(result4.messages[0].tool.state).toBe('completed');
-                expect(result4.messages[0].tool.result).toBe('File contents');
-                expect(result4.messages[0].tool.completedAt).toBe(4000);
-            }
+            expect(result4.messages[0]).toMatchObject({
+                kind: 'tool-call',
+                tool: {
+                    state: 'completed',
+                    result: 'File contents',
+                    completedAt: 4000
+                }
+            });
         });
 
         it('should handle denied and canceled permissions correctly', () => {
@@ -1199,26 +1237,36 @@ describe('reducer', () => {
             const result2 = reducer(state, [], agentState2);
             expect(result2.messages).toHaveLength(2);
             
-            const deniedMsg = result2.messages.find(m => 
+            const deniedMsg = result2.messages.find(m =>
                 m.kind === 'tool-call' && m.tool.name === 'Write'
             );
-            const canceledMsg = result2.messages.find(m => 
+            const canceledMsg = result2.messages.find(m =>
                 m.kind === 'tool-call' && m.tool.name === 'Delete'
             );
-            
-            if (deniedMsg?.kind === 'tool-call') {
-                expect(deniedMsg.tool.state).toBe('error');
-                expect(deniedMsg.tool.permission?.status).toBe('denied');
-                expect(deniedMsg.tool.permission?.reason).toBe('Unauthorized access');
-                expect(deniedMsg.tool.result).toEqual({ error: 'Unauthorized access' });
-            }
-            
-            if (canceledMsg?.kind === 'tool-call') {
-                expect(canceledMsg.tool.state).toBe('error');
-                expect(canceledMsg.tool.permission?.status).toBe('canceled');
-                expect(canceledMsg.tool.permission?.reason).toBe('User canceled');
-                expect(canceledMsg.tool.result).toEqual({ error: 'User canceled' });
-            }
+
+            expect(deniedMsg).toMatchObject({
+                kind: 'tool-call',
+                tool: {
+                    state: 'error',
+                    permission: {
+                        status: 'denied',
+                        reason: 'Unauthorized access'
+                    },
+                    result: { error: 'Unauthorized access' }
+                }
+            });
+
+            expect(canceledMsg).toMatchObject({
+                kind: 'tool-call',
+                tool: {
+                    state: 'error',
+                    permission: {
+                        status: 'canceled',
+                        reason: 'User canceled'
+                    },
+                    result: { error: 'User canceled' }
+                }
+            });
         });
 
         it('should handle tool result arriving before tool call (race condition)', () => {
@@ -1268,11 +1316,14 @@ describe('reducer', () => {
             
             const result2 = reducer(state, toolMessages);
             expect(result2.messages).toHaveLength(1);
-            if (result2.messages[0].kind === 'tool-call') {
-                expect(result2.messages[0].tool.state).toBe('running'); // Result was ignored
-                expect(result2.messages[0].tool.result).toBeUndefined();
-            }
-            
+            expect(result2.messages[0]).toMatchObject({
+                kind: 'tool-call',
+                tool: {
+                    state: 'running', // Result was ignored
+                    result: undefined
+                }
+            });
+
             // Result arrives again (with different message ID since it's a new message)
             const resultMessages2: NormalizedMessage[] = [
                 {
@@ -1293,17 +1344,20 @@ describe('reducer', () => {
             ];
             
             const result3 = reducer(state, resultMessages2, null);
-            
+
             // Debug: Check if tool was properly registered
             const toolId = 'tool-1';
             const msgId = state.toolIdToMessageId.get(toolId);
             const message = msgId ? state.messages.get(msgId) : null;
-            
+
             expect(result3.messages).toHaveLength(1);
-            if (result3.messages[0].kind === 'tool-call') {
-                expect(result3.messages[0].tool.state).toBe('completed');
-                expect(result3.messages[0].tool.result).toBe('Success');
-            }
+            expect(result3.messages[0]).toMatchObject({
+                kind: 'tool-call',
+                tool: {
+                    state: 'completed',
+                    result: 'Success'
+                }
+            });
         });
 
         it('should handle interleaved messages from multiple sources correctly', () => {
@@ -1442,11 +1496,14 @@ describe('reducer', () => {
             
             const result1 = reducer(state, result1Messages);
             expect(result1.messages).toHaveLength(1);
-            if (result1.messages[0].kind === 'tool-call') {
-                expect(result1.messages[0].tool.state).toBe('completed');
-                expect(result1.messages[0].tool.result).toBe('First result');
-            }
-            
+            expect(result1.messages[0]).toMatchObject({
+                kind: 'tool-call',
+                tool: {
+                    state: 'completed',
+                    result: 'First result'
+                }
+            });
+
             // Second result (should be ignored)
             const result2Messages: NormalizedMessage[] = [
                 {
@@ -1605,16 +1662,17 @@ describe('reducer', () => {
             
             // Should update the existing permission message (ID match)
             expect(result.messages).toHaveLength(1);
-            
+
             // The message should have the permission's arguments
-            const toolMessage = result.messages[0];
-            expect(toolMessage.kind).toBe('tool-call');
-            if (toolMessage.kind === 'tool-call') {
-                expect(toolMessage.tool.name).toBe('Bash');
-                // Keeps original permission arguments
-                expect(toolMessage.tool.input).toEqual({ command: 'ls' });
-                expect(toolMessage.tool.permission?.status).toBe('approved');
-            }
+            expect(result.messages[0]).toMatchObject({
+                kind: 'tool-call',
+                tool: {
+                    name: 'Bash',
+                    // Keeps original permission arguments
+                    input: { command: 'ls' },
+                    permission: { status: 'approved' }
+                }
+            });
         });
 
         it('should maintain correct state across many operations', () => {
@@ -1636,9 +1694,9 @@ describe('reducer', () => {
                 ];
                 
                 const userResult = reducer(state, userMsg);
-                expect(userResult).toHaveLength(1);
+                expect(userResult.messages).toHaveLength(1);
                 totalMessages++;
-                
+
                 // Add permission
                 const agentState: AgentState = {
                     requests: {
@@ -1649,9 +1707,9 @@ describe('reducer', () => {
                         }
                     }
                 };
-                
+
                 const permResult = reducer(state, [], agentState);
-                expect(permResult).toHaveLength(1);
+                expect(permResult.messages).toHaveLength(1);
                 totalMessages++;
                 
                 // Approve permission
@@ -1688,7 +1746,7 @@ describe('reducer', () => {
             ];
             
             const dupResult = reducer(state, duplicateUser);
-            expect(dupResult).toHaveLength(0);
+            expect(dupResult.messages).toHaveLength(0);
             expect(state.messages.size).toBe(totalMessages); // No increase
         });
 
@@ -2666,12 +2724,14 @@ describe('reducer', () => {
             
             // Should create a tool message WITHOUT permission
             expect(result1.messages).toHaveLength(1);
-            expect(result1.messages[0].kind).toBe('tool-call');
-            if (result1.messages[0].kind === 'tool-call') {
-                expect(result1.messages[0].tool.permission).toBeUndefined();
-                expect(result1.messages[0].tool.state).toBe('running');
-            }
-            
+            expect(result1.messages[0]).toMatchObject({
+                kind: 'tool-call',
+                tool: {
+                    state: 'running'
+                }
+            });
+            expect((result1.messages[0] as { tool: { permission?: unknown } }).tool.permission).toBeUndefined();
+
             // Verify tool is registered in state
             expect(state.toolIdToMessageId.has('tool-1')).toBe(true);
             const toolMsgId = state.toolIdToMessageId.get('tool-1');
@@ -2692,13 +2752,17 @@ describe('reducer', () => {
             
             // The reducer SHOULD match the permission to the existing tool
             expect(result2.messages).toHaveLength(1);
-            expect(result2.messages[0].kind).toBe('tool-call');
-            if (result2.messages[0].kind === 'tool-call') {
-                // The existing tool should now have the permission attached
-                expect(result2.messages[0].tool.permission?.status).toBe('pending');
-                expect(result2.messages[0].tool.permission?.id).toBe('tool-1');
-            }
-            
+            expect(result2.messages[0]).toMatchObject({
+                kind: 'tool-call',
+                tool: {
+                    // The existing tool should now have the permission attached
+                    permission: {
+                        status: 'pending',
+                        id: 'tool-1'
+                    }
+                }
+            });
+
             // Should still only have ONE message - the tool was updated
             expect(state.messages.size).toBe(1);
             
@@ -2774,12 +2838,15 @@ describe('reducer', () => {
             // Find the tool message
             const toolMsg = result1.messages.find(m => m.kind === 'tool-call');
             expect(toolMsg).toBeDefined();
-            if (toolMsg?.kind === 'tool-call') {
-                expect(toolMsg.tool.permission).toBeUndefined(); // No permission yet
-                expect(toolMsg.tool.state).toBe('completed'); // Tool completed
-                expect(toolMsg.tool.result).toBe('file1.txt\nfile2.txt');
-            }
-            
+            expect(toolMsg).toMatchObject({
+                kind: 'tool-call',
+                tool: {
+                    state: 'completed', // Tool completed
+                    result: 'file1.txt\nfile2.txt'
+                }
+            });
+            expect((toolMsg as { tool: { permission?: unknown } }).tool.permission).toBeUndefined(); // No permission yet
+
             // Step 2: Session arrives with AgentState containing permission info
             const agentState: AgentState = {
                 completedRequests: {
@@ -2798,12 +2865,15 @@ describe('reducer', () => {
             
             // Should update the existing tool with permission info
             expect(result2.messages).toHaveLength(1);
-            if (result2.messages[0].kind === 'tool-call') {
-                expect(result2.messages[0].tool.permission?.status).toBe('approved');
-                // The tool should still be completed
-                expect(result2.messages[0].tool.state).toBe('completed');
-            }
-            
+            expect(result2.messages[0]).toMatchObject({
+                kind: 'tool-call',
+                tool: {
+                    permission: { status: 'approved' },
+                    // The tool should still be completed
+                    state: 'completed'
+                }
+            });
+
             // Step 3: User sends a new message, triggering a new reducer call
             const newUserMessage: NormalizedMessage = {
                 id: 'user-2',
