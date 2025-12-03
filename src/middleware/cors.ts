@@ -23,8 +23,12 @@ export const cors = (): MiddlewareHandler => {
         /**
          * Origin validation function
          * Determines whether to allow requests from a given origin
+         *
+         * @param origin - The origin header from the request
+         * @param c - The Hono context, used to access environment variables
+         * @returns The allowed origin or null to reject
          */
-        origin: (origin) => {
+        origin: (origin, c) => {
             // Allow requests with no origin (e.g., Postman, curl, mobile apps)
             if (!origin) {
                 return '*';
@@ -49,10 +53,20 @@ export const cors = (): MiddlewareHandler => {
                 return origin;
             }
 
-            // Security: Reject unknown origins in production
-            // For development, this allows all origins (should be restricted for production)
-            console.warn('[CORS] Rejecting unrecognized origin:', origin);
-            return origin; // TODO: Change to `null` to reject in production
+            // Environment-aware origin validation
+            // Default to production behavior (reject) if ENVIRONMENT is undefined for security
+            const environment = c.env.ENVIRONMENT ?? 'production';
+            const isProduction = environment === 'production';
+
+            if (isProduction) {
+                // Security: Reject unknown origins in production
+                console.warn('[CORS] Rejecting unrecognized origin:', origin);
+                return null;
+            }
+
+            // Development/Staging: Allow unknown origins for easier testing
+            console.warn('[CORS] Allowing unrecognized origin (non-production):', origin);
+            return origin;
         },
 
         // HTTP methods allowed for CORS requests
