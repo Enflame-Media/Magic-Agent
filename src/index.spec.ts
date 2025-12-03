@@ -1,4 +1,17 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+
+// Mock cloudflare:workers module (required for Durable Object imports)
+vi.mock('cloudflare:workers', () => ({
+    DurableObject: class DurableObject {
+        ctx: DurableObjectState;
+        env: unknown;
+        constructor(ctx: DurableObjectState, env: unknown) {
+            this.ctx = ctx;
+            this.env = env;
+        }
+    },
+}));
+
 import app from '@/index';
 
 /**

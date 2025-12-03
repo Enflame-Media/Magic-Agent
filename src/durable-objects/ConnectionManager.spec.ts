@@ -25,6 +25,24 @@ vi.mock('cloudflare:workers', () => ({
     },
 }));
 
+// Mock auth module to avoid Ed25519 crypto operations unsupported in Node.js
+// The real implementation uses Web Crypto Ed25519 which only works in Cloudflare Workers
+vi.mock('@/lib/auth', () => ({
+    initAuth: vi.fn().mockResolvedValue(undefined),
+    verifyToken: vi.fn().mockImplementation(async (token: string) => {
+        // Return null for invalid/test tokens, simulating auth failure
+        if (token === 'invalid-token' || token === 'test') {
+            return null;
+        }
+        // Return valid result for "valid-token"
+        if (token === 'valid-token') {
+            return { userId: 'test-user-123', extras: {} };
+        }
+        return null;
+    }),
+    resetAuth: vi.fn(),
+}));
+
 import { ConnectionManager } from './ConnectionManager';
 import type {
     ConnectionMetadata,
@@ -191,31 +209,40 @@ describe('ConnectionManager', () => {
             const state = createMockState();
             const cm = new ConnectionManager(state as unknown as DurableObjectState, mockEnv);
 
-            // Note: This test would need a valid token to get past auth
-            // For now, we test the validation logic is in place
-            const request = new Request('https://do/websocket?token=test&clientType=session-scoped', {
-                method: 'GET',
-                headers: { Upgrade: 'websocket' },
-            });
+            // Use valid-token to pass auth, then test sessionId validation
+            const request = new Request(
+                'https://do/websocket?token=valid-token&clientType=session-scoped',
+                {
+                    method: 'GET',
+                    headers: { Upgrade: 'websocket' },
+                }
+            );
             const response = await cm.fetch(request);
 
-            // Will fail at auth since we don't have a real token
-            // In integration tests with real auth, this would return 400
-            expect([400, 401]).toContain(response.status);
+            // Should fail at validation since sessionId is missing
+            expect(response.status).toBe(400);
+            const text = await response.text();
+            expect(text).toContain('Session ID');
         });
 
         it('should reject machine-scoped connections without machineId', async () => {
             const state = createMockState();
             const cm = new ConnectionManager(state as unknown as DurableObjectState, mockEnv);
 
-            const request = new Request('https://do/websocket?token=test&clientType=machine-scoped', {
-                method: 'GET',
-                headers: { Upgrade: 'websocket' },
-            });
+            // Use valid-token to pass auth, then test machineId validation
+            const request = new Request(
+                'https://do/websocket?token=valid-token&clientType=machine-scoped',
+                {
+                    method: 'GET',
+                    headers: { Upgrade: 'websocket' },
+                }
+            );
             const response = await cm.fetch(request);
 
-            // Will fail at auth since we don't have a real token
-            expect([400, 401]).toContain(response.status);
+            // Should fail at validation since machineId is missing
+            expect(response.status).toBe(400);
+            const text = await response.text();
+            expect(text).toContain('Machine ID');
         });
     });
 
