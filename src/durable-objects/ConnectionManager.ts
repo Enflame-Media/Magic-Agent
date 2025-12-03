@@ -20,13 +20,10 @@ import type {
     WebSocketAuthHandshake,
     ClientType,
     WebSocketMessage,
-    ErrorMessage,
-    ConnectedMessage,
     MessageFilter,
     ConnectionStats,
     ConnectionManagerConfig,
     ClientMessage,
-    NormalizedMessage,
 } from './types';
 import { CloseCode, DEFAULT_CONFIG, normalizeMessage } from './types';
 import { verifyToken, initAuth } from '@/lib/auth';
@@ -107,11 +104,12 @@ export class ConnectionManager extends DurableObject<ConnectionManagerEnv> {
 
         // Set up auto-response for ping/pong during hibernation
         // This keeps connections alive without waking the DO
+        // Uses client format {event, data} for compatibility with happy-cli and happy-app
         if (this.config.enableAutoResponse) {
             this.ctx.setWebSocketAutoResponse(
                 new WebSocketRequestResponsePair(
-                    JSON.stringify({ type: 'ping', timestamp: 0 }),
-                    JSON.stringify({ type: 'pong', timestamp: Date.now() })
+                    JSON.stringify({ event: 'ping' }),
+                    JSON.stringify({ event: 'pong', data: { timestamp: Date.now() } })
                 )
             );
         }
@@ -235,17 +233,18 @@ export class ConnectionManager extends DurableObject<ConnectionManagerEnv> {
                 this.userId = verified.userId;
             }
 
-            // Send connected confirmation
-            const connectedMsg: ConnectedMessage = {
-                type: 'connected',
-                payload: {
+            // Send connected confirmation in client format
+            // Uses {event, data} for compatibility with happy-cli and happy-app
+            const connectedMsg: ClientMessage = {
+                event: 'connected',
+                data: {
                     connectionId,
                     userId: verified.userId,
                     clientType: handshake.clientType,
                     sessionId: handshake.sessionId,
                     machineId: handshake.machineId,
+                    timestamp: Date.now(),
                 },
-                timestamp: Date.now(),
             };
 
             // Queue the message to be sent after the connection is established
@@ -254,15 +253,14 @@ export class ConnectionManager extends DurableObject<ConnectionManagerEnv> {
             // Broadcast machine online status to user-scoped connections (mobile apps)
             // This allows the UI to show daemon online/offline status
             if (handshake.clientType === 'machine-scoped' && handshake.machineId) {
-                this.broadcast(
+                this.broadcastClientMessage(
                     {
-                        type: 'machine-update',
-                        payload: {
+                        event: 'machine-update',
+                        data: {
                             machineId: handshake.machineId,
                             active: true,
                             timestamp: Date.now(),
                         },
-                        timestamp: Date.now(),
                     },
                     { type: 'user-scoped-only' }
                 );
@@ -373,16 +371,19 @@ export class ConnectionManager extends DurableObject<ConnectionManagerEnv> {
                     const rpcPayload = normalized.payload as { method?: string } | undefined;
                     if (rpcPayload?.method) {
                         // Extract target from method (format: "sessionId:methodName" or "machineId:methodName")
-                        const [targetId] = rpcPayload.method.split(':');
-                        // Try to find matching session or machine connection
-                        this.broadcastClientMessage(
-                            {
-                                event: 'rpc-request',
-                                data: normalized.payload,
-                                ackId: normalized.messageId,
-                            },
-                            { type: 'interested-in-session', sessionId: targetId }
-                        );
+                        const parts = rpcPayload.method.split(':');
+                        const targetId = parts[0];
+                        if (targetId) {
+                            // Try to find matching session or machine connection
+                            this.broadcastClientMessage(
+                                {
+                                    event: 'rpc-request',
+                                    data: normalized.payload,
+                                    ackId: normalized.messageId,
+                                },
+                                { type: 'all-interested-in-session', sessionId: targetId }
+                            );
+                        }
                     }
                 }
                 break;
@@ -468,15 +469,14 @@ export class ConnectionManager extends DurableObject<ConnectionManagerEnv> {
 
             // Broadcast machine offline status if this was a machine-scoped connection
             if (metadata.clientType === 'machine-scoped' && metadata.machineId) {
-                this.broadcast(
+                this.broadcastClientMessage(
                     {
-                        type: 'machine-update',
-                        payload: {
+                        event: 'machine-update',
+                        data: {
                             machineId: metadata.machineId,
                             active: false,
                             timestamp: Date.now(),
                         },
-                        timestamp: Date.now(),
                     },
                     { type: 'user-scoped-only' }
                 );
@@ -619,15 +619,16 @@ export class ConnectionManager extends DurableObject<ConnectionManagerEnv> {
     /**
      * Send an error message to a specific WebSocket
      *
+     * Uses client format {event, data} for compatibility with happy-cli and happy-app
+     *
      * @param ws - Target WebSocket
      * @param code - Error code
      * @param message - Error message
      */
     private sendError(ws: WebSocket, code: number, message: string): void {
-        const errorMsg: ErrorMessage = {
-            type: 'error',
-            payload: { code, message },
-            timestamp: Date.now(),
+        const errorMsg: ClientMessage = {
+            event: 'error',
+            data: { code, message, timestamp: Date.now() },
         };
         try {
             ws.send(JSON.stringify(errorMsg));
