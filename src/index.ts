@@ -13,6 +13,16 @@ import connectRoutes from '@/routes/connect';
 import accountRoutes from '@/routes/account';
 import userRoutes from '@/routes/user';
 import feedRoutes from '@/routes/feed';
+import versionRoutes from '@/routes/version';
+import devRoutes from '@/routes/dev';
+import voiceRoutes from '@/routes/voice';
+import kvRoutes from '@/routes/kv';
+import pushRoutes from '@/routes/push';
+import websocketRoutes from '@/routes/websocket';
+
+// Export Durable Object classes for Cloudflare Workers
+// These must be exported from the main entry point for Wrangler to detect them
+export { ConnectionManager } from '@/durable-objects';
 
 /**
  * Environment bindings interface for Cloudflare Workers
@@ -45,6 +55,12 @@ interface Env {
      * @optional Only used in test routes
      */
     TEST_AUTH_SECRET?: string;
+
+    /**
+     * ConnectionManager Durable Object namespace
+     * @required for WebSocket functionality (HAP-16)
+     */
+    CONNECTION_MANAGER: DurableObjectNamespace;
 }
 
 /**
@@ -95,6 +111,17 @@ app.route('/', connectRoutes);
 app.route('/', accountRoutes);
 app.route('/', userRoutes);
 app.route('/', feedRoutes);
+
+// Mount utility and specialized routes (HAP-15)
+app.route('/', versionRoutes);
+app.route('/', devRoutes);
+app.route('/', voiceRoutes);
+app.route('/', kvRoutes);
+app.route('/', pushRoutes);
+
+// Mount WebSocket routes (HAP-16: Durable Objects foundation)
+// These routes handle WebSocket upgrades and forward to ConnectionManager DO
+app.route('/', websocketRoutes);
 
 // Mount test routes
 app.route('/test', testRoutes);

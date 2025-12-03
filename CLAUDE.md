@@ -1353,6 +1353,624 @@ All routes follow consistent error response patterns:
 }
 ```
 
+## User Profile & Social Routes (HAP-14)
+
+The following routes handle user profile management, user discovery, and activity feeds. All routes require authentication and use OpenAPI documentation with Zod validation schemas.
+
+### Account Routes
+
+**Location:** `src/routes/account.ts`
+
+Account routes manage the current user's profile and preferences.
+
+#### GET /v1/account - Get User Profile
+
+**Auth Required:** Yes (Bearer token)
+
+Returns the current user's profile including connected services.
+
+**Response (200):**
+```json
+{
+  "id": "user_id",
+  "timestamp": 1701432000000,
+  "firstName": "John",
+  "lastName": "Doe",
+  "username": "johndoe",
+  "github": { "login": "johndoe", "avatar_url": "..." },
+  "connectedServices": ["openai", "anthropic"]
+}
+```
+
+#### PUT /v1/account - Update User Profile
+
+**Auth Required:** Yes (Bearer token)
+
+Updates the current user's profile fields.
+
+**Request:**
+```json
+{
+  "firstName": "John",
+  "lastName": "Doe",
+  "username": "johndoe"
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "profile": { ... }
+}
+```
+
+**Response (409) - Username Taken:**
+```json
+{
+  "success": false,
+  "error": "username-taken"
+}
+```
+
+#### GET /v1/account/preferences - Get Account Preferences
+
+**Auth Required:** Yes (Bearer token)
+
+Returns encrypted account settings with version for optimistic concurrency.
+
+**Response (200):**
+```json
+{
+  "settings": "{\"theme\":\"dark\"}",
+  "settingsVersion": 5
+}
+```
+
+#### PUT /v1/account/preferences - Update Account Preferences
+
+**Auth Required:** Yes (Bearer token)
+
+Updates account settings with optimistic locking.
+
+**Request:**
+```json
+{
+  "settings": "{\"theme\":\"light\"}",
+  "expectedVersion": 5
+}
+```
+
+**Response (200) - Success:**
+```json
+{
+  "success": true,
+  "version": 6
+}
+```
+
+**Response (200) - Version Mismatch:**
+```json
+{
+  "success": false,
+  "error": "version-mismatch",
+  "currentVersion": 6,
+  "currentSettings": "{\"theme\":\"dark\"}"
+}
+```
+
+### User Routes
+
+**Location:** `src/routes/user.ts`
+
+User routes enable user discovery and profile viewing.
+
+#### GET /v1/users/search - Search Users
+
+**Auth Required:** Yes (Bearer token)
+
+Search for users by username prefix (case-insensitive).
+
+**Query Parameters:**
+- `query`: Search string (username prefix)
+- `limit`: Maximum results (1-50, default 10)
+
+**Response (200):**
+```json
+{
+  "users": [
+    {
+      "id": "user_id",
+      "firstName": "Jane",
+      "lastName": "Smith",
+      "username": "janesmith",
+      "status": "none"
+    }
+  ]
+}
+```
+
+**Status values:** `none`, `requested`, `pending`, `friend`, `rejected`
+
+#### GET /v1/users/:id - Get User Profile
+
+**Auth Required:** Yes (Bearer token)
+
+Returns a user's profile by ID with relationship status.
+
+**Response (200):**
+```json
+{
+  "user": {
+    "id": "user_id",
+    "firstName": "Jane",
+    "lastName": "Smith",
+    "username": "janesmith",
+    "status": "friend"
+  }
+}
+```
+
+**Response (404):**
+```json
+{
+  "error": "User not found"
+}
+```
+
+### Feed Routes
+
+**Location:** `src/routes/feed.ts`
+
+Feed routes provide activity feed with cursor-based pagination.
+
+#### GET /v1/feed - Get Activity Feed
+
+**Auth Required:** Yes (Bearer token)
+
+Returns user's activity feed with cursor-based pagination.
+
+**Query Parameters:**
+- `before`: Cursor for older items (e.g., `cursor_42`)
+- `after`: Cursor for newer items
+- `limit`: Maximum items (1-200, default 50)
+
+**Response (200):**
+```json
+{
+  "items": [
+    {
+      "id": "feed_abc123",
+      "body": { "type": "session-created", ... },
+      "repeatKey": "session_created_xyz",
+      "cursor": "cursor_42",
+      "createdAt": 1701432000000
+    }
+  ],
+  "hasMore": true
+}
+```
+
+**Pagination:**
+- Use `before` cursor to get older items
+- Use `after` cursor to get newer items
+- Cursors are in format `cursor_{counter}`
+
+## Utility & Specialized Routes (HAP-15)
+
+The following routes provide utility functions: version checking, development logging, voice synthesis integration, key-value storage, and push notifications.
+
+### Version Routes
+
+**Location:** `src/routes/version.ts`
+
+#### POST /v1/version - Check App Version
+
+Check if the client app version requires an update.
+
+**Request:**
+```json
+{
+    "platform": "ios",
+    "version": "1.4.0",
+    "app_id": "com.ex3ndr.happy"
+}
+```
+
+**Response (200):**
+```json
+{
+    "updateUrl": "https://apps.apple.com/us/app/happy-claude-code-client/id6748571505"
+}
+```
+
+Returns `null` for `updateUrl` if the version is up to date.
+
+### Dev Routes
+
+**Location:** `src/routes/dev.ts`
+
+#### POST /logs-combined-from-cli-and-mobile-for-simple-ai-debugging
+
+Combined logging endpoint for debugging. Only enabled when `DANGEROUSLY_LOG_TO_SERVER_FOR_AI_AUTO_DEBUGGING` environment variable is set.
+
+**Request:**
+```json
+{
+    "timestamp": "2024-01-15T10:30:00.000Z",
+    "level": "info",
+    "message": "User action completed",
+    "source": "mobile",
+    "platform": "ios"
+}
+```
+
+**Response (200):**
+```json
+{
+    "success": true
+}
+```
+
+### Voice Routes
+
+**Location:** `src/routes/voice.ts`
+
+#### POST /v1/voice/token 🔒
+
+**Auth Required:** Yes (Bearer token)
+
+Get an ElevenLabs conversation token for voice synthesis. In production, requires RevenueCat subscription verification.
+
+**Request:**
+```json
+{
+    "agentId": "agent_abc123",
+    "revenueCatPublicKey": "appl_XYZ789"
+}
+```
+
+**Response (200) - Success:**
+```json
+{
+    "allowed": true,
+    "token": "xi_token_...",
+    "agentId": "agent_abc123"
+}
+```
+
+**Response (200) - Denied (no subscription):**
+```json
+{
+    "allowed": false,
+    "agentId": "agent_abc123"
+}
+```
+
+### KV Routes
+
+**Location:** `src/routes/kv.ts`
+
+Key-value storage with optimistic locking. All routes require authentication.
+
+#### GET /v1/kv/:key 🔒
+
+Get a single key-value pair.
+
+**Response (200):**
+```json
+{
+    "key": "settings:theme",
+    "value": "base64EncodedEncryptedValue",
+    "version": 1
+}
+```
+
+#### GET /v1/kv 🔒
+
+List key-value pairs with optional prefix filter.
+
+**Query Parameters:**
+- `prefix`: Filter by key prefix (e.g., `settings:`)
+- `limit`: Maximum items (1-1000, default: 100)
+
+**Response (200):**
+```json
+{
+    "items": [
+        { "key": "settings:theme", "value": "...", "version": 1 }
+    ]
+}
+```
+
+#### POST /v1/kv/bulk 🔒
+
+Bulk get multiple keys.
+
+**Request:**
+```json
+{
+    "keys": ["settings:theme", "settings:notifications"]
+}
+```
+
+**Response (200):**
+```json
+{
+    "values": [
+        { "key": "settings:theme", "value": "...", "version": 1 }
+    ]
+}
+```
+
+#### POST /v1/kv 🔒
+
+Atomic batch mutation (create/update/delete). Uses optimistic locking with version numbers.
+
+**Request:**
+```json
+{
+    "mutations": [
+        { "key": "settings:theme", "value": "newBase64Value", "version": 1 },
+        { "key": "settings:old", "value": null, "version": 2 }
+    ]
+}
+```
+
+- `version: -1` for new keys
+- `value: null` to delete
+
+**Response (200) - Success:**
+```json
+{
+    "success": true,
+    "results": [
+        { "key": "settings:theme", "version": 2 }
+    ]
+}
+```
+
+**Response (409) - Version Mismatch:**
+```json
+{
+    "success": false,
+    "errors": [
+        { "key": "settings:theme", "error": "version-mismatch", "version": 3, "value": "currentValue" }
+    ]
+}
+```
+
+### Push Routes
+
+**Location:** `src/routes/push.ts`
+
+Push notification token management. All routes require authentication.
+
+#### POST /v1/push-tokens 🔒
+
+Register a push notification token. Idempotent - updates timestamp if token already exists.
+
+**Request:**
+```json
+{
+    "token": "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]"
+}
+```
+
+**Response (200):**
+```json
+{
+    "success": true
+}
+```
+
+#### DELETE /v1/push-tokens/:token 🔒
+
+Delete a push notification token.
+
+**Response (200):**
+```json
+{
+    "success": true
+}
+```
+
+#### GET /v1/push-tokens 🔒
+
+List all push tokens for the authenticated user.
+
+**Response (200):**
+```json
+{
+    "tokens": [
+        {
+            "id": "cld123abc",
+            "token": "ExponentPushToken[xxx]",
+            "createdAt": 1701432000000,
+            "updatedAt": 1701432000000
+        }
+    ]
+}
+```
+
+## WebSocket & Durable Objects (HAP-16)
+
+### Overview
+
+Real-time WebSocket connections are managed using Cloudflare Durable Objects with the WebSocket Hibernation API. This replaces the Socket.io + Redis architecture from happy-server.
+
+**Location:** `src/durable-objects/`
+
+### Architecture
+
+```
+┌──────────────────────────────────────────────────────────┐
+│                    Cloudflare Edge                        │
+├──────────────────────────────────────────────────────────┤
+│  Worker (fetch) → /v1/updates or /v1/websocket           │
+│         ↓                                                 │
+│  Auth verification (privacy-kit token)                    │
+│         ↓                                                 │
+│  Get/Create ConnectionManager DO (by userId)              │
+│         ↓                                                 │
+│  ┌─────────────────────────────────────────────────────┐ │
+│  │           ConnectionManager Durable Object           │ │
+│  │                                                      │ │
+│  │  - acceptWebSocket() with hibernation support        │ │
+│  │  - Connection metadata via serializeAttachment       │ │
+│  │  - Auto ping/pong during hibernation                 │ │
+│  │  - Filtered message broadcasting                     │ │
+│  └─────────────────────────────────────────────────────┘ │
+└──────────────────────────────────────────────────────────┘
+```
+
+### Connection Types
+
+Three client types supported (matching happy-server Socket.io):
+
+| Type | Description | Required Params |
+|------|-------------|-----------------|
+| `user-scoped` | Mobile app - receives all user events | token |
+| `session-scoped` | Session viewer - specific session events | token, sessionId |
+| `machine-scoped` | CLI daemon - specific machine events | token, machineId |
+
+### WebSocket Endpoints
+
+#### GET /v1/updates (or /v1/websocket)
+
+WebSocket upgrade endpoint. Authentication via query params or headers.
+
+**Query Parameters:**
+- `token` (required): Auth token from privacy-kit
+- `clientType`: `user-scoped` | `session-scoped` | `machine-scoped` (default: user-scoped)
+- `sessionId`: Required for session-scoped connections
+- `machineId`: Required for machine-scoped connections
+
+**Headers Alternative:**
+- `Authorization: Bearer <token>`
+- `X-Client-Type: <type>`
+- `X-Session-Id: <id>`
+- `X-Machine-Id: <id>`
+
+**Example (JavaScript client):**
+```javascript
+const ws = new WebSocket(
+    'wss://api.example.com/v1/updates?token=xxx&clientType=user-scoped'
+);
+
+ws.onopen = () => console.log('Connected');
+ws.onmessage = (event) => {
+    const msg = JSON.parse(event.data);
+    if (msg.type === 'connected') {
+        console.log('Connection ID:', msg.payload.connectionId);
+    }
+};
+```
+
+#### GET /v1/websocket/stats (Protected)
+
+Returns connection statistics for the authenticated user.
+
+**Response:**
+```json
+{
+    "totalConnections": 3,
+    "byType": {
+        "user-scoped": 1,
+        "session-scoped": 1,
+        "machine-scoped": 1
+    },
+    "activeSessions": 1,
+    "activeMachines": 1,
+    "oldestConnection": 1699500000000
+}
+```
+
+#### POST /v1/websocket/broadcast (Protected)
+
+Send a message to user's WebSocket connections with optional filtering.
+
+**Request:**
+```json
+{
+    "message": {
+        "type": "session-update",
+        "payload": { "sessionId": "xyz", "status": "active" },
+        "timestamp": 1699500000000
+    },
+    "filter": {
+        "type": "user-scoped-only"
+    }
+}
+```
+
+**Filter Types:**
+- `{ type: "all" }` - All connections
+- `{ type: "user-scoped-only" }` - Only mobile apps
+- `{ type: "session", sessionId: "xxx" }` - Specific session
+- `{ type: "machine", machineId: "xxx" }` - Specific machine
+- `{ type: "exclude", connectionId: "xxx" }` - All except one
+
+### Message Protocol
+
+All WebSocket messages are JSON with this structure:
+
+```typescript
+interface WebSocketMessage {
+    type: 'ping' | 'pong' | 'connected' | 'error' | 'broadcast' | ...;
+    payload?: unknown;
+    timestamp: number;
+    messageId?: string;
+}
+```
+
+**Built-in Message Types:**
+- `ping` / `pong`: Keep-alive (auto-handled during hibernation)
+- `connected`: Sent after successful connection with connectionId
+- `error`: Error notification with code and message
+- `broadcast`: Generic broadcast message
+
+### Close Codes
+
+Standard WebSocket codes plus custom application codes:
+
+| Code | Constant | Meaning |
+|------|----------|---------|
+| 1000 | NORMAL | Clean disconnect |
+| 1001 | GOING_AWAY | DO being evicted |
+| 4001 | AUTH_FAILED | Invalid token |
+| 4002 | INVALID_HANDSHAKE | Missing handshake data |
+| 4003 | MISSING_SESSION_ID | Session-scoped without sessionId |
+| 4004 | MISSING_MACHINE_ID | Machine-scoped without machineId |
+| 4005 | CONNECTION_LIMIT_EXCEEDED | User has too many connections |
+
+### Hibernation & Cost Optimization
+
+The WebSocket Hibernation API allows Durable Objects to be evicted from memory while keeping WebSocket connections open:
+
+- **Auto-response**: Ping/pong handled without waking DO
+- **State restoration**: Connection metadata restored via `deserializeAttachment`
+- **Tags**: Connections tagged for efficient filtering without iterating all
+
+This significantly reduces costs for long-lived, mostly-idle WebSocket connections.
+
+### Testing
+
+```bash
+# Run WebSocket/DO tests
+yarn test src/durable-objects/
+
+# Note: Tests mock cloudflare:workers since it's edge-only
+```
+
+### Files
+
+- `src/durable-objects/types.ts` - Type definitions
+- `src/durable-objects/ConnectionManager.ts` - Main DO class
+- `src/durable-objects/index.ts` - Exports
+- `src/routes/websocket.ts` - HTTP routes for WebSocket upgrade
+- `wrangler.toml` - DO bindings configuration
+
 ## Resources
 
 - [Hono Documentation](https://hono.dev/)
@@ -1362,4 +1980,5 @@ All routes follow consistent error response patterns:
 - [Drizzle ORM Documentation](https://orm.drizzle.team/)
 - [Drizzle with D1 Guide](https://orm.drizzle.team/docs/get-started-sqlite#cloudflare-d1)
 - [Durable Objects](https://developers.cloudflare.com/workers/learning/using-durable-objects/)
+- [WebSocket Hibernation API](https://developers.cloudflare.com/durable-objects/best-practices/websockets/)
 - [R2 Storage](https://developers.cloudflare.com/r2/)
