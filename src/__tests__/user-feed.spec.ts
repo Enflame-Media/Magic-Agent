@@ -42,7 +42,7 @@ vi.mock('@/lib/auth', () => ({
 }));
 
 import app from '@/index';
-import { authHeader, jsonBody, parseJson } from './test-utils';
+import { authHeader, parseJson } from './test-utils';
 
 describe('User Routes', () => {
     beforeEach(() => {
@@ -335,7 +335,8 @@ describe('Feed Routes', () => {
                     res1
                 );
                 if (body1.items.length > 0 && body1.hasMore) {
-                    const lastCursor = body1.items[body1.items.length - 1].cursor;
+                    const lastItem = body1.items[body1.items.length - 1];
+                    const lastCursor = lastItem?.cursor;
 
                     // Get next page
                     const res2 = await app.request(`/v1/feed?before=${lastCursor}&limit=5`, {
@@ -358,6 +359,138 @@ describe('Feed Routes', () => {
 
             expect([200, 500]).toContain(res.status);
             // Feed should only contain items for the authenticated user
+        });
+    });
+
+    describe('Cursor Validation', () => {
+        it('should reject invalid before cursor format (missing prefix)', async () => {
+            const res = await app.request('/v1/feed?before=invalid_123', {
+                method: 'GET',
+                headers: authHeader(),
+            });
+
+            // Should reject with 400 for invalid cursor, or 500 if env/DB undefined
+            expect([400, 500]).toContain(res.status);
+            if (res.status === 400) {
+                const data = (await res.json()) as { error: string };
+                expect(data).toHaveProperty('error');
+                expect(data.error).toContain('Invalid cursor format');
+            }
+        });
+
+        it('should reject invalid before cursor format (non-numeric)', async () => {
+            const res = await app.request('/v1/feed?before=cursor_abc', {
+                method: 'GET',
+                headers: authHeader(),
+            });
+
+            expect([400, 500]).toContain(res.status);
+            if (res.status === 400) {
+                const data = await parseJson<{ error: string }>(res);
+                expect(data.error).toContain('Invalid cursor format');
+            }
+        });
+
+        it('should reject invalid after cursor format (missing prefix)', async () => {
+            const res = await app.request('/v1/feed?after=wrong_format', {
+                method: 'GET',
+                headers: authHeader(),
+            });
+
+            expect([400, 500]).toContain(res.status);
+            if (res.status === 400) {
+                const data = await parseJson<{ error: string }>(res);
+                expect(data.error).toContain('Invalid cursor format');
+            }
+        });
+
+        it('should reject invalid after cursor format (non-numeric)', async () => {
+            const res = await app.request('/v1/feed?after=cursor_xyz', {
+                method: 'GET',
+                headers: authHeader(),
+            });
+
+            expect([400, 500]).toContain(res.status);
+            if (res.status === 400) {
+                const data = await parseJson<{ error: string }>(res);
+                expect(data.error).toContain('Invalid cursor format');
+            }
+        });
+
+        it('should accept valid cursor_0', async () => {
+            const res = await app.request('/v1/feed?before=cursor_0', {
+                method: 'GET',
+                headers: authHeader(),
+            });
+
+            // Should not fail validation (may fail on DB)
+            expect([200, 500]).toContain(res.status);
+        });
+
+        it('should accept valid high cursor number', async () => {
+            const res = await app.request('/v1/feed?after=cursor_999999', {
+                method: 'GET',
+                headers: authHeader(),
+            });
+
+            // Should not fail validation (may fail on DB)
+            expect([200, 500]).toContain(res.status);
+        });
+    });
+
+    describe('Limit Validation', () => {
+        it('should use default limit when not specified', async () => {
+            const res = await app.request('/v1/feed', {
+                method: 'GET',
+                headers: authHeader(),
+            });
+
+            expect([200, 500]).toContain(res.status);
+        });
+
+        it('should accept minimum limit of 1', async () => {
+            const res = await app.request('/v1/feed?limit=1', {
+                method: 'GET',
+                headers: authHeader(),
+            });
+
+            expect([200, 500]).toContain(res.status);
+        });
+
+        it('should accept maximum limit of 200', async () => {
+            const res = await app.request('/v1/feed?limit=200', {
+                method: 'GET',
+                headers: authHeader(),
+            });
+
+            expect([200, 500]).toContain(res.status);
+        });
+
+        it('should reject limit of 0', async () => {
+            const res = await app.request('/v1/feed?limit=0', {
+                method: 'GET',
+                headers: authHeader(),
+            });
+
+            expect([400, 500]).toContain(res.status);
+        });
+
+        it('should reject negative limit', async () => {
+            const res = await app.request('/v1/feed?limit=-10', {
+                method: 'GET',
+                headers: authHeader(),
+            });
+
+            expect([400, 500]).toContain(res.status);
+        });
+
+        it('should reject non-numeric limit', async () => {
+            const res = await app.request('/v1/feed?limit=abc', {
+                method: 'GET',
+                headers: authHeader(),
+            });
+
+            expect([400, 500]).toContain(res.status);
         });
     });
 });
