@@ -6,6 +6,12 @@ import { schema } from '@/db/schema';
 import { createId } from '@/utils/id';
 import { eq, and } from 'drizzle-orm';
 import {
+    initEncryption,
+    isEncryptionInitialized,
+    encryptString,
+    decryptString,
+} from '@/lib/encryption';
+import {
     GitHubOAuthParamsResponseSchema,
     GitHubOAuthCallbackQuerySchema,
     GitHubDisconnectResponseSchema,
@@ -311,9 +317,17 @@ connectRoutes.openapi(registerAITokenRoute, async (c) => {
     const { token } = c.req.valid('json');
     const db = getDb(c.env.DB);
 
-    // TODO: Encrypt token using privacy-kit or similar
-    // For now, store as-is (NOT SECURE - implement encryption in production)
-    const encryptedToken = Buffer.from(token, 'utf8');
+    // Initialize encryption if not already done
+    if (!isEncryptionInitialized()) {
+        await initEncryption(c.env.HANDY_MASTER_SECRET);
+    }
+
+    // Encrypt token using path-based key derivation (matches happy-server pattern)
+    // Path: ['user', userId, 'vendors', vendor, 'token']
+    const encryptedToken = await encryptString(
+        ['user', userId, 'vendors', vendor, 'token'],
+        token
+    );
 
     // Upsert service account token
     const existing = await db.query.serviceAccountTokens.findFirst({
@@ -326,7 +340,7 @@ connectRoutes.openapi(registerAITokenRoute, async (c) => {
         await db
             .update(schema.serviceAccountTokens)
             .set({
-                token: encryptedToken,
+                token: Buffer.from(encryptedToken),
                 updatedAt: new Date(),
             })
             .where(
@@ -341,7 +355,7 @@ connectRoutes.openapi(registerAITokenRoute, async (c) => {
             id: createId(),
             accountId: userId,
             vendor,
-            token: encryptedToken,
+            token: Buffer.from(encryptedToken),
         });
     }
 
@@ -395,9 +409,16 @@ connectRoutes.openapi(getAITokenRoute, async (c) => {
         return c.json({ token: null });
     }
 
-    // TODO: Decrypt token using privacy-kit or similar
-    // For now, decode as-is (NOT SECURE - implement decryption in production)
-    const decryptedToken = serviceToken.token.toString('utf8');
+    // Initialize encryption if not already done
+    if (!isEncryptionInitialized()) {
+        await initEncryption(c.env.HANDY_MASTER_SECRET);
+    }
+
+    // Decrypt token using path-based key derivation (matches happy-server pattern)
+    const decryptedToken = await decryptString(
+        ['user', userId, 'vendors', vendor, 'token'],
+        new Uint8Array(serviceToken.token)
+    );
 
     return c.json({ token: decryptedToken });
 });
@@ -492,11 +513,27 @@ connectRoutes.openapi(listAITokensRoute, async (c) => {
         where: (tokens, { eq }) => eq(tokens.accountId, userId),
     });
 
-    // TODO: Decrypt tokens using privacy-kit or similar
-    const decryptedTokens = serviceTokens.map((st) => ({
-        vendor: st.vendor,
-        token: st.token.toString('utf8'), // NOT SECURE - implement decryption in production
-    }));
+    // Initialize encryption if not already done
+    if (!isEncryptionInitialized()) {
+        await initEncryption(c.env.HANDY_MASTER_SECRET);
+    }
+
+    // Decrypt all tokens using path-based key derivation
+    // Filter out tokens that fail to decrypt (e.g., corrupted data, key rotation)
+    const decryptedTokens: Array<{ vendor: string; token: string }> = [];
+
+    for (const st of serviceTokens) {
+        try {
+            const token = await decryptString(
+                ['user', userId, 'vendors', st.vendor, 'token'],
+                new Uint8Array(st.token)
+            );
+            decryptedTokens.push({ vendor: st.vendor, token });
+        } catch {
+            // Skip tokens that fail to decrypt - they may be corrupted or from a different key
+            console.error(`Failed to decrypt token for vendor ${st.vendor}, user ${userId}`);
+        }
+    }
 
     return c.json({ tokens: decryptedTokens });
 });
