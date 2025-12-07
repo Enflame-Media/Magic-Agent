@@ -1,12 +1,17 @@
 /**
- * Integration Tests for User and Feed Routes
+ * Integration Tests for User, Feed, and Friend Routes
  *
  * Tests user endpoints:
  * - GET /v1/users/search (search users)
  * - GET /v1/users/:id (get user profile)
  *
- * And feed endpoints:
+ * Feed endpoints:
  * - GET /v1/feed (activity feed)
+ *
+ * Friend management endpoints:
+ * - POST /v1/friends/add (add friend or accept request)
+ * - POST /v1/friends/remove (remove friend or cancel/reject request)
+ * - GET /v1/friends (list friends and pending requests)
  *
  * @module __tests__/user-feed.spec
  */
@@ -42,7 +47,7 @@ vi.mock('@/lib/auth', () => ({
 }));
 
 import app from '@/index';
-import { authHeader, expectOneOfStatus } from './test-utils';
+import { authHeader, expectOneOfStatus, jsonBody } from './test-utils';
 
 describe('User Routes', () => {
     beforeEach(() => {
@@ -455,6 +460,225 @@ describe('Feed Routes', () => {
             });
 
             await expectOneOfStatus(res, [400], [500]);
+        });
+    });
+});
+
+describe('Friend Routes', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    describe('POST /v1/friends/add - Add Friend', () => {
+        it('should require authentication', async () => {
+            const res = await app.request('/v1/friends/add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: jsonBody({ uid: 'target-user-id' }),
+            });
+
+            expect(res.status).toBe(401);
+        });
+
+        it('should accept valid friend request', async () => {
+            const res = await app.request('/v1/friends/add', {
+                method: 'POST',
+                headers: authHeader(),
+                body: jsonBody({ uid: 'test-user-456' }),
+            });
+
+            const body = await expectOneOfStatus<{ user: { status: string } | null }>(res, [200], [500]);
+            if (!body) return;
+            expect(body).toHaveProperty('user');
+            if (body.user) {
+                expect(['none', 'requested', 'pending', 'friend', 'rejected']).toContain(
+                    body.user.status
+                );
+            }
+        });
+
+        it('should return null when adding self as friend', async () => {
+            const res = await app.request('/v1/friends/add', {
+                method: 'POST',
+                headers: authHeader(),
+                body: jsonBody({ uid: 'test-user-123' }), // Same as auth user
+            });
+
+            const body = await expectOneOfStatus<{ user: null }>(res, [200], [500]);
+            if (!body) return;
+            expect(body.user).toBeNull();
+        });
+
+        it('should require uid in request body', async () => {
+            const res = await app.request('/v1/friends/add', {
+                method: 'POST',
+                headers: authHeader(),
+                body: jsonBody({}),
+            });
+
+            expect(res.status).toBe(400);
+        });
+
+        it('should return user profile with relationship status', async () => {
+            const res = await app.request('/v1/friends/add', {
+                method: 'POST',
+                headers: authHeader(),
+                body: jsonBody({ uid: 'test-user-456' }),
+            });
+
+            const body = await expectOneOfStatus<{
+                user: { id: string; firstName: string | null; lastName: string | null; username: string | null; status: string } | null;
+            }>(res, [200], [500]);
+            if (!body || !body.user) return;
+            expect(body.user).toHaveProperty('id');
+            expect(body.user).toHaveProperty('firstName');
+            expect(body.user).toHaveProperty('lastName');
+            expect(body.user).toHaveProperty('username');
+            expect(body.user).toHaveProperty('status');
+        });
+
+        it('should return null for non-existent user', async () => {
+            const res = await app.request('/v1/friends/add', {
+                method: 'POST',
+                headers: authHeader(),
+                body: jsonBody({ uid: 'non-existent-user-xyz' }),
+            });
+
+            const body = await expectOneOfStatus<{ user: null }>(res, [200], [500]);
+            if (!body) return;
+            expect(body.user).toBeNull();
+        });
+    });
+
+    describe('POST /v1/friends/remove - Remove Friend', () => {
+        it('should require authentication', async () => {
+            const res = await app.request('/v1/friends/remove', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: jsonBody({ uid: 'target-user-id' }),
+            });
+
+            expect(res.status).toBe(401);
+        });
+
+        it('should accept valid remove request', async () => {
+            const res = await app.request('/v1/friends/remove', {
+                method: 'POST',
+                headers: authHeader(),
+                body: jsonBody({ uid: 'test-user-456' }),
+            });
+
+            const body = await expectOneOfStatus<{ user: { status: string } | null }>(res, [200], [500]);
+            if (!body) return;
+            expect(body).toHaveProperty('user');
+            if (body.user) {
+                expect(['none', 'requested', 'pending', 'friend', 'rejected']).toContain(
+                    body.user.status
+                );
+            }
+        });
+
+        it('should require uid in request body', async () => {
+            const res = await app.request('/v1/friends/remove', {
+                method: 'POST',
+                headers: authHeader(),
+                body: jsonBody({}),
+            });
+
+            expect(res.status).toBe(400);
+        });
+
+        it('should return user profile with updated relationship status', async () => {
+            const res = await app.request('/v1/friends/remove', {
+                method: 'POST',
+                headers: authHeader(),
+                body: jsonBody({ uid: 'test-user-456' }),
+            });
+
+            const body = await expectOneOfStatus<{
+                user: { id: string; status: string } | null;
+            }>(res, [200], [500]);
+            if (!body || !body.user) return;
+            expect(body.user).toHaveProperty('id');
+            expect(body.user).toHaveProperty('status');
+        });
+
+        it('should return null for non-existent user', async () => {
+            const res = await app.request('/v1/friends/remove', {
+                method: 'POST',
+                headers: authHeader(),
+                body: jsonBody({ uid: 'non-existent-user-xyz' }),
+            });
+
+            const body = await expectOneOfStatus<{ user: null }>(res, [200], [500]);
+            if (!body) return;
+            expect(body.user).toBeNull();
+        });
+    });
+
+    describe('GET /v1/friends - List Friends', () => {
+        it('should require authentication', async () => {
+            const res = await app.request('/v1/friends', {
+                method: 'GET',
+            });
+
+            expect(res.status).toBe(401);
+        });
+
+        it('should return friends list with valid auth', async () => {
+            const res = await app.request('/v1/friends', {
+                method: 'GET',
+                headers: authHeader(),
+            });
+
+            const body = await expectOneOfStatus<{ friends: unknown[] }>(res, [200], [500]);
+            if (!body) return;
+            expect(body).toHaveProperty('friends');
+            expect(Array.isArray(body.friends)).toBe(true);
+        });
+
+        it('should return friends with user profile data', async () => {
+            const res = await app.request('/v1/friends', {
+                method: 'GET',
+                headers: authHeader(),
+            });
+
+            const body = await expectOneOfStatus<{
+                friends: { id: string; firstName: string | null; lastName: string | null; username: string | null; status: string }[];
+            }>(res, [200], [500]);
+            if (!body) return;
+            body.friends.forEach((friend) => {
+                expect(friend).toHaveProperty('id');
+                expect(friend).toHaveProperty('firstName');
+                expect(friend).toHaveProperty('lastName');
+                expect(friend).toHaveProperty('username');
+                expect(friend).toHaveProperty('status');
+            });
+        });
+
+        it('should only return friends with friend/pending/requested status', async () => {
+            const res = await app.request('/v1/friends', {
+                method: 'GET',
+                headers: authHeader(),
+            });
+
+            const body = await expectOneOfStatus<{ friends: { status: string }[] }>(res, [200], [500]);
+            if (!body) return;
+            body.friends.forEach((friend) => {
+                expect(['friend', 'pending', 'requested']).toContain(friend.status);
+            });
+        });
+
+        it('should handle empty friends list', async () => {
+            const res = await app.request('/v1/friends', {
+                method: 'GET',
+                headers: authHeader(),
+            });
+
+            const body = await expectOneOfStatus<{ friends: unknown[] }>(res, [200], [500]);
+            if (!body) return;
+            // Empty friends list is valid
+            expect(Array.isArray(body.friends)).toBe(true);
         });
     });
 });
