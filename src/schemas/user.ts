@@ -159,3 +159,41 @@ export const BadRequestErrorSchema = z
         }),
     })
     .openapi('BadRequestError');
+
+// ============================================================================
+// Friend Management Routes
+// ============================================================================
+
+/**
+ * Schema for add/remove friend request body
+ */
+export const FriendRequestBodySchema = z
+    .object({
+        uid: z.string().openapi({
+            description: 'Target user ID',
+            example: 'cmed556s4002bvb2020igg8jf',
+        }),
+    })
+    .openapi('FriendRequestBody');
+
+/**
+ * Schema for friend operation response
+ */
+export const FriendOperationResponseSchema = z
+    .object({
+        user: UserProfileSchema.nullable().openapi({
+            description: 'Updated user profile with new relationship status, or null if operation failed',
+        }),
+    })
+    .openapi('FriendOperationResponse');
+
+/**
+ * Schema for friend list response
+ */
+export const FriendListResponseSchema = z
+    .object({
+        friends: z.array(UserProfileSchema).openapi({
+            description: 'Array of friends with their relationship status',
+        }),
+    })
+    .openapi('FriendListResponse');
