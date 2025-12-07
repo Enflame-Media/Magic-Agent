@@ -42,7 +42,7 @@ vi.mock('@/lib/auth', () => ({
 }));
 
 import app from '@/index';
-import { authHeader, jsonBody, parseJson, VALID_TOKEN } from './test-utils';
+import { authHeader, jsonBody, expectOneOfStatus, VALID_TOKEN } from './test-utils';
 
 describe('Artifact Routes', () => {
     beforeEach(() => {
@@ -64,12 +64,11 @@ describe('Artifact Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ artifacts: unknown[] }>(res);
-                expect(body).toHaveProperty('artifacts');
-                expect(Array.isArray(body.artifacts)).toBe(true);
-            }
+            // Accept 200 success or 500 DB error
+            const body = await expectOneOfStatus<{ artifacts: unknown[] }>(res, [200], [500]);
+            if (!body) return;
+            expect(body).toHaveProperty('artifacts');
+            expect(Array.isArray(body.artifacts)).toBe(true);
         });
 
         it('should return artifact headers without body', async () => {
@@ -78,14 +77,13 @@ describe('Artifact Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ artifacts: { body?: unknown }[] }>(res);
-                // List should not include body content (only headers)
-                body.artifacts.forEach((artifact) => {
-                    expect(artifact.body).toBeUndefined();
-                });
-            }
+            // Accept 200 success or 500 DB error
+            const body = await expectOneOfStatus<{ artifacts: { body?: unknown }[] }>(res, [200], [500]);
+            if (!body) return;
+            // List should not include body content (only headers)
+            body.artifacts.forEach((artifact) => {
+                expect(artifact.body).toBeUndefined();
+            });
         });
     });
 
@@ -113,13 +111,12 @@ describe('Artifact Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 404, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ artifact: { id: string; body: unknown } }>(res);
-                expect(body).toHaveProperty('artifact');
-                // Single artifact should include body
-                expect(body.artifact).toHaveProperty('body');
-            }
+            // This endpoint may return 200, 404 (not found), or 500 (DB error)
+            // We only verify body structure when we get a successful response
+            const body = await expectOneOfStatus<{ artifact: { id: string; body: unknown } }>(res, [200], [404, 500]);
+            // When body is null, test passes (404/500 was acceptable)
+            // When body exists, verify structure (assertions run unconditionally on the body)
+            expect(body === null || (body.artifact !== undefined && 'body' in body.artifact)).toBe(true);
         });
     });
 
@@ -151,11 +148,10 @@ describe('Artifact Routes', () => {
                 }),
             });
 
-            expect([200, 201, 400, 500]).toContain(res.status);
-            if (res.status === 200 || res.status === 201) {
-                const body = await parseJson<{ artifact: { id: string } }>(res);
-                expect(body).toHaveProperty('artifact');
-            }
+            // This endpoint may return 200/201 (success), 400 (validation), or 500 (DB error)
+            const body = await expectOneOfStatus<{ artifact: { id: string } }>(res, [200, 201], [400, 500]);
+            // Verify artifact property exists when response is successful
+            expect(body === null || body.artifact !== undefined).toBe(true);
         });
 
         it('should require id field', async () => {
@@ -282,12 +278,10 @@ describe('Artifact Routes', () => {
                 }),
             });
 
-            expect([200, 404, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ success: boolean; headerVersion: number }>(res);
-                expect(body.success).toBe(true);
-                expect(body.headerVersion).toBeGreaterThan(1);
-            }
+            // May return 200 (success), 404 (not found), or 500 (DB error)
+            const body = await expectOneOfStatus<{ success: boolean; headerVersion: number }>(res, [200], [404, 500]);
+            // When successful, verify response structure
+            expect(body === null || (body.success === true && body.headerVersion > 1)).toBe(true);
         });
 
         it('should update artifact body', async () => {
@@ -328,14 +322,10 @@ describe('Artifact Routes', () => {
                 }),
             });
 
-            expect([200, 404, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ success: boolean; error?: string }>(res);
-                // May return success: false with version-mismatch error
-                if (!body.success) {
-                    expect(body.error).toBe('version-mismatch');
-                }
-            }
+            // May return 200 (with success or version-mismatch error), 404, or 500
+            const body = await expectOneOfStatus<{ success: boolean; error?: string }>(res, [200], [404, 500]);
+            // When 200, may return success: false with version-mismatch error
+            expect(body === null || body.success === true || body.error === 'version-mismatch').toBe(true);
         });
 
         it('should return 404 for non-existent artifact', async () => {
@@ -366,11 +356,10 @@ describe('Artifact Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 404, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ success: boolean }>(res);
-                expect(body.success).toBe(true);
-            }
+            // May return 200 (success), 404 (not found), or 500 (DB error)
+            const body = await expectOneOfStatus<{ success: boolean }>(res, [200], [404, 500]);
+            // When successful, verify success is true
+            expect(body === null || body.success === true).toBe(true);
         });
 
         it('should return 404 for non-existent artifact', async () => {

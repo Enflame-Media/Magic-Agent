@@ -44,14 +44,7 @@ vi.mock('@/lib/auth', () => ({
 }));
 
 import app from '@/index';
-import {
-    authHeader,
-    jsonBody,
-    parseJson,
-    VALID_TOKEN,
-    TEST_USER_ID,
-    generateTestId,
-} from './test-utils';
+import { authHeader, jsonBody, expectOneOfStatus, VALID_TOKEN } from './test-utils';
 
 describe('Session Routes', () => {
     beforeEach(() => {
@@ -74,12 +67,11 @@ describe('Session Routes', () => {
             });
 
             // Should return 200 with sessions array (may be empty)
-            expect([200, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ sessions: unknown[] }>(res);
+            const body = await expectOneOfStatus<{ sessions: unknown[] }>(res, [200], [500]);
+            if (!body) return;
                 expect(body).toHaveProperty('sessions');
                 expect(Array.isArray(body.sessions)).toBe(true);
-            }
+            
         });
     });
 
@@ -98,12 +90,11 @@ describe('Session Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ sessions: unknown[]; nextCursor?: string }>(res);
+            const body = await expectOneOfStatus<{ sessions: unknown[]; nextCursor?: string }>(res, [200], [500]);
+            if (!body) return;
                 expect(body).toHaveProperty('sessions');
                 expect(Array.isArray(body.sessions)).toBe(true);
-            }
+            
         });
 
         it('should accept limit query parameter', async () => {
@@ -112,7 +103,7 @@ describe('Session Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [200], [500]);
         });
 
         it('should accept cursor query parameter', async () => {
@@ -121,7 +112,7 @@ describe('Session Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 400, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [200, 400], [500]);
         });
 
         it('should accept changedSince query parameter', async () => {
@@ -130,7 +121,7 @@ describe('Session Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [200], [500]);
         });
 
         it('should reject invalid limit (too high)', async () => {
@@ -140,7 +131,7 @@ describe('Session Routes', () => {
             });
 
             // Should reject limit > 200
-            expect([200, 400, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [200, 400], [500]);
         });
     });
 
@@ -159,11 +150,10 @@ describe('Session Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ sessions: unknown[] }>(res);
+            const body = await expectOneOfStatus<{ sessions: unknown[] }>(res, [200], [500]);
+            if (!body) return;
                 expect(body).toHaveProperty('sessions');
-            }
+            
         });
 
         it('should accept limit query parameter', async () => {
@@ -172,7 +162,7 @@ describe('Session Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [200], [500]);
         });
     });
 
@@ -203,12 +193,11 @@ describe('Session Routes', () => {
                 }),
             });
 
-            expect([200, 201, 500]).toContain(res.status);
-            if (res.status === 200 || res.status === 201) {
-                const body = await parseJson<{ session: { id: string; tag: string } }>(res);
+            const body = await expectOneOfStatus<{ session: { id: string; tag: string } }>(res, [200, 201], [500]);
+            if (!body) return;
                 expect(body).toHaveProperty('session');
                 expect(body.session).toHaveProperty('id');
-            }
+            
         });
 
         it('should require tag field', async () => {
@@ -259,8 +248,8 @@ describe('Session Routes', () => {
             });
 
             // Both should succeed (idempotent) or DB error
-            expect([200, 201, 500]).toContain(res1.status);
-            expect([200, 201, 500]).toContain(res2.status);
+            await expectOneOfStatus(res1, [200, 201], [500]);
+            await expectOneOfStatus(res2, [200, 201], [500]);
         });
     });
 
@@ -279,7 +268,7 @@ describe('Session Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([404, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [404], [500]);
         });
 
         it('should validate session ID format', async () => {
@@ -288,7 +277,7 @@ describe('Session Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 404, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [200, 404], [500]);
         });
     });
 
@@ -307,7 +296,7 @@ describe('Session Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([404, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [404], [500]);
         });
 
         it('should soft delete session (set active=false)', async () => {
@@ -316,11 +305,10 @@ describe('Session Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 404, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ success: boolean }>(res);
+            const body = await expectOneOfStatus<{ success: boolean }>(res, [200], [404, 500]);
+            if (!body) return;
                 expect(body.success).toBe(true);
-            }
+            
         });
     });
 
@@ -347,11 +335,10 @@ describe('Session Routes', () => {
                 }),
             });
 
-            expect([200, 201, 404, 500]).toContain(res.status);
-            if (res.status === 200 || res.status === 201) {
-                const body = await parseJson<{ message: { id: string } }>(res);
+            const body = await expectOneOfStatus<{ message: { id: string } }>(res, [200, 201], [404, 500]);
+            if (!body) return;
                 expect(body).toHaveProperty('message');
-            }
+            
         });
 
         it('should require content field', async () => {
@@ -364,7 +351,7 @@ describe('Session Routes', () => {
             });
 
             // 400 = validation error, 500 = runtime error (DB undefined)
-            expect([400, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [400], [500]);
         });
 
         it('should return 404 for non-existent session', async () => {
@@ -376,7 +363,7 @@ describe('Session Routes', () => {
                 }),
             });
 
-            expect([404, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [404], [500]);
         });
     });
 
@@ -392,18 +379,18 @@ describe('Session Routes', () => {
                 }),
             });
 
-            if (createRes.status === 200) {
-                const { session } = await parseJson<{ session: { id: string } }>(createRes);
+            const createBody = await expectOneOfStatus<{ session: { id: string } }>(createRes, [200], [500]);
+            if (!createBody) return;
+            const { session } = createBody;
 
-                // Try to access as user 2
-                const accessRes = await app.request(`/v1/sessions/${session.id}`, {
-                    method: 'GET',
-                    headers: authHeader('user2-token'),
-                });
+            // Try to access as user 2
+            const accessRes = await app.request(`/v1/sessions/${session.id}`, {
+                method: 'GET',
+                headers: authHeader('user2-token'),
+            });
 
-                // Should be 404 (not found for this user) or 403 (forbidden)
-                expect([403, 404, 500]).toContain(accessRes.status);
-            }
+            // Should be 404 (not found for this user) or 403 (forbidden)
+            await expectOneOfStatus(accessRes, [403, 404], [500]);
         });
     });
 });

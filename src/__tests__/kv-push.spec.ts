@@ -46,7 +46,7 @@ vi.mock('@/lib/auth', () => ({
 }));
 
 import app from '@/index';
-import { authHeader, jsonBody, parseJson } from './test-utils';
+import { authHeader, jsonBody, expectOneOfStatus } from './test-utils';
 
 describe('KV Routes', () => {
     beforeEach(() => {
@@ -68,13 +68,12 @@ describe('KV Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 404, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ key: string; value: string; version: number }>(res);
+            const body = await expectOneOfStatus<{ key: string; value: string; version: number }>(res, [200], [404, 500]);
+            if (!body) return;
                 expect(body).toHaveProperty('key');
                 expect(body).toHaveProperty('value');
                 expect(body).toHaveProperty('version');
-            }
+            
         });
 
         it('should return 404 for non-existent key', async () => {
@@ -83,7 +82,7 @@ describe('KV Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([404, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [404], [500]);
         });
 
         it('should handle keys with colons', async () => {
@@ -92,7 +91,7 @@ describe('KV Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 404, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [200, 404], [500]);
         });
     });
 
@@ -111,12 +110,11 @@ describe('KV Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ items: unknown[] }>(res);
+            const body = await expectOneOfStatus<{ items: unknown[] }>(res, [200], [500]);
+            if (!body) return;
                 expect(body).toHaveProperty('items');
                 expect(Array.isArray(body.items)).toBe(true);
-            }
+            
         });
 
         it('should accept prefix filter', async () => {
@@ -125,7 +123,7 @@ describe('KV Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [200], [500]);
         });
 
         it('should accept limit parameter', async () => {
@@ -134,7 +132,7 @@ describe('KV Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [200], [500]);
         });
 
         it('should reject invalid limit (too high)', async () => {
@@ -144,7 +142,7 @@ describe('KV Routes', () => {
             });
 
             // Max limit is 1000
-            expect([200, 400, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [200, 400], [500]);
         });
     });
 
@@ -168,12 +166,11 @@ describe('KV Routes', () => {
                 }),
             });
 
-            expect([200, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ values: unknown[] }>(res);
+            const body = await expectOneOfStatus<{ values: unknown[] }>(res, [200], [500]);
+            if (!body) return;
                 expect(body).toHaveProperty('values');
                 expect(Array.isArray(body.values)).toBe(true);
-            }
+            
         });
 
         it('should require keys array', async () => {
@@ -193,7 +190,7 @@ describe('KV Routes', () => {
                 body: jsonBody({ keys: [] }),
             });
 
-            expect([200, 400, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [200, 400], [500]);
         });
     });
 
@@ -220,11 +217,10 @@ describe('KV Routes', () => {
                 }),
             });
 
-            expect([200, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ success: boolean; results: unknown[] }>(res);
+            const body = await expectOneOfStatus<{ success: boolean; results: unknown[] }>(res, [200], [500]);
+            if (!body) return;
                 expect(body.success).toBe(true);
-            }
+            
         });
 
         it('should update existing KV entry', async () => {
@@ -236,7 +232,7 @@ describe('KV Routes', () => {
                 }),
             });
 
-            expect([200, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [200], [500]);
         });
 
         it('should delete KV entry (value null)', async () => {
@@ -248,7 +244,7 @@ describe('KV Routes', () => {
                 }),
             });
 
-            expect([200, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [200], [500]);
         });
 
         it('should handle multiple mutations atomically', async () => {
@@ -264,7 +260,7 @@ describe('KV Routes', () => {
                 }),
             });
 
-            expect([200, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [200], [500]);
         });
 
         it('should require mutations array', async () => {
@@ -286,13 +282,9 @@ describe('KV Routes', () => {
                 }),
             });
 
-            expect([200, 409, 500]).toContain(res.status);
-            if (res.status === 409 || res.status === 200) {
-                const body = await parseJson<{ success: boolean; errors?: unknown[] }>(res);
-                if (!body.success) {
-                    expect(body).toHaveProperty('errors');
-                }
-            }
+            const body = await expectOneOfStatus<{ success: boolean; errors?: unknown[] }>(res, [200, 409], [500]);
+            if (!body || body.success) return;
+            expect(body).toHaveProperty('errors');
         });
     });
 });
@@ -321,11 +313,10 @@ describe('Push Routes', () => {
                 body: jsonBody({ token }),
             });
 
-            expect([200, 201, 500]).toContain(res.status);
-            if (res.status === 200 || res.status === 201) {
-                const body = await parseJson<{ success: boolean }>(res);
+            const body = await expectOneOfStatus<{ success: boolean }>(res, [200, 201], [500]);
+            if (!body) return;
                 expect(body.success).toBe(true);
-            }
+            
         });
 
         it('should require token field', async () => {
@@ -355,8 +346,8 @@ describe('Push Routes', () => {
                 body: jsonBody({ token }),
             });
 
-            expect([200, 201, 500]).toContain(res1.status);
-            expect([200, 201, 500]).toContain(res2.status);
+            await expectOneOfStatus(res1, [200, 201], [500]);
+            await expectOneOfStatus(res2, [200, 201], [500]);
         });
     });
 
@@ -376,11 +367,10 @@ describe('Push Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 404, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ success: boolean }>(res);
+            const body = await expectOneOfStatus<{ success: boolean }>(res, [200], [404, 500]);
+            if (!body) return;
                 expect(body.success).toBe(true);
-            }
+            
         });
 
         it('should return 404 for non-existent token', async () => {
@@ -389,7 +379,7 @@ describe('Push Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 404, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [200, 404], [500]);
         });
 
         it('should handle URL-encoded tokens', async () => {
@@ -399,7 +389,7 @@ describe('Push Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 404, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [200, 404], [500]);
         });
     });
 
@@ -418,12 +408,11 @@ describe('Push Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ tokens: unknown[] }>(res);
+            const body = await expectOneOfStatus<{ tokens: unknown[] }>(res, [200], [500]);
+            if (!body) return;
                 expect(body).toHaveProperty('tokens');
                 expect(Array.isArray(body.tokens)).toBe(true);
-            }
+            
         });
 
         it('should return tokens with metadata', async () => {
@@ -432,17 +421,16 @@ describe('Push Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{
-                    tokens: { id: string; token: string; createdAt: number }[];
-                }>(res);
+            const body = await expectOneOfStatus<{
+                tokens: { id: string; token: string; createdAt: number }[];
+            }>(res, [200], [500]);
+            if (!body) return;
                 body.tokens.forEach((token) => {
                     expect(token).toHaveProperty('id');
                     expect(token).toHaveProperty('token');
                     expect(token).toHaveProperty('createdAt');
                 });
-            }
+            
         });
     });
 
@@ -453,7 +441,7 @@ describe('Push Routes', () => {
                 headers: authHeader('user2-token'),
             });
 
-            expect([200, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [200], [500]);
             // Should only return tokens for the authenticated user
         });
 
@@ -465,7 +453,7 @@ describe('Push Routes', () => {
             });
 
             // Should either not find it or refuse deletion
-            expect([200, 403, 404, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [200, 403, 404], [500]);
         });
     });
 });

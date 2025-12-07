@@ -41,7 +41,7 @@ vi.mock('@/lib/auth', () => ({
 }));
 
 import app from '@/index';
-import { authHeader, jsonBody, parseJson } from './test-utils';
+import { authHeader, jsonBody, expectOneOfStatus } from './test-utils';
 
 describe('WebSocket Routes', () => {
     beforeEach(() => {
@@ -54,7 +54,7 @@ describe('WebSocket Routes', () => {
                 method: 'GET',
             });
 
-            // Should reject without Upgrade header
+            // Should reject without Upgrade header (may return text error, not JSON)
             expect([101, 400, 426, 500]).toContain(res.status);
         });
 
@@ -67,6 +67,7 @@ describe('WebSocket Routes', () => {
                 },
             });
 
+            // May return text error, not JSON
             expect([400, 401, 500]).toContain(res.status);
         });
 
@@ -79,7 +80,7 @@ describe('WebSocket Routes', () => {
                 },
             });
 
-            expect([401, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [401], [500]);
         });
 
         it('should accept valid WebSocket upgrade request', async () => {
@@ -92,7 +93,7 @@ describe('WebSocket Routes', () => {
             });
 
             // In test environment without real WebSocket support, may return various codes
-            expect([101, 200, 400, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [101, 200, 400], [500]);
         });
 
         it('should support user-scoped client type', async () => {
@@ -104,7 +105,7 @@ describe('WebSocket Routes', () => {
                 },
             });
 
-            expect([101, 200, 400, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [101, 200, 400], [500]);
         });
 
         it('should require sessionId for session-scoped client type', async () => {
@@ -117,7 +118,7 @@ describe('WebSocket Routes', () => {
             });
 
             // Should fail without sessionId
-            expect([400, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [400], [500]);
         });
 
         it('should accept session-scoped with sessionId', async () => {
@@ -132,7 +133,7 @@ describe('WebSocket Routes', () => {
                 }
             );
 
-            expect([101, 200, 400, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [101, 200, 400], [500]);
         });
 
         it('should require machineId for machine-scoped client type', async () => {
@@ -145,7 +146,7 @@ describe('WebSocket Routes', () => {
             });
 
             // Should fail without machineId
-            expect([400, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [400], [500]);
         });
 
         it('should accept machine-scoped with machineId', async () => {
@@ -160,7 +161,7 @@ describe('WebSocket Routes', () => {
                 }
             );
 
-            expect([101, 200, 400, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [101, 200, 400], [500]);
         });
 
         it('should support Authorization header alternative', async () => {
@@ -173,7 +174,7 @@ describe('WebSocket Routes', () => {
                 },
             });
 
-            expect([101, 200, 400, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [101, 200, 400], [500]);
         });
 
         it('should support X-Client-Type header', async () => {
@@ -186,7 +187,7 @@ describe('WebSocket Routes', () => {
                 },
             });
 
-            expect([101, 200, 400, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [101, 200, 400], [500]);
         });
     });
 
@@ -200,7 +201,7 @@ describe('WebSocket Routes', () => {
                 },
             });
 
-            expect([101, 200, 400, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [101, 200, 400], [500]);
         });
     });
 
@@ -219,21 +220,19 @@ describe('WebSocket Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{
-                    totalConnections: number;
-                    byType: Record<string, number>;
-                    activeSessions: number;
-                    activeMachines: number;
-                }>(res);
-
+            const body = await expectOneOfStatus<{
+                totalConnections: number;
+                byType: Record<string, number>;
+                activeSessions: number;
+                activeMachines: number;
+            }>(res, [200], [500]);
+            if (!body) return;
                 expect(body).toHaveProperty('totalConnections');
                 expect(body).toHaveProperty('byType');
                 expect(body).toHaveProperty('activeSessions');
                 expect(body).toHaveProperty('activeMachines');
                 expect(typeof body.totalConnections).toBe('number');
-            }
+            
         });
 
         it('should return byType breakdown', async () => {
@@ -242,20 +241,18 @@ describe('WebSocket Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{
-                    byType: {
-                        'user-scoped': number;
-                        'session-scoped': number;
-                        'machine-scoped': number;
-                    };
-                }>(res);
-
+            const body = await expectOneOfStatus<{
+                byType: {
+                    'user-scoped': number;
+                    'session-scoped': number;
+                    'machine-scoped': number;
+                };
+            }>(res, [200], [500]);
+            if (!body) return;
                 expect(body.byType).toHaveProperty('user-scoped');
                 expect(body.byType).toHaveProperty('session-scoped');
                 expect(body.byType).toHaveProperty('machine-scoped');
-            }
+            
         });
     });
 
@@ -289,12 +286,11 @@ describe('WebSocket Routes', () => {
                 }),
             });
 
-            expect([200, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ success: boolean; delivered: number }>(res);
+            const body = await expectOneOfStatus<{ success: boolean; delivered: number }>(res, [200], [500]);
+            if (!body) return;
                 expect(body).toHaveProperty('success');
                 expect(body).toHaveProperty('delivered');
-            }
+            
         });
 
         it('should require message field', async () => {
@@ -323,7 +319,7 @@ describe('WebSocket Routes', () => {
                 }),
             });
 
-            expect([200, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [200], [500]);
         });
 
         it('should accept filter for specific session', async () => {
@@ -343,7 +339,7 @@ describe('WebSocket Routes', () => {
                 }),
             });
 
-            expect([200, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [200], [500]);
         });
 
         it('should accept filter for specific machine', async () => {
@@ -363,7 +359,7 @@ describe('WebSocket Routes', () => {
                 }),
             });
 
-            expect([200, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [200], [500]);
         });
 
         it('should accept filter to exclude connection', async () => {
@@ -383,7 +379,7 @@ describe('WebSocket Routes', () => {
                 }),
             });
 
-            expect([200, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [200], [500]);
         });
 
         it('should return delivered count', async () => {
@@ -399,12 +395,11 @@ describe('WebSocket Routes', () => {
                 }),
             });
 
-            expect([200, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ delivered: number }>(res);
+            const body = await expectOneOfStatus<{ delivered: number }>(res, [200], [500]);
+            if (!body) return;
                 expect(typeof body.delivered).toBe('number');
                 expect(body.delivered).toBeGreaterThanOrEqual(0);
-            }
+            
         });
     });
 
@@ -424,7 +419,7 @@ describe('WebSocket Routes', () => {
             });
 
             // Should succeed but deliver 0 messages (user 2 has no connections)
-            expect([200, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [200], [500]);
         });
 
         it('should reject invalid client types', async () => {
@@ -436,7 +431,7 @@ describe('WebSocket Routes', () => {
                 },
             });
 
-            expect([400, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [400], [500]);
         });
     });
 });

@@ -42,7 +42,7 @@ vi.mock('@/lib/auth', () => ({
 }));
 
 import app from '@/index';
-import { authHeader, parseJson } from './test-utils';
+import { authHeader, expectOneOfStatus } from './test-utils';
 
 describe('User Routes', () => {
     beforeEach(() => {
@@ -64,12 +64,10 @@ describe('User Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ users: unknown[] }>(res);
-                expect(body).toHaveProperty('users');
-                expect(Array.isArray(body.users)).toBe(true);
-            }
+            const body = await expectOneOfStatus<{ users: unknown[] }>(res, [200], [500]);
+            if (!body) return;
+            expect(body).toHaveProperty('users');
+            expect(Array.isArray(body.users)).toBe(true);
         });
 
         it('should require query parameter', async () => {
@@ -87,7 +85,7 @@ describe('User Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [200], [500]);
         });
 
         it('should reject invalid limit (too high)', async () => {
@@ -97,7 +95,7 @@ describe('User Routes', () => {
             });
 
             // Max limit is 50
-            expect([200, 400, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [200, 400], [500]);
         });
 
         it('should return users with relationship status', async () => {
@@ -106,16 +104,14 @@ describe('User Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ users: { status?: string }[] }>(res);
-                body.users.forEach((user) => {
-                    expect(user).toHaveProperty('status');
-                    expect(['none', 'requested', 'pending', 'friend', 'rejected']).toContain(
-                        user.status
-                    );
-                });
-            }
+            const body = await expectOneOfStatus<{ users: { status?: string }[] }>(res, [200], [500]);
+            if (!body) return;
+            body.users.forEach((user) => {
+                expect(user).toHaveProperty('status');
+                expect(['none', 'requested', 'pending', 'friend', 'rejected']).toContain(
+                    user.status
+                );
+            });
         });
 
         it('should handle case-insensitive search', async () => {
@@ -124,7 +120,7 @@ describe('User Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [200], [500]);
         });
 
         it('should handle empty search results', async () => {
@@ -133,11 +129,9 @@ describe('User Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ users: unknown[] }>(res);
-                expect(body.users).toEqual([]);
-            }
+            const body = await expectOneOfStatus<{ users: unknown[] }>(res, [200], [500]);
+            if (!body) return;
+            expect(body.users).toEqual([]);
         });
     });
 
@@ -156,13 +150,11 @@ describe('User Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 404, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ user: { id: string; status: string } }>(res);
-                expect(body).toHaveProperty('user');
-                expect(body.user).toHaveProperty('id');
-                expect(body.user).toHaveProperty('status');
-            }
+            const body = await expectOneOfStatus<{ user: { id: string; status: string } }>(res, [200], [404, 500]);
+            if (!body) return;
+            expect(body).toHaveProperty('user');
+            expect(body.user).toHaveProperty('id');
+            expect(body.user).toHaveProperty('status');
         });
 
         it('should return 404 for non-existent user', async () => {
@@ -171,7 +163,7 @@ describe('User Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([404, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [404], [500]);
         });
 
         it('should include relationship status with current user', async () => {
@@ -180,13 +172,11 @@ describe('User Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 404, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ user: { status: string } }>(res);
-                expect(['none', 'requested', 'pending', 'friend', 'rejected']).toContain(
-                    body.user.status
-                );
-            }
+            const body = await expectOneOfStatus<{ user: { status: string } }>(res, [200], [404, 500]);
+            if (!body) return;
+            expect(['none', 'requested', 'pending', 'friend', 'rejected']).toContain(
+                body.user.status
+            );
         });
 
         it('should return limited profile info based on privacy', async () => {
@@ -195,14 +185,10 @@ describe('User Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 404, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ user: { firstName?: string; username?: string } }>(
-                    res
-                );
-                // Should at least have basic profile fields
-                expect(body.user).toHaveProperty('username');
-            }
+            const body = await expectOneOfStatus<{ user: { firstName?: string; username?: string } }>(res, [200], [404, 500]);
+            if (!body) return;
+            // Should at least have basic profile fields
+            expect(body.user).toHaveProperty('username');
         });
     });
 });
@@ -227,13 +213,11 @@ describe('Feed Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ items: unknown[]; hasMore: boolean }>(res);
-                expect(body).toHaveProperty('items');
-                expect(Array.isArray(body.items)).toBe(true);
-                expect(body).toHaveProperty('hasMore');
-            }
+            const body = await expectOneOfStatus<{ items: unknown[]; hasMore: boolean }>(res, [200], [500]);
+            if (!body) return;
+            expect(body).toHaveProperty('items');
+            expect(Array.isArray(body.items)).toBe(true);
+            expect(body).toHaveProperty('hasMore');
         });
 
         it('should accept limit parameter', async () => {
@@ -242,7 +226,7 @@ describe('Feed Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [200], [500]);
         });
 
         it('should accept before cursor for pagination', async () => {
@@ -251,7 +235,7 @@ describe('Feed Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 400, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [200, 400], [500]);
         });
 
         it('should accept after cursor for pagination', async () => {
@@ -260,7 +244,7 @@ describe('Feed Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 400, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [200, 400], [500]);
         });
 
         it('should reject invalid limit (too high)', async () => {
@@ -270,7 +254,7 @@ describe('Feed Routes', () => {
             });
 
             // Max limit is 200
-            expect([200, 400, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [200, 400], [500]);
         });
 
         it('should return feed items with cursors', async () => {
@@ -279,14 +263,12 @@ describe('Feed Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ items: { cursor: string }[] }>(res);
-                body.items.forEach((item) => {
-                    expect(item).toHaveProperty('cursor');
-                    expect(item.cursor).toMatch(/^cursor_\d+$/);
-                });
-            }
+            const body = await expectOneOfStatus<{ items: { cursor: string }[] }>(res, [200], [500]);
+            if (!body) return;
+            body.items.forEach((item) => {
+                expect(item).toHaveProperty('cursor');
+                expect(item.cursor).toMatch(/^cursor_\d+$/);
+            });
         });
 
         it('should return feed items in correct format', async () => {
@@ -295,17 +277,15 @@ describe('Feed Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{
-                    items: { id: string; body: unknown; createdAt: number }[];
-                }>(res);
-                body.items.forEach((item) => {
-                    expect(item).toHaveProperty('id');
-                    expect(item).toHaveProperty('body');
-                    expect(item).toHaveProperty('createdAt');
-                });
-            }
+            const body = await expectOneOfStatus<{
+                items: { id: string; body: unknown; createdAt: number }[];
+            }>(res, [200], [500]);
+            if (!body) return;
+            body.items.forEach((item) => {
+                expect(item).toHaveProperty('id');
+                expect(item).toHaveProperty('body');
+                expect(item).toHaveProperty('createdAt');
+            });
         });
 
         it('should handle empty feed', async () => {
@@ -314,12 +294,10 @@ describe('Feed Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ items: unknown[] }>(res);
-                // Empty feed is valid
-                expect(Array.isArray(body.items)).toBe(true);
-            }
+            const body = await expectOneOfStatus<{ items: unknown[] }>(res, [200], [500]);
+            if (!body) return;
+            // Empty feed is valid
+            expect(Array.isArray(body.items)).toBe(true);
         });
 
         it('should paginate correctly with before cursor', async () => {
@@ -329,24 +307,18 @@ describe('Feed Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 500]).toContain(res1.status);
-            if (res1.status === 200) {
-                const body1 = await parseJson<{ items: { cursor: string }[]; hasMore: boolean }>(
-                    res1
-                );
-                if (body1.items.length > 0 && body1.hasMore) {
-                    const lastItem = body1.items[body1.items.length - 1];
-                    const lastCursor = lastItem?.cursor;
+            const body1 = await expectOneOfStatus<{ items: { cursor: string }[]; hasMore: boolean }>(res1, [200], [500]);
+            if (!body1 || body1.items.length === 0 || !body1.hasMore) return;
+            const lastItem = body1.items[body1.items.length - 1];
+            const lastCursor = lastItem?.cursor;
 
-                    // Get next page
-                    const res2 = await app.request(`/v1/feed?before=${lastCursor}&limit=5`, {
-                        method: 'GET',
-                        headers: authHeader(),
-                    });
+            // Get next page
+            const res2 = await app.request(`/v1/feed?before=${lastCursor}&limit=5`, {
+                method: 'GET',
+                headers: authHeader(),
+            });
 
-                    expect([200, 500]).toContain(res2.status);
-                }
-            }
+            await expectOneOfStatus(res2, [200], [500]);
         });
     });
 
@@ -357,7 +329,7 @@ describe('Feed Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [200], [500]);
             // Feed should only contain items for the authenticated user
         });
     });
@@ -370,12 +342,10 @@ describe('Feed Routes', () => {
             });
 
             // Should reject with 400 for invalid cursor, or 500 if env/DB undefined
-            expect([400, 500]).toContain(res.status);
-            if (res.status === 400) {
-                const data = (await res.json()) as { error: string };
-                expect(data).toHaveProperty('error');
-                expect(data.error).toContain('Invalid cursor format');
-            }
+            const body = await expectOneOfStatus<{ error: string }>(res, [400], [500]);
+            if (!body) return;
+            expect(body).toHaveProperty('error');
+            expect(body.error).toContain('Invalid cursor format');
         });
 
         it('should reject invalid before cursor format (non-numeric)', async () => {
@@ -384,11 +354,9 @@ describe('Feed Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([400, 500]).toContain(res.status);
-            if (res.status === 400) {
-                const data = await parseJson<{ error: string }>(res);
-                expect(data.error).toContain('Invalid cursor format');
-            }
+            const body = await expectOneOfStatus<{ error: string }>(res, [400], [500]);
+            if (!body) return;
+            expect(body.error).toContain('Invalid cursor format');
         });
 
         it('should reject invalid after cursor format (missing prefix)', async () => {
@@ -397,11 +365,9 @@ describe('Feed Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([400, 500]).toContain(res.status);
-            if (res.status === 400) {
-                const data = await parseJson<{ error: string }>(res);
-                expect(data.error).toContain('Invalid cursor format');
-            }
+            const body = await expectOneOfStatus<{ error: string }>(res, [400], [500]);
+            if (!body) return;
+            expect(body.error).toContain('Invalid cursor format');
         });
 
         it('should reject invalid after cursor format (non-numeric)', async () => {
@@ -410,11 +376,9 @@ describe('Feed Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([400, 500]).toContain(res.status);
-            if (res.status === 400) {
-                const data = await parseJson<{ error: string }>(res);
-                expect(data.error).toContain('Invalid cursor format');
-            }
+            const body = await expectOneOfStatus<{ error: string }>(res, [400], [500]);
+            if (!body) return;
+            expect(body.error).toContain('Invalid cursor format');
         });
 
         it('should accept valid cursor_0', async () => {
@@ -424,7 +388,7 @@ describe('Feed Routes', () => {
             });
 
             // Should not fail validation (may fail on DB)
-            expect([200, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [200], [500]);
         });
 
         it('should accept valid high cursor number', async () => {
@@ -434,7 +398,7 @@ describe('Feed Routes', () => {
             });
 
             // Should not fail validation (may fail on DB)
-            expect([200, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [200], [500]);
         });
     });
 
@@ -445,7 +409,7 @@ describe('Feed Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [200], [500]);
         });
 
         it('should accept minimum limit of 1', async () => {
@@ -454,7 +418,7 @@ describe('Feed Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [200], [500]);
         });
 
         it('should accept maximum limit of 200', async () => {
@@ -463,7 +427,7 @@ describe('Feed Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [200], [500]);
         });
 
         it('should reject limit of 0', async () => {
@@ -472,7 +436,7 @@ describe('Feed Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([400, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [400], [500]);
         });
 
         it('should reject negative limit', async () => {
@@ -481,7 +445,7 @@ describe('Feed Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([400, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [400], [500]);
         });
 
         it('should reject non-numeric limit', async () => {
@@ -490,7 +454,7 @@ describe('Feed Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([400, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [400], [500]);
         });
     });
 });

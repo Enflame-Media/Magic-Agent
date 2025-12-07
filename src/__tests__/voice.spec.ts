@@ -35,7 +35,7 @@ vi.mock('@/lib/auth', () => ({
 }));
 
 import app from '@/index';
-import { authHeader, jsonBody, INVALID_TOKEN } from './test-utils';
+import { authHeader, jsonBody, INVALID_TOKEN, expectOneOfStatus } from './test-utils';
 
 describe('Voice Routes', () => {
     // Store original fetch
@@ -99,11 +99,9 @@ describe('Voice Routes', () => {
             });
 
             // Should return 400 with missing API key error, or 500 if env is undefined
-            expect([400, 500]).toContain(res.status);
-            if (res.status === 400) {
-                const data = await res.json();
-                expect(data).toHaveProperty('allowed', false);
-            }
+            const body = await expectOneOfStatus<{ allowed: boolean }>(res, [400], [500]);
+            if (!body) return;
+            expect(body).toHaveProperty('allowed', false);
         });
 
         it('should return token in development mode without subscription check', async () => {

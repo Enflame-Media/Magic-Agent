@@ -8,7 +8,6 @@
  */
 
 import { vi } from 'vitest';
-import type { Context } from 'hono';
 
 /**
  * Mock user ID used in authentication mocks
@@ -82,7 +81,7 @@ export function createMockDb() {
     tables.forEach((table) => storage.set(table, []));
 
     return {
-        prepare: vi.fn((sql: string) => {
+        prepare: vi.fn((_sql: string) => {
             const mockStatement = {
                 bind: vi.fn(() => mockStatement),
                 all: vi.fn(async () => ({
@@ -245,6 +244,93 @@ export async function expectError(
             throw new Error(`Expected error to contain "${errorContains}", got: ${body}`);
         }
     }
+}
+
+
+/**
+ * Assert response is successful (2xx) and return parsed JSON body.
+ * Use this instead of conditionally checking res.ok before parsing.
+ *
+ * @example
+ * // Before (anti-pattern - expect may never run)
+ * if (res.ok) {
+ *     const body = await parseJson<{ sessions: unknown[] }>(res);
+ *     expect(body).toHaveProperty('sessions');
+ * }
+ *
+ * // After (fail fast, expect always runs)
+ * const body = await expectOk<{ sessions: unknown[] }>(res);
+ * expect(body).toHaveProperty('sessions');
+ */
+export async function expectOk<T>(response: Response): Promise<T> {
+    if (!response.ok) {
+        const body = await response.text();
+        throw new Error(
+            `Expected response.ok to be true, got status ${response.status}. Body: ${body}`
+        );
+    }
+    return (await response.json()) as T;
+}
+
+/**
+ * Assert response has specific status and return parsed JSON body.
+ * Use this instead of conditionally checking res.status before parsing.
+ *
+ * @example
+ * // Before (anti-pattern - expect may never run)
+ * if (res.status === 200) {
+ *     const body = await parseJson<{ success: boolean }>(res);
+ *     expect(body.success).toBe(true);
+ * }
+ *
+ * // After (fail fast, expect always runs)
+ * const body = await expectStatus<{ success: boolean }>(res, 200);
+ * expect(body.success).toBe(true);
+ */
+export async function expectStatus<T>(response: Response, status: number): Promise<T> {
+    if (response.status !== status) {
+        const body = await response.text();
+        throw new Error(
+            `Expected status ${status}, got ${response.status}. Body: ${body}`
+        );
+    }
+    return (await response.json()) as T;
+}
+
+/**
+ * Assert response status is one of expected statuses and return parsed JSON body.
+ * Use this for tests where multiple success statuses are acceptable.
+ *
+ * @example
+ * // Before (anti-pattern - expect may never run)
+ * expect([200, 201, 500]).toContain(res.status);
+ * if (res.status === 200 || res.status === 201) {
+ *     const body = await parseJson<{ session: object }>(res);
+ *     expect(body).toHaveProperty('session');
+ * }
+ *
+ * // After (fail fast, expect always runs or test skips gracefully)
+ * const body = await expectOneOfStatus<{ session: object }>(res, [200, 201], [500]);
+ * if (body) {
+ *     expect(body).toHaveProperty('session');
+ * }
+ */
+export async function expectOneOfStatus<T>(
+    response: Response,
+    successStatuses: number[],
+    acceptableFailureStatuses: number[] = []
+): Promise<T | null> {
+    const allAcceptable = [...successStatuses, ...acceptableFailureStatuses];
+    if (!allAcceptable.includes(response.status)) {
+        const body = await response.text();
+        throw new Error(
+            `Expected status to be one of [${allAcceptable.join(', ')}], got ${response.status}. Body: ${body}`
+        );
+    }
+    if (acceptableFailureStatuses.includes(response.status)) {
+        return null;
+    }
+    return (await response.json()) as T;
 }
 
 /**

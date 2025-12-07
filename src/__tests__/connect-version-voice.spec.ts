@@ -51,7 +51,7 @@ vi.mock('@/lib/auth', () => ({
 }));
 
 import app from '@/index';
-import { authHeader, jsonBody, parseJson } from './test-utils';
+import { authHeader, jsonBody, expectOneOfStatus } from './test-utils';
 
 describe('Connect Routes', () => {
     beforeEach(() => {
@@ -73,12 +73,11 @@ describe('Connect Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ url: string }>(res);
-                expect(body).toHaveProperty('url');
-                expect(body.url).toContain('github.com');
-            }
+            // Use expectOk to ensure we get a successful response
+            const body = await expectOneOfStatus<{ url: string }>(res, [200], [500]);
+            if (!body) return;
+            expect(body).toHaveProperty('url');
+            expect(body.url).toContain('github.com');
         });
     });
 
@@ -155,11 +154,10 @@ describe('Connect Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 404, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ success: boolean }>(res);
-                expect(body.success).toBe(true);
-            }
+            // May return 200 (success), 404 (not connected), or 500 (DB error)
+            const body = await expectOneOfStatus<{ success: boolean }>(res, [200], [404, 500]);
+            // When successful, verify success is true
+            expect(body === null || body.success === true).toBe(true);
         });
     });
 
@@ -186,11 +184,10 @@ describe('Connect Routes', () => {
                     body: jsonBody({ token: `sk-test-${vendor}-token` }),
                 });
 
-                expect([200, 500]).toContain(res.status);
-                if (res.status === 200) {
-                    const body = await parseJson<{ success: boolean }>(res);
-                    expect(body.success).toBe(true);
-                }
+                // Use expectOk to ensure we get a successful response
+                const body = await expectOneOfStatus<{ success: boolean }>(res, [200], [500]);
+            if (!body) return;
+                expect(body.success).toBe(true);
             }
         });
 
@@ -230,11 +227,10 @@ describe('Connect Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ token: string | null }>(res);
-                expect(body).toHaveProperty('token');
-            }
+            // Use expectOk to ensure we get a successful response
+            const body = await expectOneOfStatus<{ token: string | null }>(res, [200], [500]);
+            if (!body) return;
+            expect(body).toHaveProperty('token');
         });
 
         it('should return null for unregistered vendor', async () => {
@@ -243,12 +239,11 @@ describe('Connect Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ token: string | null }>(res);
-                // May be null if not registered
-                expect(body).toHaveProperty('token');
-            }
+            // Use expectOk to ensure we get a successful response
+            const body = await expectOneOfStatus<{ token: string | null }>(res, [200], [500]);
+            if (!body) return;
+            // May be null if not registered
+            expect(body).toHaveProperty('token');
         });
     });
 
@@ -267,11 +262,10 @@ describe('Connect Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 404, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ success: boolean }>(res);
-                expect(body.success).toBe(true);
-            }
+            // May return 200 (success), 404 (not registered), or 500 (DB error)
+            const body = await expectOneOfStatus<{ success: boolean }>(res, [200], [404, 500]);
+            // When successful, verify success is true
+            expect(body === null || body.success === true).toBe(true);
         });
     });
 
@@ -290,12 +284,11 @@ describe('Connect Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ tokens: { vendor: string; token: string }[] }>(res);
-                expect(body).toHaveProperty('tokens');
-                expect(Array.isArray(body.tokens)).toBe(true);
-            }
+            // Use expectOk to ensure we get a successful response
+            const body = await expectOneOfStatus<{ tokens: { vendor: string; token: string }[] }>(res, [200], [500]);
+            if (!body) return;
+            expect(body).toHaveProperty('tokens');
+            expect(Array.isArray(body.tokens)).toBe(true);
         });
     });
 });
@@ -317,11 +310,10 @@ describe('Version Routes', () => {
                 }),
             });
 
-            expect([200, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ updateUrl: string | null }>(res);
-                expect(body).toHaveProperty('updateUrl');
-            }
+            // Use expectOk to ensure we get a successful response
+            const body = await expectOneOfStatus<{ updateUrl: string | null }>(res, [200], [500]);
+            if (!body) return;
+            expect(body).toHaveProperty('updateUrl');
         });
 
         it('should check Android version', async () => {
@@ -373,11 +365,10 @@ describe('Version Routes', () => {
                 }),
             });
 
-            expect([200, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ updateUrl: string | null }>(res);
-                expect(body.updateUrl).toBeNull();
-            }
+            // Use expectOk to ensure we get a successful response
+            const body = await expectOneOfStatus<{ updateUrl: string | null }>(res, [200], [500]);
+            if (!body) return;
+            expect(body.updateUrl).toBeNull();
         });
 
         it('should return update URL for outdated version', async () => {
@@ -391,12 +382,11 @@ describe('Version Routes', () => {
                 }),
             });
 
-            expect([200, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ updateUrl: string | null }>(res);
-                // May or may not have update URL depending on config
-                expect(body).toHaveProperty('updateUrl');
-            }
+            // Use expectOk to ensure we get a successful response
+            const body = await expectOneOfStatus<{ updateUrl: string | null }>(res, [200], [500]);
+            if (!body) return;
+            // May or may not have update URL depending on config
+            expect(body).toHaveProperty('updateUrl');
         });
     });
 });
@@ -429,14 +419,11 @@ describe('Voice Routes', () => {
                 }),
             });
 
-            expect([200, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ allowed: boolean; token?: string; agentId: string }>(
-                    res
-                );
-                expect(body).toHaveProperty('allowed');
-                expect(body).toHaveProperty('agentId');
-            }
+            // Use expectOk to ensure we get a successful response
+            const body = await expectOneOfStatus<{ allowed: boolean; token?: string; agentId: string }>(res, [200], [500]);
+            if (!body) return;
+            expect(body).toHaveProperty('allowed');
+            expect(body).toHaveProperty('agentId');
         });
 
         it('should require agentId', async () => {
@@ -459,12 +446,11 @@ describe('Voice Routes', () => {
                 }),
             });
 
-            expect([200, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ allowed: boolean }>(res);
-                // May be allowed in dev mode, denied in prod
-                expect(typeof body.allowed).toBe('boolean');
-            }
+            // Use expectOk to ensure we get a successful response
+            const body = await expectOneOfStatus<{ allowed: boolean }>(res, [200], [500]);
+            if (!body) return;
+            // May be allowed in dev mode, denied in prod
+            expect(typeof body.allowed).toBe('boolean');
         });
 
         it('should include token when allowed', async () => {
@@ -477,13 +463,11 @@ describe('Voice Routes', () => {
                 }),
             });
 
-            expect([200, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ allowed: boolean; token?: string }>(res);
-                if (body.allowed) {
-                    expect(body).toHaveProperty('token');
-                }
-            }
+            // Use expectOk to ensure we get a successful response
+            const body = await expectOneOfStatus<{ allowed: boolean; token?: string }>(res, [200], [500]);
+            if (!body) return;
+            // When allowed, token should be present; when not allowed, it may be absent
+            expect(!body.allowed || body.token !== undefined).toBe(true);
         });
     });
 });

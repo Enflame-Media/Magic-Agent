@@ -41,7 +41,7 @@ vi.mock('@/lib/auth', () => ({
 }));
 
 import app from '@/index';
-import { authHeader, jsonBody, parseJson, VALID_TOKEN } from './test-utils';
+import { authHeader, jsonBody, expectOneOfStatus, VALID_TOKEN } from './test-utils';
 
 describe('Machine Routes', () => {
     beforeEach(() => {
@@ -75,12 +75,11 @@ describe('Machine Routes', () => {
                 }),
             });
 
-            expect([200, 201, 500]).toContain(res.status);
-            if (res.status === 200 || res.status === 201) {
-                const body = await parseJson<{ machine: { id: string } }>(res);
-                expect(body).toHaveProperty('machine');
-                expect(body.machine.id).toBe(machineId);
-            }
+            // Accept 200 success or 500 DB error
+            const body = await expectOneOfStatus<{ machine: { id: string } }>(res, [200], [500]);
+            if (!body) return;
+            expect(body).toHaveProperty('machine');
+            expect(body.machine.id).toBe(machineId);
         });
 
         it('should require id field', async () => {
@@ -151,12 +150,11 @@ describe('Machine Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ machines: unknown[] }>(res);
-                expect(body).toHaveProperty('machines');
-                expect(Array.isArray(body.machines)).toBe(true);
-            }
+            // Accept 200 success or 500 DB error
+            const body = await expectOneOfStatus<{ machines: unknown[] }>(res, [200], [500]);
+            if (!body) return;
+            expect(body).toHaveProperty('machines');
+            expect(Array.isArray(body.machines)).toBe(true);
         });
 
         it('should accept limit query parameter', async () => {
@@ -183,14 +181,13 @@ describe('Machine Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ machines: { active: boolean }[] }>(res);
-                // All returned machines should be active
-                body.machines.forEach((machine) => {
-                    expect(machine.active).toBe(true);
-                });
-            }
+            // Accept 200 success or 500 DB error
+            const body = await expectOneOfStatus<{ machines: { active: boolean }[] }>(res, [200], [500]);
+            if (!body) return;
+            // All returned machines should be active
+            body.machines.forEach((machine) => {
+                expect(machine.active).toBe(true);
+            });
         });
     });
 
@@ -218,11 +215,10 @@ describe('Machine Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 404, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ machine: { id: string } }>(res);
-                expect(body).toHaveProperty('machine');
-            }
+            // May return 200 (found), 404 (not found), or 500 (DB error)
+            const body = await expectOneOfStatus<{ machine: { id: string } }>(res, [200], [404, 500]);
+            // When found, verify machine property exists
+            expect(body === null || body.machine !== undefined).toBe(true);
         });
     });
 
@@ -313,16 +309,19 @@ describe('Machine Routes', () => {
                 }),
             });
 
-            if (createRes.status === 200) {
-                // Try to access as user 2
-                const accessRes = await app.request(`/v1/machines/${machineId}`, {
-                    method: 'GET',
-                    headers: authHeader('user2-token'),
-                });
+            // Accept 200 success or 500 DB error
+            const createBody = await expectOneOfStatus<{ machine: { id: string } }>(createRes, [200], [500]);
+            if (!createBody) return;
+            expect(createBody).toHaveProperty('machine');
 
-                // Should be 404 (not found for this user) or 403 (forbidden)
-                expect([403, 404, 500]).toContain(accessRes.status);
-            }
+            // Try to access as user 2
+            const accessRes = await app.request(`/v1/machines/${machineId}`, {
+                method: 'GET',
+                headers: authHeader('user2-token'),
+            });
+
+            // Should be 404 (not found for this user) or 403 (forbidden)
+            expect([403, 404, 500]).toContain(accessRes.status);
         });
 
         it('should not allow updating another user\'s machine', async () => {

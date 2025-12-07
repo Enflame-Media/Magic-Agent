@@ -37,16 +37,7 @@ vi.mock('@/lib/auth', () => ({
 }));
 
 import app from '@/index';
-import {
-    authHeader,
-    jsonBody,
-    parseJson,
-    expectSuccess,
-    expectError,
-    VALID_TOKEN,
-    INVALID_TOKEN,
-    TEST_USER_ID,
-} from './test-utils';
+import { authHeader, jsonBody, INVALID_TOKEN } from './test-utils';
 
 /**
  * Helper to create mock Ed25519 signature data

@@ -40,7 +40,7 @@ vi.mock('@/lib/auth', () => ({
 }));
 
 import app from '@/index';
-import { authHeader, jsonBody, parseJson } from './test-utils';
+import { authHeader, jsonBody, expectOneOfStatus } from './test-utils';
 
 describe('Access Key Routes', () => {
     beforeEach(() => {
@@ -62,11 +62,9 @@ describe('Access Key Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ accessKey: unknown }>(res);
-                expect(body).toHaveProperty('accessKey');
-            }
+            const body = await expectOneOfStatus<{ accessKey: unknown }>(res, [200], [500]);
+            if (!body) return;
+            expect(body).toHaveProperty('accessKey');
         });
 
         it('should return null for non-existent access key', async () => {
@@ -75,11 +73,9 @@ describe('Access Key Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ accessKey: unknown }>(res);
-                expect(body.accessKey).toBeNull();
-            }
+            const body = await expectOneOfStatus<{ accessKey: unknown }>(res, [200], [500]);
+            if (!body) return;
+            expect(body.accessKey).toBeNull();
         });
 
         it('should validate sessionId parameter', async () => {
@@ -88,7 +84,7 @@ describe('Access Key Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 400, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [200, 400], [500]);
         });
 
         it('should validate machineId parameter', async () => {
@@ -97,7 +93,7 @@ describe('Access Key Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 400, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [200, 400], [500]);
         });
     });
 
@@ -126,11 +122,9 @@ describe('Access Key Routes', () => {
                 }),
             });
 
-            expect([200, 201, 500]).toContain(res.status);
-            if (res.status === 200 || res.status === 201) {
-                const body = await parseJson<{ accessKey: { data: string } }>(res);
-                expect(body).toHaveProperty('accessKey');
-            }
+            const body = await expectOneOfStatus<{ accessKey: { data: string } }>(res, [200, 201], [500]);
+            if (!body) return;
+            expect(body).toHaveProperty('accessKey');
         });
 
         it('should require data field', async () => {
@@ -165,7 +159,7 @@ describe('Access Key Routes', () => {
                 }),
             });
 
-            expect([409, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [409], [500]);
         });
     });
 
@@ -193,12 +187,10 @@ describe('Access Key Routes', () => {
                 }),
             });
 
-            expect([200, 404, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ success: boolean; version: number }>(res);
-                expect(body.success).toBe(true);
-                expect(body.version).toBeGreaterThan(1);
-            }
+            const body = await expectOneOfStatus<{ success: boolean; version: number }>(res, [200], [404, 500]);
+            if (!body) return;
+            expect(body.success).toBe(true);
+            expect(body.version).toBeGreaterThan(1);
         });
 
         it('should require data field', async () => {
@@ -235,7 +227,7 @@ describe('Access Key Routes', () => {
                 }),
             });
 
-            expect([404, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [404], [500]);
         });
 
         it('should handle version mismatch (optimistic locking)', async () => {
@@ -248,13 +240,9 @@ describe('Access Key Routes', () => {
                 }),
             });
 
-            expect([200, 404, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ success: boolean; error?: string }>(res);
-                if (!body.success) {
-                    expect(body.error).toBe('version-mismatch');
-                }
-            }
+            const body = await expectOneOfStatus<{ success: boolean; error?: string }>(res, [200], [404, 500]);
+            if (!body || body.success) return;
+            expect(body.error).toBe('version-mismatch');
         });
     });
 
@@ -279,11 +267,9 @@ describe('Access Key Routes', () => {
             });
 
             // Should either not find it or return null
-            expect([200, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ accessKey: unknown }>(res);
-                expect(body.accessKey).toBeNull();
-            }
+            const body = await expectOneOfStatus<{ accessKey: unknown }>(res, [200], [500]);
+            if (!body) return;
+            expect(body.accessKey).toBeNull();
         });
     });
 });

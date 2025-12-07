@@ -41,7 +41,7 @@ vi.mock('@/lib/auth', () => ({
 }));
 
 import app from '@/index';
-import { authHeader, jsonBody, parseJson } from './test-utils';
+import { authHeader, jsonBody, expectOneOfStatus } from './test-utils';
 
 describe('Account Routes', () => {
     beforeEach(() => {
@@ -63,16 +63,15 @@ describe('Account Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 404, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{
-                    id: string;
-                    firstName?: string;
-                    lastName?: string;
-                    username?: string;
-                }>(res);
+            const body = await expectOneOfStatus<{
+                id: string;
+                firstName?: string;
+                lastName?: string;
+                username?: string;
+            }>(res, [200], [404, 500]);
+            if (!body) return;
                 expect(body).toHaveProperty('id');
-            }
+            
         });
 
         it('should include connected services info', async () => {
@@ -81,11 +80,10 @@ describe('Account Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 404, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ connectedServices?: string[] }>(res);
+            const body = await expectOneOfStatus<{ connectedServices?: string[] }>(res, [200], [404, 500]);
+            if (!body) return;
                 expect(body).toHaveProperty('connectedServices');
-            }
+            
         });
 
         it('should include timestamp', async () => {
@@ -94,12 +92,11 @@ describe('Account Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 404, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ timestamp: number }>(res);
+            const body = await expectOneOfStatus<{ timestamp: number }>(res, [200], [404, 500]);
+            if (!body) return;
                 expect(body).toHaveProperty('timestamp');
                 expect(typeof body.timestamp).toBe('number');
-            }
+            
         });
     });
 
@@ -126,11 +123,10 @@ describe('Account Routes', () => {
                 }),
             });
 
-            expect([200, 404, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ success: boolean }>(res);
+            const body = await expectOneOfStatus<{ success: boolean }>(res, [200], [404, 500]);
+            if (!body) return;
                 expect(body.success).toBe(true);
-            }
+            
         });
 
         it('should update lastName', async () => {
@@ -142,7 +138,7 @@ describe('Account Routes', () => {
                 }),
             });
 
-            expect([200, 404, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [200], [404, 500]);
         });
 
         it('should update username', async () => {
@@ -155,7 +151,7 @@ describe('Account Routes', () => {
                 }),
             });
 
-            expect([200, 404, 409, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [200, 409], [404, 500]);
         });
 
         it('should update multiple fields at once', async () => {
@@ -169,7 +165,7 @@ describe('Account Routes', () => {
                 }),
             });
 
-            expect([200, 404, 409, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [200, 409], [404, 500]);
         });
 
         it('should return 409 for taken username', async () => {
@@ -182,13 +178,9 @@ describe('Account Routes', () => {
                 }),
             });
 
-            expect([200, 404, 409, 500]).toContain(res.status);
-            if (res.status === 409 || res.status === 200) {
-                const body = await parseJson<{ success: boolean; error?: string }>(res);
-                if (!body.success) {
-                    expect(body.error).toBe('username-taken');
-                }
-            }
+            const body = await expectOneOfStatus<{ success: boolean; error?: string }>(res, [200, 409], [404, 500]);
+            if (!body || body.success) return;
+            expect(body.error).toBe('username-taken');
         });
 
         it('should reject invalid username format', async () => {
@@ -201,7 +193,7 @@ describe('Account Routes', () => {
             });
 
             // May accept or reject based on validation rules
-            expect([200, 400, 404, 409, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [200, 400, 409], [404, 500]);
         });
     });
 
@@ -220,13 +212,12 @@ describe('Account Routes', () => {
                 headers: authHeader(),
             });
 
-            expect([200, 404, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ settings: string; settingsVersion: number }>(res);
+            const body = await expectOneOfStatus<{ settings: string; settingsVersion: number }>(res, [200], [404, 500]);
+            if (!body) return;
                 expect(body).toHaveProperty('settings');
                 expect(body).toHaveProperty('settingsVersion');
                 expect(typeof body.settingsVersion).toBe('number');
-            }
+            
         });
     });
 
@@ -254,11 +245,10 @@ describe('Account Routes', () => {
                 }),
             });
 
-            expect([200, 404, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{ success: boolean; version: number }>(res);
+            const body = await expectOneOfStatus<{ success: boolean; version: number }>(res, [200], [404, 500]);
+            if (!body) return;
                 expect(body.success).toBe(true);
-            }
+            
         });
 
         it('should require settings field', async () => {
@@ -295,20 +285,16 @@ describe('Account Routes', () => {
                 }),
             });
 
-            expect([200, 404, 500]).toContain(res.status);
-            if (res.status === 200) {
-                const body = await parseJson<{
-                    success: boolean;
-                    error?: string;
-                    currentVersion?: number;
-                    currentSettings?: string;
-                }>(res);
-                if (!body.success) {
-                    expect(body.error).toBe('version-mismatch');
-                    expect(body).toHaveProperty('currentVersion');
-                    expect(body).toHaveProperty('currentSettings');
-                }
-            }
+            const body = await expectOneOfStatus<{
+                success: boolean;
+                error?: string;
+                currentVersion?: number;
+                currentSettings?: string;
+            }>(res, [200], [404, 500]);
+            if (!body || body.success) return;
+            expect(body.error).toBe('version-mismatch');
+            expect(body).toHaveProperty('currentVersion');
+            expect(body).toHaveProperty('currentSettings');
         });
 
         it('should accept JSON string settings', async () => {
@@ -327,7 +313,7 @@ describe('Account Routes', () => {
                 }),
             });
 
-            expect([200, 404, 500]).toContain(res.status);
+            await expectOneOfStatus(res, [200], [404, 500]);
         });
     });
 
@@ -344,11 +330,10 @@ describe('Account Routes', () => {
             });
 
             // Both should succeed but return different data
-            if (res1.status === 200 && res2.status === 200) {
-                const body1 = await parseJson<{ id: string }>(res1);
-                const body2 = await parseJson<{ id: string }>(res2);
-                expect(body1.id).not.toBe(body2.id);
-            }
+            const body1 = await expectOneOfStatus<{ id: string }>(res1, [200], [404, 500]);
+            const body2 = await expectOneOfStatus<{ id: string }>(res2, [200], [404, 500]);
+            if (!body1 || !body2) return;
+            expect(body1.id).not.toBe(body2.id);
         });
     });
 });
