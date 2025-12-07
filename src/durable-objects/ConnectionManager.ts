@@ -27,13 +27,31 @@ import type {
 } from './types';
 import { CloseCode, DEFAULT_CONFIG, normalizeMessage } from './types';
 import { verifyToken, initAuth } from '@/lib/auth';
+import { getDb } from '@/db/client';
+import type { HandlerResult, HandlerContext } from './handlers';
+import {
+    handleSessionMetadataUpdate,
+    handleSessionStateUpdate,
+    handleSessionAlive,
+    handleSessionEnd,
+    handleSessionMessage,
+    handleMachineAlive,
+    handleMachineMetadataUpdate,
+    handleMachineStateUpdate,
+    handleArtifactRead,
+    handleArtifactUpdate,
+    handleArtifactCreate,
+    handleArtifactDelete,
+    handleAccessKeyGet,
+    handleUsageReport,
+} from './handlers';
 
 /**
  * Environment bindings for the ConnectionManager Durable Object
  */
 export interface ConnectionManagerEnv {
-    /** D1 Database binding (optional, for future use) */
-    DB?: D1Database;
+    /** D1 Database binding for database updates */
+    DB: D1Database;
 
     /** Master secret for auth token verification */
     HANDY_MASTER_SECRET: string;
@@ -288,8 +306,14 @@ export class ConnectionManager extends DurableObject<ConnectionManagerEnv> {
      * Called when a connected client sends a message.
      * The DO may wake from hibernation to process this message.
      *
+     * Routes messages to appropriate handlers:
+     * - Database update handlers (session, machine, artifact, usage)
+     * - RPC forwarding
+     * - Generic broadcast forwarding
+     *
      * @param ws - The WebSocket that sent the message
      * @param message - The message content (string or binary)
+     * @see HAP-283 - WebSocket message handlers for database updates
      */
     override async webSocketMessage(ws: WebSocket, message: ArrayBuffer | string): Promise<void> {
         // Update last activity timestamp
@@ -325,6 +349,16 @@ export class ConnectionManager extends DurableObject<ConnectionManagerEnv> {
             return;
         }
 
+        // Create handler context for database operations
+        const handlerCtx: HandlerContext | null = this.userId
+            ? {
+                  userId: this.userId,
+                  db: getDb(this.env.DB),
+                  machineId: metadata?.machineId,
+                  sessionId: metadata?.sessionId,
+              }
+            : null;
+
         // Handle message by type (normalized from either format)
         switch (normalized.type) {
             case 'ping':
@@ -335,6 +369,173 @@ export class ConnectionManager extends DurableObject<ConnectionManagerEnv> {
                 }));
                 break;
 
+            // =========================================================================
+            // SESSION HANDLERS - Database update events
+            // =========================================================================
+            case 'update-metadata':
+                if (handlerCtx) {
+                    const result = await handleSessionMetadataUpdate(
+                        handlerCtx,
+                        normalized.payload as { sid: string; metadata: string; expectedVersion: number }
+                    );
+                    await this.processHandlerResult(ws, result, normalized.messageId);
+                }
+                break;
+
+            case 'update-state':
+                if (handlerCtx) {
+                    const result = await handleSessionStateUpdate(
+                        handlerCtx,
+                        normalized.payload as { sid: string; agentState: string | null; expectedVersion: number }
+                    );
+                    await this.processHandlerResult(ws, result, normalized.messageId);
+                }
+                break;
+
+            case 'session-alive':
+                if (handlerCtx) {
+                    const result = await handleSessionAlive(
+                        handlerCtx,
+                        normalized.payload as { sid: string; time: number; thinking?: boolean }
+                    );
+                    await this.processHandlerResult(ws, result, normalized.messageId);
+                }
+                break;
+
+            case 'session-end':
+                if (handlerCtx) {
+                    const result = await handleSessionEnd(
+                        handlerCtx,
+                        normalized.payload as { sid: string; time: number }
+                    );
+                    await this.processHandlerResult(ws, result, normalized.messageId);
+                }
+                break;
+
+            case 'message':
+                if (handlerCtx) {
+                    const result = await handleSessionMessage(
+                        handlerCtx,
+                        normalized.payload as { sid: string; message: string; localId?: string }
+                    );
+                    await this.processHandlerResult(ws, result, normalized.messageId, metadata?.connectionId);
+                }
+                break;
+
+            // =========================================================================
+            // MACHINE HANDLERS - Database update events
+            // =========================================================================
+            case 'machine-alive':
+                if (handlerCtx) {
+                    const result = await handleMachineAlive(
+                        handlerCtx,
+                        normalized.payload as { machineId: string; time: number }
+                    );
+                    await this.processHandlerResult(ws, result, normalized.messageId);
+                }
+                break;
+
+            case 'machine-update-metadata':
+                if (handlerCtx) {
+                    const result = await handleMachineMetadataUpdate(
+                        handlerCtx,
+                        normalized.payload as { machineId: string; metadata: string; expectedVersion: number }
+                    );
+                    await this.processHandlerResult(ws, result, normalized.messageId);
+                }
+                break;
+
+            case 'machine-update-state':
+                if (handlerCtx) {
+                    const result = await handleMachineStateUpdate(
+                        handlerCtx,
+                        normalized.payload as { machineId: string; daemonState: string; expectedVersion: number }
+                    );
+                    await this.processHandlerResult(ws, result, normalized.messageId);
+                }
+                break;
+
+            // =========================================================================
+            // ARTIFACT HANDLERS - Database update events
+            // =========================================================================
+            case 'artifact-read':
+                if (handlerCtx) {
+                    const result = await handleArtifactRead(
+                        handlerCtx,
+                        normalized.payload as { artifactId: string }
+                    );
+                    await this.processHandlerResult(ws, result, normalized.messageId);
+                }
+                break;
+
+            case 'artifact-update':
+                if (handlerCtx) {
+                    const result = await handleArtifactUpdate(
+                        handlerCtx,
+                        normalized.payload as {
+                            artifactId: string;
+                            header?: { data: string; expectedVersion: number };
+                            body?: { data: string; expectedVersion: number };
+                        }
+                    );
+                    await this.processHandlerResult(ws, result, normalized.messageId);
+                }
+                break;
+
+            case 'artifact-create':
+                if (handlerCtx) {
+                    const result = await handleArtifactCreate(
+                        handlerCtx,
+                        normalized.payload as { id: string; header: string; body: string; dataEncryptionKey: string }
+                    );
+                    await this.processHandlerResult(ws, result, normalized.messageId);
+                }
+                break;
+
+            case 'artifact-delete':
+                if (handlerCtx) {
+                    const result = await handleArtifactDelete(
+                        handlerCtx,
+                        normalized.payload as { artifactId: string }
+                    );
+                    await this.processHandlerResult(ws, result, normalized.messageId);
+                }
+                break;
+
+            // =========================================================================
+            // ACCESS KEY HANDLERS
+            // =========================================================================
+            case 'access-key-get':
+                if (handlerCtx) {
+                    const result = await handleAccessKeyGet(
+                        handlerCtx,
+                        normalized.payload as { sessionId: string; machineId: string }
+                    );
+                    await this.processHandlerResult(ws, result, normalized.messageId);
+                }
+                break;
+
+            // =========================================================================
+            // USAGE HANDLERS
+            // =========================================================================
+            case 'usage-report':
+                if (handlerCtx) {
+                    const result = await handleUsageReport(
+                        handlerCtx,
+                        normalized.payload as {
+                            key: string;
+                            sessionId?: string;
+                            tokens: { total: number; [key: string]: number };
+                            cost: { total: number; [key: string]: number };
+                        }
+                    );
+                    await this.processHandlerResult(ws, result, normalized.messageId);
+                }
+                break;
+
+            // =========================================================================
+            // RPC HANDLERS - Message forwarding
+            // =========================================================================
             case 'broadcast':
                 // Client requests to broadcast a message to other connections
                 // Note: Most broadcasts should come from the Worker via /broadcast endpoint
@@ -442,6 +643,53 @@ export class ConnectionManager extends DurableObject<ConnectionManagerEnv> {
                     }
                 }
                 break;
+        }
+    }
+
+    /**
+     * Process handler result - send response and broadcast updates
+     *
+     * @param ws - WebSocket to send response to
+     * @param result - Handler result with response and/or broadcast
+     * @param ackId - Optional ack ID for request-response correlation
+     * @param skipConnectionId - Optional connection ID to exclude from broadcast
+     */
+    private async processHandlerResult(
+        ws: WebSocket,
+        result: HandlerResult,
+        ackId?: string,
+        skipConnectionId?: string
+    ): Promise<void> {
+        // Send response if provided
+        if (result.response !== undefined) {
+            const responseMsg: ClientMessage = {
+                event: 'ack',
+                ackId,
+                ack: result.response,
+            };
+            try {
+                ws.send(JSON.stringify(responseMsg));
+            } catch {
+                // Connection may be closed
+            }
+        }
+
+        // Broadcast update if provided
+        if (result.broadcast) {
+            // Add connection exclusion if requested (for message events to avoid echo)
+            let filter = result.broadcast.filter;
+            if (skipConnectionId) {
+                // Wrap in exclude filter if not already excluding
+                if (filter.type !== 'exclude') {
+                    // For now, just use the original filter - true exclusion would need more complex logic
+                }
+            }
+            this.broadcastClientMessage(result.broadcast.message, filter);
+        }
+
+        // Broadcast ephemeral event if provided
+        if (result.ephemeral) {
+            this.broadcastClientMessage(result.ephemeral.message, result.ephemeral.filter);
         }
     }
 

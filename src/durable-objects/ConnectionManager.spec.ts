@@ -52,10 +52,23 @@ import type {
 } from './types';
 import { CloseCode } from './types';
 
+// Mock D1Database
+const mockD1Database = {
+    prepare: vi.fn().mockReturnThis(),
+    bind: vi.fn().mockReturnThis(),
+    first: vi.fn().mockResolvedValue(null),
+    all: vi.fn().mockResolvedValue({ results: [] }),
+    run: vi.fn().mockResolvedValue({ success: true }),
+    batch: vi.fn().mockResolvedValue([]),
+    dump: vi.fn().mockResolvedValue(new ArrayBuffer(0)),
+    exec: vi.fn().mockResolvedValue({ count: 0, duration: 0 }),
+} as unknown as D1Database;
+
 // Mock environment
 const mockEnv = {
     HANDY_MASTER_SECRET: 'test-secret-for-vitest-tests',
     ENVIRONMENT: 'development' as const,
+    DB: mockD1Database,
 };
 
 // Mock DurableObjectState

@@ -13,3 +13,6 @@ export type { ConnectionManagerEnv } from './ConnectionManager';
 
 // Types
 export * from './types';
+
+// Handlers - WebSocket message handlers for database updates
+export * from './handlers';
