@@ -3,7 +3,7 @@ import { View, ActivityIndicator, Pressable } from 'react-native';
 import { Text } from '@/components/StyledText';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { useAuth } from '@/auth/AuthContext';
-import { getUsageForPeriod, calculateTotals } from '@/sync/apiUsage';
+import { getUsageForPeriod, calculateTotals, CostByTokenType } from '@/sync/apiUsage';
 import { Ionicons } from '@expo/vector-icons';
 import { t } from '@/text';
 
@@ -100,7 +100,12 @@ export const SessionCostDisplay: React.FC<SessionCostDisplayProps> = ({
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [totalCost, setTotalCost] = useState<number>(0);
-    const [costByModel, setCostByModel] = useState<Record<string, number>>({});
+    const [costByTokenType, setCostByTokenType] = useState<CostByTokenType>({
+        input: 0,
+        output: 0,
+        cache_creation: 0,
+        cache_read: 0
+    });
 
     const loadCostData = useCallback(async () => {
         if (!auth.credentials) {
@@ -117,7 +122,7 @@ export const SessionCostDisplay: React.FC<SessionCostDisplayProps> = ({
             const response = await getUsageForPeriod(auth.credentials, '30days', sessionId);
             const totals = calculateTotals(response.usage || []);
             setTotalCost(totals.totalCost);
-            setCostByModel(totals.costByModel);
+            setCostByTokenType(totals.costByTokenType);
         } catch (err) {
             console.error('Failed to load session cost:', err);
             setError(t('usage.noData'));
@@ -190,8 +195,16 @@ export const SessionCostDisplay: React.FC<SessionCostDisplayProps> = ({
         );
     }
 
-    // Sort models by cost (highest first)
-    const sortedModels = Object.entries(costByModel)
+    // Token type labels mapping to translation keys
+    const tokenTypeLabels: Record<keyof CostByTokenType, string> = {
+        input: t('sessionInfo.inputCost'),
+        output: t('sessionInfo.outputCost'),
+        cache_creation: t('sessionInfo.cacheCreationCost'),
+        cache_read: t('sessionInfo.cacheReadCost')
+    };
+
+    // Filter to only show token types with non-zero costs, sorted by cost (highest first)
+    const sortedTokenTypes = (Object.entries(costByTokenType) as [keyof CostByTokenType, number][])
         .filter(([, cost]) => cost > 0)
         .sort(([, a], [, b]) => b - a);
 
@@ -206,11 +219,11 @@ export const SessionCostDisplay: React.FC<SessionCostDisplayProps> = ({
 
             <Text style={styles.totalCost}>{formatCost(totalCost)}</Text>
 
-            {sortedModels.length > 0 && (
+            {sortedTokenTypes.length > 0 && (
                 <View style={styles.breakdownContainer}>
-                    {sortedModels.map(([model, cost]) => (
-                        <View key={model} style={styles.breakdownRow}>
-                            <Text style={styles.breakdownLabel}>{model}</Text>
+                    {sortedTokenTypes.map(([tokenType, cost]) => (
+                        <View key={tokenType} style={styles.breakdownRow}>
+                            <Text style={styles.breakdownLabel}>{tokenTypeLabels[tokenType]}</Text>
                             <Text style={styles.breakdownValue}>{formatCost(cost)}</Text>
                         </View>
                     ))}

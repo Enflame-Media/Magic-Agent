@@ -93,38 +93,82 @@ export async function getUsageForPeriod(
 }
 
 /**
- * Calculate total tokens and cost from usage data
+ * Token type keys used in cost and token breakdowns.
+ * These match the keys sent by the CLI in usage-report events.
+ */
+export const TOKEN_TYPE_KEYS = ['input', 'output', 'cache_creation', 'cache_read'] as const;
+export type TokenType = typeof TOKEN_TYPE_KEYS[number];
+
+/**
+ * Check if a key is a token type key (input, output, cache_creation, cache_read)
+ * rather than a model name or 'total'.
+ */
+function isTokenTypeKey(key: string): key is TokenType {
+    return TOKEN_TYPE_KEYS.includes(key as TokenType);
+}
+
+/**
+ * Cost breakdown by token type.
+ * Values are in USD.
+ */
+export interface CostByTokenType {
+    input: number;
+    output: number;
+    cache_creation: number;
+    cache_read: number;
+}
+
+/**
+ * Calculate total tokens and cost from usage data.
+ *
+ * The usage data contains costs keyed by token type (input, output, cache_creation, cache_read)
+ * plus a 'total' key. This function extracts and aggregates both the raw data and
+ * structured token-type breakdown.
  */
 export function calculateTotals(usage: UsageDataPoint[]): {
     totalTokens: number;
     totalCost: number;
     tokensByModel: Record<string, number>;
+    /** @deprecated Use costByTokenType instead - this contains token type keys, not model names */
     costByModel: Record<string, number>;
+    /** Cost breakdown by token type (input, output, cache_creation, cache_read) */
+    costByTokenType: CostByTokenType;
 } {
     const result = {
         totalTokens: 0,
         totalCost: 0,
         tokensByModel: {} as Record<string, number>,
-        costByModel: {} as Record<string, number>
+        costByModel: {} as Record<string, number>,
+        costByTokenType: {
+            input: 0,
+            output: 0,
+            cache_creation: 0,
+            cache_read: 0
+        } as CostByTokenType
     };
-    
+
     for (const dataPoint of usage) {
         // Sum tokens
-        for (const [model, tokens] of Object.entries(dataPoint.tokens)) {
+        for (const [key, tokens] of Object.entries(dataPoint.tokens)) {
             if (typeof tokens === 'number') {
                 result.totalTokens += tokens;
-                result.tokensByModel[model] = (result.tokensByModel[model] || 0) + tokens;
+                result.tokensByModel[key] = (result.tokensByModel[key] || 0) + tokens;
             }
         }
-        
+
         // Sum costs
-        for (const [model, cost] of Object.entries(dataPoint.cost)) {
+        for (const [key, cost] of Object.entries(dataPoint.cost)) {
             if (typeof cost === 'number') {
                 result.totalCost += cost;
-                result.costByModel[model] = (result.costByModel[model] || 0) + cost;
+                result.costByModel[key] = (result.costByModel[key] || 0) + cost;
+
+                // Also populate structured costByTokenType if this is a token type key
+                if (isTokenTypeKey(key)) {
+                    result.costByTokenType[key] += cost;
+                }
             }
         }
     }
-    
+
     return result;
 }
