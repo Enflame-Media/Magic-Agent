@@ -221,6 +221,7 @@ export const en = {
         userNotFound: 'User not found',
         sessionDeleted: 'Session has been deleted',
         sessionDeletedDescription: 'This session has been permanently removed',
+        notAuthenticated: 'Not authenticated',
 
         // Error functions with context
         fieldError: ({ field, reason }: { field: string; reason: string }) =>
@@ -379,7 +380,15 @@ export const en = {
         deleteSessionWarning: 'This action cannot be undone. All messages and data associated with this session will be permanently deleted.',
         failedToDeleteSession: 'Failed to delete session',
         sessionDeleted: 'Session deleted successfully',
-        
+        // Cost display (HAP-227)
+        sessionCost: 'Session Cost',
+        noCostDataYet: 'No cost data available yet',
+        costBreakdown: 'Cost Breakdown',
+        inputCost: 'Input',
+        outputCost: 'Output',
+        cacheCreationCost: 'Cache Write',
+        cacheReadCost: 'Cache Read',
+
     },
 
     components: {

@@ -204,6 +204,7 @@ export const ru: TranslationStructure = {
         userNotFound: 'Пользователь не найден',
         sessionDeleted: 'Сессия была удалена',
         sessionDeletedDescription: 'Эта сессия была окончательно удалена',
+        notAuthenticated: 'Не аутентифицирован',
 
         // Error functions with context
         fieldError: ({ field, reason }: { field: string; reason: string }) =>
@@ -354,6 +355,14 @@ export const ru: TranslationStructure = {
         deleteSessionWarning: 'Это действие нельзя отменить. Все сообщения и данные, связанные с этой сессией, будут удалены навсегда.',
         failedToDeleteSession: 'Не удалось удалить сессию',
         sessionDeleted: 'Сессия успешно удалена',
+        // Cost display (HAP-227)
+        sessionCost: 'Стоимость сессии',
+        noCostDataYet: 'Данные о стоимости пока недоступны',
+        costBreakdown: 'Разбивка стоимости',
+        inputCost: 'Ввод',
+        outputCost: 'Вывод',
+        cacheCreationCost: 'Запись в кеш',
+        cacheReadCost: 'Чтение из кеша',
     },
 
     components: {

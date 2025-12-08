@@ -221,6 +221,7 @@ export const es: TranslationStructure = {
         userNotFound: 'Usuario no encontrado',
         sessionDeleted: 'La sesión ha sido eliminada',
         sessionDeletedDescription: 'Esta sesión ha sido eliminada permanentemente',
+        notAuthenticated: 'No autenticado',
 
         // Error functions with context
         fieldError: ({ field, reason }: { field: string; reason: string }) =>
@@ -379,7 +380,15 @@ export const es: TranslationStructure = {
         deleteSessionWarning: 'Esta acción no se puede deshacer. Todos los mensajes y datos asociados con esta sesión se eliminarán permanentemente.',
         failedToDeleteSession: 'Error al eliminar la sesión',
         sessionDeleted: 'Sesión eliminada exitosamente',
-        
+        // Cost display (HAP-227)
+        sessionCost: 'Costo de la sesión',
+        noCostDataYet: 'Datos de costo aún no disponibles',
+        costBreakdown: 'Desglose de costos',
+        inputCost: 'Entrada',
+        outputCost: 'Salida',
+        cacheCreationCost: 'Escritura en caché',
+        cacheReadCost: 'Lectura de caché',
+
     },
 
     components: {

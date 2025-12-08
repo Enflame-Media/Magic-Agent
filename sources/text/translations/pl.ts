@@ -232,6 +232,7 @@ export const pl: TranslationStructure = {
         userNotFound: 'Użytkownik nie został znaleziony',
         sessionDeleted: 'Sesja została usunięta',
         sessionDeletedDescription: 'Ta sesja została trwale usunięta',
+        notAuthenticated: 'Nie uwierzytelniono',
 
         // Error functions with context
         fieldError: ({ field, reason }: { field: string; reason: string }) =>
@@ -390,6 +391,14 @@ export const pl: TranslationStructure = {
         deleteSessionWarning: 'Ta operacja jest nieodwracalna. Wszystkie wiadomości i dane powiązane z tą sesją zostaną trwale usunięte.',
         failedToDeleteSession: 'Nie udało się usunąć sesji',
         sessionDeleted: 'Sesja została pomyślnie usunięta',
+        // Cost display (HAP-227)
+        sessionCost: 'Koszt sesji',
+        noCostDataYet: 'Dane o kosztach nie są jeszcze dostępne',
+        costBreakdown: 'Podział kosztów',
+        inputCost: 'Wejście',
+        outputCost: 'Wyjście',
+        cacheCreationCost: 'Zapis do pamięci podręcznej',
+        cacheReadCost: 'Odczyt z pamięci podręcznej',
     },
 
     components: {

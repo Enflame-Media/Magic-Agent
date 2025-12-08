@@ -223,6 +223,7 @@ export const zhHans: TranslationStructure = {
         userNotFound: '未找到用户',
         sessionDeleted: '会话已被删除',
         sessionDeletedDescription: '此会话已被永久删除',
+        notAuthenticated: '未认证',
 
         // Error functions with context
         fieldError: ({ field, reason }: { field: string; reason: string }) =>
@@ -381,7 +382,15 @@ export const zhHans: TranslationStructure = {
         deleteSessionWarning: '此操作无法撤销。与此会话相关的所有消息和数据将被永久删除。',
         failedToDeleteSession: '删除会话失败',
         sessionDeleted: '会话删除成功',
-        
+        // Cost display (HAP-227)
+        sessionCost: '会话费用',
+        noCostDataYet: '费用数据暂不可用',
+        costBreakdown: '费用明细',
+        inputCost: '输入',
+        outputCost: '输出',
+        cacheCreationCost: '缓存写入',
+        cacheReadCost: '缓存读取',
+
     },
 
     components: {

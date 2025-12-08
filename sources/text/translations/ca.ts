@@ -221,6 +221,7 @@ export const ca: TranslationStructure = {
         userNotFound: 'Usuari no trobat',
         sessionDeleted: 'La sessió s\'ha eliminat',
         sessionDeletedDescription: 'Aquesta sessió s\'ha eliminat permanentment',
+        notAuthenticated: 'No autenticat',
 
         // Error functions with context
         fieldError: ({ field, reason }: { field: string; reason: string }) =>
@@ -379,7 +380,15 @@ export const ca: TranslationStructure = {
         deleteSessionWarning: 'Aquesta acció no es pot desfer. Tots els missatges i dades associats amb aquesta sessió s\'eliminaran permanentment.',
         failedToDeleteSession: 'Error en eliminar la sessió',
         sessionDeleted: 'Sessió eliminada amb èxit',
-        
+        // Cost display (HAP-227)
+        sessionCost: 'Cost de la sessió',
+        noCostDataYet: 'Dades de cost encara no disponibles',
+        costBreakdown: 'Desglossament de costos',
+        inputCost: 'Entrada',
+        outputCost: 'Sortida',
+        cacheCreationCost: 'Escriptura a la memòria cau',
+        cacheReadCost: 'Lectura de la memòria cau',
+
     },
 
     components: {

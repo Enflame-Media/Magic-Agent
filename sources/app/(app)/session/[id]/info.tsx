@@ -20,6 +20,7 @@ import { CodeView } from '@/components/CodeView';
 import { Session } from '@/sync/storageTypes';
 import { useHappyAction } from '@/hooks/useHappyAction';
 import { HappyError } from '@/utils/errors';
+import { SessionCostDisplay } from '@/components/usage/SessionCostDisplay';
 
 // Animated status dot component
 function StatusDot({ color, isPulsing, size = 8 }: { color: string; isPulsing?: boolean; size?: number }) {
@@ -245,6 +246,13 @@ function SessionInfoContent({ session }: { session: Session }) {
                         icon={<Ionicons name="git-commit-outline" size={29} color="#007AFF" />}
                         showChevron={false}
                     />
+                </ItemGroup>
+
+                {/* Session Cost */}
+                <ItemGroup title={t('sessionInfo.sessionCost')}>
+                    <View style={{ marginHorizontal: 16, marginVertical: 8 }}>
+                        <SessionCostDisplay sessionId={session.id} />
+                    </View>
                 </ItemGroup>
 
                 {/* Quick Actions */}
