@@ -674,7 +674,7 @@ export function buildMachineStatusEphemeral(machineId: string, online: boolean):
  *
  * Uses the native btoa function available in Workers runtime.
  */
-function bufferToBase64(buffer: Uint8Array): string {
+export function bufferToBase64(buffer: Uint8Array): string {
     let binary = '';
     for (let i = 0; i < buffer.length; i++) {
         binary += String.fromCharCode(buffer[i]!);

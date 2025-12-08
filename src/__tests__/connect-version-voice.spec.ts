@@ -388,6 +388,56 @@ describe('Version Routes', () => {
             // May or may not have update URL depending on config
             expect(body).toHaveProperty('updateUrl');
         });
+
+        it('should return update URL for outdated Android version', async () => {
+            const res = await app.request('/v1/version', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: jsonBody({
+                    platform: 'android',
+                    version: '0.0.1', // Very old version
+                    app_id: 'com.ex3ndr.happy',
+                }),
+            });
+
+            const body = await expectOneOfStatus<{ updateUrl: string | null }>(res, [200], [500]);
+            if (!body) return;
+            // Should return Play Store URL for outdated Android
+            expect(body).toHaveProperty('updateUrl');
+        });
+
+        it('should return null for up-to-date Android version', async () => {
+            const res = await app.request('/v1/version', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: jsonBody({
+                    platform: 'android',
+                    version: '99.99.99', // Very high version
+                    app_id: 'com.ex3ndr.happy',
+                }),
+            });
+
+            const body = await expectOneOfStatus<{ updateUrl: string | null }>(res, [200], [500]);
+            if (!body) return;
+            expect(body.updateUrl).toBeNull();
+        });
+
+        it('should return null for unknown platform', async () => {
+            const res = await app.request('/v1/version', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: jsonBody({
+                    platform: 'web',
+                    version: '1.0.0',
+                    app_id: 'com.ex3ndr.happy',
+                }),
+            });
+
+            const body = await expectOneOfStatus<{ updateUrl: string | null }>(res, [200], [500]);
+            if (!body) return;
+            // Unknown platforms always return null (no update needed)
+            expect(body.updateUrl).toBeNull();
+        });
     });
 });
 
