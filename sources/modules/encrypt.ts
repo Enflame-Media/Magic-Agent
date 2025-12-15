@@ -1,6 +1,16 @@
 import { KeyTree, crypto } from "privacy-kit";
 
-// Helper to cast Uint8Array to the type Prisma expects (TypeScript 5.x strict typing)
+/**
+ * Helper to cast Uint8Array to the type Prisma expects.
+ *
+ * TypeScript 5.x introduced stricter typing for generic classes like Uint8Array,
+ * which can cause type incompatibility when Prisma expects a specific generic type
+ * (e.g., Uint8Array<ArrayBuffer>) but the actual value is just Uint8Array.
+ *
+ * This cast is necessary to satisfy Prisma's type requirements without changing
+ * runtime behaviour. Future maintainers: do not remove this cast unless you have
+ * verified that Prisma and TypeScript type compatibility issues have been resolved.
+ */
 function toBytes(data: Uint8Array): Uint8Array<ArrayBuffer> {
     return data as Uint8Array<ArrayBuffer>;
 }

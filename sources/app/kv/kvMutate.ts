@@ -4,12 +4,7 @@ import { allocateUserSeq } from "@/storage/seq";
 import { randomKeyNaked } from "@/utils/randomKeyNaked";
 import { eventRouter, buildKVBatchUpdateUpdate } from "@/app/events/eventRouter";
 import * as privacyKit from "privacy-kit";
-
-// Helper to cast Uint8Array to the type Prisma expects (TypeScript 5.x strict typing)
-function toBytes(data: Uint8Array): Uint8Array<ArrayBuffer> {
-    return data as Uint8Array<ArrayBuffer>;
-}
-
+import { toBytes } from "@/utils/bytes";
 // Helper to safely convert base64 to bytes, returning null if input is null
 function toBytesOrNull(base64: string | null): Uint8Array<ArrayBuffer> | null {
     return base64 ? toBytes(privacyKit.decodeBase64(base64)) : null;

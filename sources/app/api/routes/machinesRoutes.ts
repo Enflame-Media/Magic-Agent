@@ -1,4 +1,4 @@
-import { eventRouter } from "@/app/events/eventRouter";
+import { eventRouter, buildMachineStatusEphemeral } from "@/app/events/eventRouter";
 import { Fastify } from "../types";
 import { z } from "zod";
 import { db } from "@/storage/db";
@@ -170,6 +170,70 @@ export function machinesRoutes(app: Fastify) {
                 activeAt: machine.lastActiveAt.getTime(),
                 createdAt: machine.createdAt.getTime(),
                 updatedAt: machine.updatedAt.getTime()
+            }
+        };
+    });
+
+    // PUT /v1/machines/:id/status - Update machine active/online status
+    app.put('/v1/machines/:id/status', {
+        preHandler: app.authenticate,
+        schema: {
+            params: z.object({
+                id: z.string()
+            }),
+            body: z.object({
+                active: z.boolean()
+            })
+        }
+    }, async (request, reply) => {
+        const userId = request.userId;
+        const { id } = request.params;
+        const { active } = request.body;
+
+        // Find the machine (must belong to the authenticated user)
+        const machine = await db.machine.findFirst({
+            where: {
+                accountId: userId,
+                id: id
+            }
+        });
+
+        if (!machine) {
+            return reply.code(404).send({ error: 'Machine not found' });
+        }
+
+        // Update machine status
+        const now = new Date();
+        const updatedMachine = await db.machine.update({
+            where: { id: id },
+            data: {
+                active: active,
+                lastActiveAt: now
+            }
+        });
+
+        log({ module: 'machines', machineId: id, userId, active }, 'Machine status updated');
+
+        // Emit ephemeral event for real-time status update
+        const ephemeralPayload = buildMachineStatusEphemeral(id, active);
+        eventRouter.emitEphemeral({
+            userId,
+            payload: ephemeralPayload
+        });
+
+        return {
+            machine: {
+                id: updatedMachine.id,
+                metadata: updatedMachine.metadata,
+                metadataVersion: updatedMachine.metadataVersion,
+                daemonState: updatedMachine.daemonState,
+                daemonStateVersion: updatedMachine.daemonStateVersion,
+                dataEncryptionKey: updatedMachine.dataEncryptionKey ? Buffer.from(updatedMachine.dataEncryptionKey).toString('base64') : null,
+                seq: updatedMachine.seq,
+                active: updatedMachine.active,
+                activeAt: updatedMachine.lastActiveAt.getTime(),
+                createdAt: updatedMachine.createdAt.getTime(),
+                updatedAt: updatedMachine.updatedAt.getTime()
             }
         };
     });
