@@ -338,6 +338,12 @@ export const zhHans: TranslationStructure = {
         emptyResponse: '服务器返回了空响应',
     },
 
+    sessionContextMenu: {
+        // Used by session long-press context menu (SessionsList.tsx, ActiveSessionsGroup.tsx)
+        viewInfo: '查看信息',
+        copySessionId: '复制会话 ID',
+    },
+
     sessionInfo: {
         // Used by Session Info screen (app/(app)/session/[id]/info.tsx)
         killSession: '终止会话',

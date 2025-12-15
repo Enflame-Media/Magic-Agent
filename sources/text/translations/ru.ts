@@ -309,6 +309,12 @@ export const ru: TranslationStructure = {
         emptyResponse: 'Сервер вернул пустой ответ',
     },
 
+    sessionContextMenu: {
+        // Used by session long-press context menu (SessionsList.tsx, ActiveSessionsGroup.tsx)
+        viewInfo: 'Просмотреть информацию',
+        copySessionId: 'Копировать ID сессии',
+    },
+
     sessionInfo: {
         // Used by Session Info screen (app/(app)/session/[id]/info.tsx)
         killSession: 'Завершить сессию',

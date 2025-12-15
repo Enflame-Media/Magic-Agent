@@ -397,6 +397,12 @@ export const en = {
 
     },
 
+    sessionContextMenu: {
+        // Used by session long-press context menu (SessionsList.tsx, ActiveSessionsGroup.tsx)
+        viewInfo: 'View Info',
+        copySessionId: 'Copy Session ID',
+    },
+
     components: {
         emptyMainScreen: {
             // Used by EmptyMainScreen component

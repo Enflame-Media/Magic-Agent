@@ -13,6 +13,7 @@ import { t } from '@/text';
 import { useNavigateToSession } from '@/hooks/useNavigateToSession';
 import { useIsTablet } from '@/utils/responsive';
 import { ProjectGitStatus } from './ProjectGitStatus';
+import { useSessionContextMenu } from '@/hooks/useSessionContextMenu';
 
 const stylesheet = StyleSheet.create((theme) => ({
     container: {
@@ -273,6 +274,7 @@ const CompactSessionRow = React.memo(({ session, selected, showBorder }: { sessi
     const sessionName = getSessionName(session);
     const navigateToSession = useNavigateToSession();
     const isTablet = useIsTablet();
+    const { showContextMenu } = useSessionContextMenu(session);
 
     return (
         <Pressable
@@ -291,6 +293,8 @@ const CompactSessionRow = React.memo(({ session, selected, showBorder }: { sessi
                     navigateToSession(session.id);
                 }
             }}
+            onLongPress={showContextMenu}
+            delayLongPress={500}
         >
             <View style={styles.sessionContent}>
                 {/* Title line with status */}

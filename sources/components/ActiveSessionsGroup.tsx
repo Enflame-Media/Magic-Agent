@@ -12,6 +12,7 @@ import { StyleSheet } from 'react-native-unistyles';
 import { ProjectGitStatus } from './ProjectGitStatus';
 import { useNavigateToSession } from '@/hooks/useNavigateToSession';
 import { useIsTablet } from '@/utils/responsive';
+import { useSessionContextMenu } from '@/hooks/useSessionContextMenu';
 
 const stylesheet = StyleSheet.create((theme) => ({
     container: {
@@ -317,6 +318,7 @@ const CompactSessionRow = React.memo(({ session, selected, showBorder }: { sessi
     const sessionName = getSessionName(session);
     const navigateToSession = useNavigateToSession();
     const isTablet = useIsTablet();
+    const { showContextMenu } = useSessionContextMenu(session);
 
     const avatarId = React.useMemo(() => {
         return getSessionAvatarId(session);
@@ -339,6 +341,8 @@ const CompactSessionRow = React.memo(({ session, selected, showBorder }: { sessi
                     navigateToSession(session.id);
                 }
             }}
+            onLongPress={showContextMenu}
+            delayLongPress={500}
         >
             <View style={styles.avatarContainer}>
                 <Avatar id={avatarId} size={48} monochrome={!sessionStatus.isConnected} flavor={session.metadata?.flavor} />

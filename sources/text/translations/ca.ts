@@ -336,6 +336,12 @@ export const ca: TranslationStructure = {
         emptyResponse: 'El servidor ha retornat una resposta buida',
     },
 
+    sessionContextMenu: {
+        // Used by session long-press context menu (SessionsList.tsx, ActiveSessionsGroup.tsx)
+        viewInfo: 'Veure informació',
+        copySessionId: 'Copia l\'ID de la sessió',
+    },
+
     sessionInfo: {
         // Used by Session Info screen (app/(app)/session/[id]/info.tsx)
         killSession: 'Finalitza la sessió',

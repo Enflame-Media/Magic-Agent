@@ -336,6 +336,12 @@ export const pt: TranslationStructure = {
         emptyResponse: 'O servidor retornou uma resposta vazia',
     },
 
+    sessionContextMenu: {
+        // Used by session long-press context menu (SessionsList.tsx, ActiveSessionsGroup.tsx)
+        viewInfo: 'Ver informações',
+        copySessionId: 'Copiar ID da sessão',
+    },
+
     sessionInfo: {
         // Used by Session Info screen (app/(app)/session/[id]/info.tsx)
         killSession: 'Encerrar sessão',

@@ -19,6 +19,7 @@ import { useIsTablet } from '@/utils/responsive';
 import { requestReview } from '@/utils/requestReview';
 import { layout } from './layout';
 import { useNavigateToSession } from '@/hooks/useNavigateToSession';
+import { useSessionContextMenu } from '@/hooks/useSessionContextMenu';
 
 const stylesheet = StyleSheet.create((theme) => ({
     container: {
@@ -164,6 +165,13 @@ export function SessionsList() {
     const isTablet = useIsTablet();
     const compactSessionView = useSetting('compactSessionView');
     const selectable = isTablet;
+
+    // Memoize contentContainerStyle to prevent FlatList re-renders
+    const contentContainerStyle = React.useMemo(() => ({
+        paddingBottom: safeArea.bottom + 128,
+        maxWidth: layout.maxWidth
+    }), [safeArea.bottom]);
+
     const dataWithSelected = selectable ? React.useMemo(() => {
         return data?.map(item => ({
             ...item,
@@ -278,7 +286,7 @@ export function SessionsList() {
                     data={dataWithSelected}
                     renderItem={renderItem}
                     keyExtractor={keyExtractor}
-                    contentContainerStyle={{ paddingBottom: safeArea.bottom + 128, maxWidth: layout.maxWidth }}
+                    contentContainerStyle={contentContainerStyle}
                     ListHeaderComponent={HeaderComponent}
                 />
             </View>
@@ -300,6 +308,7 @@ const SessionItem = React.memo(({ session, selected, isFirst, isLast, isSingle }
     const sessionSubtitle = getSessionSubtitle(session);
     const navigateToSession = useNavigateToSession();
     const isTablet = useIsTablet();
+    const { showContextMenu } = useSessionContextMenu(session);
 
     const avatarId = React.useMemo(() => {
         return getSessionAvatarId(session);
@@ -324,6 +333,8 @@ const SessionItem = React.memo(({ session, selected, isFirst, isLast, isSingle }
                     navigateToSession(session.id);
                 }
             }}
+            onLongPress={showContextMenu}
+            delayLongPress={500}
         >
             <View style={styles.avatarContainer}>
                 <Avatar id={avatarId} size={48} monochrome={!sessionStatus.isConnected} flavor={session.metadata?.flavor} />
