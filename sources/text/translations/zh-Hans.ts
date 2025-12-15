@@ -301,6 +301,8 @@ export const zhHans: TranslationStructure = {
 
     session: {
         inputPlaceholder: '输入消息...',
+        noMessagesYet: '暂无消息',
+        createdTime: ({ time }: { time: string }) => `创建于 ${time}`,
     },
 
     commandPalette: {

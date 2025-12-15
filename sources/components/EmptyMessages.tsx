@@ -112,11 +112,11 @@ export function EmptyMessages({ session }: EmptyMessagesProps) {
             )}
             
             <Text style={styles.noMessagesText}>
-                No messages yet
+                {t('session.noMessagesYet')}
             </Text>
-            
+
             <Text style={styles.createdText}>
-                Created {startedTime}
+                {t('session.createdTime', { time: startedTime })}
             </Text>
         </View>
     );

@@ -299,6 +299,8 @@ export const en = {
 
     session: {
         inputPlaceholder: 'Type a message ...',
+        noMessagesYet: 'No messages yet',
+        createdTime: ({ time }: { time: string }) => `Created ${time}`,
     },
 
     commandPalette: {

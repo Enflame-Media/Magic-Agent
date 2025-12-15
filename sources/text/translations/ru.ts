@@ -406,6 +406,8 @@ export const ru: TranslationStructure = {
 
     session: {
         inputPlaceholder: 'Введите сообщение...',
+        noMessagesYet: 'Сообщений пока нет',
+        createdTime: ({ time }: { time: string }) => `Создано ${time}`,
     },
 
     commandPalette: {

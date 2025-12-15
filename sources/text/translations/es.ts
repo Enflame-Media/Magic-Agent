@@ -299,6 +299,8 @@ export const es: TranslationStructure = {
 
     session: {
         inputPlaceholder: 'Escriba un mensaje ...',
+        noMessagesYet: 'Aún no hay mensajes',
+        createdTime: ({ time }: { time: string }) => `Creado ${time}`,
     },
 
     commandPalette: {
