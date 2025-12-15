@@ -20,6 +20,7 @@ import kvRoutes from '@/routes/kv';
 import pushRoutes from '@/routes/push';
 import websocketRoutes from '@/routes/websocket';
 import uploadRoutes from '@/routes/uploads';
+import usageRoutes from '@/routes/usage';
 
 // Export Durable Object classes for Cloudflare Workers
 // These must be exported from the main entry point for Wrangler to detect them
@@ -94,8 +95,13 @@ app.use('*', cors());
  * Skip initialization in test environments where HANDY_MASTER_SECRET might not be set
  */
 app.use('*', async (c, next) => {
-    if (c.env?.HANDY_MASTER_SECRET) {
-        await initAuth(c.env.HANDY_MASTER_SECRET);
+    const secret = c.env?.HANDY_MASTER_SECRET;
+    if (secret) {
+        // Debug: Log secret info (NOT the actual secret, just metadata)
+        console.log('[Auth Init] Secret present, length:', secret.length, 'first 4 chars:', secret.substring(0, 4) + '...');
+        await initAuth(secret);
+    } else {
+        console.error('[Auth Init] WARNING: HANDY_MASTER_SECRET is NOT SET!');
     }
     await next();
 });
@@ -132,6 +138,9 @@ app.route('/', websocketRoutes);
 
 // Mount file upload routes (HAP-5: R2 Storage)
 app.route('/', uploadRoutes);
+
+// Mount usage routes (HAP-302: Usage query endpoint)
+app.route('/', usageRoutes);
 
 // Mount test routes
 app.route('/test', testRoutes);
