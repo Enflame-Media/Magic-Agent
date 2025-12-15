@@ -67,7 +67,7 @@ export const pl: TranslationStructure = {
         fileViewer: 'Przeglądarka plików',
         loading: 'Ładowanie...',
         retry: 'Ponów',
-        on: 'włączone',
+        on: 'na',
     },
 
     profile: {
