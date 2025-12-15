@@ -8,6 +8,7 @@ import {
     UsersSearchResponseSchema
 } from './friendTypes';
 import { AppError, ErrorCodes } from '@/utils/errors';
+import { checkAuthError } from './apiHelper';
 
 /**
  * Search for users by username (returns multiple results)
@@ -20,7 +21,7 @@ export async function searchUsersByUsername(
 
     return await backoff(async () => {
         const response = await fetch(
-            `${API_ENDPOINT}/v1/user/search?${new URLSearchParams({ query: username })}`,
+            `${API_ENDPOINT}/v1/users/search?${new URLSearchParams({ query: username })}`,
             {
                 method: 'GET',
                 headers: {
@@ -29,6 +30,7 @@ export async function searchUsersByUsername(
             }
         );
 
+        checkAuthError(response, 'searching users');
         if (!response.ok) {
             if (response.status === 404) {
                 return [];
@@ -58,7 +60,7 @@ export async function getUserProfile(
 
     return await backoff(async () => {
         const response = await fetch(
-            `${API_ENDPOINT}/v1/user/${userId}`,
+            `${API_ENDPOINT}/v1/users/${userId}`,
             {
                 method: 'GET',
                 headers: {
@@ -67,6 +69,7 @@ export async function getUserProfile(
             }
         );
 
+        checkAuthError(response, 'getting user profile');
         if (!response.ok) {
             if (response.status === 404) {
                 return null;
@@ -121,6 +124,7 @@ export async function sendFriendRequest(
             body: JSON.stringify({ uid: recipientId })
         });
 
+        checkAuthError(response, 'adding friend');
         if (!response.ok) {
             if (response.status === 404) {
                 return null;
@@ -161,6 +165,7 @@ export async function getFriendsList(
             }
         });
 
+        checkAuthError(response, 'getting friends list');
         if (!response.ok) {
             throw new AppError(ErrorCodes.FETCH_FAILED, `Failed to get friends list: ${response.status}`, { canTryAgain: true });
         }
@@ -195,6 +200,7 @@ export async function removeFriend(
             body: JSON.stringify({ uid: friendId })
         });
 
+        checkAuthError(response, 'removing friend');
         if (!response.ok) {
             if (response.status === 404) {
                 return null;
