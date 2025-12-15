@@ -22,22 +22,6 @@
         "APP_ENV": "development"
       }
     },
-    "preview": {
-      "autoIncrement": true,
-      "distribution": "internal",
-      "channel": "preview",
-      "env": {
-        "APP_ENV": "preview"
-      }
-    },
-    "preview-store": {
-      "autoIncrement": true,
-      "distribution": "store",
-      "channel": "preview",
-      "env": {
-        "APP_ENV": "preview"
-      }
-    },
     "production": {
       "autoIncrement": true,
       "channel": "production",

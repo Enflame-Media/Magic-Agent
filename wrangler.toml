@@ -1,5 +1,5 @@
 name = "happy-app"
-compatibility_date = "2025-09-15"
+compatibility_date = "2025-11-17"
 compatibility_flags = ["nodejs_compat"]
 account_id = "81f483e6767ea3194467ecef42840f79"  # Same as happy-server-workers
 

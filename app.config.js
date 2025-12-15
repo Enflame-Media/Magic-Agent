@@ -1,13 +1,11 @@
 const variant = process.env.APP_ENV || 'development';
 const name = {
     development: "Happy (dev)",
-    preview: "Happy (preview)",
     production: "Happy"
 }[variant];
 const bundleId = {
-    development: "com.enfmn.happy.dev",
-    preview: "com.enfm.happy.preview",
-    production: "com.enfm.happy"
+    development: "com.enflame.happy.dev",
+    production: "com.enflame.happy"
 }[variant];
 
 export default {
@@ -36,7 +34,7 @@ export default {
                 NSLocalNetworkUsageDescription: "Allow $(PRODUCT_NAME) to find and connect to local devices on your network.",
                 NSBonjourServices: ["_http._tcp", "_https._tcp"]
             },
-            associatedDomains: variant === 'production' ? ["applinks:app.happy.engineering"] : []
+            associatedDomains: variant === 'production' ? ["applinks:app.enflame.happy"] : []
         },
         android: {
             adaptiveIcon: {
@@ -62,7 +60,7 @@ export default {
                     "data": [
                         {
                             "scheme": "https",
-                            "host": "app.happy.engineering",
+                            "host": "happy.enflamemedia.com",
                             "pathPrefix": "/"
                         }
                     ],
@@ -149,7 +147,7 @@ export default {
             ]
         ],
         updates: {
-            url: "https://u.expo.dev/4558dd3d-cd5a-47cd-bad9-e591a241cc06",
+            url: "https://u.expo.dev/4702965f-0053-4c71-b2df-bdce94e03dc4",
             requestHeaders: {
                 "expo-channel-name": "production"
             }
@@ -162,7 +160,7 @@ export default {
                 root: "./sources/app"
             },
             eas: {
-                projectId: "4558dd3d-cd5a-47cd-bad9-e591a241cc06"
+                projectId: "4702965f-0053-4c71-b2df-bdce94e03dc4"
             },
             app: {
                 postHogKey: process.env.EXPO_PUBLIC_POSTHOG_API_KEY,
@@ -171,6 +169,6 @@ export default {
                 revenueCatStripeKey: process.env.EXPO_PUBLIC_REVENUE_CAT_STRIPE
             }
         },
-        owner: "bulkacorp"
+        owner: "enflame-media"
     }
 };

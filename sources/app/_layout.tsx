@@ -12,7 +12,7 @@ import { initialWindowMetrics, SafeAreaProvider, useSafeAreaInsets } from 'react
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SidebarNavigator } from '@/components/SidebarNavigator';
 import sodium from '@/encryption/libsodium.lib';
-import { View, Platform } from 'react-native';
+import { View, Platform, Text } from 'react-native';
 import { ModalProvider } from '@/modal';
 import { PostHogProvider } from 'posthog-react-native';
 import { tracking } from '@/track/tracking';
@@ -154,20 +154,73 @@ export default function RootLayout() {
     // Init sequence
     //
     const [initState, setInitState] = React.useState<{ credentials: AuthCredentials | null } | null>(null);
+    const [debugInfo, setDebugInfo] = React.useState<string>('Starting...');
     React.useEffect(() => {
+        // UNMISSABLE DEBUG MARKER - if you don't see this, the build is stale!
+        console.warn('🚀🚀🚀 HAPPY APP INIT v2 - ' + new Date().toISOString() + ' 🚀🚀🚀');
+        // Also try alert for absolute certainty
+        if (Platform.OS === 'web' && typeof window !== 'undefined') {
+            (window as any).__HAPPY_DEBUG__ = (window as any).__HAPPY_DEBUG__ || [];
+            (window as any).__HAPPY_DEBUG__.push('Init started: ' + new Date().toISOString());
+        }
         (async () => {
+            console.log('[_layout] Init sequence starting...');
+            setDebugInfo('Init starting...');
             try {
+                console.log('[_layout] Loading fonts...');
+                setDebugInfo('Loading fonts...');
                 await loadFonts();
+                console.log('[_layout] Fonts loaded, waiting for sodium...');
+                setDebugInfo('Fonts loaded, waiting for sodium...');
                 await sodium.ready;
+                console.log('[_layout] Sodium ready, getting credentials...');
+                setDebugInfo('Sodium ready, getting credentials...');
                 const credentials = await TokenStorage.getCredentials();
-                console.log('credentials', credentials);
+                console.log('[_layout] Credentials:', credentials ? 'found' : 'not found');
+                setDebugInfo('Credentials: ' + (credentials ? 'found' : 'not found'));
                 if (credentials) {
-                    await syncRestore(credentials);
+                    console.log('[_layout] Calling syncRestore...');
+                    setDebugInfo('Calling syncRestore...');
+                    // Add timeout to prevent infinite hang - sync will continue in background
+                    const INIT_TIMEOUT_MS = 15000;
+                    try {
+                        await Promise.race([
+                            syncRestore(credentials),
+                            new Promise<void>((_, reject) =>
+                                setTimeout(() => reject(new Error('syncRestore timed out')), INIT_TIMEOUT_MS)
+                            ),
+                        ]);
+                        console.log('[_layout] syncRestore completed');
+                        setDebugInfo('syncRestore completed');
+                    } catch (syncError) {
+                        console.warn('[_layout] syncRestore failed/timed out:', syncError);
+                        setDebugInfo('syncRestore failed: ' + String(syncError));
+
+                        // If token is invalid, clear credentials and start fresh
+                        const errorMessage = String(syncError);
+                        if (errorMessage.includes('Invalid token') || errorMessage.includes('401') || errorMessage.includes('Unauthorized')) {
+                            console.warn('[_layout] Invalid token detected, clearing credentials...');
+                            setDebugInfo('Invalid token - clearing credentials...');
+                            await TokenStorage.removeCredentials();
+                            // Set credentials to null to show login screen
+                            setInitState({ credentials: null });
+                            return; // Exit early, don't continue with invalid credentials
+                        }
+                        // For other errors, continue with credentials (sync will retry in background)
+                    }
                 }
 
+                console.log('[_layout] Setting init state...');
+                setDebugInfo('Setting init state...');
                 setInitState({ credentials });
+                console.log('[_layout] Init complete!');
+                setDebugInfo('Init complete!');
             } catch (error) {
-                console.error('Error initializing:', error);
+                console.error('[_layout] Error initializing:', error);
+                setDebugInfo('ERROR: ' + String(error));
+                // Still try to show the app even if init fails
+                console.log('[_layout] Attempting to show app despite error...');
+                setInitState({ credentials: null });
             }
         })();
     }, []);
@@ -185,11 +238,23 @@ export default function RootLayout() {
     useTrackScreens()
 
     //
-    // Not inited
+    // Not inited - show debug info while loading
     //
 
     if (!initState) {
-        return null;
+        return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1a1a2e', padding: 20 }}>
+                <Text style={{ color: '#00ff00', fontSize: 18, fontFamily: 'monospace', textAlign: 'center' }}>
+                    🔧 DEBUG MODE 🔧
+                </Text>
+                <Text style={{ color: '#ffffff', fontSize: 14, fontFamily: 'monospace', marginTop: 20, textAlign: 'center' }}>
+                    {debugInfo}
+                </Text>
+                <Text style={{ color: '#888888', fontSize: 12, fontFamily: 'monospace', marginTop: 20, textAlign: 'center' }}>
+                    If stuck here, check browser console (F12)
+                </Text>
+            </View>
+        );
     }
 
     //

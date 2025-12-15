@@ -13,17 +13,25 @@ import { randomUUID } from 'expo-crypto';
 export class Encryption {
 
     static async create(masterSecret: Uint8Array) {
+        console.log('[Encryption.create] Starting...');
 
         // Derive content data key to open session and machine records
+        console.log('[Encryption.create] Deriving content data key...');
         const contentDataKey = await deriveKey(masterSecret, 'Happy EnCoder', ['content']);
+        console.log('[Encryption.create] Content data key derived');
 
         // Derive content data key keypair
+        console.log('[Encryption.create] Creating keypair from seed...');
         const contentKeyPair = sodium.crypto_box_seed_keypair(contentDataKey);
+        console.log('[Encryption.create] Keypair created');
 
         // Derive anonymous ID
+        console.log('[Encryption.create] Deriving anonymous ID...');
         const anonID = encodeHex((await deriveKey(masterSecret, 'Happy Coder', ['analytics', 'id']))).slice(0, 16).toLowerCase();
+        console.log('[Encryption.create] Anonymous ID derived:', anonID);
 
         // Create encryption
+        console.log('[Encryption.create] Creating Encryption instance...');
         return new Encryption(anonID, masterSecret, contentKeyPair);
     }
 

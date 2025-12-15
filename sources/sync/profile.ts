@@ -26,8 +26,8 @@ export const ProfileSchema = z.object({
     timestamp: z.number(),
     firstName: z.string().nullable(),
     lastName: z.string().nullable(),
-    avatar: ImageRefSchema.nullable(),
-    github: GitHubProfileSchema.nullable(),
+    avatar: ImageRefSchema.nullable().optional(), // Server may not return avatar field
+    github: GitHubProfileSchema.nullable().optional(), // Server may not return github field
     connectedServices: z.array(z.string()).default([])
 });
 

@@ -2,6 +2,7 @@ import { AuthCredentials } from '@/auth/tokenStorage';
 import { backoff } from '@/utils/time';
 import { getServerUrl } from './serverConfig';
 import { AppError, ErrorCodes } from '@/utils/errors';
+import { checkAuthError } from './apiHelper';
 
 //
 // Types
@@ -80,6 +81,7 @@ export async function kvGet(
             }
         });
 
+        checkAuthError(response, 'getting KV value');
         if (response.status === 404) {
             return null;
         }
@@ -121,6 +123,7 @@ export async function kvList(
             }
         });
 
+        checkAuthError(response, 'listing KV items');
         if (!response.ok) {
             throw new AppError(ErrorCodes.FETCH_FAILED, `Failed to list KV items: ${response.status}`, { canTryAgain: true });
         }
@@ -157,6 +160,7 @@ export async function kvBulkGet(
             body: JSON.stringify({ keys })
         });
 
+        checkAuthError(response, 'bulk getting KV values');
         if (!response.ok) {
             throw new AppError(ErrorCodes.FETCH_FAILED, `Failed to bulk get KV values: ${response.status}`, { canTryAgain: true });
         }
@@ -195,6 +199,7 @@ export async function kvMutate(
             body: JSON.stringify({ mutations })
         });
 
+        checkAuthError(response, 'mutating KV values');
         if (response.status === 409) {
             const data = await response.json() as KvMutateErrorResponse;
             return data;

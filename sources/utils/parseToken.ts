@@ -4,9 +4,11 @@ import { AppError, ErrorCodes } from "@/utils/errors";
 
 export function parseToken(token: string) {
     const [_header, payload, _signature] = token.split('.');
-    const sub = JSON.parse(decodeUTF8(decodeBase64(payload))).sub;
-    if (typeof sub !== 'string') {
-        throw new AppError(ErrorCodes.VALIDATION_FAILED, 'Invalid token');
+    const parsed = JSON.parse(decodeUTF8(decodeBase64(payload)));
+    // Support both "user" (happy-server-workers) and "sub" (legacy) claims
+    const userId = parsed.user ?? parsed.sub;
+    if (typeof userId !== 'string') {
+        throw new AppError(ErrorCodes.VALIDATION_FAILED, 'Invalid authentication token');
     }
-    return sub;
+    return userId;
 }

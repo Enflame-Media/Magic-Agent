@@ -17,6 +17,7 @@ export const ErrorCodes = {
     AUTH_FAILED: 'AUTH_FAILED',
     INVALID_KEY: 'INVALID_KEY',
     NOT_AUTHENTICATED: 'NOT_AUTHENTICATED',
+    TOKEN_EXPIRED: 'TOKEN_EXPIRED', // 401 from server - triggers logout, never retried
 
     // Socket/RPC errors
     SOCKET_NOT_CONNECTED: 'SOCKET_NOT_CONNECTED',

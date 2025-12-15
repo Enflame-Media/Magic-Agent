@@ -83,6 +83,22 @@ export const ApiUpdateMachineStateSchema = z.object({
     activeAt: z.number().optional()
 });
 
+// New machine schema - sent when a machine is first registered
+export const ApiNewMachineSchema = z.object({
+    t: z.literal('new-machine'),
+    machineId: z.string(),
+    seq: z.number(),
+    metadata: z.string(),           // Encrypted metadata
+    metadataVersion: z.number(),
+    daemonState: z.string().nullable(),  // Encrypted daemon state
+    daemonStateVersion: z.number(),
+    dataEncryptionKey: z.string().nullable(),  // Base64 encoded
+    active: z.boolean(),
+    activeAt: z.number(),
+    createdAt: z.number(),
+    updatedAt: z.number()
+});
+
 // Artifact update schemas
 export const ApiNewArtifactSchema = z.object({
     t: z.literal('new-artifact'),
@@ -154,6 +170,7 @@ export const ApiUpdateSchema = z.discriminatedUnion('t', [
     ApiUpdateSessionStateSchema,
     ApiUpdateAccountSchema,
     ApiUpdateMachineStateSchema,
+    ApiNewMachineSchema,
     ApiNewArtifactSchema,
     ApiUpdateArtifactSchema,
     ApiDeleteArtifactSchema,

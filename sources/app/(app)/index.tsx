@@ -37,15 +37,24 @@ function NotAuthenticated() {
     const insets = useSafeAreaInsets();
 
     const createAccount = async () => {
+        console.log('[createAccount] Starting...');
         try {
+            console.log('[createAccount] Generating random secret...');
             const secret = await getRandomBytesAsync(32);
+            console.log('[createAccount] Secret generated, getting token...');
             const token = await authGetToken(secret);
+            console.log('[createAccount] Token received:', token ? 'yes' : 'no');
             if (token && secret) {
+                console.log('[createAccount] Calling auth.login...');
                 await auth.login(token, encodeBase64(secret, 'base64url'));
+                console.log('[createAccount] auth.login completed, tracking...');
                 trackAccountCreated();
+                console.log('[createAccount] Done!');
+            } else {
+                console.log('[createAccount] Missing token or secret, not logging in');
             }
         } catch (error) {
-            console.error('Error creating account', error);
+            console.error('[createAccount] Error:', error);
         }
     }
 

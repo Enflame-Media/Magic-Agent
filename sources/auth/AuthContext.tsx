@@ -26,13 +26,20 @@ export function AuthProvider({ children, initialCredentials }: { children: React
     }, [isAuthenticated, credentials]);
 
     const login = async (token: string, secret: string) => {
+        console.log('[AuthContext.login] Starting...');
         const newCredentials: AuthCredentials = { token, secret };
+        console.log('[AuthContext.login] Storing credentials...');
         const success = await TokenStorage.setCredentials(newCredentials);
+        console.log('[AuthContext.login] Credentials stored:', success);
         if (success) {
+            console.log('[AuthContext.login] Calling syncCreate...');
             await syncCreate(newCredentials);
+            console.log('[AuthContext.login] syncCreate completed, updating state...');
             setCredentials(newCredentials);
             setIsAuthenticated(true);
+            console.log('[AuthContext.login] Done!');
         } else {
+            console.log('[AuthContext.login] Failed to save credentials');
             throw new AppError(ErrorCodes.AUTH_FAILED, 'Failed to save credentials');
         }
     };

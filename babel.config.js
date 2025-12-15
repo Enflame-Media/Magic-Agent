@@ -4,7 +4,8 @@ module.exports = function (api) {
     presets: ['babel-preset-expo'],
     env: {
       production: {
-        plugins: ["transform-remove-console"],
+        // TEMPORARILY DISABLED FOR DEBUGGING - re-enable after fixing login issue
+        // plugins: ["transform-remove-console"],
       },
     },
     plugins: [

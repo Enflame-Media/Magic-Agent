@@ -4,6 +4,7 @@ import { getServerUrl } from './serverConfig';
 import { FeedResponseSchema, FeedItem } from './feedTypes';
 import { log } from '@/log';
 import { AppError, ErrorCodes } from '@/utils/errors';
+import { checkAuthError } from './apiHelper';
 
 /**
  * Fetch user's feed with pagination
@@ -34,6 +35,7 @@ export async function fetchFeed(
             }
         });
 
+        checkAuthError(response, 'fetching feed');
         if (!response.ok) {
             throw new AppError(ErrorCodes.FETCH_FAILED, `Failed to fetch feed: ${response.status}`, { canTryAgain: true });
         }

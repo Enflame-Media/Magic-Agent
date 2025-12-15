@@ -165,8 +165,8 @@ function SessionViewLoaded({ sessionId, session }: { sessionId: string, session:
     const shouldShowCliWarning = isCliOutdated && !isAcknowledged;
     // Get permission mode from session object, default to 'default'
     const permissionMode = session.permissionMode || 'default';
-    // Get model mode from session object, default to 'default'
-    const modelMode = session.modelMode || 'default';
+    // Get model mode from session object, default to 'opus'
+    const modelMode = session.modelMode || 'opus';
     const sessionStatus = useSessionStatus(session);
     const sessionUsage = useSessionUsage(sessionId);
     const alwaysShowContextSize = useSetting('alwaysShowContextSize');

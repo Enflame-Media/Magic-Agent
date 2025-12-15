@@ -26,7 +26,7 @@ export const envConfig: EnvConfig[] = [
     {
         name: 'EXPO_PUBLIC_HAPPY_SERVER_URL',
         description: 'Happy server URL for API and WebSocket connections',
-        defaultValue: 'https://api.cluster-fluster.com',
+        defaultValue: 'https://happy-api.enflamemedia.com',
         buildTime: true,
     },
 

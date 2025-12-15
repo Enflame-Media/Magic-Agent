@@ -7,7 +7,7 @@ import { decodeBase64, encodeBase64 } from '@/encryption/base64';
 import { storage } from './storage';
 import { ApiEphemeralUpdateSchema, ApiMessage, ApiUpdateContainerSchema } from './apiTypes';
 import type { ApiEphemeralActivityUpdate } from './apiTypes';
-import { Session, Machine } from './storageTypes';
+import { Session, Machine, MachineMetadata } from './storageTypes';
 import { InvalidateSync } from '@/utils/sync';
 import { ActivityUpdateAccumulator } from './reducer/activityUpdateAccumulator';
 import { randomUUID } from 'expo-crypto';
@@ -144,14 +144,34 @@ class Sync {
         this.serverID = parseToken(credentials.token);
         await this.#init();
 
-        // Await settings sync to have fresh settings
-        await this.settingsSync.awaitQueue();
+        // Await initial syncs with timeout to prevent login from hanging forever
+        // These are best-effort - if they fail/timeout, login still succeeds
+        // and the syncs will retry in the background via backoff
+        const SYNC_TIMEOUT_MS = 10000; // 10 seconds
 
-        // Await profile sync to have fresh profile
-        await this.profileSync.awaitQueue();
+        const awaitWithTimeout = async (name: string, syncPromise: Promise<void>) => {
+            try {
+                await Promise.race([
+                    syncPromise,
+                    new Promise<void>((_, reject) =>
+                        setTimeout(() => reject(new Error(`${name} sync timed out after ${SYNC_TIMEOUT_MS}ms`)), SYNC_TIMEOUT_MS)
+                    ),
+                ]);
+                log.log(`✅ ${name} sync completed`);
+            } catch (error) {
+                // Log but don't fail - syncs will continue retrying in background
+                const errorMessage = error instanceof Error ? error.message : String(error);
+                log.log(`⚠️ ${name} sync failed/timed out: ${errorMessage}`);
+                console.warn(`${name} sync failed/timed out:`, error);
+            }
+        };
 
-        // Await purchases sync to have fresh purchases
-        await this.purchasesSync.awaitQueue();
+        // Run syncs with timeouts - these are non-blocking for login success
+        await awaitWithTimeout('Settings', this.settingsSync.awaitQueue());
+        await awaitWithTimeout('Profile', this.profileSync.awaitQueue());
+        await awaitWithTimeout('Purchases', this.purchasesSync.awaitQueue());
+
+        log.log('🎉 sync.create() completed - user can now use the app');
     }
 
     async restore(credentials: AuthCredentials, encryption: Encryption) {
@@ -280,25 +300,21 @@ class Sync {
         let fallbackModel: string | null = null;
 
         switch (modelMode) {
-            case 'default':
-                model = null;
+            case 'opus':
+                model = 'claude-opus-4-5-20251101';
                 fallbackModel = null;
-                break;
-            case 'adaptiveUsage':
-                model = 'claude-opus-4-1-20250805';
-                fallbackModel = 'claude-sonnet-4-5-20250929';
                 break;
             case 'sonnet':
                 model = 'claude-sonnet-4-5-20250929';
                 fallbackModel = null;
                 break;
-            case 'opus':
-                model = 'claude-opus-4-1-20250805';
+            case 'haiku':
+                model = 'claude-haiku-4-5-20251001';
                 fallbackModel = null;
                 break;
             default:
-                // If no modelMode is specified, use default behavior (let server decide)
-                model = null;
+                // If no modelMode is specified, use default behavior (opus)
+                model = 'claude-opus-4-5-20251101';
                 fallbackModel = null;
                 break;
         }
@@ -896,21 +912,21 @@ class Sync {
             return;
         }
 
-        const data = await response.json();
-        console.log(`📊 Sync: Fetched ${Array.isArray(data) ? data.length : 0} machines from server`);
-        const machines = data as Array<{
+        const data = await response.json() as { machines?: Array<{
             id: string;
             metadata: string;
             metadataVersion: number;
             daemonState?: string | null;
             daemonStateVersion?: number;
-            dataEncryptionKey?: string | null; // Add support for per-machine encryption keys
+            dataEncryptionKey?: string | null;
             seq: number;
             active: boolean;
-            activeAt: number;  // Changed from lastActiveAt
+            activeAt: number;
             createdAt: number;
             updatedAt: number;
-        }>;
+        }> };
+        const machines = data.machines ?? [];
+        console.log(`📊 Sync: Fetched ${machines.length} machines from server`);
 
         // First, collect and decrypt encryption keys for all machines
         const machineKeysMap = new Map<string, Uint8Array | null>();
@@ -1693,6 +1709,82 @@ class Sync {
 
             // Apply the updated profile to storage
             storage.getState().applyProfile(updatedProfile);
+        } else if (updateData.body.t === 'new-machine') {
+            log.log('🆕 New machine update received');
+            const newMachineUpdate = updateData.body;
+            const machineId = newMachineUpdate.machineId;
+
+            // Skip if machine already exists
+            if (storage.getState().machines[machineId]) {
+                log.log(`Machine ${machineId} already exists, skipping new-machine update`);
+                return;
+            }
+
+            // Decrypt the data encryption key if provided
+            let decryptedKey: Uint8Array | null = null;
+            if (newMachineUpdate.dataEncryptionKey) {
+                decryptedKey = await this.encryption.decryptEncryptionKey(newMachineUpdate.dataEncryptionKey);
+                if (!decryptedKey) {
+                    console.error(`Failed to decrypt data encryption key for new machine ${machineId}`);
+                    return;
+                }
+            }
+
+            // Initialize machine encryption
+            const machineKeysMap = new Map<string, Uint8Array | null>();
+            machineKeysMap.set(machineId, decryptedKey);
+            await this.encryption.initializeMachines(machineKeysMap);
+
+            // Get machine encryption for decryption
+            const machineEncryption = this.encryption.getMachineEncryption(machineId);
+            if (!machineEncryption) {
+                console.error(`Failed to initialize encryption for new machine ${machineId}`);
+                return;
+            }
+
+            // Decrypt metadata
+            let metadata: MachineMetadata | null = null;
+            if (newMachineUpdate.metadata) {
+                try {
+                    metadata = await machineEncryption.decryptMetadata(
+                        newMachineUpdate.metadataVersion,
+                        newMachineUpdate.metadata
+                    );
+                } catch (error) {
+                    console.error(`Failed to decrypt metadata for new machine ${machineId}:`, error);
+                }
+            }
+
+            // Decrypt daemonState
+            let daemonState: any | null = null;
+            if (newMachineUpdate.daemonState) {
+                try {
+                    daemonState = await machineEncryption.decryptDaemonState(
+                        newMachineUpdate.daemonStateVersion,
+                        newMachineUpdate.daemonState
+                    );
+                } catch (error) {
+                    console.error(`Failed to decrypt daemonState for new machine ${machineId}:`, error);
+                }
+            }
+
+            // Create the new machine object
+            const newMachine: Machine = {
+                id: machineId,
+                seq: newMachineUpdate.seq,
+                createdAt: newMachineUpdate.createdAt,
+                updatedAt: newMachineUpdate.updatedAt,
+                active: newMachineUpdate.active,
+                activeAt: newMachineUpdate.activeAt,
+                metadata,
+                metadataVersion: newMachineUpdate.metadataVersion,
+                daemonState,
+                daemonStateVersion: newMachineUpdate.daemonStateVersion
+            };
+
+            // Apply to storage
+            storage.getState().applyMachines([newMachine]);
+            log.log(`🆕 New machine ${machineId} added to storage`);
         } else if (updateData.body.t === 'update-machine') {
             const machineUpdate = updateData.body;
             const machineId = machineUpdate.machineId;  // Changed from .id to .machineId
@@ -2068,7 +2160,16 @@ export async function syncCreate(credentials: AuthCredentials) {
         return;
     }
     isInitialized = true;
-    await syncInit(credentials, false);
+    console.log('[syncCreate] Starting sync initialization...');
+    try {
+        await syncInit(credentials, false);
+        console.log('[syncCreate] Sync initialization completed successfully');
+    } catch (error) {
+        console.error('[syncCreate] Sync initialization failed:', error);
+        // Reset isInitialized so user can retry
+        isInitialized = false;
+        throw error;
+    }
 }
 
 export async function syncRestore(credentials: AuthCredentials) {
@@ -2077,23 +2178,40 @@ export async function syncRestore(credentials: AuthCredentials) {
         return;
     }
     isInitialized = true;
-    await syncInit(credentials, true);
+    console.log('[syncRestore] Starting sync restore...');
+    try {
+        await syncInit(credentials, true);
+        console.log('[syncRestore] Sync restore completed successfully');
+    } catch (error) {
+        console.error('[syncRestore] Sync restore failed:', error);
+        // Reset isInitialized so user can retry
+        isInitialized = false;
+        throw error;
+    }
 }
 
 async function syncInit(credentials: AuthCredentials, restore: boolean) {
+    console.log('[syncInit] Starting...', { restore });
 
     // Initialize sync engine
+    console.log('[syncInit] Decoding secret key...');
     const secretKey = decodeBase64(credentials.secret, 'base64url');
     if (secretKey.length !== 32) {
         throw new AppError(ErrorCodes.VALIDATION_FAILED, `Invalid secret key length: ${secretKey.length}, expected 32`);
     }
+    console.log('[syncInit] Secret key decoded, length:', secretKey.length);
+
+    console.log('[syncInit] Creating encryption...');
     const encryption = await Encryption.create(secretKey);
+    console.log('[syncInit] Encryption created, anonID:', encryption.anonID);
 
     // Initialize tracking
+    console.log('[syncInit] Initializing tracking...');
     initializeTracking(encryption.anonID);
 
     // Initialize socket connection
     const API_ENDPOINT = getServerUrl();
+    console.log('[syncInit] Initializing socket to:', API_ENDPOINT);
     apiSocket.initialize({ endpoint: API_ENDPOINT, token: credentials.token }, encryption);
 
     // Clean up previous status change handler if exists (prevents accumulation on hot reload)
@@ -2105,9 +2223,11 @@ async function syncInit(credentials: AuthCredentials, restore: boolean) {
     });
 
     // Initialize sessions engine
+    console.log('[syncInit] Initializing sync engine...');
     if (restore) {
         await sync.restore(credentials, encryption);
     } else {
         await sync.create(credentials, encryption);
     }
+    console.log('[syncInit] Sync engine initialized');
 }

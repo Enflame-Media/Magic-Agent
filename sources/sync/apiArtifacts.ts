@@ -3,6 +3,7 @@ import { backoff } from '@/utils/time';
 import { getServerUrl } from './serverConfig';
 import { Artifact, ArtifactCreateRequest, ArtifactUpdateRequest, ArtifactUpdateResponse } from './artifactTypes';
 import { AppError, ErrorCodes } from '@/utils/errors';
+import { checkAuthError } from './apiHelper';
 
 /**
  * Fetch all artifacts for the account
@@ -18,12 +19,13 @@ export async function fetchArtifacts(credentials: AuthCredentials): Promise<Arti
             }
         });
 
+        checkAuthError(response, 'fetching artifacts');
         if (!response.ok) {
             throw new AppError(ErrorCodes.FETCH_FAILED, `Failed to fetch artifacts: ${response.status}`, { canTryAgain: true });
         }
 
-        const data = await response.json() as Artifact[];
-        return data;
+        const data = await response.json() as { artifacts: Artifact[] };
+        return data.artifacts ?? [];
     });
 }
 
@@ -41,6 +43,7 @@ export async function fetchArtifact(credentials: AuthCredentials, artifactId: st
             }
         });
 
+        checkAuthError(response, 'fetching artifact');
         if (!response.ok) {
             if (response.status === 404) {
                 throw new AppError(ErrorCodes.NOT_FOUND, 'Artifact not found');
@@ -57,7 +60,7 @@ export async function fetchArtifact(credentials: AuthCredentials, artifactId: st
  * Create a new artifact
  */
 export async function createArtifact(
-    credentials: AuthCredentials, 
+    credentials: AuthCredentials,
     request: ArtifactCreateRequest
 ): Promise<Artifact> {
     const API_ENDPOINT = getServerUrl();
@@ -72,6 +75,7 @@ export async function createArtifact(
             body: JSON.stringify(request)
         });
 
+        checkAuthError(response, 'creating artifact');
         if (!response.ok) {
             if (response.status === 409) {
                 throw new AppError(ErrorCodes.ALREADY_EXISTS, 'Artifact ID already exists');
@@ -104,6 +108,7 @@ export async function updateArtifact(
             body: JSON.stringify(request)
         });
 
+        checkAuthError(response, 'updating artifact');
         if (!response.ok) {
             if (response.status === 404) {
                 throw new AppError(ErrorCodes.NOT_FOUND, 'Artifact not found');
@@ -133,6 +138,7 @@ export async function deleteArtifact(
             }
         });
 
+        checkAuthError(response, 'deleting artifact');
         if (!response.ok) {
             if (response.status === 404) {
                 throw new AppError(ErrorCodes.NOT_FOUND, 'Artifact not found');
