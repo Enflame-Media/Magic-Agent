@@ -13,7 +13,7 @@ import { registerCommonHandlers, SpawnSessionOptions, SpawnSessionResult } from 
 import { encodeBase64, decodeBase64, encrypt, decrypt } from './encryption';
 import { backoff } from '@/utils/time';
 import { RpcHandlerManager } from './rpc/RpcHandlerManager';
-import { HappyWebSocket } from './HappyWebSocket';
+import { HappyWebSocket, WebSocketMetrics } from './HappyWebSocket';
 import type { MetadataUpdateResponse, DaemonStateUpdateResponse } from './socketUtils';
 
 // Keep-alive timing configuration (prevents thundering herd on reconnection)
@@ -441,5 +441,19 @@ export class ApiMachineClient {
         if (this.socket && !this.isShuttingDown) {
             this.socket.onMemoryPressure();
         }
+    }
+
+    /**
+     * Get WebSocket metrics for observability (HAP-362)
+     *
+     * Returns null if socket is not initialized or shutting down.
+     * Combines point-in-time statistics with cumulative counters for
+     * tracking WebSocket health over time.
+     */
+    getSocketMetrics(): WebSocketMetrics | null {
+        if (!this.socket || this.isShuttingDown) {
+            return null;
+        }
+        return this.socket.getMetrics();
     }
 }

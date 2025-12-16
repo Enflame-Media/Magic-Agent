@@ -88,6 +88,30 @@ interface HappyMessage {
 }
 
 /**
+ * WebSocket metrics for observability (HAP-362)
+ *
+ * Combines point-in-time statistics (gauges) with cumulative counters
+ * for tracking WebSocket handler map health over time.
+ */
+export interface WebSocketMetrics {
+    // Gauges - point-in-time values
+    /** Total handlers across all events */
+    totalHandlers: number;
+    /** Number of distinct event types with registered handlers */
+    eventTypes: number;
+    /** Current pending acknowledgements awaiting response */
+    pendingAcks: number;
+
+    // Counters - cumulative values
+    /** Times memory pressure cleanup has been triggered */
+    memoryPressureCount: number;
+    /** Total stale acks removed by memory pressure cleanup */
+    acksCleanedTotal: number;
+    /** Total handlers rejected due to MAX_HANDLERS_PER_EVENT limit */
+    handlersRejectedTotal: number;
+}
+
+/**
  * Error thrown when a WebSocket acknowledgment times out
  */
 export class WebSocketAckTimeoutError extends Error {
@@ -164,6 +188,12 @@ export class HappyWebSocket {
 
     // Acknowledgement tracking
     private pendingAcks: Map<string, PendingAck> = new Map();
+
+    // Metrics counters for observability (HAP-362)
+    // These are cumulative counters that persist across the socket lifetime
+    private memoryPressureCount = 0;
+    private acksCleanedTotal = 0;
+    private handlersRejectedTotal = 0;
 
     constructor(
         baseUrl: string,
@@ -442,6 +472,7 @@ export class HappyWebSocket {
         const liveCount = this.countLiveHandlers(handlers);
         if (liveCount >= HappyWebSocket.MAX_HANDLERS_PER_EVENT) {
             logger.warn(`[HappyWebSocket] Max handlers (${HappyWebSocket.MAX_HANDLERS_PER_EVENT}) reached for event '${event}'. Rejecting new handler.`);
+            this.handlersRejectedTotal++; // HAP-362: Track rejection for metrics
             return this;
         }
 
@@ -663,6 +694,28 @@ export class HappyWebSocket {
     }
 
     /**
+     * Get comprehensive WebSocket metrics for observability (HAP-362)
+     *
+     * Combines point-in-time statistics (gauges) with cumulative counters
+     * for tracking WebSocket handler map health over time.
+     *
+     * @returns WebSocketMetrics with both gauges and counters
+     */
+    getMetrics(): WebSocketMetrics {
+        const stats = this.getStats();
+        return {
+            // Gauges from getStats()
+            totalHandlers: stats.totalHandlers,
+            eventTypes: stats.eventTypes,
+            pendingAcks: stats.pendingAcks,
+            // Counters
+            memoryPressureCount: this.memoryPressureCount,
+            acksCleanedTotal: this.acksCleanedTotal,
+            handlersRejectedTotal: this.handlersRejectedTotal
+        };
+    }
+
+    /**
      * Count live handlers in a Set of WeakRefs (HAP-361)
      * Iterates through WeakRefs and counts only those that haven't been GC'd
      */
@@ -679,10 +732,15 @@ export class HappyWebSocket {
     /**
      * Called during memory pressure to clean up non-essential state. (HAP-353)
      * Removes orphaned acks and reports stats for diagnostics.
+     * Increments metrics counters for observability (HAP-362).
      */
     onMemoryPressure(): void {
         const statsBefore = this.getStats();
         const acksCleanedUp = this.cleanupStaleAcks();
+
+        // HAP-362: Increment metrics counters
+        this.memoryPressureCount++;
+        this.acksCleanedTotal += acksCleanedUp;
 
         logger.debug(`[HappyWebSocket] Memory pressure cleanup: ${acksCleanedUp} acks cleaned. Stats: handlers=${statsBefore.totalHandlers}, events=${statsBefore.eventTypes}, pendingAcks=${statsBefore.pendingAcks}`);
     }

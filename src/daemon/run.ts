@@ -4,6 +4,7 @@ import os from 'os';
 import * as tmp from 'tmp';
 
 import { ApiClient } from '@/api/api';
+import type { ApiMachineClient } from '@/api/apiMachine';
 import { TrackedSession } from './types';
 import { MachineMetadata, DaemonState, Metadata } from '@/api/types';
 import { SpawnSessionOptions, SpawnSessionResult } from '@/modules/common/registerCommonHandlers';
@@ -559,6 +560,11 @@ export async function startDaemon(): Promise<void> {
     // Record daemon start time for health endpoint uptime calculation
     const daemonStartTime = Date.now();
 
+    // HAP-362: Late-binding reference for WebSocket metrics
+    // This allows the health endpoint to access metrics after apiMachine is initialized
+    let apiMachineRef: ApiMachineClient | null = null;
+    const getWebSocketMetrics = () => apiMachineRef?.getSocketMetrics() ?? null;
+
     // Start control server
     const { port: controlPort, stop: stopControlServer } = await startDaemonControlServer({
       getChildren: getCurrentChildren,
@@ -567,7 +573,8 @@ export async function startDaemon(): Promise<void> {
       requestShutdown: () => requestShutdown('happy-cli'),
       onHappySessionWebhook,
       authToken: daemonAuthToken,
-      startTime: daemonStartTime
+      startTime: daemonStartTime,
+      getWebSocketMetrics
     });
 
     // Write initial daemon state (no lock needed for state file)
@@ -604,6 +611,7 @@ export async function startDaemon(): Promise<void> {
 
     // Create realtime machine session
     const apiMachine = api.machineSyncClient(machine);
+    apiMachineRef = apiMachine; // HAP-362: Set late-binding ref for health endpoint metrics
 
     // Set RPC handlers
     apiMachine.setRPCHandlers({
@@ -710,6 +718,12 @@ export async function startDaemon(): Promise<void> {
         // State file is just informational for CLI tools
         // The previous check-then-act pattern was a TOCTOU race condition
         try {
+          // HAP-362: Log WebSocket metrics during heartbeat for observability
+          const socketMetrics = apiMachine.getSocketMetrics();
+          if (socketMetrics) {
+            logger.debug(`[DAEMON RUN] WebSocket metrics: handlers=${socketMetrics.totalHandlers}, events=${socketMetrics.eventTypes}, pendingAcks=${socketMetrics.pendingAcks}, memoryPressure=${socketMetrics.memoryPressureCount}, acksCleanedTotal=${socketMetrics.acksCleanedTotal}, handlersRejectedTotal=${socketMetrics.handlersRejectedTotal}`);
+          }
+
           const updatedState: DaemonLocallyPersistedState = {
             pid: process.pid,
             httpPort: controlPort,

@@ -11,6 +11,7 @@ import { logger } from '@/ui/logger';
 import { Metadata } from '@/api/types';
 import { TrackedSession, RateLimitConfig, RateLimiterState, RateLimitMetrics } from './types';
 import { SpawnSessionOptions, SpawnSessionResult } from '@/modules/common/registerCommonHandlers';
+import type { WebSocketMetrics } from '@/api/HappyWebSocket';
 
 /** Default rate limit configuration */
 const DEFAULT_RATE_LIMIT: RateLimitConfig = {
@@ -26,7 +27,8 @@ export function startDaemonControlServer({
   onHappySessionWebhook,
   authToken,
   startTime,
-  rateLimit = DEFAULT_RATE_LIMIT
+  rateLimit = DEFAULT_RATE_LIMIT,
+  getWebSocketMetrics
 }: {
   getChildren: () => TrackedSession[];
   stopSession: (sessionId: string) => boolean;
@@ -36,6 +38,8 @@ export function startDaemonControlServer({
   authToken: string;
   startTime: number;
   rateLimit?: RateLimitConfig;
+  /** HAP-362: Optional getter for WebSocket metrics. Returns null if socket unavailable. */
+  getWebSocketMetrics?: () => WebSocketMetrics | null;
 }): Promise<{ port: number; stop: () => Promise<void> }> {
   return new Promise((resolve, reject) => {
     const app = fastify({
@@ -323,6 +327,15 @@ export function startDaemonControlServer({
                 windowResetAt: z.string()
               })
             }),
+            // HAP-362: WebSocket metrics for observability
+            websocket: z.object({
+              totalHandlers: z.number(),
+              eventTypes: z.number(),
+              pendingAcks: z.number(),
+              memoryPressureCount: z.number(),
+              acksCleanedTotal: z.number(),
+              handlersRejectedTotal: z.number()
+            }).nullable(),
             timestamp: z.string()
           })
         }
@@ -347,6 +360,9 @@ export function startDaemonControlServer({
       const remaining = Math.max(0, rateLimit.maxRequests - rateLimiterState.count);
 
       logger.debug(`[CONTROL SERVER] Health check: status=${status}, sessions=${children.length}, rateLimit=${rateLimitMetrics.rateLimitedRequests}/${rateLimitMetrics.totalRequests}`);
+
+      // HAP-362: Get WebSocket metrics if getter is provided
+      const websocketMetrics = getWebSocketMetrics?.() ?? null;
 
       return {
         status,
@@ -374,6 +390,7 @@ export function startDaemonControlServer({
             windowResetAt: new Date(windowResetAt).toISOString()
           }
         },
+        websocket: websocketMetrics,
         timestamp: new Date().toISOString()
       };
     });
