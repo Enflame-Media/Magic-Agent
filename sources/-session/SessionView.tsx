@@ -7,13 +7,14 @@ import { ChatList } from '@/components/ChatList';
 import { Deferred } from '@/components/Deferred';
 import { EmptyMessages } from '@/components/EmptyMessages';
 import { VoiceAssistantStatusBar } from '@/components/VoiceAssistantStatusBar';
+import { SessionTabs } from '@/components/SessionTabs';
 import { useDraft } from '@/hooks/useDraft';
 import { Modal } from '@/modal';
 import { voiceHooks } from '@/realtime/hooks/voiceHooks';
 import { startRealtimeSession, stopRealtimeSession, updateCurrentSessionId } from '@/realtime/RealtimeSession';
 import { gitStatusSync } from '@/sync/gitStatusSync';
 import { sessionAbort } from '@/sync/ops';
-import { storage, useIsDataReady, useLocalSetting, useRealtimeStatus, useSessionMessages, useSessionUsage, useSetting } from '@/sync/storage';
+import { storage, useIsDataReady, useLocalSetting, useRealtimeStatus, useSessionMessages, useSessionUsage, useSetting, useAllSessions } from '@/sync/storage';
 import { useSession } from '@/sync/storage';
 import { Session } from '@/sync/storageTypes';
 import { sync } from '@/sync/sync';
@@ -38,6 +39,9 @@ import { Typography } from '@/constants/Typography';
 const EXPANDED_HEIGHT = 72;
 const COLLAPSED_HEIGHT = 0;
 const ANIMATION_DURATION = 250;
+
+// Height of the session tabs bar (HAP-327)
+const SESSION_TABS_HEIGHT = 44;
 
 /**
  * ExpandableHeaderMetadata - A collapsible section showing session metadata
@@ -381,12 +385,22 @@ function SessionViewLoaded({ sessionId, session }: { sessionId: string, session:
     const { messages, isLoaded } = useSessionMessages(sessionId);
     const acknowledgedCliVersions = useLocalSetting('acknowledgedCliVersions');
 
+    // HAP-327: Get active sessions count for session tabs visibility
+    const allSessions = useAllSessions();
+    const activeSessionsCount = React.useMemo(() => {
+        return allSessions.filter(s => s.active).length;
+    }, [allSessions]);
+    const showSessionTabs = activeSessionsCount >= 2;
+
+    // HAP-327: Calculate tabs offset for positioning elements below header
+    const sessionTabsOffset = showSessionTabs ? SESSION_TABS_HEIGHT : 0;
+
     // Memoize dynamic styles that depend on runtime values
     const cliWarningStyle = useMemo(() => ({
         ...styles.cliWarningBase,
         position: 'absolute' as const,
-        top: safeArea.top + headerHeight + ((!isTablet && realtimeStatus !== 'disconnected') ? 48 : 0) + 8,
-    }), [safeArea.top, headerHeight, isTablet, realtimeStatus, styles.cliWarningBase]);
+        top: safeArea.top + headerHeight + ((!isTablet && realtimeStatus !== 'disconnected') ? 48 : 0) + sessionTabsOffset + 8,
+    }), [safeArea.top, headerHeight, isTablet, realtimeStatus, sessionTabsOffset, styles.cliWarningBase]);
 
     const mainContentStyle = useMemo(() => ({
         flexBasis: 0,
@@ -400,11 +414,17 @@ function SessionViewLoaded({ sessionId, session }: { sessionId: string, session:
         backgroundColor: `rgba(${theme.dark ? '28, 23, 28' : '255, 255, 255'}, 0.9)`,
     }), [safeArea.top, theme.dark, styles.backButtonBase]);
 
-    // Position for expandable header (HAP-326) - below the main header
+    // HAP-327: Position for session tabs - below the main header and voice status bar
+    const sessionTabsPositionStyle = useMemo(() => ({
+        ...styles.sessionTabsPosition,
+        top: safeArea.top + headerHeight + ((!isTablet && realtimeStatus !== 'disconnected') ? 48 : 0),
+    }), [safeArea.top, headerHeight, isTablet, realtimeStatus, styles.sessionTabsPosition]);
+
+    // Position for expandable header (HAP-326) - below the main header and session tabs
     const expandableHeaderPositionStyle = useMemo(() => ({
         ...styles.expandableHeaderPosition,
-        top: safeArea.top + headerHeight + ((!isTablet && realtimeStatus !== 'disconnected') ? 48 : 0),
-    }), [safeArea.top, headerHeight, isTablet, realtimeStatus, styles.expandableHeaderPosition]);
+        top: safeArea.top + headerHeight + ((!isTablet && realtimeStatus !== 'disconnected') ? 48 : 0) + sessionTabsOffset,
+    }), [safeArea.top, headerHeight, isTablet, realtimeStatus, sessionTabsOffset, styles.expandableHeaderPosition]);
 
     // Check if CLI version is outdated and not already acknowledged
     const cliVersion = session.metadata?.version;
@@ -570,6 +590,13 @@ function SessionViewLoaded({ sessionId, session }: { sessionId: string, session:
                 </View>
             )}
 
+            {/* HAP-327: Session Tabs - horizontal scrollable tab bar for quick session switching */}
+            {showSessionTabs && !(isLandscape && deviceType === 'phone') && (
+                <View style={sessionTabsPositionStyle}>
+                    <SessionTabs currentSessionId={sessionId} />
+                </View>
+            )}
+
             {/* CLI Version Warning Overlay - Subtle centered pill */}
             {shouldShowCliWarning && !(isLandscape && deviceType === 'phone') && (
                 <Pressable
@@ -667,13 +694,21 @@ const stylesheet = StyleSheet.create((theme) => ({
         right: 0,
         zIndex: 999,
     },
+    // HAP-327: Session tabs position - below header, above expandable metadata
+    sessionTabsPosition: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 997,
+    },
     // Expandable header position (HAP-326)
     expandableHeaderPosition: {
         position: 'absolute',
         top: 0,
         left: 0,
         right: 0,
-        zIndex: 998,
+        zIndex: 996,
     },
     // CLI warning base styles
     cliWarningBase: {
