@@ -40,9 +40,10 @@ export const FeedItemCard = React.memo(({ item }: FeedItemCardProps) => {
     switch (item.body.kind) {
         case 'friend_request': {
             const avatarElement = user!.avatar ? (
-                <Avatar 
+                <Avatar
                     id={user!.id}
                     imageUrl={user!.avatar.url}
+                    thumbhash={user!.avatar.thumbhash}
                     size={40}
                 />
             ) : (
@@ -62,9 +63,10 @@ export const FeedItemCard = React.memo(({ item }: FeedItemCardProps) => {
             
         case 'friend_accepted': {
             const avatarElement = user!.avatar ? (
-                <Avatar 
+                <Avatar
                     id={user!.id}
                     imageUrl={user!.avatar.url}
+                    thumbhash={user!.avatar.thumbhash}
                     size={40}
                 />
             ) : (
