@@ -439,9 +439,90 @@ describe.skipIf(!await isServerHealthy())('Daemon Integration Tests', { timeout:
     expect(logContent).toContain('cleanup');
     
     console.log('[TEST] Daemon terminated gracefully with SIGTERM - cleanup logs written');
-    
+
     // Clean up state file if it still exists (should have been cleaned by SIGTERM handler)
     await clearDaemonState();
+  });
+
+  /**
+   * Package.json Version Cache Invalidation Test (HAP-367)
+   *
+   * This test validates the version caching behavior introduced in HAP-354:
+   * - getProjectVersion() caches the version on first read
+   * - fs.watch() detects package.json changes
+   * - Cache is invalidated and refreshed when file changes
+   *
+   * Since getProjectVersion() and cleanupVersionWatcher() are private functions,
+   * we test behavior through daemon logs:
+   * - [DAEMON RUN] Cached project version: X.Y.Z (initial cache population)
+   * - [DAEMON RUN] package.json changed, refreshing version cache (file change detected)
+   * - [DAEMON RUN] Updated cached version: X.Y.Z (cache refreshed)
+   *
+   * Test flow:
+   * 1. Daemon starts and caches version (first heartbeat populates cache)
+   * 2. Wait for initial cache to be logged
+   * 3. Modify package.json version field (simulating npm upgrade)
+   * 4. Wait ~500ms for fs.watch to trigger debounced callback
+   * 5. Verify daemon log contains cache invalidation message
+   * 6. Restore original package.json (cleanup)
+   */
+  it('should detect package.json version change and refresh cache (HAP-367)', { timeout: 15_000 }, async () => {
+    const packagePath = path.join(process.cwd(), 'package.json');
+    const packageJsonOriginalRawText = readFileSync(packagePath, 'utf8');
+    const originalPackage = JSON.parse(packageJsonOriginalRawText);
+    const originalVersion = originalPackage.version;
+    const testVersion = `0.0.0-cache-test-${Date.now()}`;
+
+    try {
+      // Get daemon log file
+      const logFile = await getLatestDaemonLog();
+      if (!logFile) {
+        throw new Error('No daemon log file found');
+      }
+
+      // Verify initial cache was populated (from daemon startup)
+      // Give the daemon a moment to start up fully and log cache message
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      let logContent = readFileSync(logFile.path, 'utf8');
+      expect(logContent).toContain('[DAEMON RUN] Cached project version:');
+      console.log('[TEST] Initial version cache confirmed populated');
+
+      // Modify package.json version to trigger cache invalidation
+      const modifiedPackage = { ...originalPackage, version: testVersion };
+      writeFileSync(packagePath, JSON.stringify(modifiedPackage, null, 2));
+      console.log(`[TEST] Modified package.json version from ${originalVersion} to ${testVersion}`);
+
+      // Wait for fs.watch to trigger and cache to be refreshed
+      // fs.watch has platform-specific behavior, so we use polling with retries
+      const maxWaitMs = 5000;
+      const pollInterval = 250;
+      let cacheRefreshed = false;
+      const startTime = Date.now();
+
+      while (Date.now() - startTime < maxWaitMs) {
+        await new Promise(resolve => setTimeout(resolve, pollInterval));
+        logContent = readFileSync(logFile.path, 'utf8');
+
+        if (logContent.includes('[DAEMON RUN] package.json changed, refreshing version cache')) {
+          cacheRefreshed = true;
+          break;
+        }
+      }
+
+      expect(cacheRefreshed).toBe(true);
+      console.log('[TEST] Cache invalidation message found in logs');
+
+      // Verify the updated version was logged
+      expect(logContent).toContain(`[DAEMON RUN] Updated cached version: ${testVersion}`);
+      console.log('[TEST] Updated cached version confirmed in logs');
+
+      console.log('[TEST] Package.json version cache invalidation test passed');
+    } finally {
+      // CRITICAL: Restore original package.json
+      writeFileSync(packagePath, packageJsonOriginalRawText);
+      console.log(`[TEST] Restored package.json version to ${originalVersion}`);
+    }
   });
 
   /**
