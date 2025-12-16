@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Pressable, FlatList } from 'react-native';
+import { View, Pressable, FlatList, Platform } from 'react-native';
 import { Text } from '@/components/StyledText';
 import { usePathname } from 'expo-router';
 import { SessionListViewItem } from '@/sync/storage';
@@ -90,6 +90,19 @@ const stylesheet = StyleSheet.create((theme) => ({
     },
     sessionItemSelected: {
         backgroundColor: theme.colors.surfaceSelected,
+    },
+    // Active state backgrounds for enhanced visibility
+    sessionItemThinking: {
+        backgroundColor: Platform.select({
+            ios: 'rgba(0, 122, 255, 0.06)',
+            default: 'rgba(0, 122, 255, 0.04)',
+        }),
+    },
+    sessionItemPermission: {
+        backgroundColor: Platform.select({
+            ios: 'rgba(255, 149, 0, 0.06)',
+            default: 'rgba(255, 149, 0, 0.04)',
+        }),
     },
     sessionContent: {
         flex: 1,
@@ -331,11 +344,17 @@ const SessionItem = React.memo(({ session, selected, isFirst, isLast, isSingle }
         return getSessionAvatarId(session);
     }, [session]);
 
+    // Determine background tinting for active states
+    const activeStateStyle = sessionStatus.state === 'thinking' ? styles.sessionItemThinking
+        : sessionStatus.state === 'permission_required' ? styles.sessionItemPermission
+        : undefined;
+
     return (
         <Pressable
             style={[
                 styles.sessionItem,
                 selected && styles.sessionItemSelected,
+                activeStateStyle,
                 isSingle ? styles.sessionItemSingle :
                     isFirst ? styles.sessionItemFirst :
                         isLast ? styles.sessionItemLast : {}

@@ -79,6 +79,19 @@ const stylesheet = StyleSheet.create((theme) => ({
     sessionRowSelected: {
         backgroundColor: theme.colors.surfaceSelected,
     },
+    // Active state backgrounds for enhanced visibility
+    sessionRowThinking: {
+        backgroundColor: Platform.select({
+            ios: 'rgba(0, 122, 255, 0.06)',
+            default: 'rgba(0, 122, 255, 0.04)',
+        }),
+    },
+    sessionRowPermission: {
+        backgroundColor: Platform.select({
+            ios: 'rgba(255, 149, 0, 0.06)',
+            default: 'rgba(255, 149, 0, 0.04)',
+        }),
+    },
     sessionContent: {
         flex: 1,
         marginLeft: 16,
@@ -343,12 +356,18 @@ const CompactSessionRow = React.memo(({ session, selected, showBorder }: { sessi
         return getSessionAvatarId(session);
     }, [session]);
 
+    // Determine background tinting for active states
+    const activeStateStyle = sessionStatus.state === 'thinking' ? styles.sessionRowThinking
+        : sessionStatus.state === 'permission_required' ? styles.sessionRowPermission
+        : undefined;
+
     return (
         <Pressable
             style={[
                 styles.sessionRow,
                 showBorder && styles.sessionRowWithBorder,
-                selected && styles.sessionRowSelected
+                selected && styles.sessionRowSelected,
+                activeStateStyle
             ]}
             onPressIn={() => {
                 if (isTablet) {
