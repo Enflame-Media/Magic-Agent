@@ -4,6 +4,7 @@ import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { useRealtimeStatus } from '@/sync/storage';
 import { useVisibleSessionListViewData } from '@/hooks/useVisibleSessionListViewData';
 import { useIsTablet } from '@/utils/responsive';
+import { useTrackMountTime } from '@/hooks/usePerformanceMonitor';
 import { EmptySessionsTablet } from './EmptySessionsTablet';
 import { ErrorBoundary } from './ErrorBoundary';
 import { SessionsList } from './SessionsList';
@@ -64,6 +65,9 @@ const styles = StyleSheet.create((theme) => ({
 
 
 export const MainView = React.memo(({ variant }: MainViewProps) => {
+    // Track render performance (HAP-336)
+    useTrackMountTime('MainView');
+
     const { theme } = useUnistyles();
     const sessionListViewData = useVisibleSessionListViewData();
     const isTablet = useIsTablet();

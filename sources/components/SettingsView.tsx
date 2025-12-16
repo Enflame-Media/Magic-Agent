@@ -26,6 +26,7 @@ import { useProfile } from '@/sync/storage';
 import { getDisplayName, getAvatarUrl, getBio } from '@/sync/profile';
 import { Avatar } from '@/components/Avatar';
 import { t } from '@/text';
+import { useTrackMountTime } from '@/hooks/usePerformanceMonitor';
 
 // Manual Auth Modal Component for Android
 function ManualAuthModal({ onClose, onSubmit }: { onClose: () => void; onSubmit: (url: string) => void }) {
@@ -85,6 +86,9 @@ function ManualAuthModal({ onClose, onSubmit }: { onClose: () => void; onSubmit:
 }
 
 export const SettingsView = React.memo(function SettingsView() {
+    // Track render performance (HAP-336)
+    useTrackMountTime('SettingsView');
+
     const { theme } = useUnistyles();
     const router = useRouter();
     const appVersion = Constants.expoConfig?.version || '1.0.0';

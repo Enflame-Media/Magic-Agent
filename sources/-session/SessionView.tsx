@@ -21,6 +21,7 @@ import { sync } from '@/sync/sync';
 import { t } from '@/text';
 import { tracking, trackMessageSent } from '@/track';
 import { isRunningOnMac } from '@/utils/platform';
+import { useTrackMountTime } from '@/hooks/usePerformanceMonitor';
 import { useDeviceType, useHeaderHeight, useIsLandscape, useIsTablet } from '@/utils/responsive';
 import { formatPathRelativeToHome, getSessionAvatarId, getSessionName, useSessionStatus } from '@/utils/sessionUtils';
 import { isVersionSupported, MINIMUM_CLI_VERSION } from '@/utils/versionUtils';
@@ -259,6 +260,9 @@ const expandableStyles = {
 } as const;
 
 export const SessionView = React.memo((props: { id: string }) => {
+    // Track render performance (HAP-336)
+    useTrackMountTime('SessionView');
+
     const sessionId = props.id;
     const router = useRouter();
     const session = useSession(sessionId);

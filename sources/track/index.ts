@@ -3,6 +3,19 @@ import { tracking } from './tracking';
 // Re-export tracking for direct access
 export { tracking } from './tracking';
 
+// Re-export performance monitoring utilities (HAP-336)
+export {
+    markAppStart,
+    markFirstRender,
+    getStartupDuration,
+    trackScreenRender,
+    getScreenBaseline,
+    getAllScreenBaselines,
+    logBaselines,
+    reportBaselines,
+    createTimer,
+} from '@/utils/performance';
+
 /**
  * Initialize tracking with an anonymous user ID.
  * Should be called once during auth initialization.
