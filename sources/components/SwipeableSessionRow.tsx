@@ -13,7 +13,7 @@
  *   <SessionItem session={session} />
  * </SwipeableSessionRow>
  */
-import React, { useRef, useCallback, useState } from 'react';
+import React, { useRef, useCallback, useState, useEffect } from 'react';
 import { Platform, Animated, Pressable, AccessibilityInfo, View } from 'react-native';
 import { Text } from '@/components/StyledText';
 import Swipeable from 'react-native-gesture-handler/Swipeable';
@@ -23,6 +23,7 @@ import { sessionKill, sessionDelete } from '@/sync/ops';
 import { useNavigateToSession } from '@/hooks/useNavigateToSession';
 import { hapticsLight } from '@/components/haptics';
 import { Modal } from '@/modal';
+import { Toast } from '@/toast';
 import { t } from '@/text';
 import { HappyError } from '@/utils/errors';
 import { useHappyAction } from '@/hooks/useHappyAction';
@@ -30,6 +31,8 @@ import { useSessionStatus } from '@/utils/sessionUtils';
 import { StyleSheet } from 'react-native-unistyles';
 import { Typography } from '@/constants/Typography';
 import { HoverSessionActions } from './HoverSessionActions';
+
+const ARCHIVE_UNDO_DURATION = 5000; // 5 seconds to undo
 
 const ACTION_WIDTH = 80;
 
@@ -52,6 +55,10 @@ export const SwipeableSessionRow = React.memo(function SwipeableSessionRow({
     const navigateToSession = useNavigateToSession();
     const sessionStatus = useSessionStatus(session);
 
+    // Ref to track pending archive timeout for undo functionality
+    const pendingArchiveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const currentToastIdRef = useRef<string | null>(null);
+
     // Archive action with error handling
     const [_archiving, performArchive] = useHappyAction(async () => {
         const result = await sessionKill(session.id);
@@ -68,6 +75,15 @@ export const SwipeableSessionRow = React.memo(function SwipeableSessionRow({
         }
     });
 
+    // Cleanup pending archive on unmount
+    useEffect(() => {
+        return () => {
+            if (pendingArchiveRef.current) {
+                clearTimeout(pendingArchiveRef.current);
+            }
+        };
+    }, []);
+
     // Close swipeable and navigate to session for quick reply
     const handleQuickReply = useCallback(() => {
         swipeableRef.current?.close();
@@ -77,27 +93,45 @@ export const SwipeableSessionRow = React.memo(function SwipeableSessionRow({
         AccessibilityInfo.announceForAccessibility(t('swipeActions.navigatingToReply'));
     }, [navigateToSession, session.id]);
 
-    // Handle archive action
+    // Handle undo action - cancels the pending archive
+    const handleUndoArchive = useCallback(() => {
+        if (pendingArchiveRef.current) {
+            clearTimeout(pendingArchiveRef.current);
+            pendingArchiveRef.current = null;
+        }
+        currentToastIdRef.current = null;
+        hapticsLight();
+        AccessibilityInfo.announceForAccessibility(t('swipeActions.archiveUndone'));
+    }, []);
+
+    // Handle archive action with undo toast
     const handleArchive = useCallback(() => {
         swipeableRef.current?.close();
         hapticsLight();
-        // Show confirmation modal
-        Modal.alert(
-            t('sessionInfo.archiveSession'),
-            t('sessionInfo.archiveSessionConfirm'),
-            [
-                { text: t('common.cancel'), style: 'cancel' },
-                {
-                    text: t('sessionInfo.archiveSession'),
-                    style: 'destructive',
-                    onPress: () => {
-                        performArchive();
-                        AccessibilityInfo.announceForAccessibility(t('swipeActions.sessionArchived'));
-                    },
-                },
-            ]
-        );
-    }, [performArchive]);
+
+        // Clear any existing pending archive
+        if (pendingArchiveRef.current) {
+            clearTimeout(pendingArchiveRef.current);
+        }
+
+        // Show undo toast
+        const toastId = Toast.show({
+            message: t('swipeActions.sessionArchived'),
+            duration: ARCHIVE_UNDO_DURATION,
+            action: {
+                label: t('common.undo'),
+                onPress: handleUndoArchive,
+            },
+        });
+        currentToastIdRef.current = toastId;
+
+        // Set pending archive - will execute after toast duration if not cancelled
+        pendingArchiveRef.current = setTimeout(() => {
+            pendingArchiveRef.current = null;
+            currentToastIdRef.current = null;
+            performArchive();
+        }, ARCHIVE_UNDO_DURATION);
+    }, [handleUndoArchive, performArchive]);
 
     // Handle delete action
     const handleDelete = useCallback(() => {
@@ -243,21 +277,28 @@ export const SwipeableSessionRow = React.memo(function SwipeableSessionRow({
         };
 
         const handleWebArchive = () => {
-            Modal.alert(
-                t('sessionInfo.archiveSession'),
-                t('sessionInfo.archiveSessionConfirm'),
-                [
-                    { text: t('common.cancel'), style: 'cancel' },
-                    {
-                        text: t('sessionInfo.archiveSession'),
-                        style: 'destructive',
-                        onPress: () => {
-                            performArchive();
-                            AccessibilityInfo.announceForAccessibility(t('swipeActions.sessionArchived'));
-                        },
-                    },
-                ]
-            );
+            // Clear any existing pending archive
+            if (pendingArchiveRef.current) {
+                clearTimeout(pendingArchiveRef.current);
+            }
+
+            // Show undo toast
+            const toastId = Toast.show({
+                message: t('swipeActions.sessionArchived'),
+                duration: ARCHIVE_UNDO_DURATION,
+                action: {
+                    label: t('common.undo'),
+                    onPress: handleUndoArchive,
+                },
+            });
+            currentToastIdRef.current = toastId;
+
+            // Set pending archive - will execute after toast duration if not cancelled
+            pendingArchiveRef.current = setTimeout(() => {
+                pendingArchiveRef.current = null;
+                currentToastIdRef.current = null;
+                performArchive();
+            }, ARCHIVE_UNDO_DURATION);
         };
 
         const handleWebDelete = () => {
