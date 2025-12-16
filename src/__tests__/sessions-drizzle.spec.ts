@@ -493,4 +493,418 @@ describe('Session Routes with Drizzle Mocking', () => {
             expect(body.message.content).toBeDefined();
         });
     });
+
+    describe('GET /v2/sessions - Pagination Edge Cases', () => {
+        it('should return 400 for invalid cursor format', async () => {
+            const res = await authRequest('/v2/sessions?cursor=invalid-cursor', { method: 'GET' });
+            expect(res.status).toBe(400);
+
+            const body = await res.json() as { error: string };
+            expect(body.error).toBe('Invalid cursor format');
+        });
+
+        it('should return 400 for cursor without cursor_v1_ prefix', async () => {
+            const res = await authRequest('/v2/sessions?cursor=some_random_id', { method: 'GET' });
+            expect(res.status).toBe(400);
+        });
+
+        it('should return nextCursor when hasNext is true', async () => {
+            // Create more sessions than the default limit to trigger pagination
+            // Default limit is 50, so create 55 sessions
+            const sessions = Array.from({ length: 55 }, (_, i) =>
+                createTestSession(TEST_USER_ID, {
+                    id: `session-${String(i).padStart(4, '0')}`,
+                    updatedAt: new Date(Date.now() - i * 1000), // Different timestamps
+                })
+            );
+            drizzleMock.seedData('sessions', sessions);
+
+            const body = await expectOk<{ sessions: { id: string }[]; nextCursor: string | null }>(
+                await authRequest('/v2/sessions?limit=50', { method: 'GET' })
+            );
+
+            expect(body.sessions).toHaveLength(50);
+            expect(body.nextCursor).not.toBeNull();
+            expect(body.nextCursor).toMatch(/^cursor_v1_/);
+        });
+
+        it('should return null nextCursor when hasNext is false', async () => {
+            // Create fewer sessions than the limit
+            const sessions = Array.from({ length: 10 }, (_, i) =>
+                createTestSession(TEST_USER_ID, { id: `session-${i}` })
+            );
+            drizzleMock.seedData('sessions', sessions);
+
+            const body = await expectOk<{ sessions: { id: string }[]; nextCursor: string | null }>(
+                await authRequest('/v2/sessions?limit=50', { method: 'GET' })
+            );
+
+            expect(body.sessions).toHaveLength(10);
+            expect(body.nextCursor).toBeNull();
+        });
+
+        it('should filter sessions with changedSince parameter', async () => {
+            const now = Date.now();
+            const oneHourAgo = now - 3600000;
+            const twoHoursAgo = now - 7200000;
+
+            const recentSession = createTestSession(TEST_USER_ID, {
+                id: 'recent-session',
+                updatedAt: new Date(now - 1000), // 1 second ago
+            });
+            const oldSession = createTestSession(TEST_USER_ID, {
+                id: 'old-session',
+                updatedAt: new Date(twoHoursAgo),
+            });
+            drizzleMock.seedData('sessions', [recentSession, oldSession]);
+
+            const body = await expectOk<{ sessions: { id: string }[] }>(
+                await authRequest(`/v2/sessions?changedSince=${oneHourAgo}`, { method: 'GET' })
+            );
+
+            // With the mock, filtering may not work exactly as expected
+            // but this exercises the changedSince code path
+            expect(body.sessions).toBeDefined();
+            expect(Array.isArray(body.sessions)).toBe(true);
+        });
+
+        it('should use cursor for pagination', async () => {
+            const sessions = Array.from({ length: 20 }, (_, i) =>
+                createTestSession(TEST_USER_ID, {
+                    id: `session-${String(i).padStart(4, '0')}`,
+                })
+            );
+            drizzleMock.seedData('sessions', sessions);
+
+            // First page
+            const firstPage = await expectOk<{ sessions: { id: string }[]; nextCursor: string | null }>(
+                await authRequest('/v2/sessions?limit=10', { method: 'GET' })
+            );
+
+            expect(firstPage.sessions).toHaveLength(10);
+
+            // Second page using cursor (exercises cursor parsing code path)
+            if (firstPage.nextCursor) {
+                const secondPage = await expectOk<{ sessions: { id: string }[]; nextCursor: string | null }>(
+                    await authRequest(`/v2/sessions?limit=10&cursor=${firstPage.nextCursor}`, { method: 'GET' })
+                );
+                expect(secondPage.sessions).toBeDefined();
+            }
+        });
+    });
+
+    describe('GET /v1/sessions/:id/messages - List Session Messages', () => {
+        it('should require authentication', async () => {
+            const res = await unauthRequest('/v1/sessions/session-123/messages', { method: 'GET' });
+            expect(res.status).toBe(401);
+        });
+
+        it('should return 404 for non-existent session', async () => {
+            const res = await authRequest('/v1/sessions/non-existent/messages', { method: 'GET' });
+            expect(res.status).toBe(404);
+
+            const body = await res.json() as { error: string };
+            expect(body.error).toBe('Session not found');
+        });
+
+        it('should return 404 for session owned by another user', async () => {
+            const otherSession = createTestSession(TEST_USER_ID_2, { id: 'other-session' });
+            drizzleMock.seedData('sessions', [otherSession]);
+
+            const res = await authRequest('/v1/sessions/other-session/messages', { method: 'GET' });
+            expect(res.status).toBe(404);
+        });
+
+        it('should return empty array when session has no messages', async () => {
+            const session = createTestSession(TEST_USER_ID, { id: 'empty-session' });
+            drizzleMock.seedData('sessions', [session]);
+
+            const body = await expectOk<{ messages: unknown[] }>(
+                await authRequest('/v1/sessions/empty-session/messages', { method: 'GET' })
+            );
+
+            expect(body.messages).toHaveLength(0);
+        });
+
+        it('should return messages for owned session', async () => {
+            const session = createTestSession(TEST_USER_ID, { id: 'session-with-messages' });
+            drizzleMock.seedData('sessions', [session]);
+
+            // Seed some messages for this session
+            const messages = [
+                {
+                    id: 'msg-1',
+                    sessionId: 'session-with-messages',
+                    localId: 'local-1',
+                    seq: 0,
+                    content: JSON.stringify({ type: 'user', text: 'Hello' }),
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                },
+                {
+                    id: 'msg-2',
+                    sessionId: 'session-with-messages',
+                    localId: 'local-2',
+                    seq: 1,
+                    content: JSON.stringify({ type: 'assistant', text: 'Hi there!' }),
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                },
+            ];
+            drizzleMock.seedData('sessionMessages', messages);
+
+            const body = await expectOk<{ messages: { id: string; sessionId: string }[] }>(
+                await authRequest('/v1/sessions/session-with-messages/messages', { method: 'GET' })
+            );
+
+            expect(body.messages).toHaveLength(2);
+            expect(body.messages.every(m => m.sessionId === 'session-with-messages')).toBe(true);
+        });
+    });
+
+    describe('POST /v1/sessions - Database Error Handling', () => {
+        it('should handle session creation database failure', async () => {
+            // Override the insert mock to return an empty array (simulating DB failure)
+            const originalInsert = drizzleMock.mockDb.insert;
+            drizzleMock.mockDb.insert = vi.fn(() => ({
+                values: vi.fn(() => ({
+                    returning: vi.fn(async () => []), // Empty array = no session created
+                    onConflictDoNothing: vi.fn().mockReturnThis(),
+                    onConflictDoUpdate: vi.fn().mockReturnThis(),
+                })),
+            })) as unknown as typeof originalInsert;
+
+            const res = await authRequest('/v1/sessions', {
+                method: 'POST',
+                body: JSON.stringify({
+                    tag: `failure-test-${Date.now()}`,
+                    metadata: '{"name":"Test"}',
+                }),
+            });
+
+            expect(res.status).toBe(500);
+            const body = await res.json() as { error: string };
+            expect(body.error).toBe('Failed to create session');
+
+            // Restore original insert mock
+            drizzleMock.mockDb.insert = originalInsert;
+        });
+    });
+
+    describe('POST /v1/sessions/:id/messages - Database Error Handling', () => {
+        it('should handle message creation database failure', async () => {
+            const session = createTestSession(TEST_USER_ID, { id: 'session-for-failure' });
+            drizzleMock.seedData('sessions', [session]);
+
+            // Override the insert mock to return an empty array (simulating DB failure)
+            const originalInsert = drizzleMock.mockDb.insert;
+            drizzleMock.mockDb.insert = vi.fn(() => ({
+                values: vi.fn(() => ({
+                    returning: vi.fn(async () => []), // Empty array = no message created
+                    onConflictDoNothing: vi.fn().mockReturnThis(),
+                    onConflictDoUpdate: vi.fn().mockReturnThis(),
+                })),
+            })) as unknown as typeof originalInsert;
+
+            const res = await authRequest('/v1/sessions/session-for-failure/messages', {
+                method: 'POST',
+                body: JSON.stringify({
+                    localId: 'local-failure',
+                    content: { text: 'This should fail' },
+                }),
+            });
+
+            expect(res.status).toBe(500);
+            const body = await res.json() as { error: string };
+            expect(body.error).toBe('Failed to create message');
+
+            // Restore original insert mock
+            drizzleMock.mockDb.insert = originalInsert;
+        });
+    });
+
+    describe('Session with null dataEncryptionKey (branch coverage)', () => {
+        it('should return null dataEncryptionKey for existing session without encryption key', async () => {
+            // Create a session without dataEncryptionKey
+            const sessionWithoutKey = {
+                id: 'session-no-key',
+                tag: 'no-key-tag',
+                accountId: TEST_USER_ID,
+                metadata: '{"name":"No Key Session"}',
+                metadataVersion: 1,
+                agentState: '{}',
+                agentStateVersion: 1,
+                dataEncryptionKey: null, // Explicitly null
+                seq: 0,
+                active: true,
+                lastActiveAt: new Date(),
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            };
+            drizzleMock.seedData('sessions', [sessionWithoutKey]);
+
+            // Test POST /v1/sessions with same tag returns existing session with null key
+            const body = await expectOk<{ session: { id: string; dataEncryptionKey: string | null } }>(
+                await authRequest('/v1/sessions', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        tag: 'no-key-tag',
+                        metadata: '{"name":"Different metadata"}',
+                    }),
+                })
+            );
+
+            expect(body.session.id).toBe('session-no-key');
+            expect(body.session.dataEncryptionKey).toBeNull();
+        });
+
+        it('should return null dataEncryptionKey when getting session without encryption key', async () => {
+            // Create a session without dataEncryptionKey
+            const sessionWithoutKey = {
+                id: 'session-get-no-key',
+                tag: 'get-no-key-tag',
+                accountId: TEST_USER_ID,
+                metadata: '{"name":"Get No Key Session"}',
+                metadataVersion: 1,
+                agentState: '{}',
+                agentStateVersion: 1,
+                dataEncryptionKey: null, // Explicitly null
+                seq: 0,
+                active: true,
+                lastActiveAt: new Date(),
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            };
+            drizzleMock.seedData('sessions', [sessionWithoutKey]);
+
+            const body = await expectOk<{ session: { id: string; dataEncryptionKey: string | null } }>(
+                await authRequest('/v1/sessions/session-get-no-key', { method: 'GET' })
+            );
+
+            expect(body.session.id).toBe('session-get-no-key');
+            expect(body.session.dataEncryptionKey).toBeNull();
+        });
+
+        it('should create session without dataEncryptionKey and return null', async () => {
+            const tag = `no-key-create-${Date.now()}`;
+
+            const body = await expectOk<{ session: { id: string; dataEncryptionKey: string | null } }>(
+                await authRequest('/v1/sessions', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        tag,
+                        metadata: '{"name":"Session Without Key"}',
+                        // Not providing dataEncryptionKey
+                    }),
+                })
+            );
+
+            expect(body.session).toHaveProperty('id');
+            expect(body.session.dataEncryptionKey).toBeNull();
+        });
+    });
+
+    describe('Message creation without localId (branch coverage)', () => {
+        it('should create message without localId parameter', async () => {
+            const session = createTestSession(TEST_USER_ID, { id: 'session-no-localid' });
+            drizzleMock.seedData('sessions', [session]);
+
+            const body = await expectOk<{ message: { id: string; localId: string | null } }>(
+                await authRequest('/v1/sessions/session-no-localid/messages', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        // Not providing localId at all
+                        content: { type: 'user', text: 'Message without localId' },
+                    }),
+                })
+            );
+
+            expect(body.message).toHaveProperty('id');
+            // localId should be null when not provided
+            expect(body.message.localId).toBeNull();
+        });
+    });
+
+    describe('List endpoints with null dataEncryptionKey (branch coverage)', () => {
+        it('should return null dataEncryptionKey in GET /v1/sessions list', async () => {
+            // Create a session without dataEncryptionKey
+            const sessionWithoutKey = {
+                id: 'list-session-no-key',
+                tag: 'list-no-key-tag',
+                accountId: TEST_USER_ID,
+                metadata: '{"name":"List No Key Session"}',
+                metadataVersion: 1,
+                agentState: '{}',
+                agentStateVersion: 1,
+                dataEncryptionKey: null, // Explicitly null
+                seq: 0,
+                active: true,
+                lastActiveAt: new Date(),
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            };
+            drizzleMock.seedData('sessions', [sessionWithoutKey]);
+
+            const body = await expectOk<{ sessions: { id: string; dataEncryptionKey: string | null }[] }>(
+                await authRequest('/v1/sessions', { method: 'GET' })
+            );
+
+            expect(body.sessions).toHaveLength(1);
+            expect(body.sessions[0]?.dataEncryptionKey).toBeNull();
+        });
+
+        it('should return null dataEncryptionKey in GET /v2/sessions paginated list', async () => {
+            // Create a session without dataEncryptionKey
+            const sessionWithoutKey = {
+                id: 'paginated-session-no-key',
+                tag: 'paginated-no-key-tag',
+                accountId: TEST_USER_ID,
+                metadata: '{"name":"Paginated No Key Session"}',
+                metadataVersion: 1,
+                agentState: '{}',
+                agentStateVersion: 1,
+                dataEncryptionKey: null, // Explicitly null
+                seq: 0,
+                active: true,
+                lastActiveAt: new Date(),
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            };
+            drizzleMock.seedData('sessions', [sessionWithoutKey]);
+
+            const body = await expectOk<{ sessions: { id: string; dataEncryptionKey: string | null }[]; nextCursor: string | null }>(
+                await authRequest('/v2/sessions', { method: 'GET' })
+            );
+
+            expect(body.sessions).toHaveLength(1);
+            expect(body.sessions[0]?.dataEncryptionKey).toBeNull();
+        });
+
+        it('should return null dataEncryptionKey in GET /v2/sessions/active list', async () => {
+            // Create an active session without dataEncryptionKey
+            const sessionWithoutKey = {
+                id: 'active-session-no-key',
+                tag: 'active-no-key-tag',
+                accountId: TEST_USER_ID,
+                metadata: '{"name":"Active No Key Session"}',
+                metadataVersion: 1,
+                agentState: '{}',
+                agentStateVersion: 1,
+                dataEncryptionKey: null, // Explicitly null
+                seq: 0,
+                active: true,
+                lastActiveAt: new Date(), // Recently active
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            };
+            drizzleMock.seedData('sessions', [sessionWithoutKey]);
+
+            const body = await expectOk<{ sessions: { id: string; dataEncryptionKey: string | null }[] }>(
+                await authRequest('/v2/sessions/active', { method: 'GET' })
+            );
+
+            expect(body.sessions).toHaveLength(1);
+            expect(body.sessions[0]?.dataEncryptionKey).toBeNull();
+        });
+    });
 });

@@ -198,6 +198,75 @@ function applyOrderBy<T extends BaseEntity>(
     });
 }
 
+
+/**
+ * Relationship mapping to determine how to join related data
+ */
+const RELATIONSHIP_MAP: Record<string, { foreignKey: string; targetTable: string }> = {
+    // UserRelationship -> Account (toUser)
+    'UserRelationship.toUser': { foreignKey: 'toUserId', targetTable: 'Account' },
+    // UserRelationship -> Account (fromUser)
+    'UserRelationship.fromUser': { foreignKey: 'fromUserId', targetTable: 'Account' },
+    // Session -> Account
+    'Session.account': { foreignKey: 'accountId', targetTable: 'Account' },
+    // Machine -> Account
+    'Machine.account': { foreignKey: 'accountId', targetTable: 'Account' },
+};
+
+/**
+ * Apply 'with' clause to join related data
+ */
+function applyWithClause<T extends BaseEntity>(
+    data: T[],
+    withOptions: Record<string, boolean | QueryOptions<unknown>> | undefined,
+    store: DataStore,
+    tableName: string
+): T[] {
+    if (!withOptions) return data;
+
+    return data.map((item) => {
+        const result = { ...item };
+
+        for (const [relationName, relationOptions] of Object.entries(withOptions)) {
+            // Skip if relation is disabled
+            if (relationOptions === false) continue;
+
+            // Find the relationship mapping
+            const relationKey = `${tableName}.${relationName}`;
+            const mapping = RELATIONSHIP_MAP[relationKey];
+
+            if (mapping) {
+                const foreignKeyValue = item[mapping.foreignKey];
+                const relatedTable = store.get(mapping.targetTable) || [];
+
+                // Find related record
+                const related = relatedTable.find((r) => r.id === foreignKeyValue);
+
+                if (related) {
+                    // Apply column filtering if specified
+                    if (typeof relationOptions === 'object' && 'columns' in relationOptions) {
+                        const columns = relationOptions.columns as Record<string, boolean>;
+                        const filteredRelated: Record<string, unknown> = {};
+                        for (const [col, include] of Object.entries(columns)) {
+                            if (include) {
+                                filteredRelated[col] = related[col];
+                            }
+                        }
+                        (result as Record<string, unknown>)[relationName] = filteredRelated;
+                    } else {
+                        (result as Record<string, unknown>)[relationName] = related;
+                    }
+                } else {
+                    // Related record not found
+                    (result as Record<string, unknown>)[relationName] = null;
+                }
+            }
+        }
+
+        return result;
+    });
+}
+
 /**
  * Create a relational query mock for a specific table
  */
@@ -223,10 +292,24 @@ function createRelationalQueryMock<T extends BaseEntity>(
                 data = data.slice(0, options.limit);
             }
 
+            // Apply 'with' clause to join related data
+            data = applyWithClause(data, options?.with, store, tableName);
+
             return data;
         }),
 
         findFirst: vi.fn(async (options?: QueryOptions<T>): Promise<T | undefined> => {
+            // If forceNullOnRefetch is enabled, check if we should return null
+            if (mockBehavior.forceNullOnRefetch) {
+                // Skip the specified number of calls before returning null
+                if (mockBehavior.skipFindFirstCount > 0) {
+                    mockBehavior.skipFindFirstCount--;
+                } else {
+                    // Return null to simulate deleted/non-existent account
+                    return undefined;
+                }
+            }
+
             let data = (store.get(tableName) || []) as T[];
 
             // Apply where filter
@@ -234,6 +317,9 @@ function createRelationalQueryMock<T extends BaseEntity>(
 
             // Apply orderBy
             data = applyOrderBy(data, options?.orderBy);
+
+            // Apply 'with' clause to join related data
+            data = applyWithClause(data, options?.with, store, tableName);
 
             return data[0];
         }),
@@ -330,6 +416,15 @@ function createUpdateMock<T extends BaseEntity>(
                 return builder;
             },
             returning: async () => {
+                // Check if we should force empty result for testing race conditions
+                if (mockBehavior.forceEmptyUpdateResult) {
+                    if (mockBehavior.skipUpdatesCount > 0) {
+                        mockBehavior.skipUpdatesCount--;
+                    } else {
+                        return [];
+                    }
+                }
+
                 const data = (store.get(tableName) || []) as T[];
                 const updated: T[] = [];
 
@@ -459,10 +554,9 @@ function createSelectMock<T extends BaseEntity>(store: DataStore): SelectBuilder
                     const sql = obj.getSQL();
                     // Try to extract comparison info from the SQL object
                     if (sql && typeof sql === 'object' && 'queryChunks' in (sql as Record<string, unknown>)) {
-                        const chunks = (sql as { queryChunks: unknown[] }).queryChunks;
-                        // Extract field names and values from chunks
-                        // This is a simplified heuristic
-                        return () => true; // Allow through for now
+                        // Drizzle SQL objects have queryChunks - accept all for now
+                        // A more sophisticated implementation could parse the chunks
+                        return () => true;
                     }
                 } catch {
                     // Fallback if getSQL fails
@@ -565,11 +659,9 @@ function createSelectMock<T extends BaseEntity>(store: DataStore): SelectBuilder
                     const ord = ordering as { sql?: { queryChunks?: unknown[] }; order?: string };
 
                     // Drizzle orderBy produces objects with sql.queryChunks
-                    // For simplicity, we'll extract field names heuristically
+                    // For simplicity, we use a default order (more sophisticated
+                    // implementation could parse the queryChunks to extract field names)
                     if (ord.sql && ord.sql.queryChunks) {
-                        const chunks = ord.sql.queryChunks;
-                        // Usually contains column reference and direction
-                        // For now, use a default order
                         orderSpecs.push({ field: 'updatedAt', direction: 'desc' });
                     } else {
                         // Fallback
@@ -631,6 +723,30 @@ export interface MockDrizzleConfig {
     /** Initial data to seed into tables */
     initialData?: Record<string, BaseEntity[]>;
 }
+
+/**
+ * Shared state for controlling mock behavior during tests
+ */
+interface MockBehaviorState {
+    /** When true, update operations will return empty arrays (simulating race conditions) */
+    forceEmptyUpdateResult: boolean;
+    /** When true, findFirst after update will return undefined (simulating deleted account) */
+    forceNullOnRefetch: boolean;
+    /** Counter for how many updates to skip before returning empty */
+    skipUpdatesCount: number;
+    /** Number of findFirst calls to skip before returning null (for forceNullOnRefetch) */
+    skipFindFirstCount: number;
+}
+
+/**
+ * Global mock behavior state - can be modified by tests
+ */
+let mockBehavior: MockBehaviorState = {
+    forceEmptyUpdateResult: false,
+    forceNullOnRefetch: false,
+    skipUpdatesCount: 0,
+    skipFindFirstCount: 0,
+};
 
 /**
  * Create a mock Drizzle client that mimics the real Drizzle ORM behavior
@@ -749,12 +865,53 @@ export function createMockDrizzle(config?: MockDrizzleConfig) {
             Object.values(TABLE_NAME_MAP).forEach((tableName) => {
                 store.set(tableName, []);
             });
+            // Also reset mock behavior
+            resetMockBehavior();
         },
 
         /**
          * Get the underlying data store (for debugging)
          */
         _store: store,
+
+        /**
+         * Force update operations to return empty arrays (simulating race conditions)
+         * @param enable - Whether to enable this behavior
+         * @param skipCount - Number of updates to perform normally before returning empty
+         */
+        setForceEmptyUpdateResult: (enable: boolean, skipCount: number = 0) => {
+            mockBehavior.forceEmptyUpdateResult = enable;
+            mockBehavior.skipUpdatesCount = skipCount;
+        },
+
+        /**
+         * Force findFirst to return null (simulating deleted account)
+         * @param enable - Whether to enable this behavior
+         * @param skipCount - Number of findFirst calls to perform normally before returning null
+         */
+        setForceNullOnRefetch: (enable: boolean, skipCount: number = 0) => {
+            mockBehavior.forceNullOnRefetch = enable;
+            mockBehavior.skipFindFirstCount = skipCount;
+        },
+
+        /**
+         * Reset all mock behavior to defaults
+         */
+        resetMockBehavior: () => {
+            resetMockBehavior();
+        },
+    };
+}
+
+/**
+ * Reset mock behavior state to defaults
+ */
+function resetMockBehavior() {
+    mockBehavior = {
+        forceEmptyUpdateResult: false,
+        forceNullOnRefetch: false,
+        skipUpdatesCount: 0,
+        skipFindFirstCount: 0,
     };
 }
 
