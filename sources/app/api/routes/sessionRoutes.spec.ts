@@ -351,6 +351,29 @@ describe('sessionRoutes', () => {
 
             expect(response.statusCode).toBe(400);
         });
+
+        it('should emit update event when creating a new session', async () => {
+            const { eventRouter } = await import('@/app/events/eventRouter');
+
+            vi.mocked(db.session.findFirst).mockResolvedValue(null);
+            const newSession = createMockSession({ id: 'new-sess', tag: 'unique-tag' });
+            vi.mocked(db.session.create).mockResolvedValue(newSession as any);
+
+            await app.inject({
+                method: 'POST',
+                url: '/v1/sessions',
+                headers: {
+                    ...authHeader(),
+                    'Content-Type': 'application/json',
+                },
+                payload: {
+                    tag: 'unique-tag',
+                    metadata: '{"test": true}',
+                },
+            });
+
+            expect(eventRouter.emitUpdate).toHaveBeenCalled();
+        });
     });
 
     describe('GET /v1/sessions/:sessionId/messages', () => {

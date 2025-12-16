@@ -356,6 +356,32 @@ describe('artifactsRoutes', () => {
             const body = JSON.parse(response.payload);
             expect(body.error).toBe('Failed to create artifact');
         });
+
+        it('should emit update event when creating a new artifact', async () => {
+            const { eventRouter } = await import('@/app/events/eventRouter');
+
+            const artifactId = '123e4567-e89b-12d3-a456-426614174001';
+            vi.mocked(db.artifact.findUnique).mockResolvedValue(null);
+            const newArtifact = createMockArtifact({ id: artifactId });
+            vi.mocked(db.artifact.create).mockResolvedValue(newArtifact as any);
+
+            await app.inject({
+                method: 'POST',
+                url: '/v1/artifacts',
+                headers: {
+                    ...authHeader(),
+                    'Content-Type': 'application/json',
+                },
+                payload: {
+                    id: artifactId,
+                    header: 'AQIDBA==',
+                    body: 'BQYHCA==',
+                    dataEncryptionKey: 'CQoLDA==',
+                },
+            });
+
+            expect(eventRouter.emitUpdate).toHaveBeenCalled();
+        });
     });
 
     describe('POST /v1/artifacts/:id (update)', () => {
@@ -505,6 +531,33 @@ describe('artifactsRoutes', () => {
 
             expect(response.statusCode).toBe(401);
         });
+
+        it('should emit update event when updating an artifact', async () => {
+            const { eventRouter } = await import('@/app/events/eventRouter');
+
+            const artifact = createMockArtifact({
+                id: 'artifact-123',
+                headerVersion: 1,
+                bodyVersion: 1,
+            });
+            vi.mocked(db.artifact.findFirst).mockResolvedValue(artifact as any);
+            vi.mocked(db.artifact.update).mockResolvedValue({ ...artifact, headerVersion: 2 } as any);
+
+            await app.inject({
+                method: 'POST',
+                url: '/v1/artifacts/artifact-123',
+                headers: {
+                    ...authHeader(),
+                    'Content-Type': 'application/json',
+                },
+                payload: {
+                    header: 'TmV3SGVhZGVy',
+                    expectedHeaderVersion: 1,
+                },
+            });
+
+            expect(eventRouter.emitUpdate).toHaveBeenCalled();
+        });
     });
 
     describe('DELETE /v1/artifacts/:id', () => {
@@ -584,6 +637,22 @@ describe('artifactsRoutes', () => {
             expect(response.statusCode).toBe(500);
             const body = JSON.parse(response.payload);
             expect(body.error).toBe('Failed to delete artifact');
+        });
+
+        it('should emit update event when deleting an artifact', async () => {
+            const { eventRouter } = await import('@/app/events/eventRouter');
+
+            const artifact = createMockArtifact({ id: 'artifact-to-delete' });
+            vi.mocked(db.artifact.findFirst).mockResolvedValue(artifact as any);
+            vi.mocked(db.artifact.delete).mockResolvedValue(artifact as any);
+
+            await app.inject({
+                method: 'DELETE',
+                url: '/v1/artifacts/artifact-to-delete',
+                headers: authHeader(),
+            });
+
+            expect(eventRouter.emitUpdate).toHaveBeenCalled();
         });
     });
 });

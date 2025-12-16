@@ -345,6 +345,31 @@ describe('accountRoutes', () => {
             const body = JSON.parse(response.payload);
             expect(body.success).toBe(true);
         });
+
+        it('should emit update event when updating settings', async () => {
+            const { eventRouter } = await import('@/app/events/eventRouter');
+
+            vi.mocked(db.account.findUnique).mockResolvedValue({
+                settings: '{"old":"data"}',
+                settingsVersion: 2,
+            } as any);
+            vi.mocked(db.account.updateMany).mockResolvedValue({ count: 1 } as any);
+
+            await app.inject({
+                method: 'POST',
+                url: '/v1/account/settings',
+                headers: {
+                    ...authHeader(),
+                    'Content-Type': 'application/json',
+                },
+                payload: {
+                    settings: '{"new":"data"}',
+                    expectedVersion: 2,
+                },
+            });
+
+            expect(eventRouter.emitUpdate).toHaveBeenCalled();
+        });
     });
 
     describe('POST /v1/usage/query', () => {
