@@ -82,6 +82,9 @@ function createMockState() {
             put: vi.fn(),
             delete: vi.fn(),
             list: vi.fn(),
+            setAlarm: vi.fn().mockResolvedValue(undefined),
+            getAlarm: vi.fn().mockResolvedValue(null),
+            deleteAlarm: vi.fn().mockResolvedValue(undefined),
         },
         getWebSockets: vi.fn(() => Array.from(webSockets.keys())),
         acceptWebSocket: vi.fn(),
@@ -192,7 +195,7 @@ describe('ConnectionManager', () => {
             expect(text).toContain('WebSocket');
         });
 
-        it('should reject WebSocket requests without token', async () => {
+        it('should accept WebSocket requests without token in pending-auth state (HAP-360)', async () => {
             const state = createMockState();
             const cm = new ConnectionManager(state as unknown as DurableObjectState, mockEnv);
 
@@ -200,9 +203,25 @@ describe('ConnectionManager', () => {
                 method: 'GET',
                 headers: { Upgrade: 'websocket' },
             });
-            const response = await cm.fetch(request);
 
-            expect(response.status).toBe(400);
+            // HAP-360: Connections without tokens are now accepted in pending-auth state
+            // and given an auth timeout. The client must send an auth message to complete.
+            // In Workers runtime this returns 101 Switching Protocols, but Node.js Response
+            // doesn't support status 101, so we catch the error and verify the connection
+            // was accepted by checking acceptWebSocket was called.
+            try {
+                await cm.fetch(request);
+            } catch (error) {
+                // Expected: Node.js throws RangeError for status 101
+                expect(error).toBeInstanceOf(RangeError);
+                expect((error as Error).message).toContain('status');
+            }
+
+            // Verify the WebSocket connection was accepted before the Response error
+            expect(state.acceptWebSocket).toHaveBeenCalled();
+
+            // Verify auth timeout was scheduled (HAP-360 alarm feature)
+            expect(state.storage.setAlarm).toHaveBeenCalled();
         });
 
         it('should reject WebSocket requests with invalid token', async () => {
