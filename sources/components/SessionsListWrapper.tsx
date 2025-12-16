@@ -4,6 +4,7 @@ import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { Header } from './navigation/Header';
 import { SessionsList } from './SessionsList';
 import { EmptyMainScreen } from './EmptyMainScreen';
+import { FAB } from './FAB';
 import { useVisibleSessionListViewData } from '@/hooks/useVisibleSessionListViewData';
 import { useSocketStatus } from '@/sync/storage';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -227,7 +228,10 @@ export const SessionsListWrapper = React.memo(() => {
                     </View>
                 </View>
             ) : (
-                <SessionsList />
+                <>
+                    <SessionsList />
+                    <FAB />
+                </>
             )}
         </View>
     );
