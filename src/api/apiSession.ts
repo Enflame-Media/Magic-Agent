@@ -15,6 +15,7 @@ import { registerCommonHandlers } from '../modules/common/registerCommonHandlers
 import { SocketDisconnectedError } from './socketUtils';
 import { extractErrorType, SyncMetrics, SyncMetricsCollector, SyncOutcome } from './syncMetrics';
 import type { MetadataUpdateResponse, StateUpdateResponse } from './socketUtils';
+import { ContextNotificationService, type UsageData } from './contextNotifications';
 
 /**
  * Event types emitted by ApiSessionClient
@@ -63,6 +64,8 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
     private hasShownDisconnectWarning = false;
     /** Collects telemetry metrics for sync operations @see HAP-166 */
     private readonly syncMetricsCollector = new SyncMetricsCollector();
+    /** Optional context notification service for push notifications on high context usage @see HAP-343 */
+    private contextNotificationService: ContextNotificationService | null = null;
 
     constructor(token: string, session: Session) {
         super()
@@ -458,6 +461,14 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
         }
         logger.debugLargeJson('[SOCKET] Sending usage data:', usageReport)
         this.socket.emit('usage-report', usageReport);
+
+        // Check for context threshold crossing and send push notification if needed
+        if (this.contextNotificationService) {
+            // Fire and forget - don't block on notification sending
+            this.contextNotificationService.checkUsageAndNotify(usage as UsageData).catch(error => {
+                logger.debug('[SOCKET] Context notification check failed:', error);
+            });
+        }
     }
 
     /**
@@ -802,6 +813,20 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
      */
     resetSyncMetrics(): void {
         this.syncMetricsCollector.reset();
+    }
+
+    /**
+     * Set the context notification service for push notifications on high context usage.
+     * When set, push notifications will be sent when context usage crosses 80% or 95% thresholds.
+     *
+     * @param service - The context notification service, or null to disable
+     * @see HAP-343
+     */
+    setContextNotificationService(service: ContextNotificationService | null): void {
+        this.contextNotificationService = service;
+        if (service) {
+            logger.debug('[API] Context notification service enabled');
+        }
     }
 
     async close() {

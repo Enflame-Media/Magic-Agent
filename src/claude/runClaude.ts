@@ -24,6 +24,8 @@ import { projectPath } from '../projectPath';
 import { resolve } from 'node:path';
 import { SocketDisconnectedError } from '@/api/socketUtils';
 import { AppError, ErrorCodes } from '@/utils/errors';
+import { PushNotificationClient } from '@/api/pushNotifications';
+import { ContextNotificationService } from '@/api/contextNotifications';
 
 export interface StartOptions {
     model?: string
@@ -168,6 +170,22 @@ export async function runClaude(credentials: Credentials, options: StartOptions 
     // Start Happy MCP server
     const happyServer = await startHappyServer(session);
     logger.debug(`[START] Happy MCP server started at ${happyServer.url}`);
+
+    // Set up context notification service for push notifications on high context usage (HAP-343)
+    // This runs in background - notification failures are logged but don't affect normal operation
+    try {
+        const pushClient = new PushNotificationClient(credentials.token);
+        const contextNotificationService = new ContextNotificationService(
+            pushClient,
+            response.id,
+            workingDirectory
+        );
+        session.setContextNotificationService(contextNotificationService);
+        logger.debug('[START] Context notification service initialized');
+    } catch (error) {
+        // Non-fatal: notifications are a nice-to-have feature
+        logger.debug('[START] Failed to initialize context notifications:', error);
+    }
 
     // Print log file path
     const logPath = logger.logFilePath;
