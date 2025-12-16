@@ -4,6 +4,21 @@ Code on the go controlling claude code from your mobile device.
 
 Free. Open source. Code anywhere.
 
+## Prerequisites
+
+Before installing Happy CLI, ensure you have:
+
+- **Node.js 20+** (required for eventsource-parser dependency)
+- **Claude Code** installed globally via one of:
+  - `npm install -g @anthropic-ai/claude-code` (recommended)
+  - `brew install claude-code` (macOS/Linux)
+  - Native installer: https://claude.ai/install
+
+Verify Claude Code is installed and accessible:
+```bash
+claude --version
+```
+
 ## Installation
 
 ```bash
@@ -41,19 +56,18 @@ This will:
 
 ## Environment Variables
 
-- `HAPPY_SERVER_URL` - Custom server URL (default: https://api.cluster-fluster.com)
-- `HAPPY_WEBAPP_URL` - Custom web app URL (default: https://app.happy.engineering)
-- `HAPPY_HOME_DIR` - Custom home directory for Happy data (default: ~/.happy)
+- `HAPPY_SERVER_URL` - Custom server URL (default: https://happy-api.enflamemedia.com)
+- `HAPPY_WEBAPP_URL` - Custom web app URL (default: https://happy.enflamemedia.com)
+- `HAPPY_HOME_DIR` - Custom home directory for Happy data (default: ~/.enfm-happy)
 - `HAPPY_DISABLE_CAFFEINATE` - Disable macOS sleep prevention (set to `true`, `1`, or `yes`)
 - `HAPPY_EXPERIMENTAL` - Enable experimental features (set to `true`, `1`, or `yes`)
 
 ## Requirements
 
-- Node.js >= 20.0.0
-  - Required by `eventsource-parser@3.0.5`, which is required by
-  `@modelcontextprotocol/sdk`, which we used to implement permission forwarding
-  to mobile app
-- Claude CLI installed & logged in (`claude` command available in PATH)
+See [Prerequisites](#prerequisites) for the full requirements. In summary:
+
+- Node.js >= 20.0.0 (required by `eventsource-parser` for MCP permission forwarding)
+- Claude Code installed globally and logged in (`claude` command available in PATH)
 
 ## License
 

@@ -112,15 +112,13 @@ Handles server communication and encryption.
 - RPC handler registration for remote procedure calls
 
 ### 2. Claude Integration (`/src/claude/`)
-Core Claude Code integration layer.
+Core Claude Code integration layer. Uses globally-installed Claude Code (not bundled).
 
 - **`loop.ts`**: Main control loop managing interactive/remote modes
 - **`types.ts`**: Claude message type definitions with parsers
-
-- **`claudeSdk.ts`**: Direct SDK integration using `@anthropic-ai/claude-code`
+- **`claudeSdk.ts`**: Integrates with globally-installed Claude Code via dynamic import
 - **`interactive.ts`**: **LIKELY WILL BE DEPRECATED in favor of running through SDK** PTY-based interactive Claude sessions
 - **`watcher.ts`**: File system watcher for Claude session files (for interactive mode snooping)
-
 - **`mcp/startPermissionServer.ts`**: MCP (Model Context Protocol) permission server
 
 **Key Features:**
@@ -177,10 +175,56 @@ User interface components.
 - Challenge-response authentication prevents replay attacks
 - Session isolation through unique session IDs
 
+## Encryption Architecture
+
+The CLI uses **AES-256-GCM** for end-to-end encryption with key versioning support. This is intentionally different from the server-side encryption (which uses TweetNaCl secretbox).
+
+**See `/docs/ENCRYPTION-ARCHITECTURE.md` for comprehensive documentation.**
+
+### Key Points for CLI Development
+
+1. **Primary Algorithm**: AES-256-GCM with 12-byte nonces
+2. **Legacy Support**: TweetNaCl secretbox (XSalsa20-Poly1305) for backward compatibility
+3. **Key Versioning**: `KeyVersionManager` enables seamless key rotation
+4. **Hybrid Nonce**: Random bytes + counter eliminates nonce collision risk
+
+### Bundle Formats
+
+```
+Version 0x00: [version:1][nonce:12][ciphertext:N][authTag:16]
+Version 0x01: [version:1][keyVersion:2][nonce:12][ciphertext:N][authTag:16]
+Legacy:       [nonce:24][ciphertext:N]  (no version byte)
+```
+
+### Why AES-256-GCM (not secretbox like server)?
+
+- **Hardware acceleration**: AES-NI on modern CPUs
+- **Key rotation**: Version byte enables seamless rotation
+- **Interoperability**: Must decrypt App-encrypted data
+- **AEAD**: Built-in authentication
+
+The server uses simpler TweetNaCl secretbox because it only encrypts server-managed secrets (AI tokens) which don't require key rotation or cross-platform compatibility.
+
 ## Dependencies
 
+### Runtime Dependency (External)
+
+**Claude Code** must be installed globally before using Happy CLI. It is NOT bundled with this package.
+
+**Detection Order**: Happy CLI searches for Claude Code in this order:
+1. **npm global** - `npm root -g`/`@anthropic-ai/claude-code`
+2. **Homebrew** - `/opt/homebrew/bin/claude` or `/usr/local/bin/claude`
+3. **Native installer** - `~/.claude/local/claude`
+
+Install via one of:
+- `npm install -g @anthropic-ai/claude-code` (recommended)
+- `brew install claude-code` (macOS/Linux)
+- Native installer: https://claude.ai/install
+
+### Package Dependencies
+
 - Core: Node.js, TypeScript
-- Claude: `@anthropic-ai/claude-code` SDK
+- Claude: Global `claude` CLI (see above)
 - Networking: Socket.IO client, Axios
 - Crypto: TweetNaCl
 - Terminal: node-pty, chalk, qrcode-terminal
