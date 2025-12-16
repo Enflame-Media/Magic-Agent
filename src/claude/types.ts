@@ -28,13 +28,14 @@ export const RawJSONLinesSchema = z.discriminatedUnion("type", [
   }).passthrough(),
 
   // Assistant message - validates message object with usage and content
+  // Note: message is optional to support synthetic/error assistant formats
   z.object({
     uuid: z.string(),
     type: z.literal("assistant"),
     message: z.object({// Entire message used in getMessageKey()
       usage: UsageSchema.optional(), // Used in apiSession.ts
       content: z.any() // Used in tests
-    }).passthrough()
+    }).passthrough().optional()
   }).passthrough(),
 
   // Summary message - validates summary and leafUuid

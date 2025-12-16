@@ -21,12 +21,66 @@ import { AppError, ErrorCodes } from '@/utils/errors';
 
 import { cleanupDaemonState, isDaemonRunningCurrentlyInstalledHappyVersion, stopDaemon } from './controlClient';
 import { startDaemonControlServer } from './controlServer';
-import { readFileSync } from 'fs';
+import { readFileSync, watch, type FSWatcher } from 'fs';
 import { join } from 'path';
 import { projectPath } from '@/projectPath';
 import { validateHeartbeatInterval } from '@/utils/validators';
 import { createDefaultMemoryMonitor, MemoryMonitorHandle } from './memoryMonitor';
 import { clearGlobalDeduplicator } from '@/utils/requestDeduplication';
+
+// Version cache for package.json (HAP-354)
+// Eliminates repetitive disk I/O during heartbeat checks
+let cachedProjectVersion: string | null = null;
+let packageJsonWatcher: FSWatcher | null = null;
+
+/**
+ * Gets the project version from package.json with caching and file watching.
+ * On first call, reads the version and sets up a file watcher for changes.
+ * Subsequent calls return the cached value until the file changes.
+ *
+ * @returns The current package.json version string
+ */
+function getProjectVersion(): string {
+  if (cachedProjectVersion === null) {
+    const packageJsonPath = join(projectPath(), 'package.json');
+
+    // Initial read
+    const version = JSON.parse(readFileSync(packageJsonPath, 'utf-8')).version as string;
+    cachedProjectVersion = version;
+    logger.debug(`[DAEMON RUN] Cached project version: ${cachedProjectVersion}`);
+
+    // Watch for changes (npm upgrade scenario)
+    packageJsonWatcher = watch(packageJsonPath, (eventType) => {
+      if (eventType === 'change') {
+        logger.debug('[DAEMON RUN] package.json changed, refreshing version cache');
+        try {
+          const newVersion = JSON.parse(readFileSync(packageJsonPath, 'utf-8')).version as string;
+          cachedProjectVersion = newVersion;
+          logger.debug(`[DAEMON RUN] Updated cached version: ${cachedProjectVersion}`);
+        } catch (error) {
+          // Keep existing cached value on error (corrupted JSON, file deleted)
+          logger.debug('[DAEMON RUN] Failed to refresh version cache:', error);
+        }
+      }
+    });
+  }
+
+  // At this point cachedProjectVersion is guaranteed to be non-null
+  // (either set above or in a previous call)
+  return cachedProjectVersion!;
+}
+
+/**
+ * Cleans up the package.json file watcher.
+ * Should be called during daemon shutdown.
+ */
+function cleanupVersionWatcher(): void {
+  if (packageJsonWatcher) {
+    packageJsonWatcher.close();
+    packageJsonWatcher = null;
+    logger.debug('[DAEMON RUN] Version watcher closed');
+  }
+}
 
 // Prepare initial metadata
 export const initialMachineMetadata: MachineMetadata = {
@@ -606,8 +660,8 @@ export async function startDaemon(): Promise<void> {
 
         // Check if daemon needs update
         // If version on disk is different from the one in package.json - we need to restart
-        // BIG if - does this get updated from underneath us on npm upgrade?
-        const projectVersion = JSON.parse(readFileSync(join(projectPath(), 'package.json'), 'utf-8')).version;
+        // Uses cached version with file watcher for efficient I/O (HAP-354)
+        const projectVersion = getProjectVersion();
         if (projectVersion !== configuration.currentCliVersion) {
           logger.debug('[DAEMON RUN] Daemon is outdated, triggering self-restart with latest version');
 
@@ -727,6 +781,9 @@ export async function startDaemon(): Promise<void> {
         heartbeatTimeoutHandle = null;
         logger.debug('[DAEMON RUN] Health check timeout cleared');
       }
+
+      // Close version watcher (HAP-354: cached package.json version)
+      cleanupVersionWatcher();
 
       // Stop memory monitor
       memoryMonitor.stop();

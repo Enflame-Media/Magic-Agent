@@ -1,10 +1,13 @@
 #!/usr/bin/env node
 
-import { execSync } from 'child_process';
+import { execFileSync, spawnSync } from 'child_process';
 
 /**
  * Generate release notes using Claude Code by analyzing git commits
  * Usage: node scripts/generate-release-notes.js <from-tag> <to-version>
+ *
+ * Security: Uses execFileSync with argument arrays to prevent command injection.
+ * Prompt is passed via stdin to claude to avoid shell escaping issues.
  */
 
 const [,, fromTag, toVersion] = process.argv;
@@ -14,25 +17,46 @@ if (!fromTag || !toVersion) {
     process.exit(1);
 }
 
+// Validate fromTag to prevent path traversal or unexpected values
+// Allow only alphanumeric, dots, dashes, and underscores (valid git tag/branch characters)
+if (fromTag !== 'null' && !/^[a-zA-Z0-9._-]+$/.test(fromTag)) {
+    console.error('Invalid fromTag format. Must contain only alphanumeric characters, dots, dashes, and underscores.');
+    process.exit(1);
+}
+
 async function generateReleaseNotes() {
     try {
-        // Get commit range for the release
-        const commitRange = fromTag === 'null' || !fromTag ? '--all' : `${fromTag}..HEAD`;
-        
-        // Get git log for the commits
+        // Get git log for the commits using execFileSync (no shell injection possible)
         let gitLog;
+        const logFormat = '%h - %s (%an, %ar)';
+
         try {
-            gitLog = execSync(
-                `git log ${commitRange} --pretty=format:"%h - %s (%an, %ar)" --no-merges`,
-                { encoding: 'utf8' }
-            );
+            if (fromTag === 'null' || !fromTag) {
+                // Get all commits
+                gitLog = execFileSync('git', [
+                    'log',
+                    '--all',
+                    `--pretty=format:${logFormat}`,
+                    '--no-merges'
+                ], { encoding: 'utf8' });
+            } else {
+                // Get commits since tag
+                gitLog = execFileSync('git', [
+                    'log',
+                    `${fromTag}..HEAD`,
+                    `--pretty=format:${logFormat}`,
+                    '--no-merges'
+                ], { encoding: 'utf8' });
+            }
         } catch (_error) {
             // Fallback to recent commits if tag doesn't exist
             console.error(`Tag ${fromTag} not found, using recent commits instead`);
-            gitLog = execSync(
-                `git log -10 --pretty=format:"%h - %s (%an, %ar)" --no-merges`,
-                { encoding: 'utf8' }
-            );
+            gitLog = execFileSync('git', [
+                'log',
+                '-10',
+                `--pretty=format:${logFormat}`,
+                '--no-merges'
+            ], { encoding: 'utf8' });
         }
 
         if (!gitLog.trim()) {
@@ -46,13 +70,16 @@ async function generateReleaseNotes() {
 Git commits:
 ${gitLog}
 
+If the previous version was a beta version - like x.y.z-a
+You should look back in the commit history until the previous non-beta version tag. These are really the changes that will go into this non-beta release.
+
 Please format the output as markdown with:
 - A brief summary of the release
 - Organized sections for:
-  - 🚀 New Features
-  - 🐛 Bug Fixes  
-  - ♻️ Refactoring
-  - 🔧 Other Changes
+  - New Features
+  - Bug Fixes
+  - Refactoring
+  - Other Changes
 - Use bullet points for each change
 - Keep descriptions concise but informative
 - Focus on user-facing changes
@@ -61,18 +88,31 @@ Please format the output as markdown with:
 Do not include any preamble or explanations, just return the markdown release notes.`;
 
         // Call Claude Code to generate release notes
+        // Use spawnSync with stdin to avoid command injection from prompt content
         console.error('Generating release notes with Claude Code...');
-        const releaseNotes = execSync(
-            `claude --print "${prompt}"`,
-            { 
-                encoding: 'utf8',
-                stdio: ['pipe', 'pipe', 'inherit'],
-                maxBuffer: 1024 * 1024 * 10 // 10MB buffer
-            }
-        );
+
+        const result = spawnSync('claude', [
+            '--add-dir', '.',
+            '--print',
+            '-'  // Read prompt from stdin
+        ], {
+            input: prompt,
+            encoding: 'utf8',
+            stdio: ['pipe', 'pipe', 'inherit'],
+            maxBuffer: 1024 * 1024 * 10 // 10MB buffer
+        });
+
+        if (result.error) {
+            throw result.error;
+        }
+
+        if (result.status !== 0) {
+            console.error('Claude Code exited with non-zero status:', result.status);
+            process.exit(1);
+        }
 
         // Output release notes to stdout for release-it to use
-        console.log(releaseNotes.trim());
+        console.log(result.stdout.trim());
 
     } catch (error) {
         console.error('Error generating release notes:', error.message);
