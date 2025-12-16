@@ -950,6 +950,55 @@ All auth routes are OpenAPI-documented and use Zod validation.
 - Validate public key lengths before processing
 - Rate limit auth endpoints to prevent brute force
 
+### Server-Side Encryption Architecture
+
+The server uses **TweetNaCl secretbox** (XSalsa20-Poly1305) for encrypting server-managed secrets. This is intentionally different from the client-side E2E encryption (which uses AES-256-GCM).
+
+**See `/docs/ENCRYPTION-ARCHITECTURE.md` for comprehensive documentation.**
+
+#### What Server-Side Encryption Protects
+
+| Data | Encrypted? | Purpose |
+|------|-----------|---------|
+| AI vendor tokens (OpenAI, Anthropic) | Yes | Protect API keys at rest |
+| OAuth tokens | Yes | Protect third-party credentials |
+| User session data | No (E2E encrypted by clients) | Server stores encrypted blobs |
+| User messages | No (E2E encrypted by clients) | Server cannot read |
+
+#### Key Points for Server Development
+
+1. **Algorithm**: TweetNaCl secretbox (XSalsa20-Poly1305)
+2. **Key Derivation**: HKDF with path-based context (e.g., `['user', userId, 'vendors', 'openai', 'token']`)
+3. **Key Cache**: Up to 1000 derived keys cached for performance
+4. **Location**: `src/lib/encryption.ts`
+
+#### Usage Example
+
+```typescript
+import { encryptString, decryptString } from '@/lib/encryption';
+
+// Encrypt an AI vendor token
+const encrypted = await encryptString(
+    ['user', userId, 'vendors', 'openai', 'token'],
+    'sk-...'
+);
+
+// Decrypt when needed
+const token = await decryptString(
+    ['user', userId, 'vendors', 'openai', 'token'],
+    encrypted
+);
+```
+
+#### Why TweetNaCl (not AES-GCM like clients)?
+
+- **Simplicity**: No key versioning needed for server secrets
+- **Audited**: TweetNaCl is a widely audited, secure-by-default library
+- **Sufficient**: Server secrets don't need cross-platform compatibility
+- **Different trust model**: Server encryption protects secrets the server needs to use
+
+**Important**: Server-side encryption and E2E encryption are completely separate systems. The server cannot decrypt user data (sessions, messages) because those use client-side E2E encryption with user-controlled keys.
+
 ### Future Migration to Better-Auth
 
 **Status:** Deferred to HAP-29 (blocked by HAP-10 POC)
