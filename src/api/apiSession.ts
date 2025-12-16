@@ -2,7 +2,7 @@ import { logger } from '@/ui/logger'
 import { AppError, ErrorCodes } from '@/utils/errors'
 import { EventEmitter } from 'node:events'
 import { HappyWebSocket } from './HappyWebSocket'
-import { AgentState, MessageContent, Metadata, Session, Update, UserMessage, UserMessageSchema, Usage } from './types'
+import { AgentState, EphemeralUpdate, MessageContent, Metadata, Session, Update, UserMessage, UserMessageSchema, Usage } from './types'
 import { calculateCost } from './pricing'
 import { decodeBase64, decrypt, encodeBase64, encrypt, JsonSerializable } from './encryption';
 import { backoff } from '@/utils/time';
@@ -80,6 +80,7 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
     private readonly onSocketDisconnect: (reason: string) => void;
     private readonly onSocketConnectError: (error: unknown) => void;
     private readonly onSocketUpdate: (data: Update) => Promise<void>;
+    private readonly onSocketEphemeral: (data: EphemeralUpdate) => void;
     private readonly onSocketError: (error: unknown) => void;
 
     constructor(token: string, session: Session) {
@@ -100,7 +101,7 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
             encryptionVariant: this.encryptionVariant,
             logger: (msg, data) => logger.debug(msg, data)
         });
-        registerCommonHandlers(this.rpcHandlerManager);
+        registerCommonHandlers(this.rpcHandlerManager, this.metadata?.path ?? process.cwd());
 
         //
         // Create WebSocket with optimized connection options
@@ -282,6 +283,28 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
         };
         this.socket.on<Update>('update', this.onSocketUpdate);
 
+        // Ephemeral events - real-time status updates from server (HAP-357)
+        this.onSocketEphemeral = (data: EphemeralUpdate) => {
+            switch (data.type) {
+                case 'activity':
+                    // Session activity update - currently handled elsewhere via keep-alive
+                    logger.debug(`[EPHEMERAL] Activity: session ${data.id} active=${data.active} thinking=${data.thinking}`);
+                    break;
+                case 'usage':
+                    // Real-time usage/cost update from server
+                    logger.debug(`[EPHEMERAL] Usage: session ${data.id} cost=$${data.cost.total.toFixed(4)} tokens=${data.tokens.total}`);
+                    break;
+                case 'machine-activity':
+                    // Machine/daemon activity update - track other daemons coming online/offline
+                    logger.debug(`[EPHEMERAL] Machine activity: ${data.id} active=${data.active}`);
+                    break;
+                default:
+                    // Unknown ephemeral type - log but don't crash (forward compatibility)
+                    logger.debug(`[EPHEMERAL] Unknown type: ${(data as { type: string }).type}`);
+            }
+        };
+        this.socket.on<EphemeralUpdate>('ephemeral', this.onSocketEphemeral);
+
         // DEATH
         this.onSocketError = (error) => {
             logger.debug('[API] Socket error:', error);
@@ -349,7 +372,8 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
         });
 
         // Track usage from assistant messages
-        if (body.type === 'assistant' && body.message.usage) {
+        // Note: message is optional to support synthetic/error formats
+        if (body.type === 'assistant' && body.message?.usage) {
             try {
                 // Extract model from message if available (model is passed through by zod's .passthrough())
                 const model = (body.message as Record<string, unknown>).model as string | undefined;

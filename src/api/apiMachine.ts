@@ -8,7 +8,7 @@
 import { AppError, ErrorCodes } from '@/utils/errors';
 import { logger } from '@/ui/logger';
 import { configuration } from '@/configuration';
-import { MachineMetadata, DaemonState, Machine, Update, UpdateMachineBody } from './types';
+import { EphemeralUpdate, MachineMetadata, DaemonState, Machine, Update, UpdateMachineBody } from './types';
 import { registerCommonHandlers, SpawnSessionOptions, SpawnSessionResult } from '../modules/common/registerCommonHandlers';
 import { encodeBase64, decodeBase64, encrypt, decrypt } from './encryption';
 import { backoff } from '@/utils/time';
@@ -40,6 +40,7 @@ export class ApiMachineClient {
     private onSocketConnect!: () => void;
     private onSocketDisconnect!: () => void;
     private onSocketUpdate!: (data: Update) => void;
+    private onSocketEphemeral!: (data: EphemeralUpdate) => void;
     private onSocketConnectError!: (error: unknown) => void;
     private onSocketError!: (error: Error) => void;
 
@@ -55,7 +56,7 @@ export class ApiMachineClient {
             logger: (msg, data) => logger.debug(msg, data)
         });
 
-        registerCommonHandlers(this.rpcHandlerManager);
+        registerCommonHandlers(this.rpcHandlerManager, process.cwd());
     }
 
     setRPCHandlers({
@@ -329,6 +330,30 @@ export class ApiMachineClient {
             }
         };
         this.socket.on<Update>('update', this.onSocketUpdate);
+
+        // Ephemeral events - real-time status updates from server (HAP-357)
+        this.onSocketEphemeral = (data: EphemeralUpdate) => {
+            switch (data.type) {
+                case 'activity':
+                    // Session activity - machine daemon doesn't track individual sessions
+                    // Silently ignore (session clients handle this)
+                    break;
+                case 'usage':
+                    // Real-time usage/cost update - informational for daemon
+                    logger.debug(`[API MACHINE] [EPHEMERAL] Usage: session ${data.id} cost=$${data.cost.total.toFixed(4)}`);
+                    break;
+                case 'machine-activity':
+                    // Other machine/daemon activity - track peers for awareness
+                    if (data.id !== this.machine.id) {
+                        logger.debug(`[API MACHINE] [EPHEMERAL] Peer daemon ${data.id} active=${data.active}`);
+                    }
+                    break;
+                default:
+                    // Unknown ephemeral type - log but don't crash (forward compatibility)
+                    logger.debug(`[API MACHINE] [EPHEMERAL] Unknown type: ${(data as { type: string }).type}`);
+            }
+        };
+        this.socket.on<EphemeralUpdate>('ephemeral', this.onSocketEphemeral);
 
         this.onSocketConnectError = (error) => {
             logger.debug(`[API MACHINE] Connection error: ${(error as Error).message}`);
