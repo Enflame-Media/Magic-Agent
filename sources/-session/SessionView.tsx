@@ -28,8 +28,231 @@ import { useRouter } from 'expo-router';
 import * as React from 'react';
 import { useMemo } from 'react';
 import { ActivityIndicator, Platform, Pressable, Text, View } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
+import { layout } from '@/components/layout';
+import { Typography } from '@/constants/Typography';
+
+// Constants for expandable header animation
+const EXPANDED_HEIGHT = 72;
+const COLLAPSED_HEIGHT = 0;
+const ANIMATION_DURATION = 250;
+
+/**
+ * ExpandableHeaderMetadata - A collapsible section showing session metadata
+ * Displays model mode, permission mode, and context usage with smooth Reanimated animations.
+ * HAP-326: Added expandable header section for quick access to session metadata.
+ */
+// Maximum context size in tokens (190K tokens for Claude's context window)
+const MAX_CONTEXT_SIZE = 190000;
+
+interface ExpandableHeaderMetadataProps {
+    modelMode: string;
+    permissionMode: string;
+    /** Context size in tokens (0-190000), will be converted to percentage for display */
+    contextSize: number | null;
+    isConnected: boolean;
+    flavor?: string | null;
+}
+
+const ExpandableHeaderMetadata = React.memo(({
+    modelMode,
+    permissionMode,
+    contextSize,
+    isConnected,
+    flavor
+}: ExpandableHeaderMetadataProps) => {
+    // Calculate remaining context percentage (inverted - shows how much is LEFT)
+    const contextPercent = useMemo(() => {
+        if (contextSize === null || contextSize === 0) return null;
+        const usedPercent = Math.min(contextSize / MAX_CONTEXT_SIZE, 1);
+        // Show remaining percentage (100% - used%)
+        return Math.round((1 - usedPercent) * 100);
+    }, [contextSize]);
+    const { theme } = useUnistyles();
+    const [isExpanded, setIsExpanded] = React.useState(false);
+    const expandedHeight = useSharedValue(COLLAPSED_HEIGHT);
+
+    // Handle toggle
+    const handleToggle = React.useCallback(() => {
+        setIsExpanded(prev => {
+            const newState = !prev;
+            expandedHeight.value = withTiming(newState ? EXPANDED_HEIGHT : COLLAPSED_HEIGHT, {
+                duration: ANIMATION_DURATION
+            });
+            return newState;
+        });
+    }, [expandedHeight]);
+
+    // Animated style for the content container height
+    const animatedContainerStyle = useAnimatedStyle(() => ({
+        height: expandedHeight.value,
+        overflow: 'hidden' as const,
+    }));
+
+    // Animated style for chevron rotation
+    const animatedChevronStyle = useAnimatedStyle(() => ({
+        transform: [{
+            rotate: expandedHeight.value === COLLAPSED_HEIGHT ? '0deg' : '180deg'
+        }],
+    }));
+
+    // Format model mode for display
+    const modelDisplay = useMemo(() => {
+        // Claude models
+        if (modelMode === 'opus') return 'Opus 4.5';
+        if (modelMode === 'sonnet') return 'Sonnet 4.5';
+        if (modelMode === 'haiku') return 'Haiku 4.5';
+        // Codex models
+        if (modelMode === 'gpt-5-minimal') return 'GPT-5 Minimal';
+        if (modelMode === 'gpt-5-low') return 'GPT-5 Low';
+        if (modelMode === 'gpt-5-medium') return 'GPT-5 Medium';
+        if (modelMode === 'gpt-5-high') return 'GPT-5 High';
+        if (modelMode === 'gpt-5-codex-low') return 'Codex Low';
+        if (modelMode === 'gpt-5-codex-medium') return 'Codex Medium';
+        if (modelMode === 'gpt-5-codex-high') return 'Codex High';
+        return modelMode;
+    }, [modelMode]);
+
+    // Format permission mode for display
+    const modeDisplay = useMemo(() => {
+        const isCodex = flavor === 'codex' || flavor === 'openai' || flavor === 'gpt';
+        if (isCodex) {
+            // Codex permission modes
+            if (permissionMode === 'default') return t('agentInput.codexPermissionMode.default');
+            if (permissionMode === 'read-only') return t('agentInput.codexPermissionMode.readOnly');
+            if (permissionMode === 'safe-yolo') return t('agentInput.codexPermissionMode.safeYolo');
+            if (permissionMode === 'yolo') return t('agentInput.codexPermissionMode.yolo');
+        } else {
+            // Claude permission modes
+            if (permissionMode === 'default') return t('agentInput.permissionMode.default');
+            if (permissionMode === 'acceptEdits') return t('agentInput.permissionMode.acceptEdits');
+            if (permissionMode === 'plan') return t('agentInput.permissionMode.plan');
+            if (permissionMode === 'bypassPermissions') return t('agentInput.permissionMode.bypassPermissions');
+        }
+        return permissionMode;
+    }, [permissionMode, flavor]);
+
+    // Dynamic styles
+    const headerTapStyle = useMemo(() => ({
+        backgroundColor: theme.colors.header.background,
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        flexDirection: 'row' as const,
+        alignItems: 'center' as const,
+        justifyContent: 'center' as const,
+        borderBottomWidth: isExpanded ? 0 : 1,
+        borderBottomColor: theme.colors.divider,
+    }), [theme.colors.header.background, theme.colors.divider, isExpanded]);
+
+    const expandedContentStyle = useMemo(() => ({
+        backgroundColor: theme.colors.header.background,
+        paddingHorizontal: 16,
+        paddingTop: 4,
+        paddingBottom: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: theme.colors.divider,
+    }), [theme.colors.header.background, theme.colors.divider]);
+
+    return (
+        <View style={expandableStyles.container}>
+            {/* Tap area to toggle */}
+            <Pressable onPress={handleToggle} style={headerTapStyle}>
+                <Text style={[expandableStyles.tapHint, { color: theme.colors.textSecondary }]}>
+                    {isExpanded
+                        ? (isConnected ? t('session.expandableHeader.connected') : t('session.expandableHeader.disconnected'))
+                        : t('session.expandableHeader.tapToExpand')
+                    }
+                </Text>
+                <Animated.View style={animatedChevronStyle}>
+                    <Ionicons
+                        name="chevron-down"
+                        size={16}
+                        color={theme.colors.textSecondary}
+                    />
+                </Animated.View>
+            </Pressable>
+
+            {/* Expandable content */}
+            <Animated.View style={animatedContainerStyle}>
+                <View style={expandedContentStyle}>
+                    <View style={expandableStyles.contentRow}>
+                        {/* Model */}
+                        <View style={expandableStyles.metadataItem}>
+                            <Text style={[expandableStyles.metadataLabel, { color: theme.colors.textSecondary }]}>
+                                {t('session.expandableHeader.model')}
+                            </Text>
+                            <Text style={[expandableStyles.metadataValue, { color: theme.colors.text }]}>
+                                {modelDisplay}
+                            </Text>
+                        </View>
+
+                        {/* Permission Mode */}
+                        <View style={expandableStyles.metadataItem}>
+                            <Text style={[expandableStyles.metadataLabel, { color: theme.colors.textSecondary }]}>
+                                {t('session.expandableHeader.mode')}
+                            </Text>
+                            <Text style={[expandableStyles.metadataValue, { color: theme.colors.text }]}>
+                                {modeDisplay}
+                            </Text>
+                        </View>
+
+                        {/* Context */}
+                        <View style={expandableStyles.metadataItem}>
+                            <Text style={[expandableStyles.metadataLabel, { color: theme.colors.textSecondary }]}>
+                                {t('session.expandableHeader.context')}
+                            </Text>
+                            <Text style={[
+                                expandableStyles.metadataValue,
+                                { color: contextPercent !== null && contextPercent < 20 ? '#FF9500' : theme.colors.text }
+                            ]}>
+                                {contextPercent !== null ? `${contextPercent}%` : '—'}
+                            </Text>
+                        </View>
+                    </View>
+                </View>
+            </Animated.View>
+        </View>
+    );
+});
+
+// Static styles for expandable header
+const expandableStyles = {
+    container: {
+        width: '100%' as const,
+        maxWidth: layout.maxWidth,
+        alignSelf: 'center' as const,
+    },
+    tapHint: {
+        fontSize: 12,
+        marginRight: 4,
+        ...Typography.default(),
+    },
+    contentRow: {
+        flexDirection: 'row' as const,
+        justifyContent: 'space-around' as const,
+        alignItems: 'flex-start' as const,
+        paddingTop: 8,
+    },
+    metadataItem: {
+        alignItems: 'center' as const,
+        flex: 1,
+    },
+    metadataLabel: {
+        fontSize: 10,
+        fontWeight: '600' as const,
+        textTransform: 'uppercase' as const,
+        letterSpacing: 0.5,
+        marginBottom: 4,
+        ...Typography.default('semiBold'),
+    },
+    metadataValue: {
+        fontSize: 14,
+        fontWeight: '500' as const,
+        ...Typography.default(),
+    },
+} as const;
 
 export const SessionView = React.memo((props: { id: string }) => {
     const sessionId = props.id;
@@ -176,6 +399,12 @@ function SessionViewLoaded({ sessionId, session }: { sessionId: string, session:
         top: safeArea.top + 8,
         backgroundColor: `rgba(${theme.dark ? '28, 23, 28' : '255, 255, 255'}, 0.9)`,
     }), [safeArea.top, theme.dark, styles.backButtonBase]);
+
+    // Position for expandable header (HAP-326) - below the main header
+    const expandableHeaderPositionStyle = useMemo(() => ({
+        ...styles.expandableHeaderPosition,
+        top: safeArea.top + headerHeight + ((!isTablet && realtimeStatus !== 'disconnected') ? 48 : 0),
+    }), [safeArea.top, headerHeight, isTablet, realtimeStatus, styles.expandableHeaderPosition]);
 
     // Check if CLI version is outdated and not already acknowledged
     const cliVersion = session.metadata?.version;
@@ -355,6 +584,19 @@ function SessionViewLoaded({ sessionId, session }: { sessionId: string, session:
                 </Pressable>
             )}
 
+            {/* Expandable Header Metadata - HAP-326 */}
+            {!(isLandscape && deviceType === 'phone') && (
+                <View style={expandableHeaderPositionStyle}>
+                    <ExpandableHeaderMetadata
+                        modelMode={modelMode}
+                        permissionMode={permissionMode}
+                        contextSize={sessionUsage?.contextSize ?? session.latestUsage?.contextSize ?? null}
+                        isConnected={sessionStatus.isConnected}
+                        flavor={session.metadata?.flavor}
+                    />
+                </View>
+            )}
+
             {/* Main content area - no padding since header is overlay */}
             <View style={mainContentStyle}>
                 <AgentContentView
@@ -424,6 +666,14 @@ const stylesheet = StyleSheet.create((theme) => ({
         left: 0,
         right: 0,
         zIndex: 999,
+    },
+    // Expandable header position (HAP-326)
+    expandableHeaderPosition: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 998,
     },
     // CLI warning base styles
     cliWarningBase: {

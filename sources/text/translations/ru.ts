@@ -445,6 +445,15 @@ export const ru: TranslationStructure = {
         inputPlaceholder: 'Введите сообщение...',
         noMessagesYet: 'Сообщений пока нет',
         createdTime: ({ time }: { time: string }) => `Создано ${time}`,
+        // Expandable header metadata section (HAP-326)
+        expandableHeader: {
+            model: 'Модель',
+            mode: 'Режим',
+            context: 'Контекст',
+            tapToExpand: 'Нажмите для подробностей',
+            connected: 'Подключено',
+            disconnected: 'Отключено',
+        },
     },
 
     commandPalette: {

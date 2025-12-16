@@ -311,6 +311,15 @@ export const pt: TranslationStructure = {
         inputPlaceholder: 'Digite uma mensagem ...',
         noMessagesYet: 'Ainda não há mensagens',
         createdTime: ({ time }: { time: string }) => `Criado ${time}`,
+        // Expandable header metadata section (HAP-326)
+        expandableHeader: {
+            model: 'Modelo',
+            mode: 'Modo',
+            context: 'Contexto',
+            tapToExpand: 'Toque para ver detalhes',
+            connected: 'Conectado',
+            disconnected: 'Desconectado',
+        },
     },
 
     commandPalette: {

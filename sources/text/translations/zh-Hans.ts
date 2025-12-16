@@ -313,6 +313,15 @@ export const zhHans: TranslationStructure = {
         inputPlaceholder: '输入消息...',
         noMessagesYet: '暂无消息',
         createdTime: ({ time }: { time: string }) => `创建于 ${time}`,
+        // Expandable header metadata section (HAP-326)
+        expandableHeader: {
+            model: '模型',
+            mode: '模式',
+            context: '上下文',
+            tapToExpand: '点击查看详情',
+            connected: '已连接',
+            disconnected: '已断开',
+        },
     },
 
     commandPalette: {

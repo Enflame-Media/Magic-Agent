@@ -322,6 +322,15 @@ export const pl: TranslationStructure = {
         inputPlaceholder: 'Wpisz wiadomość...',
         noMessagesYet: 'Brak wiadomości',
         createdTime: ({ time }: { time: string }) => `Utworzono ${time}`,
+        // Expandable header metadata section (HAP-326)
+        expandableHeader: {
+            model: 'Model',
+            mode: 'Tryb',
+            context: 'Kontekst',
+            tapToExpand: 'Dotknij, aby rozwinąć',
+            connected: 'Połączono',
+            disconnected: 'Rozłączono',
+        },
     },
 
     commandPalette: {

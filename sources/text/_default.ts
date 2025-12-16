@@ -311,6 +311,15 @@ export const en = {
         inputPlaceholder: 'Type a message ...',
         noMessagesYet: 'No messages yet',
         createdTime: ({ time }: { time: string }) => `Created ${time}`,
+        // Expandable header metadata section (HAP-326)
+        expandableHeader: {
+            model: 'Model',
+            mode: 'Mode',
+            context: 'Context',
+            tapToExpand: 'Tap for details',
+            connected: 'Connected',
+            disconnected: 'Disconnected',
+        },
     },
 
     commandPalette: {
