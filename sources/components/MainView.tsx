@@ -1,17 +1,15 @@
 import * as React from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
-import { useRealtimeStatus, useFriendRequests } from '@/sync/storage';
+import { useRealtimeStatus } from '@/sync/storage';
 import { useVisibleSessionListViewData } from '@/hooks/useVisibleSessionListViewData';
 import { useIsTablet } from '@/utils/responsive';
 import { EmptySessionsTablet } from './EmptySessionsTablet';
 import { SessionsList } from './SessionsList';
 import { VoiceAssistantStatusBar } from './VoiceAssistantStatusBar';
 import { TabBar, TabType } from './TabBar';
-import { InboxView } from './InboxView';
 import { SettingsViewWrapper } from './SettingsViewWrapper';
 import { SessionsListWrapper } from './SessionsListWrapper';
-import { useSettings } from '@/sync/storage';
 import { ZenHome } from '@/-zen/ZenHome';
 
 interface MainViewProps {
@@ -69,14 +67,10 @@ export const MainView = React.memo(({ variant }: MainViewProps) => {
     const sessionListViewData = useVisibleSessionListViewData();
     const isTablet = useIsTablet();
     const realtimeStatus = useRealtimeStatus();
-    const friendRequests = useFriendRequests();
-    const settings = useSettings();
 
     // Tab state management - always call hooks even if not used
-    // Default to zen tab if experiments enabled, otherwise sessions
-    const [activeTab, setActiveTab] = React.useState<TabType>(
-        settings.experiments ? 'zen' : 'sessions'
-    );
+    // Sessions is always the default tab
+    const [activeTab, setActiveTab] = React.useState<TabType>('sessions');
 
     const handleTabPress = React.useCallback((tab: TabType) => {
         setActiveTab(tab);
@@ -87,8 +81,6 @@ export const MainView = React.memo(({ variant }: MainViewProps) => {
         switch (activeTab) {
             case 'zen':
                 return <ZenHome />;
-            case 'inbox':
-                return <InboxView />;
             case 'settings':
                 return <SettingsViewWrapper />;
             case 'sessions':
@@ -149,7 +141,6 @@ export const MainView = React.memo(({ variant }: MainViewProps) => {
             <TabBar
                 activeTab={activeTab}
                 onTabPress={handleTabPress}
-                inboxBadgeCount={friendRequests.length}
             />
         </>
     );

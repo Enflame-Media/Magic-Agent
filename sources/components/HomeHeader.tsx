@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Header } from './navigation/Header';
-import { useSocketStatus } from '@/sync/storage';
+import { useSocketStatus, useFriendRequests } from '@/sync/storage';
 import { Platform, Pressable, Text, View } from 'react-native';
 import { Typography } from '@/constants/Typography';
 import { StatusDot } from './StatusDot';
@@ -10,6 +10,7 @@ import { getServerInfo } from '@/sync/serverConfig';
 import { Image } from 'expo-image';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { t } from '@/text';
+import { useInboxHasContent } from '@/hooks/useInboxHasContent';
 
 const stylesheet = StyleSheet.create((theme) => ({
     headerButton: {
@@ -18,6 +19,11 @@ const stylesheet = StyleSheet.create((theme) => ({
         height: 32,
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    headerButtonsContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
     },
     iconButton: {
         color: theme.colors.header.tint,
@@ -80,6 +86,36 @@ const stylesheet = StyleSheet.create((theme) => ({
         alignSelf: Platform.OS === 'ios' ? 'center' : 'flex-start',
         flex: 1,
     },
+    // Badge styles for inbox notification
+    badgeContainer: {
+        position: 'relative',
+    },
+    badge: {
+        position: 'absolute',
+        top: -2,
+        right: -4,
+        backgroundColor: theme.colors.status.error,
+        borderRadius: 8,
+        minWidth: 16,
+        height: 16,
+        paddingHorizontal: 4,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    badgeText: {
+        color: '#FFFFFF',
+        fontSize: 10,
+        ...Typography.default('semiBold'),
+    },
+    indicatorDot: {
+        position: 'absolute',
+        top: 2,
+        right: 2,
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: theme.colors.text,
+    },
 }));
 
 
@@ -118,15 +154,41 @@ function HeaderRight() {
     const router = useRouter();
     const styles = stylesheet;
     const { theme } = useUnistyles();
+    const friendRequests = useFriendRequests();
+    const inboxHasContent = useInboxHasContent();
+    const inboxBadgeCount = friendRequests.length;
 
     return (
-        <Pressable
-            onPress={() => router.push('/new')}
-            hitSlop={15}
-            style={styles.headerButton}
-        >
-            <Ionicons name="add-outline" size={28} color={theme.colors.header.tint} />
-        </Pressable>
+        <View style={styles.headerButtonsContainer}>
+            {/* Inbox notification bell */}
+            <Pressable
+                onPress={() => router.push('/inbox')}
+                hitSlop={15}
+                style={styles.headerButton}
+            >
+                <View style={styles.badgeContainer}>
+                    <Ionicons name="notifications-outline" size={24} color={theme.colors.header.tint} />
+                    {inboxBadgeCount > 0 && (
+                        <View style={styles.badge}>
+                            <Text style={styles.badgeText}>
+                                {inboxBadgeCount > 99 ? '99+' : inboxBadgeCount}
+                            </Text>
+                        </View>
+                    )}
+                    {inboxHasContent && inboxBadgeCount === 0 && (
+                        <View style={styles.indicatorDot} />
+                    )}
+                </View>
+            </Pressable>
+            {/* Add new session button */}
+            <Pressable
+                onPress={() => router.push('/new')}
+                hitSlop={15}
+                style={styles.headerButton}
+            >
+                <Ionicons name="add-outline" size={28} color={theme.colors.header.tint} />
+            </Pressable>
+        </View>
     );
 }
 
