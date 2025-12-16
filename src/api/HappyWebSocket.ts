@@ -172,21 +172,24 @@ export class HappyWebSocket {
      * Internal connection logic
      */
     private doConnect(): void {
-        // Build WebSocket URL with auth params
+        // Build WebSocket URL without auth in query string (security: avoid URL logging)
         const wsUrl = new URL(this.path, this.baseUrl);
         wsUrl.protocol = wsUrl.protocol === 'https:' ? 'wss:' : 'ws:';
 
-        // Add auth as query parameters (similar to Socket.io handshake)
-        wsUrl.searchParams.set('token', this.auth.token);
-        wsUrl.searchParams.set('clientType', this.auth.clientType);
+        // Build auth headers for secure transmission (HAP-351)
+        // Server-side parseHandshake() supports Authorization header as fallback
+        const headers: Record<string, string> = {
+            'Authorization': `Bearer ${this.auth.token}`,
+            'X-Client-Type': this.auth.clientType,
+        };
         if (this.auth.sessionId) {
-            wsUrl.searchParams.set('sessionId', this.auth.sessionId);
+            headers['X-Session-Id'] = this.auth.sessionId;
         }
         if (this.auth.machineId) {
-            wsUrl.searchParams.set('machineId', this.auth.machineId);
+            headers['X-Machine-Id'] = this.auth.machineId;
         }
 
-        logger.debug(`[HappyWebSocket] Connecting to ${wsUrl.toString().replace(/token=[^&]+/, 'token=***')}`);
+        logger.debug(`[HappyWebSocket] Connecting to ${wsUrl.toString()}`);
 
         // Set connection timeout
         const connectionTimer = setTimeout(() => {
@@ -198,7 +201,9 @@ export class HappyWebSocket {
         }, this.config.timeout);
 
         try {
-            this.ws = new WebSocket(wsUrl.toString());
+            // Pass auth via headers instead of URL query params for security
+            // This prevents token exposure in server logs, proxy logs, and browser history
+            this.ws = new WebSocket(wsUrl.toString(), { headers });
 
             this.ws.on('open', () => {
                 clearTimeout(connectionTimer);
