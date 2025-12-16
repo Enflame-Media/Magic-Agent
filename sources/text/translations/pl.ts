@@ -442,6 +442,28 @@ export const pl: TranslationStructure = {
         outputCost: 'Wyjście',
         cacheCreationCost: 'Zapis do pamięci podręcznej',
         cacheReadCost: 'Odczyt z pamięci podręcznej',
+        // Context management (HAP-342)
+        contextManagement: 'Zarządzanie kontekstem',
+        clearContext: 'Wyczyść historię',
+        clearContextSubtitle: 'Zacznij od nowej rozmowy',
+        clearContextConfirm: 'Historia rozmowy zostanie wyczyszczona i rozpocznie się nowa sesja. Kontynuować?',
+        compactContext: 'Podsumuj kontekst',
+        compactContextSubtitle: 'Skróć rozmowę, aby zmniejszyć użycie',
+        compactContextConfirm: 'Historia rozmowy zostanie podsumowana, aby zmniejszyć użycie kontekstu. Kontynuować?',
+        // Context breakdown (HAP-341)
+        contextBreakdown: {
+            sectionTitle: 'Użycie kontekstu',
+            title: 'Podział tokenów',
+            noData: 'Dane o użyciu tokenów nie są jeszcze dostępne',
+            tokens: 'tokenów',
+            assistantResponses: 'Odpowiedzi asystenta',
+            toolCalls: 'Wywołania narzędzi',
+            cacheUsage: 'Użycie pamięci podręcznej',
+            topConsumers: 'Główni konsumenci',
+            response: 'Odpowiedź',
+            inputOutput: ({ input, output }: { input: string; output: string }) => `Wej: ${input} / Wyj: ${output}`,
+            andMore: ({ count }: { count: number }) => `+${count} więcej...`,
+        },
     },
 
     components: {

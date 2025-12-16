@@ -409,6 +409,28 @@ export const en = {
         outputCost: 'Output',
         cacheCreationCost: 'Cache Write',
         cacheReadCost: 'Cache Read',
+        // Context management (HAP-342)
+        contextManagement: 'Context Management',
+        clearContext: 'Clear History',
+        clearContextSubtitle: 'Start fresh with a new conversation',
+        clearContextConfirm: 'This will clear the conversation history and start a new session. Continue?',
+        compactContext: 'Summarize Context',
+        compactContextSubtitle: 'Compress conversation to reduce usage',
+        compactContextConfirm: 'This will summarize the conversation history to reduce context usage. Continue?',
+        // Context breakdown (HAP-341)
+        contextBreakdown: {
+            sectionTitle: 'Context Usage',
+            title: 'Token Breakdown',
+            noData: 'No token usage data available yet',
+            tokens: 'tokens',
+            assistantResponses: 'Assistant Responses',
+            toolCalls: 'Tool Calls',
+            cacheUsage: 'Cache Usage',
+            topConsumers: 'Top Consumers',
+            response: 'Response',
+            inputOutput: ({ input, output }: { input: string; output: string }) => `In: ${input} / Out: ${output}`,
+            andMore: ({ count }: { count: number }) => `+${count} more...`,
+        },
 
     },
 

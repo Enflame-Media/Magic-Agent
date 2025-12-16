@@ -395,6 +395,28 @@ export const ru: TranslationStructure = {
         outputCost: 'Вывод',
         cacheCreationCost: 'Запись в кеш',
         cacheReadCost: 'Чтение из кеша',
+        // Context management (HAP-342)
+        contextManagement: 'Управление контекстом',
+        clearContext: 'Очистить историю',
+        clearContextSubtitle: 'Начать с чистого листа',
+        clearContextConfirm: 'История разговора будет очищена и начнётся новая сессия. Продолжить?',
+        compactContext: 'Сжать контекст',
+        compactContextSubtitle: 'Сжать разговор для экономии места',
+        compactContextConfirm: 'История разговора будет сжата для уменьшения использования контекста. Продолжить?',
+        // Context breakdown (HAP-341)
+        contextBreakdown: {
+            sectionTitle: 'Использование контекста',
+            title: 'Разбивка токенов',
+            noData: 'Данные об использовании токенов пока недоступны',
+            tokens: 'токенов',
+            assistantResponses: 'Ответы ассистента',
+            toolCalls: 'Вызовы инструментов',
+            cacheUsage: 'Использование кэша',
+            topConsumers: 'Основные потребители',
+            response: 'Ответ',
+            inputOutput: ({ input, output }: { input: string; output: string }) => `Вход: ${input} / Выход: ${output}`,
+            andMore: ({ count }: { count: number }) => `+${count} ещё...`,
+        },
     },
 
     components: {

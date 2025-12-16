@@ -519,6 +519,28 @@ export async function sessionDelete(sessionId: string): Promise<{ success: boole
     }
 }
 
+/**
+ * Clear conversation context for a session
+ * This sends the /clear command which resets the session context,
+ * starting fresh while maintaining the current working state.
+ * @param sessionId - The session ID to clear context for
+ */
+export async function sessionClearContext(sessionId: string): Promise<void> {
+    const { sync } = await import('./sync');
+    await sync.sendMessage(sessionId, '/clear');
+}
+
+/**
+ * Compact/summarize conversation context for a session
+ * This sends the /compact command which compresses the conversation
+ * history into a summary to reduce context usage.
+ * @param sessionId - The session ID to compact context for
+ */
+export async function sessionCompactContext(sessionId: string): Promise<void> {
+    const { sync } = await import('./sync');
+    await sync.sendMessage(sessionId, '/compact');
+}
+
 // Export types for external use
 export type {
     SessionBashRequest,

@@ -11,7 +11,7 @@ import { useSession, useIsDataReady } from '@/sync/storage';
 import { getSessionName, useSessionStatus, formatOSPlatform, formatPathRelativeToHome, getSessionAvatarId } from '@/utils/sessionUtils';
 import * as Clipboard from 'expo-clipboard';
 import { Modal } from '@/modal';
-import { sessionKill, sessionDelete } from '@/sync/ops';
+import { sessionKill, sessionDelete, sessionClearContext, sessionCompactContext } from '@/sync/ops';
 import { useUnistyles } from 'react-native-unistyles';
 import { layout } from '@/components/layout';
 import { t } from '@/text';
@@ -21,6 +21,7 @@ import { Session } from '@/sync/storageTypes';
 import { useHappyAction } from '@/hooks/useHappyAction';
 import { HappyError } from '@/utils/errors';
 import { SessionCostDisplay } from '@/components/usage/SessionCostDisplay';
+import { ContextBreakdown } from '@/components/usage/ContextBreakdown';
 
 // Animated status dot component
 function StatusDot({ color, isPulsing, size = 8 }: { color: string; isPulsing?: boolean; size?: number }) {
@@ -141,6 +142,44 @@ function SessionInfoContent({ session }: { session: Session }) {
         );
     }, [performDelete]);
 
+    // Context management actions
+    const [_clearingContext, performClearContext] = useHappyAction(async () => {
+        await sessionClearContext(session.id);
+    });
+
+    const handleClearContext = useCallback(() => {
+        Modal.alert(
+            t('sessionInfo.clearContext'),
+            t('sessionInfo.clearContextConfirm'),
+            [
+                { text: t('common.cancel'), style: 'cancel' },
+                {
+                    text: t('sessionInfo.clearContext'),
+                    style: 'destructive',
+                    onPress: performClearContext
+                }
+            ]
+        );
+    }, [performClearContext]);
+
+    const [_compactingContext, performCompactContext] = useHappyAction(async () => {
+        await sessionCompactContext(session.id);
+    });
+
+    const handleCompactContext = useCallback(() => {
+        Modal.alert(
+            t('sessionInfo.compactContext'),
+            t('sessionInfo.compactContextConfirm'),
+            [
+                { text: t('common.cancel'), style: 'cancel' },
+                {
+                    text: t('sessionInfo.compactContext'),
+                    onPress: performCompactContext
+                }
+            ]
+        );
+    }, [performCompactContext]);
+
     const formatDate = useCallback((timestamp: number) => {
         return new Date(timestamp).toLocaleString();
     }, []);
@@ -255,6 +294,13 @@ function SessionInfoContent({ session }: { session: Session }) {
                     </View>
                 </ItemGroup>
 
+                {/* Context Breakdown (HAP-341) */}
+                <ItemGroup title={t('sessionInfo.contextBreakdown.sectionTitle')}>
+                    <View style={{ marginHorizontal: 16, marginVertical: 8 }}>
+                        <ContextBreakdown sessionId={session.id} />
+                    </View>
+                </ItemGroup>
+
                 {/* Quick Actions */}
                 <ItemGroup title={t('sessionInfo.quickActions')}>
                     {session.metadata?.machineId && (
@@ -282,6 +328,24 @@ function SessionInfoContent({ session }: { session: Session }) {
                         />
                     )}
                 </ItemGroup>
+
+                {/* Context Management - only show for connected sessions */}
+                {sessionStatus.isConnected && (
+                    <ItemGroup title={t('sessionInfo.contextManagement')}>
+                        <Item
+                            title={t('sessionInfo.compactContext')}
+                            subtitle={t('sessionInfo.compactContextSubtitle')}
+                            icon={<Ionicons name="contract-outline" size={29} color="#5856D6" />}
+                            onPress={handleCompactContext}
+                        />
+                        <Item
+                            title={t('sessionInfo.clearContext')}
+                            subtitle={t('sessionInfo.clearContextSubtitle')}
+                            icon={<Ionicons name="refresh-outline" size={29} color="#FF9500" />}
+                            onPress={handleClearContext}
+                        />
+                    </ItemGroup>
+                )}
 
                 {/* Metadata */}
                 {session.metadata && (

@@ -433,6 +433,28 @@ export const zhHans: TranslationStructure = {
         outputCost: '输出',
         cacheCreationCost: '缓存写入',
         cacheReadCost: '缓存读取',
+        // Context management (HAP-342)
+        contextManagement: '上下文管理',
+        clearContext: '清除历史',
+        clearContextSubtitle: '开始新的对话',
+        clearContextConfirm: '将清除对话历史并开始新的会话。是否继续？',
+        compactContext: '压缩上下文',
+        compactContextSubtitle: '压缩对话以减少使用量',
+        compactContextConfirm: '将压缩对话历史以减少上下文使用量。是否继续？',
+        // Context breakdown (HAP-341)
+        contextBreakdown: {
+            sectionTitle: '上下文使用',
+            title: '令牌分解',
+            noData: '令牌使用数据暂不可用',
+            tokens: '令牌',
+            assistantResponses: '助手回复',
+            toolCalls: '工具调用',
+            cacheUsage: '缓存使用',
+            topConsumers: '主要消耗者',
+            response: '回复',
+            inputOutput: ({ input, output }: { input: string; output: string }) => `输入: ${input} / 输出: ${output}`,
+            andMore: ({ count }: { count: number }) => `+${count} 更多...`,
+        },
 
     },
 

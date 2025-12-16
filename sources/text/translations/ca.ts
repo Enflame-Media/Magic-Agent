@@ -431,6 +431,28 @@ export const ca: TranslationStructure = {
         outputCost: 'Sortida',
         cacheCreationCost: 'Escriptura a la memòria cau',
         cacheReadCost: 'Lectura de la memòria cau',
+        // Context management (HAP-342)
+        contextManagement: 'Gestió del context',
+        clearContext: 'Esborrar historial',
+        clearContextSubtitle: 'Començar una nova conversa',
+        clearContextConfirm: "S'esborrarà l'historial de la conversa i s'iniciarà una nova sessió. Continuar?",
+        compactContext: 'Resumir context',
+        compactContextSubtitle: 'Comprimir conversa per reduir ús',
+        compactContextConfirm: "Es resumirà l'historial de la conversa per reduir l'ús del context. Continuar?",
+        // Context breakdown (HAP-341)
+        contextBreakdown: {
+            sectionTitle: 'Ús del context',
+            title: 'Desglossament de tokens',
+            noData: 'Dades d\'ús de tokens encara no disponibles',
+            tokens: 'tokens',
+            assistantResponses: 'Respostes de l\'assistent',
+            toolCalls: 'Crides a eines',
+            cacheUsage: 'Ús de la memòria cau',
+            topConsumers: 'Principals consumidors',
+            response: 'Resposta',
+            inputOutput: ({ input, output }: { input: string; output: string }) => `Ent: ${input} / Sor: ${output}`,
+            andMore: ({ count }: { count: number }) => `+${count} més...`,
+        },
 
     },
 

@@ -1,4 +1,4 @@
-import { AgentEvent } from "./typesRaw";
+import { AgentEvent, UsageData } from "./typesRaw";
 import { MessageMeta } from "./typesMessageMeta";
 
 export type ToolCall = {
@@ -47,6 +47,8 @@ export type AgentTextMessage = {
     createdAt: number;
     text: string;
     meta?: MessageMeta;
+    /** Token usage data for this message from Claude API */
+    usage?: UsageData;
 }
 
 export type ToolCallMessage = {
@@ -57,6 +59,8 @@ export type ToolCallMessage = {
     tool: ToolCall;
     children: Message[];
     meta?: MessageMeta;
+    /** Token usage data for this message from Claude API */
+    usage?: UsageData;
 }
 
 export type Message = UserTextMessage | AgentTextMessage | ToolCallMessage | ModeSwitchMessage;

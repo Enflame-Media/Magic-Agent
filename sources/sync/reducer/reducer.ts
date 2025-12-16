@@ -126,6 +126,7 @@ type ReducerMessage = {
     event: AgentEvent | null;
     tool: ToolCall | null;
     meta?: MessageMeta;
+    usage?: UsageData;
 }
 
 type StoredPermission = {
@@ -640,6 +641,7 @@ export function reducer(state: ReducerState, messages: NormalizedMessage[], agen
                         tool: null,
                         event: null,
                         meta: msg.meta,
+                        usage: msg.usage,
                     });
                     changed.add(mid);
                 }
@@ -742,6 +744,7 @@ export function reducer(state: ReducerState, messages: NormalizedMessage[], agen
                             tool: toolCall,
                             event: null,
                             meta: msg.meta,
+                            usage: msg.usage,
                         });
 
                         state.toolIdToMessageId.set(c.id, mid);
@@ -871,6 +874,7 @@ export function reducer(state: ReducerState, messages: NormalizedMessage[], agen
                         tool: null,
                         event: null,
                         meta: msg.meta,
+                        usage: msg.usage,
                     };
                     state.messages.set(mid, textMsg);
                     existingSidechain.push(textMsg);
@@ -914,6 +918,7 @@ export function reducer(state: ReducerState, messages: NormalizedMessage[], agen
                         tool: toolCall,
                         event: null,
                         meta: msg.meta,
+                        usage: msg.usage,
                     };
                     state.messages.set(mid, toolMsg);
                     existingSidechain.push(toolMsg);
@@ -1114,7 +1119,8 @@ function convertReducerMessageToMessage(reducerMsg: ReducerMessage, state: Reduc
             createdAt: reducerMsg.createdAt,
             kind: 'agent-text',
             text: reducerMsg.text,
-            meta: reducerMsg.meta
+            meta: reducerMsg.meta,
+            usage: reducerMsg.usage
         };
     } else if (reducerMsg.role === 'agent' && reducerMsg.tool !== null) {
         // Convert children recursively
@@ -1134,7 +1140,8 @@ function convertReducerMessageToMessage(reducerMsg: ReducerMessage, state: Reduc
             kind: 'tool-call',
             tool: { ...reducerMsg.tool },
             children: childMessages,
-            meta: reducerMsg.meta
+            meta: reducerMsg.meta,
+            usage: reducerMsg.usage
         };
     } else if (reducerMsg.role === 'agent' && reducerMsg.event !== null) {
         return {
