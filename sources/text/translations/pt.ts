@@ -287,6 +287,7 @@ export const pt: TranslationStructure = {
             failed: ({ error }: { error: string }) => `Falha ao criar worktree: ${error}`,
             success: 'Worktree criado com sucesso',
         },
+        fabAccessibilityLabel: 'Criar nova sessão',
         recentPaths: {
             header: 'Recentes',
             browseAll: 'Procurar tudo...',

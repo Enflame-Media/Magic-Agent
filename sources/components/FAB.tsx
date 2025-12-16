@@ -4,6 +4,7 @@ import * as React from 'react';
 import { Platform, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
+import { t } from '@/text';
 
 const TAB_BAR_HEIGHT = 49; // paddingTop(8) + icon(24) + marginTop(3) + label(~10) + paddingBottom(4)
 const FAB_SIZE = 56;
@@ -73,7 +74,7 @@ export const FAB = React.memo(({ onPress }: FABProps) => {
             onPress={handlePress}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel="Create new session"
+            accessibilityLabel={t('newSession.fabAccessibilityLabel')}
         >
             <Ionicons name="add" size={28} color={theme.colors.fab.icon} />
         </Pressable>

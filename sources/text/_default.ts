@@ -282,6 +282,7 @@ export const en = {
             failed: ({ error }: { error: string }) => `Failed to create worktree: ${error}`,
             success: 'Worktree created successfully',
         },
+        fabAccessibilityLabel: 'Create new session',
         recentPaths: {
             header: 'Recent',
             browseAll: 'Browse all...',

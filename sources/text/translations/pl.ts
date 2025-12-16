@@ -298,6 +298,7 @@ export const pl: TranslationStructure = {
             failed: ({ error }: { error: string }) => `Nie udało się utworzyć worktree: ${error}`,
             success: 'Worktree został utworzony pomyślnie',
         },
+        fabAccessibilityLabel: 'Utwórz nową sesję',
         recentPaths: {
             header: 'Ostatnie',
             browseAll: 'Przeglądaj wszystkie...',

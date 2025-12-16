@@ -289,6 +289,7 @@ export const zhHans: TranslationStructure = {
             failed: ({ error }: { error: string }) => `创建 worktree 失败：${error}`,
             success: 'Worktree 创建成功',
         },
+        fabAccessibilityLabel: '创建新会话',
         recentPaths: {
             header: '最近',
             browseAll: '浏览全部...',
