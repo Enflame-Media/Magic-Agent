@@ -10,7 +10,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
     expectOk,
-    expectStatus,
     createTestSession,
     createMockDrizzle,
     createMockR2,
@@ -168,7 +167,8 @@ describe('Usage Routes', () => {
             it('should return 500 when database query fails', async () => {
                 // Make the database select throw an error
                 const originalSelect = drizzleMock.mockDb.select;
-                drizzleMock.mockDb.select = vi.fn(() => {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                (drizzleMock.mockDb as any).select = vi.fn(() => {
                     return {
                         from: vi.fn(() => ({
                             where: vi.fn(() => ({
