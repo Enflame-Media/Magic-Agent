@@ -59,6 +59,12 @@ export interface ConnectionManagerEnv {
 
     /** Current environment */
     ENVIRONMENT?: 'development' | 'staging' | 'production';
+
+    /**
+     * Enable debug logging for RPC routing decisions (HAP-297)
+     * Set to 'true' to enable verbose logging of RPC routing
+     */
+    DEBUG_RPC_ROUTING?: string;
 }
 
 /**
@@ -676,22 +682,38 @@ export class ConnectionManager extends DurableObject<ConnectionManagerEnv> {
                 break;
 
             case 'rpc-call':
-            case 'rpc-request':
+            case 'rpc-request': {
                 // Forward RPC requests to the appropriate session/machine scoped connection
                 // The RPC message should contain target info in payload
+                const rpcPayload = normalized.payload as { method?: string } | undefined;
+
+                // HAP-297: Log RPC request received
+                this.logRpcRouting('RPC request received', {
+                    type: normalized.type,
+                    method: rpcPayload?.method,
+                    senderClientType: metadata?.clientType,
+                    ackId: normalized.messageId,
+                });
+
                 if (metadata?.clientType !== 'user-scoped') {
                     // Forward to user-scoped connections (mobile app handles RPC routing)
-                    this.broadcastClientMessage(
+                    const filter = { type: 'user-scoped-only' as const };
+                    const delivered = this.broadcastClientMessage(
                         {
                             event: normalized.type,
                             data: normalized.payload,
                             ackId: normalized.messageId,
                         },
-                        { type: 'user-scoped-only' }
+                        filter
                     );
+
+                    // HAP-297: Log broadcast filter selection
+                    this.logRpcRouting('Broadcast filter: non-user-scoped → user-scoped', {
+                        filterType: filter.type,
+                        connectionsDelivered: delivered,
+                    });
                 } else {
                     // User-scoped client sending RPC - forward to session/machine scoped
-                    const rpcPayload = normalized.payload as { method?: string } | undefined;
                     if (rpcPayload?.method) {
                         // Extract target from method (format: "sessionId:methodName" or "machineId:methodName")
                         const parts = rpcPayload.method.split(':');
@@ -710,45 +732,82 @@ export class ConnectionManager extends DurableObject<ConnectionManagerEnv> {
                                 }
                             }
 
+                            // HAP-297: Log targetId extraction and machine connection lookup
+                            this.logRpcRouting('Target extraction', {
+                                targetId,
+                                hasMachineConnection,
+                                totalConnections: this.connections.size,
+                            });
+
                             if (hasMachineConnection) {
                                 // Target is a machine - route to machine-scoped connection
-                                this.broadcastClientMessage(
+                                const filter = { type: 'machine' as const, machineId: targetId };
+                                const delivered = this.broadcastClientMessage(
                                     {
                                         event: 'rpc-request',
                                         data: normalized.payload,
                                         ackId: normalized.messageId,
                                     },
-                                    { type: 'machine', machineId: targetId }
+                                    filter
                                 );
+
+                                // HAP-297: Log broadcast filter selection
+                                this.logRpcRouting('Broadcast filter: machine', {
+                                    filterType: filter.type,
+                                    machineId: targetId,
+                                    connectionsDelivered: delivered,
+                                });
                             } else {
                                 // Target is a session - route to session-scoped connections and user-scoped
-                                this.broadcastClientMessage(
+                                const filter = { type: 'all-interested-in-session' as const, sessionId: targetId };
+                                const delivered = this.broadcastClientMessage(
                                     {
                                         event: 'rpc-request',
                                         data: normalized.payload,
                                         ackId: normalized.messageId,
                                     },
-                                    { type: 'all-interested-in-session', sessionId: targetId }
+                                    filter
                                 );
+
+                                // HAP-297: Log broadcast filter selection
+                                this.logRpcRouting('Broadcast filter: all-interested-in-session', {
+                                    filterType: filter.type,
+                                    sessionId: targetId,
+                                    connectionsDelivered: delivered,
+                                });
                             }
                         }
                     }
                 }
                 break;
+            }
 
             case 'rpc-response':
                 // Forward RPC response back to the requesting client
                 // The ackId identifies the original request
                 if (normalized.messageId) {
+                    // HAP-297: Log RPC response routing
+                    this.logRpcRouting('RPC response routing', {
+                        ackId: normalized.messageId,
+                        senderClientType: metadata?.clientType,
+                    });
+
                     // Broadcast to all connections - the one with matching pending ack will handle it
-                    this.broadcastClientMessage(
+                    const filter = { type: 'all' as const };
+                    const delivered = this.broadcastClientMessage(
                         {
                             event: 'rpc-response',
                             ackId: normalized.messageId,
                             ack: normalized.payload,
                         },
-                        { type: 'all' }
+                        filter
                     );
+
+                    // HAP-297: Log broadcast result
+                    this.logRpcRouting('RPC response broadcast complete', {
+                        filterType: filter.type,
+                        connectionsDelivered: delivered,
+                    });
                 }
                 break;
 
@@ -1029,6 +1088,26 @@ export class ConnectionManager extends DurableObject<ConnectionManagerEnv> {
             ws.send(JSON.stringify(errorMsg));
         } catch {
             // Connection may be closed, ignore
+        }
+    }
+
+    /**
+     * Log RPC routing decisions when DEBUG_RPC_ROUTING is enabled (HAP-297)
+     *
+     * This helper provides conditional debug logging for RPC routing to help
+     * diagnose issues with message delivery and broadcast filter selection.
+     *
+     * @param message - The log message
+     * @param context - Optional context object with additional details
+     */
+    private logRpcRouting(message: string, context?: Record<string, unknown>): void {
+        if (this.env.DEBUG_RPC_ROUTING !== 'true') {
+            return;
+        }
+        if (context) {
+            console.log(`[RPC-Routing] ${message}`, JSON.stringify(context));
+        } else {
+            console.log(`[RPC-Routing] ${message}`);
         }
     }
 

@@ -15,7 +15,8 @@ command = ""
 #############################
 [env.dev]
 name = "happy-server-workers-dev"
-vars = { ENVIRONMENT = "development" }
+# DEBUG_RPC_ROUTING: Set to "true" to enable verbose RPC routing debug logs (HAP-297)
+vars = { ENVIRONMENT = "development", DEBUG_RPC_ROUTING = "false" }
 # Custom domain routing
 routes = [
     { pattern = "happy-api-dev.enflamemedia.com", custom_domain = true }
@@ -61,7 +62,9 @@ persist = true
 #############################
 [env.prod]
 name = "happy-server-workers-prod"
-vars = { ENVIRONMENT = "production" }
+# DEBUG_RPC_ROUTING: Set to "true" to enable verbose RPC routing debug logs (HAP-297)
+# Warning: Keep disabled in production to avoid performance impact
+vars = { ENVIRONMENT = "production", DEBUG_RPC_ROUTING = "false" }
 # Custom domain routing
 routes = [
     { pattern = "happy-api.enflamemedia.com", custom_domain = true }
