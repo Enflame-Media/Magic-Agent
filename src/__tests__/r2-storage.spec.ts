@@ -75,6 +75,7 @@ function createEnhancedMockR2() {
         text: async () => new TextDecoder().decode(file.body),
         json: async () => JSON.parse(new TextDecoder().decode(file.body)),
         blob: async () => new Blob([file.body]),
+        bytes: async () => new Uint8Array(file.body),
         writeHttpMetadata: (headers: Headers) => {
             if (file.httpMetadata?.contentType) {
                 headers.set('content-type', file.httpMetadata.contentType);
@@ -139,13 +140,13 @@ function createEnhancedMockR2() {
                     buffer = await body.arrayBuffer();
                     size = body.size;
                 } else if (typeof body === 'string') {
-                    buffer = new TextEncoder().encode(body).buffer;
+                    buffer = new TextEncoder().encode(body).buffer as ArrayBuffer;
                     size = buffer.byteLength;
                 } else if (ArrayBuffer.isView(body)) {
                     buffer = body.buffer.slice(
                         body.byteOffset,
                         body.byteOffset + body.byteLength
-                    );
+                    ) as ArrayBuffer;
                     size = body.byteLength;
                 } else {
                     // ReadableStream - read all chunks
@@ -172,10 +173,16 @@ function createEnhancedMockR2() {
                     size = totalSize;
                 }
 
+                // Extract R2HTTPMetadata, filtering out Headers type
+                const httpMeta: R2HTTPMetadata | undefined =
+                    options?.httpMetadata && !(options.httpMetadata instanceof Headers)
+                        ? options.httpMetadata
+                        : undefined;
+
                 const fileData = {
                     body: buffer,
                     customMetadata: options?.customMetadata,
-                    httpMetadata: options?.httpMetadata,
+                    httpMetadata: httpMeta,
                     size,
                     uploaded: new Date(),
                 };
@@ -190,7 +197,7 @@ function createEnhancedMockR2() {
                     httpEtag: '"mock-etag-123"',
                     checksums: { toJSON: () => ({}) },
                     uploaded: fileData.uploaded,
-                    httpMetadata: fileData.httpMetadata || {},
+                    httpMetadata: fileData.httpMetadata || ({} as R2HTTPMetadata),
                     customMetadata: fileData.customMetadata || {},
                     range: undefined,
                     storageClass: 'Standard',
@@ -243,12 +250,22 @@ function createEnhancedMockR2() {
                     return mockR2ObjectHead(key, file);
                 });
 
-                return {
-                    objects,
-                    truncated,
-                    cursor: truncated ? paginatedKeys[paginatedKeys.length - 1] : undefined,
-                    delimitedPrefixes: [],
-                };
+                if (truncated) {
+                    // When truncated is true, paginatedKeys must have at least one item
+                    const lastKey = paginatedKeys[paginatedKeys.length - 1]!;
+                    return {
+                        objects,
+                        truncated: true,
+                        cursor: lastKey,
+                        delimitedPrefixes: [],
+                    };
+                } else {
+                    return {
+                        objects,
+                        truncated: false,
+                        delimitedPrefixes: [],
+                    };
+                }
             }
         ),
 
@@ -886,16 +903,50 @@ describe('R2 Storage Abstraction Layer', () => {
         });
 
         it('should fallback to httpMetadata contentType when customMetadata missing', async () => {
+            // This test specifically covers the middle branch of the ternary at line 331:
+            // object.customMetadata?.contentType is falsy (undefined)
+            // object.httpMetadata?.contentType is truthy (application/json)
             mockBucket._seed(
                 'files/user123/nocontenttype.txt',
                 new ArrayBuffer(10),
-                {}, // Empty custom metadata
-                { contentType: 'application/json' }
+                {}, // Empty custom metadata - contentType is undefined
+                { contentType: 'application/json' } // httpMetadata has contentType
             );
 
             const result = await storage.get('files/user123/nocontenttype.txt');
 
+            // Should use httpMetadata.contentType, not default 'application/octet-stream'
             expect(result!.customMetadata.contentType).toBe('application/json');
+        });
+
+        it('should use customMetadata contentType when present (first branch)', async () => {
+            // This test covers the first branch - customMetadata.contentType is truthy
+            mockBucket._seed(
+                'files/user123/has-custom-ct.txt',
+                new ArrayBuffer(10),
+                { contentType: 'text/html' }, // customMetadata has contentType
+                { contentType: 'application/json' } // httpMetadata also has contentType (should be ignored)
+            );
+
+            const result = await storage.get('files/user123/has-custom-ct.txt');
+
+            // Should use customMetadata.contentType, not httpMetadata.contentType
+            expect(result!.customMetadata.contentType).toBe('text/html');
+        });
+
+        it('should fallback to application/octet-stream when both metadata missing contentType', async () => {
+            // This test covers the third branch - both are falsy, use default
+            mockBucket._seed(
+                'files/user123/no-ct-anywhere.bin',
+                new ArrayBuffer(10),
+                {}, // No contentType
+                {} // httpMetadata without contentType
+            );
+
+            const result = await storage.get('files/user123/no-ct-anywhere.bin');
+
+            // Should use default 'application/octet-stream'
+            expect(result!.customMetadata.contentType).toBe('application/octet-stream');
         });
     });
 
@@ -961,6 +1012,49 @@ describe('R2 Storage Abstraction Layer', () => {
             expect(result!.originalName).toBe('unknown');
             expect(result!.accountId).toBe('unknown');
             // Content type defaults to application/octet-stream
+            expect(result!.contentType).toBe('application/octet-stream');
+        });
+
+        it('should fallback to httpMetadata contentType when customMetadata.contentType missing', async () => {
+            // This test covers the middle branch of the ternary at line 374:
+            // customMetadata.contentType is falsy, httpMetadata.contentType is truthy
+            mockBucket._seed(
+                'files/user123/http-ct-only.txt',
+                new ArrayBuffer(100),
+                { originalName: 'test.txt', accountId: 'user123' }, // No contentType in customMetadata
+                { contentType: 'text/csv' } // contentType in httpMetadata
+            );
+
+            const result = await storage.head('files/user123/http-ct-only.txt');
+
+            expect(result!.contentType).toBe('text/csv');
+        });
+
+        it('should use customMetadata contentType when present (first branch)', async () => {
+            // This test covers the first branch - customMetadata.contentType is truthy
+            mockBucket._seed(
+                'files/user123/has-custom-ct-head.txt',
+                new ArrayBuffer(100),
+                { contentType: 'text/xml', originalName: 'test.xml', accountId: 'user123' },
+                { contentType: 'application/octet-stream' } // Should be ignored
+            );
+
+            const result = await storage.head('files/user123/has-custom-ct-head.txt');
+
+            expect(result!.contentType).toBe('text/xml');
+        });
+
+        it('should fallback to application/octet-stream when both metadata missing contentType', async () => {
+            // This test covers the third branch - both are falsy, use default
+            mockBucket._seed(
+                'files/user123/no-ct-head.bin',
+                new ArrayBuffer(100),
+                { originalName: 'test.bin', accountId: 'user123' }, // No contentType
+                {} // httpMetadata without contentType
+            );
+
+            const result = await storage.head('files/user123/no-ct-head.bin');
+
             expect(result!.contentType).toBe('application/octet-stream');
         });
     });

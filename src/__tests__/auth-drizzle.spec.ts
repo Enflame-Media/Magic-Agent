@@ -231,7 +231,7 @@ describe('Auth Routes with Drizzle Mocking', () => {
             });
 
             expect(res.status).toBe(401);
-            const body = await res.json();
+            const body = await res.json() as { error?: string };
             expect(body.error).toBe('Invalid signature');
         });
 
@@ -253,7 +253,7 @@ describe('Auth Routes with Drizzle Mocking', () => {
             });
 
             expect(res.status).toBe(401);
-            const body = await res.json();
+            const body = await res.json() as { error?: string };
             expect(body.error).toBe('Invalid signature');
         });
 
@@ -369,7 +369,7 @@ describe('Auth Routes with Drizzle Mocking', () => {
             });
 
             expect(res.status).toBe(401);
-            const body = await res.json();
+            const body = await res.json() as { error?: string };
             expect(body.error).toBe('Failed to create account');
 
             // Restore original mock
@@ -485,7 +485,7 @@ describe('Auth Routes with Drizzle Mocking', () => {
             });
 
             expect(res.status).toBe(401);
-            const body = await res.json();
+            const body = await res.json() as { error?: string };
             expect(body.error).toBe('Invalid public key');
         });
 
@@ -732,7 +732,7 @@ describe('Auth Routes with Drizzle Mocking', () => {
             });
 
             expect(res.status).toBe(404);
-            const body = await res.json();
+            const body = await res.json() as { error?: string };
             expect(body.error).toBe('Request not found');
         });
 
@@ -748,7 +748,7 @@ describe('Auth Routes with Drizzle Mocking', () => {
             });
 
             expect(res.status).toBe(401);
-            const body = await res.json();
+            const body = await res.json() as { error?: string };
             expect(body.error).toBe('Invalid public key');
         });
 
@@ -892,7 +892,7 @@ describe('Auth Routes with Drizzle Mocking', () => {
             });
 
             expect(res.status).toBe(401);
-            const body = await res.json();
+            const body = await res.json() as { error?: string };
             expect(body.error).toBe('Invalid public key');
         });
 
@@ -1002,7 +1002,7 @@ describe('Auth Routes with Drizzle Mocking', () => {
             });
 
             expect(res.status).toBe(404);
-            const body = await res.json();
+            const body = await res.json() as { error?: string };
             expect(body.error).toBe('Request not found');
         });
 
@@ -1018,7 +1018,7 @@ describe('Auth Routes with Drizzle Mocking', () => {
             });
 
             expect(res.status).toBe(401);
-            const body = await res.json();
+            const body = await res.json() as { error?: string };
             expect(body.error).toBe('Invalid public key');
         });
 

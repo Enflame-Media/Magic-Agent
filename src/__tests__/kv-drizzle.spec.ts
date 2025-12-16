@@ -10,7 +10,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
     expectOk,
-    expectStatus,
     createMockDrizzle,
     createMockR2,
     createMockDurableObjectNamespace,
@@ -153,7 +152,7 @@ describe('KV Routes with Drizzle Mocking', () => {
             });
             expect(res.status).toBe(404);
 
-            const body = await res.json();
+            const body = await res.json() as { error?: string };
             expect(body).toEqual({ error: 'Key not found' });
         });
 
@@ -170,7 +169,7 @@ describe('KV Routes with Drizzle Mocking', () => {
             const res = await authRequest('/v1/kv/deleted-key', { method: 'GET' });
             expect(res.status).toBe(404);
 
-            const body = await res.json();
+            const body = await res.json() as { error?: string };
             expect(body).toEqual({ error: 'Key not found' });
         });
 
@@ -212,7 +211,7 @@ describe('KV Routes with Drizzle Mocking', () => {
             const res = await authRequest('/v1/kv/any-key', { method: 'GET' });
             expect(res.status).toBe(500);
 
-            const body = await res.json();
+            const body = await res.json() as { error?: string };
             expect(body).toEqual({ error: 'Failed to get value' });
         });
     });
@@ -322,7 +321,7 @@ describe('KV Routes with Drizzle Mocking', () => {
                             ]),
                     }),
                 }),
-            }));
+            })) as unknown as typeof drizzleMock.mockDb.select;
 
             const body = await expectOk<{
                 items: Array<{ key: string; value: string; version: number }>;
@@ -353,7 +352,7 @@ describe('KV Routes with Drizzle Mocking', () => {
                             ]),
                     }),
                 }),
-            }));
+            })) as unknown as typeof drizzleMock.mockDb.select;
 
             const body = await expectOk<{
                 items: Array<{ key: string; value: string; version: number }>;
@@ -372,12 +371,12 @@ describe('KV Routes with Drizzle Mocking', () => {
                         limit: () => Promise.reject(new Error('Database error')),
                     }),
                 }),
-            }));
+            })) as unknown as typeof drizzleMock.mockDb.select;
 
             const res = await authRequest('/v1/kv', { method: 'GET' });
             expect(res.status).toBe(500);
 
-            const body = await res.json();
+            const body = await res.json() as { error?: string };
             expect(body).toEqual({ error: 'Failed to list items' });
         });
     });
@@ -504,7 +503,7 @@ describe('KV Routes with Drizzle Mocking', () => {
             });
             expect(res.status).toBe(500);
 
-            const body = await res.json();
+            const body = await res.json() as { error?: string };
             expect(body).toEqual({ error: 'Failed to get values' });
         });
 
@@ -579,12 +578,12 @@ describe('KV Routes with Drizzle Mocking', () => {
                 });
                 expect(res.status).toBe(409);
 
-                const body = await res.json();
+                const body = await res.json() as { success: boolean; errors?: Array<{ key: string; error: string; version?: number; value?: string | null }> };
                 expect(body.success).toBe(false);
                 expect(body.errors).toHaveLength(1);
-                expect(body.errors[0].key).toBe('existing-key');
-                expect(body.errors[0].error).toBe('version-mismatch');
-                expect(body.errors[0].version).toBe(5);
+                expect(body.errors![0]!.key).toBe('existing-key');
+                expect(body.errors![0]!.error).toBe('version-mismatch');
+                expect(body.errors![0]!.version).toBe(5);
             });
 
             it('should allow creating key that was soft-deleted (value is null)', async () => {
@@ -673,11 +672,11 @@ describe('KV Routes with Drizzle Mocking', () => {
                 });
                 expect(res.status).toBe(409);
 
-                const body = await res.json();
+                const body = await res.json() as { success: boolean; errors?: Array<{ key: string; error: string; version?: number; value?: string | null }> };
                 expect(body.success).toBe(false);
-                expect(body.errors[0].key).toBe('mismatch-key');
-                expect(body.errors[0].error).toBe('version-mismatch');
-                expect(body.errors[0].version).toBe(5);
+                expect(body.errors![0]!.key).toBe('mismatch-key');
+                expect(body.errors![0]!.error).toBe('version-mismatch');
+                expect(body.errors![0]!.version).toBe(5);
             });
 
             it('should return conflict when updating non-existent key (version > 0)', async () => {
@@ -697,11 +696,11 @@ describe('KV Routes with Drizzle Mocking', () => {
                 });
                 expect(res.status).toBe(409);
 
-                const body = await res.json();
+                const body = await res.json() as { success: boolean; errors?: Array<{ key: string; error: string; version?: number; value?: string | null }> };
                 expect(body.success).toBe(false);
-                expect(body.errors[0].key).toBe('non-existent');
-                expect(body.errors[0].version).toBe(0);
-                expect(body.errors[0].value).toBeNull();
+                expect(body.errors![0]!.key).toBe('non-existent');
+                expect(body.errors![0]!.version).toBe(0);
+                expect(body.errors![0]!.value).toBeNull();
             });
         });
 
@@ -774,10 +773,10 @@ describe('KV Routes with Drizzle Mocking', () => {
                 });
                 expect(res.status).toBe(409);
 
-                const body = await res.json();
+                const body = await res.json() as { success: boolean; errors?: Array<{ key: string; error: string; version?: number; value?: string | null }> };
                 expect(body.success).toBe(false);
-                expect(body.errors[0].key).toBe('delete-mismatch');
-                expect(body.errors[0].error).toBe('version-mismatch');
+                expect(body.errors![0]!.key).toBe('delete-mismatch');
+                expect(body.errors![0]!.error).toBe('version-mismatch');
             });
         });
 
@@ -843,11 +842,11 @@ describe('KV Routes with Drizzle Mocking', () => {
                 });
                 expect(res.status).toBe(409);
 
-                const body = await res.json();
+                const body = await res.json() as { success: boolean; errors?: Array<{ key: string; error: string; version?: number; value?: string | null }> };
                 expect(body.success).toBe(false);
                 // Only the conflicting key should be in errors
                 expect(body.errors).toHaveLength(1);
-                expect(body.errors[0].key).toBe('batch-conflict-2');
+                expect(body.errors![0]!.key).toBe('batch-conflict-2');
             });
         });
 
@@ -868,7 +867,7 @@ describe('KV Routes with Drizzle Mocking', () => {
                 });
                 expect(res.status).toBe(500);
 
-                const body = await res.json();
+                const body = await res.json() as { error?: string };
                 expect(body).toEqual({ error: 'Failed to mutate values' });
             });
 
@@ -883,12 +882,15 @@ describe('KV Routes with Drizzle Mocking', () => {
     });
 
     // ==========================================================================
-    // Edge cases for defensive branches
+    // Edge cases for defensive branches (unreachable in practice)
     // ==========================================================================
     describe('Defensive code edge cases', () => {
-        it('should handle item with empty buffer value in list (defensive branch)', async () => {
-            // Tests the ternary on line 196: value ? encodeBase64(value) : ''
-            // This edge case requires item.value to be truthy (pass filter) but empty
+        // Note: Lines 196, 276, 379 contain defensive ternaries that cannot be reached
+        // because prior filters eliminate the conditions needed to hit the falsy branches.
+        // These tests verify the code handles edge cases correctly even though they
+        // won't hit the specific defensive branches in coverage.
+
+        it('should handle item with empty buffer value in list', async () => {
             drizzleMock.mockDb.select = vi.fn(() => ({
                 from: () => ({
                     where: () => ({
@@ -898,13 +900,13 @@ describe('KV Routes with Drizzle Mocking', () => {
                                     id: 'kv-empty',
                                     accountId: TEST_USER_ID,
                                     key: 'empty-value-key',
-                                    value: Buffer.from(''), // Empty buffer (truthy but empty)
+                                    value: Buffer.from(''), // Empty buffer (truthy)
                                     version: 1,
                                 },
                             ]),
                     }),
                 }),
-            }));
+            })) as unknown as typeof drizzleMock.mockDb.select;
 
             const body = await expectOk<{
                 items: Array<{ key: string; value: string; version: number }>;
@@ -912,10 +914,42 @@ describe('KV Routes with Drizzle Mocking', () => {
 
             expect(body.items).toHaveLength(1);
             expect(body.items[0]?.key).toBe('empty-value-key');
+            expect(body.items[0]?.value).toBe(''); // Empty base64
         });
 
-        it('should handle item with empty buffer value in bulk get (defensive branch)', async () => {
-            // Tests the ternary on line 276: value ? encodeBase64(value) : ''
+        it('should handle item with undefined value in list (falsy branch)', async () => {
+            // Test the falsy branch: value ? encode : ''
+            // By passing undefined which is falsy but !== null
+            // undefined !== null is TRUE, so it passes the filter
+            // Then in the map: undefined ? encode : '' returns ''
+            drizzleMock.mockDb.select = vi.fn(() => ({
+                from: () => ({
+                    where: () => ({
+                        limit: () =>
+                            Promise.resolve([
+                                {
+                                    id: 'kv-undef',
+                                    accountId: TEST_USER_ID,
+                                    key: 'undefined-value-key',
+                                    value: undefined, // undefined !== null is TRUE, so passes filter
+                                    version: 1,
+                                },
+                            ]),
+                    }),
+                }),
+            })) as unknown as typeof drizzleMock.mockDb.select;
+
+            const body = await expectOk<{
+                items: Array<{ key: string; value: string; version: number }>;
+            }>(await authRequest('/v1/kv', { method: 'GET' }));
+
+            // undefined !== null is TRUE, so item passes filter
+            // Then value ? encode : '' with undefined returns ''
+            expect(body.items).toHaveLength(1);
+            expect(body.items[0]?.value).toBe(''); // Falsy branch hit!
+        });
+
+        it('should handle item with empty buffer value in bulk get', async () => {
             drizzleMock.mockDb.query.userKVStores.findMany = vi.fn().mockResolvedValue([
                 {
                     id: 'kv-empty',
@@ -937,6 +971,62 @@ describe('KV Routes with Drizzle Mocking', () => {
 
             expect(body.values).toHaveLength(1);
             expect(body.values[0]?.key).toBe('empty-key');
+            expect(body.values[0]?.value).toBe(''); // Empty base64
+        });
+
+        it('should handle undefined value in bulk get (falsy branch)', async () => {
+            drizzleMock.mockDb.query.userKVStores.findMany = vi.fn().mockResolvedValue([
+                {
+                    id: 'kv-undef',
+                    accountId: TEST_USER_ID,
+                    key: 'undefined-key',
+                    value: undefined, // undefined !== null, passes first filter but is falsy
+                    version: 1,
+                },
+            ]);
+
+            const body = await expectOk<{
+                values: Array<{ key: string; value: string; version: number }>;
+            }>(
+                await authRequest('/v1/kv/bulk', {
+                    method: 'POST',
+                    body: JSON.stringify({ keys: ['undefined-key'] }),
+                })
+            );
+
+            // undefined !== null is TRUE (undefined is not null)
+            // So item passes filter, then in map: undefined ? encode : '' => ''
+            expect(body.values).toHaveLength(1);
+            expect(body.values[0]?.value).toBe('');
+        });
+
+        it('should return null value in conflict when existing.value is undefined (line 379)', async () => {
+            // Test the falsy branch in conflict response: existing.value ? encode : null
+            // This requires existing.value !== null (to enter the conflict block)
+            // but existing.value to be falsy (to hit the : null branch)
+            // undefined !== null is TRUE, and undefined is falsy
+            drizzleMock.mockDb.query.userKVStores.findMany = vi.fn().mockResolvedValue([
+                {
+                    id: 'kv-existing',
+                    accountId: TEST_USER_ID,
+                    key: 'conflict-key',
+                    value: undefined, // undefined !== null is TRUE (enters conflict), but falsy (hits : null)
+                    version: 5,
+                },
+            ]);
+
+            const res = await authRequest('/v1/kv', {
+                method: 'POST',
+                body: JSON.stringify({
+                    mutations: [{ key: 'conflict-key', value: 'bmV3', version: -1 }],
+                }),
+            });
+            expect(res.status).toBe(409);
+
+            const body = await res.json() as { success: boolean; errors?: Array<{ key: string; error: string; version?: number; value?: string | null }> };
+            expect(body.success).toBe(false);
+            expect(body.errors![0]!.key).toBe('conflict-key');
+            expect(body.errors![0]!.value).toBeNull(); // Falsy branch hit!
         });
     });
 

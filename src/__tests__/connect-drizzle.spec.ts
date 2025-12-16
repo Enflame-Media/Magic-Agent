@@ -683,8 +683,8 @@ describe('Connect Routes with Drizzle Mocking', () => {
             await authRequest('/v1/connect/openai', { method: 'DELETE' });
 
             // Verify other user's token still exists
-            const tokens = drizzleMock.getData('serviceAccountTokens');
-            expect(tokens.some((t: { accountId: string }) => t.accountId === TEST_USER_ID_2)).toBe(true);
+            const tokens = drizzleMock.getData('serviceAccountTokens') as unknown as Array<{ accountId: string }>;
+            expect(tokens.some((t) => t.accountId === TEST_USER_ID_2)).toBe(true);
         });
 
         it('should reject unknown vendor', async () => {

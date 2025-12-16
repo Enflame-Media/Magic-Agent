@@ -56,13 +56,19 @@ export default defineConfig({
                 'src/db/comparison-tool.ts',
             ],
             thresholds: {
-                // Adjusted from 60/60/50 (HAP-149) to achievable levels
-                // Route handlers require database mocking for full coverage
-                // Current achievement: ~55% lines, ~60% functions, ~38% branches
-                // See HAP-204 for detailed coverage analysis
-                lines: 54,
-                functions: 59,
-                branches: 38,
+                // HAP-294: Original test coverage targets
+                // Current coverage exceeds these significantly:
+                //   - Lines: ~95% (target: 60%)
+                //   - Functions: ~99% (target: 60%)
+                //   - Branches: ~90% (target: 50%)
+                //
+                // Note: HAP-295 attempted near-100% but some gaps remain:
+                //   - WebSocket Hibernation API edge cases (ConnectionManager.ts ~75%)
+                //   - Ticket module needs additional tests for full coverage
+                //   - Some defensive catch blocks for malformed binary data
+                lines: 60,
+                functions: 60,
+                branches: 50,
             },
         },
 

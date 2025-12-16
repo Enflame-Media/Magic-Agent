@@ -286,45 +286,45 @@ describe('Push Token Routes with Drizzle Mocking', () => {
 
         // Patch the insert mock to use our enhanced thenable version
         const originalInsert = drizzleMock.mockDb.insert;
-        vi.spyOn(drizzleMock.mockDb, 'insert').mockImplementation((table: unknown) => {
+        vi.spyOn(drizzleMock.mockDb, 'insert').mockImplementation(((table: unknown) => {
             const drizzleNameSymbol = Symbol.for('drizzle:Name');
             const tableName = (table as Record<symbol, string>)[drizzleNameSymbol] || 'Unknown';
 
             if (tableName === 'AccountPushToken') {
-                return createThenableInsertMock(pushTokenStore, 'AccountPushToken')() as ReturnType<
+                return createThenableInsertMock(pushTokenStore, 'AccountPushToken')() as unknown as ReturnType<
                     typeof originalInsert
                 >;
             }
-            return originalInsert(table);
-        });
+            return originalInsert(table as Parameters<typeof originalInsert>[0]);
+        }) as typeof originalInsert);
 
         // Patch the update mock to use our enhanced thenable version
         const originalUpdate = drizzleMock.mockDb.update;
-        vi.spyOn(drizzleMock.mockDb, 'update').mockImplementation((table: unknown) => {
+        vi.spyOn(drizzleMock.mockDb, 'update').mockImplementation(((table: unknown) => {
             const drizzleNameSymbol = Symbol.for('drizzle:Name');
             const tableName = (table as Record<symbol, string>)[drizzleNameSymbol] || 'Unknown';
 
             if (tableName === 'AccountPushToken') {
-                return createThenableUpdateMock(pushTokenStore, 'AccountPushToken')() as ReturnType<
+                return createThenableUpdateMock(pushTokenStore, 'AccountPushToken')() as unknown as ReturnType<
                     typeof originalUpdate
                 >;
             }
-            return originalUpdate(table);
-        });
+            return originalUpdate(table as Parameters<typeof originalUpdate>[0]);
+        }) as typeof originalUpdate);
 
         // Patch the delete mock to use our enhanced thenable version
         const originalDelete = drizzleMock.mockDb.delete;
-        vi.spyOn(drizzleMock.mockDb, 'delete').mockImplementation((table: unknown) => {
+        vi.spyOn(drizzleMock.mockDb, 'delete').mockImplementation(((table: unknown) => {
             const drizzleNameSymbol = Symbol.for('drizzle:Name');
             const tableName = (table as Record<symbol, string>)[drizzleNameSymbol] || 'Unknown';
 
             if (tableName === 'AccountPushToken') {
-                return createThenableDeleteMock(pushTokenStore, 'AccountPushToken')() as ReturnType<
+                return createThenableDeleteMock(pushTokenStore, 'AccountPushToken')() as unknown as ReturnType<
                     typeof originalDelete
                 >;
             }
-            return originalDelete(table);
-        });
+            return originalDelete(table as Parameters<typeof originalDelete>[0]);
+        }) as typeof originalDelete);
     });
 
     afterEach(() => {
@@ -816,7 +816,7 @@ describe('Push Token Routes with Drizzle Mocking', () => {
             // All registrations should succeed
             for (const res of results) {
                 expect(res.status).toBe(200);
-                const body = await res.json();
+                const body = await res.json() as { success: boolean };
                 expect(body.success).toBe(true);
             }
         });

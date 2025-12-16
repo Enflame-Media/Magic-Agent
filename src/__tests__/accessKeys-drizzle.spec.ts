@@ -12,7 +12,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
     expectOk,
-    expectStatus,
     createTestSession,
     createTestMachine,
     createTestAccessKey,
@@ -21,7 +20,6 @@ import {
     createMockDurableObjectNamespace,
     TEST_USER_ID,
     TEST_USER_ID_2,
-    generateTestId,
 } from './test-utils';
 
 // Store the mock instance for test access
@@ -151,7 +149,7 @@ describe('Access Key Routes with Drizzle Mocking', () => {
             });
 
             expect(res.status).toBe(404);
-            const body = await res.json();
+            const body = await res.json() as { error?: string };
             expect(body).toHaveProperty('error', 'Session or machine not found');
         });
 
@@ -165,7 +163,7 @@ describe('Access Key Routes with Drizzle Mocking', () => {
             });
 
             expect(res.status).toBe(404);
-            const body = await res.json();
+            const body = await res.json() as { error?: string };
             expect(body).toHaveProperty('error', 'Session or machine not found');
         });
 
@@ -175,7 +173,7 @@ describe('Access Key Routes with Drizzle Mocking', () => {
             });
 
             expect(res.status).toBe(404);
-            const body = await res.json();
+            const body = await res.json() as { error?: string };
             expect(body).toHaveProperty('error', 'Session or machine not found');
         });
 
@@ -308,7 +306,7 @@ describe('Access Key Routes with Drizzle Mocking', () => {
             });
 
             expect(res.status).toBe(404);
-            const body = await res.json();
+            const body = await res.json() as { error?: string };
             expect(body).toHaveProperty('error', 'Session or machine not found');
         });
 
@@ -322,7 +320,7 @@ describe('Access Key Routes with Drizzle Mocking', () => {
             });
 
             expect(res.status).toBe(404);
-            const body = await res.json();
+            const body = await res.json() as { error?: string };
             expect(body).toHaveProperty('error', 'Session or machine not found');
         });
 
@@ -381,7 +379,7 @@ describe('Access Key Routes with Drizzle Mocking', () => {
             });
 
             expect(res.status).toBe(409);
-            const body = await res.json();
+            const body = await res.json() as { error?: string };
             expect(body).toHaveProperty('error', 'Access key already exists');
         });
 
@@ -485,7 +483,7 @@ describe('Access Key Routes with Drizzle Mocking', () => {
             });
 
             expect(res.status).toBe(404);
-            const body = await res.json();
+            const body = await res.json() as { error?: string };
             expect(body).toHaveProperty('error', 'Access key not found');
         });
 
@@ -769,6 +767,139 @@ describe('Access Key Routes with Drizzle Mocking', () => {
 
             expect(body.success).toBe(true);
             expect(body.accessKey.data).toBe(longData);
+        });
+    });
+
+    // ============================================================================
+    // Database edge cases (500 errors)
+    // ============================================================================
+
+    describe('Database edge cases', () => {
+        it('should return 500 when insert returns no rows', async () => {
+            seedSessionAndMachine();
+
+            // Override the insert mock to return empty array (simulating insert failure)
+            const originalInsert = drizzleMock.mockDb.insert;
+            drizzleMock.mockDb.insert = vi.fn(() => ({
+                values: vi.fn(() => ({
+                    returning: vi.fn(async () => []), // Return empty array to trigger 500
+                })),
+            })) as unknown as typeof originalInsert;
+
+            const res = await authRequest('/v1/access-keys/session-123/machine-456', {
+                method: 'POST',
+                body: JSON.stringify({ data: 'new-data' }),
+            });
+
+            expect(res.status).toBe(500);
+            const body = await res.json() as { error?: string };
+            expect(body).toHaveProperty('error');
+            expect(body.error).toContain('Database insert operation returned no rows');
+
+            // Restore original mock
+            drizzleMock.mockDb.insert = originalInsert;
+        });
+
+        it('should handle race condition when version changes during update', async () => {
+            seedSessionAndMachine();
+
+            // Seed access key with version 1
+            const accessKey = createTestAccessKey(
+                TEST_USER_ID,
+                'session-123',
+                'machine-456',
+                { data: 'original-data', dataVersion: 1 }
+            );
+            drizzleMock.seedData('accessKeys', [accessKey]);
+
+            // Override update mock to return empty array (simulating race condition)
+            const originalUpdate = drizzleMock.mockDb.update;
+            drizzleMock.mockDb.update = vi.fn(() => ({
+                set: vi.fn(() => ({
+                    where: vi.fn(() => ({
+                        returning: vi.fn(async () => []), // Return empty to simulate race
+                    })),
+                })),
+            })) as unknown as typeof originalUpdate;
+
+            const body = await expectOk<{
+                success: boolean;
+                error: string;
+                currentVersion: number;
+                currentData: string;
+            }>(
+                await authRequest('/v1/access-keys/session-123/machine-456', {
+                    method: 'PUT',
+                    body: JSON.stringify({ data: 'new-data', expectedVersion: 1 }),
+                })
+            );
+
+            expect(body.success).toBe(false);
+            expect(body.error).toBe('version-mismatch');
+            expect(body.currentVersion).toBe(1);
+            expect(body.currentData).toBe('original-data');
+
+            // Restore original mock
+            drizzleMock.mockDb.update = originalUpdate;
+        });
+
+        it('should handle race condition when access key is deleted during update', async () => {
+            seedSessionAndMachine();
+
+            // Seed access key with version 1
+            const accessKey = createTestAccessKey(
+                TEST_USER_ID,
+                'session-123',
+                'machine-456',
+                { data: 'original-data', dataVersion: 1 }
+            );
+            drizzleMock.seedData('accessKeys', [accessKey]);
+
+            // Override update to return empty, and query.accessKeys.findFirst to return undefined
+            const originalUpdate = drizzleMock.mockDb.update;
+            const originalFindFirst = drizzleMock.mockDb.query.accessKeys.findFirst;
+
+            drizzleMock.mockDb.update = vi.fn(() => ({
+                set: vi.fn(() => ({
+                    where: vi.fn(() => ({
+                        returning: vi.fn(async () => []),
+                    })),
+                })),
+            })) as unknown as typeof originalUpdate;
+
+            // After the first check passes, the re-fetch in the race condition handler returns undefined
+            let findFirstCallCount = 0;
+            drizzleMock.mockDb.query.accessKeys.findFirst = vi.fn(async () => {
+                findFirstCallCount++;
+                if (findFirstCallCount === 1) {
+                    // First call - version check - return the access key
+                    return accessKey;
+                }
+                // Second call - re-fetch after failed update - access key was deleted
+                return undefined;
+            }) as unknown as typeof originalFindFirst;
+
+            const body = await expectOk<{
+                success: boolean;
+                error: string;
+                currentVersion: number;
+                currentData: string;
+            }>(
+                await authRequest('/v1/access-keys/session-123/machine-456', {
+                    method: 'PUT',
+                    body: JSON.stringify({ data: 'new-data', expectedVersion: 1 }),
+                })
+            );
+
+            expect(body.success).toBe(false);
+            expect(body.error).toBe('version-mismatch');
+            // When access key is deleted, should return defaults
+            expect(body.currentVersion).toBe(0);
+            expect(body.currentData).toBe('');
+
+            // Restore original mocks
+            drizzleMock.mockDb.update = originalUpdate;
+            drizzleMock.mockDb.query.accessKeys.findFirst = originalFindFirst;
         });
     });
 

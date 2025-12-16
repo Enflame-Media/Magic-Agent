@@ -12,6 +12,7 @@
 
 import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi';
 import { verifyToken, initAuth } from '@/lib/auth';
+import { createTicket, verifyTicket } from '@/lib/ticket';
 
 /**
  * Environment interface with Durable Object bindings
@@ -54,12 +55,85 @@ websocketRoutes.get('/v1/websocket', async (c) => {
 });
 
 /**
+ * WebSocket ticket endpoint (HAP-375)
+ *
+ * Generates a short-lived ticket for WebSocket connection authentication.
+ * This allows browser/React Native clients to authenticate without putting
+ * tokens in WebSocket URLs (which would expose them in logs).
+ *
+ * Flow:
+ * 1. Client calls this endpoint with auth token in Authorization header
+ * 2. Server validates token, returns signed ticket (30s TTL)
+ * 3. Client connects to /v1/updates?ticket=xxx
+ * 4. Server validates ticket, routes to user's DO
+ *
+ * @route POST /v1/websocket/ticket
+ */
+const ticketRoute = createRoute({
+    method: 'post',
+    path: '/v1/websocket/ticket',
+    tags: ['WebSocket'],
+    summary: 'Generate WebSocket connection ticket',
+    description:
+        'Creates a short-lived ticket for WebSocket authentication. ' +
+        'Use this instead of putting auth tokens in WebSocket URLs.',
+    security: [{ bearerAuth: [] }],
+    responses: {
+        200: {
+            description: 'Ticket generated successfully',
+            content: {
+                'application/json': {
+                    schema: z.object({
+                        ticket: z.string().describe('Signed ticket valid for 30 seconds'),
+                    }),
+                },
+            },
+        },
+        401: {
+            description: 'Unauthorized - invalid or missing token',
+            content: {
+                'application/json': {
+                    schema: z.object({
+                        error: z.string(),
+                    }),
+                },
+            },
+        },
+    },
+});
+
+websocketRoutes.openapi(ticketRoute, async (c) => {
+    // Extract and verify auth token from Authorization header
+    const authHeader = c.req.header('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+        return c.json({ error: 'Missing authorization header' } as const, 401);
+    }
+
+    const token = authHeader.slice(7);
+    if (c.env.HANDY_MASTER_SECRET) {
+        await initAuth(c.env.HANDY_MASTER_SECRET);
+    }
+
+    const verified = await verifyToken(token);
+    if (!verified) {
+        return c.json({ error: 'Invalid token' } as const, 401);
+    }
+
+    // Generate short-lived ticket
+    const ticket = await createTicket(verified.userId, c.env.HANDY_MASTER_SECRET);
+
+    return c.json({ ticket }, 200);
+});
+
+/**
  * Handle WebSocket upgrade request
  *
- * 1. Verify the upgrade header
- * 2. Extract and validate auth token
- * 3. Get or create the user's ConnectionManager DO
- * 4. Forward the upgrade request to the DO
+ * Supports two authentication flows:
+ * 1. Ticket flow (HAP-375): ?ticket=xxx - for browser/React Native clients
+ * 2. Token flow (legacy): ?token=xxx or Authorization header - for CLI
+ *
+ * The ticket flow is preferred for web clients as it keeps auth tokens
+ * out of WebSocket URLs (which would expose them in logs/history).
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function handleWebSocketUpgrade(c: any): Promise<Response> {
@@ -74,51 +148,73 @@ async function handleWebSocketUpgrade(c: any): Promise<Response> {
         });
     }
 
-    // Extract token from query params or headers
     const url = new URL(request.url);
-    let token = url.searchParams.get('token');
+    let userId: string | null = null;
 
-    if (!token) {
-        const authHeader = request.headers.get('Authorization');
-        if (authHeader?.startsWith('Bearer ')) {
-            token = authHeader.slice(7);
+    // Try ticket authentication first (HAP-375 flow for web clients)
+    const ticket = url.searchParams.get('ticket');
+    if (ticket) {
+        const ticketResult = await verifyTicket(ticket, c.env.HANDY_MASTER_SECRET);
+        if (!ticketResult) {
+            return new Response('Invalid or expired ticket', {
+                status: 401,
+                headers: { 'Content-Type': 'text/plain' },
+            });
         }
+        userId = ticketResult.userId;
     }
 
-    if (!token) {
-        return new Response('Missing authentication token', {
-            status: 401,
-            headers: { 'Content-Type': 'text/plain' },
-        });
-    }
+    // Fall back to token authentication (legacy flow for CLI)
+    if (!userId) {
+        let token = url.searchParams.get('token');
 
-    // Verify token to get userId
-    if (c.env.HANDY_MASTER_SECRET) {
-        await initAuth(c.env.HANDY_MASTER_SECRET);
-    }
+        if (!token) {
+            const authHeader = request.headers.get('Authorization');
+            if (authHeader?.startsWith('Bearer ')) {
+                token = authHeader.slice(7);
+            }
+        }
 
-    const verified = await verifyToken(token);
-    if (!verified) {
-        return new Response('Invalid authentication token', {
-            status: 401,
-            headers: { 'Content-Type': 'text/plain' },
-        });
+        if (!token) {
+            return new Response('Missing authentication (provide ticket or token)', {
+                status: 401,
+                headers: { 'Content-Type': 'text/plain' },
+            });
+        }
+
+        // Verify token to get userId
+        if (c.env.HANDY_MASTER_SECRET) {
+            await initAuth(c.env.HANDY_MASTER_SECRET);
+        }
+
+        const verified = await verifyToken(token);
+        if (!verified) {
+            return new Response('Invalid authentication token', {
+                status: 401,
+                headers: { 'Content-Type': 'text/plain' },
+            });
+        }
+        userId = verified.userId;
     }
 
     // Get the ConnectionManager DO for this user
     // Using userId as the DO ID ensures one DO per user
-    const doId = c.env.CONNECTION_MANAGER.idFromName(verified.userId);
+    const doId = c.env.CONNECTION_MANAGER.idFromName(userId);
     const stub = c.env.CONNECTION_MANAGER.get(doId);
 
     // Forward the request to the DO
     // The DO will handle the WebSocket upgrade and connection management
+    // Add X-Validated-User-Id header so DO knows user is pre-validated
     const doUrl = new URL(request.url);
     doUrl.pathname = '/websocket';
+
+    const forwardHeaders = new Headers(request.headers);
+    forwardHeaders.set('X-Validated-User-Id', userId);
 
     return stub.fetch(
         new Request(doUrl.toString(), {
             method: request.method,
-            headers: request.headers,
+            headers: forwardHeaders,
         })
     );
 }

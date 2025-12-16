@@ -16,7 +16,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
     expectOk,
-    expectStatus,
     createMockDrizzle,
     createMockR2,
     createMockDurableObjectNamespace,
@@ -109,12 +108,14 @@ function createTestServiceToken(
 }
 
 /**
- * Create test GitHub user data
+ * Create test GitHub user data.
+ * Note: GitHub user IDs are actually numbers, but mock-drizzle's BaseEntity
+ * requires `id: string`. We convert the GitHub ID to a string.
  */
 function createTestGitHubUser(
     accountId: string,
     overrides: Partial<{
-        id: number;
+        id: string;
         login: string;
         profile: Record<string, unknown>;
         createdAt: Date;
@@ -123,7 +124,8 @@ function createTestGitHubUser(
 ) {
     const now = new Date();
     return {
-        id: overrides.id ?? Math.floor(Math.random() * 1000000),
+        // Convert to string for BaseEntity compatibility
+        id: overrides.id ?? String(Math.floor(Math.random() * 1000000)),
         accountId,
         login: overrides.login ?? 'testuser',
         accessToken: Buffer.from('test-github-token'),
@@ -1137,6 +1139,408 @@ describe('Account Routes with Drizzle Mocking', () => {
             expect(result.error).toBe('version-mismatch');
             expect(result.currentVersion).toBe(5);
             expect(result.currentSettings).toBe('{"existing":"data"}');
+        });
+    });
+
+    // ============================================================================
+    // Race Condition Edge Cases (lines 468-484, 640-656)
+    // ============================================================================
+
+    describe('Race Condition Edge Cases', () => {
+        it('PUT /v1/account/preferences - should handle update returning empty result (race condition)', async () => {
+            // This tests lines 468-484 in account.ts
+            // When the update returns empty due to a race condition (account deleted between version check and update)
+            const account = createTestAccount({ id: TEST_USER_ID });
+            (account as Record<string, unknown>).settingsVersion = 1;
+            (account as Record<string, unknown>).settings = '{"original":"settings"}';
+            drizzleMock.seedData('accounts', [account]);
+
+            // Force the update to return empty result (simulating race condition)
+            drizzleMock.setForceEmptyUpdateResult(true);
+
+            const result = await expectOk<{
+                success: boolean;
+                error?: string;
+                currentVersion?: number;
+                currentSettings?: string | null;
+            }>(
+                await authRequest('/v1/account/preferences', {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        settings: '{"new":"settings"}',
+                        expectedVersion: 1,
+                    }),
+                })
+            );
+
+            // Should return version mismatch error with current state
+            expect(result.success).toBe(false);
+            expect(result.error).toBe('version-mismatch');
+            // currentVersion and currentSettings come from re-fetch
+            expect(result.currentVersion).toBeDefined();
+        });
+
+        it('PUT /v1/account/preferences - should handle null account on refetch after empty update', async () => {
+            // This tests the branch where account is null after re-fetch (lines 477-482)
+            const account = createTestAccount({ id: TEST_USER_ID });
+            (account as Record<string, unknown>).settingsVersion = 1;
+            drizzleMock.seedData('accounts', [account]);
+
+            // Force empty update result AND null on refetch
+            // The first findFirst (for version check) should succeed,
+            // the second findFirst (for refetch after empty update) should return null
+            drizzleMock.setForceEmptyUpdateResult(true);
+            drizzleMock.setForceNullOnRefetch(true, 1); // Skip first findFirst, return null on second
+
+            const result = await expectOk<{
+                success: boolean;
+                error?: string;
+                currentVersion?: number;
+                currentSettings?: string | null;
+            }>(
+                await authRequest('/v1/account/preferences', {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        settings: '{"new":"settings"}',
+                        expectedVersion: 1,
+                    }),
+                })
+            );
+
+            // Should return version mismatch with defaults (account is null)
+            expect(result.success).toBe(false);
+            expect(result.error).toBe('version-mismatch');
+            expect(result.currentVersion).toBe(0);
+            expect(result.currentSettings).toBeNull();
+        });
+
+        it('POST /v1/account/settings - should handle update returning empty result (race condition)', async () => {
+            // This tests lines 640-656 in account.ts (POST alias for PUT preferences)
+            const account = createTestAccount({ id: TEST_USER_ID });
+            (account as Record<string, unknown>).settingsVersion = 1;
+            (account as Record<string, unknown>).settings = '{"original":"settings"}';
+            drizzleMock.seedData('accounts', [account]);
+
+            // Force the update to return empty result
+            drizzleMock.setForceEmptyUpdateResult(true);
+
+            const result = await expectOk<{
+                success: boolean;
+                error?: string;
+                currentVersion?: number;
+                currentSettings?: string | null;
+            }>(
+                await authRequest('/v1/account/settings', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        settings: '{"new":"settings"}',
+                        expectedVersion: 1,
+                    }),
+                })
+            );
+
+            // Should return version mismatch error
+            expect(result.success).toBe(false);
+            expect(result.error).toBe('version-mismatch');
+            expect(result.currentVersion).toBeDefined();
+        });
+
+        it('POST /v1/account/settings - should handle null account on refetch after empty update', async () => {
+            // This tests the branch where account is null after re-fetch (lines 648-654)
+            const account = createTestAccount({ id: TEST_USER_ID });
+            (account as Record<string, unknown>).settingsVersion = 1;
+            drizzleMock.seedData('accounts', [account]);
+
+            // Force empty update result AND null on refetch
+            // The first findFirst (for version check) should succeed,
+            // the second findFirst (for refetch after empty update) should return null
+            drizzleMock.setForceEmptyUpdateResult(true);
+            drizzleMock.setForceNullOnRefetch(true, 1); // Skip first findFirst, return null on second
+
+            const result = await expectOk<{
+                success: boolean;
+                error?: string;
+                currentVersion?: number;
+                currentSettings?: string | null;
+            }>(
+                await authRequest('/v1/account/settings', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        settings: '{"new":"settings"}',
+                        expectedVersion: 1,
+                    }),
+                })
+            );
+
+            // Should return version mismatch with defaults (account is null)
+            expect(result.success).toBe(false);
+            expect(result.error).toBe('version-mismatch');
+            expect(result.currentVersion).toBe(0);
+            expect(result.currentSettings).toBeNull();
+        });
+
+        it('PUT /v1/account - should return 404 when account not found after update (race condition)', async () => {
+            // This tests lines 293-295 in account.ts
+            // Account exists for username check, but is deleted between update and re-fetch
+            const account = createTestAccount({
+                id: TEST_USER_ID,
+                firstName: 'John',
+                lastName: 'Doe',
+                username: 'johndoe',
+            });
+            drizzleMock.seedData('accounts', [account]);
+
+            // Force the refetch after update to return null
+            // skipCount=0 means the first findFirst call will return null
+            drizzleMock.setForceNullOnRefetch(true, 0);
+
+            const res = await authRequest('/v1/account', {
+                method: 'PUT',
+                body: JSON.stringify({ firstName: 'Updated' }),
+            });
+
+            expect(res.status).toBe(404);
+            const body = await res.json();
+            expect(body).toHaveProperty('error', 'Account not found');
+        });
+    });
+
+    // ============================================================================
+    // Partial Update Branch Coverage
+    // ============================================================================
+
+    describe('Partial Update Branch Coverage', () => {
+        it('should handle update with no fields provided (only updatedAt changes)', async () => {
+            // Tests the case where all of firstName, lastName, username are undefined
+            // This exercises the branch conditions in lines 275-277
+            const account = createTestAccount({
+                id: TEST_USER_ID,
+                firstName: 'Original',
+                lastName: 'Name',
+                username: 'originaluser',
+            });
+            drizzleMock.seedData('accounts', [account]);
+
+            // Send empty update - no fields
+            const body = await expectOk<{
+                success: boolean;
+                profile: { firstName: string; lastName: string; username: string };
+            }>(
+                await authRequest('/v1/account', {
+                    method: 'PUT',
+                    body: JSON.stringify({}),
+                })
+            );
+
+            expect(body.success).toBe(true);
+            // Original values should be preserved
+            expect(body.profile.firstName).toBe('Original');
+            expect(body.profile.lastName).toBe('Name');
+            expect(body.profile.username).toBe('originaluser');
+        });
+
+        it('should handle update with only firstName (lastName and username undefined)', async () => {
+            const account = createTestAccount({
+                id: TEST_USER_ID,
+                firstName: 'John',
+                lastName: 'Doe',
+                username: 'johndoe',
+            });
+            drizzleMock.seedData('accounts', [account]);
+
+            const body = await expectOk<{
+                success: boolean;
+                profile: { firstName: string; lastName: string; username: string };
+            }>(
+                await authRequest('/v1/account', {
+                    method: 'PUT',
+                    body: JSON.stringify({ firstName: 'Jane' }),
+                })
+            );
+
+            expect(body.success).toBe(true);
+            // Only firstName should be updated, others preserved
+            expect(body.profile.lastName).toBe('Doe');
+            expect(body.profile.username).toBe('johndoe');
+        });
+
+        it('should handle update with only lastName (firstName and username undefined)', async () => {
+            const account = createTestAccount({
+                id: TEST_USER_ID,
+                firstName: 'John',
+                lastName: 'Doe',
+                username: 'johndoe',
+            });
+            drizzleMock.seedData('accounts', [account]);
+
+            const body = await expectOk<{
+                success: boolean;
+                profile: { firstName: string; lastName: string; username: string };
+            }>(
+                await authRequest('/v1/account', {
+                    method: 'PUT',
+                    body: JSON.stringify({ lastName: 'Smith' }),
+                })
+            );
+
+            expect(body.success).toBe(true);
+            expect(body.profile.firstName).toBe('John');
+            expect(body.profile.username).toBe('johndoe');
+        });
+
+        it('should handle update with only username (firstName and lastName undefined)', async () => {
+            const account = createTestAccount({
+                id: TEST_USER_ID,
+                firstName: 'John',
+                lastName: 'Doe',
+                username: 'johndoe',
+            });
+            drizzleMock.seedData('accounts', [account]);
+
+            const body = await expectOk<{
+                success: boolean;
+                profile: { firstName: string; lastName: string; username: string };
+            }>(
+                await authRequest('/v1/account', {
+                    method: 'PUT',
+                    body: JSON.stringify({ username: 'newusername' }),
+                })
+            );
+
+            expect(body.success).toBe(true);
+            expect(body.profile.firstName).toBe('John');
+            expect(body.profile.lastName).toBe('Doe');
+        });
+
+        it('should handle update with firstName and lastName (username undefined)', async () => {
+            const account = createTestAccount({
+                id: TEST_USER_ID,
+                firstName: 'John',
+                lastName: 'Doe',
+                username: 'johndoe',
+            });
+            drizzleMock.seedData('accounts', [account]);
+
+            const body = await expectOk<{
+                success: boolean;
+                profile: { firstName: string; lastName: string; username: string };
+            }>(
+                await authRequest('/v1/account', {
+                    method: 'PUT',
+                    body: JSON.stringify({ firstName: 'Jane', lastName: 'Smith' }),
+                })
+            );
+
+            expect(body.success).toBe(true);
+            expect(body.profile.username).toBe('johndoe');
+        });
+
+        it('should handle update with firstName and username (lastName undefined)', async () => {
+            const account = createTestAccount({
+                id: TEST_USER_ID,
+                firstName: 'John',
+                lastName: 'Doe',
+                username: 'johndoe',
+            });
+            drizzleMock.seedData('accounts', [account]);
+
+            const body = await expectOk<{
+                success: boolean;
+                profile: { firstName: string; lastName: string; username: string };
+            }>(
+                await authRequest('/v1/account', {
+                    method: 'PUT',
+                    body: JSON.stringify({ firstName: 'Jane', username: 'janeuser' }),
+                })
+            );
+
+            expect(body.success).toBe(true);
+            expect(body.profile.lastName).toBe('Doe');
+        });
+
+        it('should handle update with lastName and username (firstName undefined)', async () => {
+            const account = createTestAccount({
+                id: TEST_USER_ID,
+                firstName: 'John',
+                lastName: 'Doe',
+                username: 'johndoe',
+            });
+            drizzleMock.seedData('accounts', [account]);
+
+            const body = await expectOk<{
+                success: boolean;
+                profile: { firstName: string; lastName: string; username: string };
+            }>(
+                await authRequest('/v1/account', {
+                    method: 'PUT',
+                    body: JSON.stringify({ lastName: 'Smith', username: 'smithuser' }),
+                })
+            );
+
+            expect(body.success).toBe(true);
+            expect(body.profile.firstName).toBe('John');
+        });
+
+        it('should skip username check when username is not provided', async () => {
+            // Tests the branch condition on line 254: if (username) { ... }
+            const account = createTestAccount({
+                id: TEST_USER_ID,
+                username: 'johndoe',
+            });
+            const otherAccount = createTestAccount({
+                id: TEST_USER_ID_2,
+                username: 'existinguser',
+            });
+            drizzleMock.seedData('accounts', [account, otherAccount]);
+
+            // Update only firstName - should not check username conflict
+            const body = await expectOk<{ success: boolean }>(
+                await authRequest('/v1/account', {
+                    method: 'PUT',
+                    body: JSON.stringify({ firstName: 'Updated' }),
+                })
+            );
+
+            expect(body.success).toBe(true);
+        });
+    });
+
+    // ============================================================================
+    // Connected Services Edge Cases
+    // ============================================================================
+
+    describe('Connected Services Edge Cases', () => {
+        it('should return empty connected services when no tokens exist', async () => {
+            const account = createTestAccount({ id: TEST_USER_ID });
+            drizzleMock.seedData('accounts', [account]);
+            // No service tokens seeded
+
+            const body = await expectOk<{
+                id: string;
+                connectedServices: string[];
+            }>(await authRequest('/v1/account', { method: 'GET' }));
+
+            expect(body.connectedServices).toEqual([]);
+            expect(body.connectedServices).toHaveLength(0);
+        });
+
+        it('should include all three AI services when all are connected', async () => {
+            const account = createTestAccount({ id: TEST_USER_ID });
+            const openaiToken = createTestServiceToken(TEST_USER_ID, 'openai');
+            const anthropicToken = createTestServiceToken(TEST_USER_ID, 'anthropic');
+            const geminiToken = createTestServiceToken(TEST_USER_ID, 'gemini');
+
+            drizzleMock.seedData('accounts', [account]);
+            drizzleMock.seedData('serviceAccountTokens', [openaiToken, anthropicToken, geminiToken]);
+
+            const body = await expectOk<{
+                connectedServices: string[];
+            }>(await authRequest('/v1/account', { method: 'GET' }));
+
+            expect(body.connectedServices).toContain('openai');
+            expect(body.connectedServices).toContain('anthropic');
+            expect(body.connectedServices).toContain('gemini');
+            expect(body.connectedServices).toHaveLength(3);
         });
     });
 });

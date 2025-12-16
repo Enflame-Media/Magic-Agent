@@ -1,0 +1,550 @@
+/**
+ * Unit Tests for Error Handler Middleware
+ *
+ * Tests the global error handler middleware for complete branch coverage:
+ * - Error message fallback (empty message -> 'Internal Server Error')
+ * - Error cause handling (with and without cause property)
+ * - HTTPException handling (with and without err.res)
+ * - Status code branches (>= 500 server errors vs < 500 client errors)
+ *
+ * @module __tests__/error.spec
+ */
+
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { Hono } from 'hono';
+import { HTTPException } from 'hono/http-exception';
+import { errorHandler } from '@/middleware/error';
+
+describe('Error Handler Middleware', () => {
+    let app: Hono;
+    let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+    let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
+
+    beforeEach(() => {
+        app = new Hono();
+        app.onError(errorHandler);
+
+        // Spy on console methods to verify logging
+        consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    describe('Error Message Fallback', () => {
+        it('should use error message when provided', async () => {
+            app.get('/test', () => {
+                throw new Error('Custom error message');
+            });
+
+            const res = await app.request('/test');
+            const body = await res.json() as { error: { message: string; status: number; details?: string } };
+
+            expect(res.status).toBe(500);
+            expect(body.error.message).toBe('Custom error message');
+        });
+
+        it('should use "Internal Server Error" when message is empty string', async () => {
+            app.get('/test', () => {
+                throw new Error('');
+            });
+
+            const res = await app.request('/test');
+            const body = await res.json() as { error: { message: string; status: number; details?: string } };
+
+            expect(res.status).toBe(500);
+            expect(body.error.message).toBe('Internal Server Error');
+        });
+
+        it('should use "Internal Server Error" when error has no message', async () => {
+            app.get('/test', () => {
+                const err = new Error();
+                err.message = ''; // Explicitly empty
+                throw err;
+            });
+
+            const res = await app.request('/test');
+            const body = await res.json() as { error: { message: string; status: number; details?: string } };
+
+            expect(res.status).toBe(500);
+            expect(body.error.message).toBe('Internal Server Error');
+        });
+    });
+
+    describe('Error Cause Handling', () => {
+        it('should include cause in log when error has cause property', async () => {
+            app.get('/test', () => {
+                const causeError = new Error('Original cause');
+                const err = Object.assign(new Error('Wrapper error'), { cause: causeError });
+                throw err;
+            });
+
+            const res = await app.request('/test');
+
+            expect(res.status).toBe(500);
+            expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+
+            const logCall = consoleErrorSpy.mock.calls[0];
+            expect(logCall[0]).toBe('[Error Handler] Server error:');
+            expect(logCall[1]).toHaveProperty('cause');
+            expect(logCall[1].cause).toBeInstanceOf(Error);
+            expect((logCall[1].cause as Error).message).toBe('Original cause');
+        });
+
+        it('should include cause when cause is a string', async () => {
+            app.get('/test', () => {
+                const err = Object.assign(new Error('Error with string cause'), { cause: 'string cause' });
+                throw err;
+            });
+
+            const res = await app.request('/test');
+
+            expect(res.status).toBe(500);
+            expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+
+            const logCall = consoleErrorSpy.mock.calls[0];
+            expect(logCall[1]).toHaveProperty('cause');
+            expect(logCall[1].cause).toBe('string cause');
+        });
+
+        it('should include cause when cause is an object', async () => {
+            app.get('/test', () => {
+                const err = Object.assign(new Error('Error with object cause'), {
+                    cause: { code: 'ECONNREFUSED', port: 5432 },
+                });
+                throw err;
+            });
+
+            const res = await app.request('/test');
+
+            expect(res.status).toBe(500);
+            expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+
+            const logCall = consoleErrorSpy.mock.calls[0];
+            expect(logCall[1]).toHaveProperty('cause');
+            expect(logCall[1].cause).toEqual({ code: 'ECONNREFUSED', port: 5432 });
+        });
+
+        it('should NOT include cause in log when error has no cause property', async () => {
+            app.get('/test', () => {
+                throw new Error('Error without cause');
+            });
+
+            const res = await app.request('/test');
+
+            expect(res.status).toBe(500);
+            expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+
+            const logCall = consoleErrorSpy.mock.calls[0];
+            expect(logCall[1]).not.toHaveProperty('cause');
+        });
+
+        it('should NOT include cause when cause is undefined', async () => {
+            app.get('/test', () => {
+                const err = Object.assign(new Error('Error with undefined cause'), { cause: undefined });
+                throw err;
+            });
+
+            const res = await app.request('/test');
+
+            expect(res.status).toBe(500);
+            expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+
+            const logCall = consoleErrorSpy.mock.calls[0];
+            // When cause is undefined, the conditional spread should NOT add it
+            expect(logCall[1]).not.toHaveProperty('cause');
+        });
+    });
+
+    describe('HTTPException Handling', () => {
+        it('should use HTTPException status code', async () => {
+            app.get('/test', () => {
+                throw new HTTPException(404, { message: 'Resource not found' });
+            });
+
+            const res = await app.request('/test');
+            const body = await res.json() as { error: { message: string; status: number; details?: string } };
+
+            expect(res.status).toBe(404);
+            expect(body.error.status).toBe(404);
+            expect(body.error.message).toBe('Resource not found');
+        });
+
+        it('should include details when HTTPException has res property', async () => {
+            app.get('/test', () => {
+                const response = new Response('Not Found', {
+                    status: 404,
+                    statusText: 'Not Found',
+                });
+                throw new HTTPException(404, {
+                    message: 'Resource not found',
+                    res: response,
+                });
+            });
+
+            const res = await app.request('/test');
+            const body = await res.json() as { error: { message: string; status: number; details?: string } };
+
+            expect(res.status).toBe(404);
+            expect(body.error.message).toBe('Resource not found');
+            expect(body.error.details).toBe('Not Found');
+        });
+
+        it('should NOT include details when HTTPException has no res property', async () => {
+            app.get('/test', () => {
+                throw new HTTPException(403, { message: 'Forbidden' });
+            });
+
+            const res = await app.request('/test');
+            const body = await res.json() as { error: { message: string; status: number; details?: string } };
+
+            expect(res.status).toBe(403);
+            expect(body.error.message).toBe('Forbidden');
+            expect(body.error).not.toHaveProperty('details');
+        });
+
+        it('should NOT include details when HTTPException res is null-like', async () => {
+            app.get('/test', () => {
+                // HTTPException constructor doesn't accept null for res,
+                // but we can test the branch by not providing res at all
+                const exception = new HTTPException(400, { message: 'Bad Request' });
+                // Verify res is undefined
+                expect(exception.res).toBeUndefined();
+                throw exception;
+            });
+
+            const res = await app.request('/test');
+            const body = await res.json() as { error: { message: string; status: number; details?: string } };
+
+            expect(res.status).toBe(400);
+            expect(body.error.message).toBe('Bad Request');
+            expect(body.error).not.toHaveProperty('details');
+        });
+    });
+
+    describe('Status Code Branches', () => {
+        it('should log to console.error for status >= 500 (server error)', async () => {
+            app.get('/test', () => {
+                throw new Error('Internal server error');
+            });
+
+            const res = await app.request('/test');
+
+            expect(res.status).toBe(500);
+            expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+            expect(consoleWarnSpy).not.toHaveBeenCalled();
+
+            const logCall = consoleErrorSpy.mock.calls[0];
+            expect(logCall[0]).toBe('[Error Handler] Server error:');
+            expect(logCall[1]).toMatchObject({
+                message: 'Internal server error',
+                status: 500,
+            });
+            expect(logCall[1]).toHaveProperty('stack');
+        });
+
+        it('should log to console.error for status 500', async () => {
+            app.get('/test', () => {
+                throw new HTTPException(500, { message: 'Server error' });
+            });
+
+            const res = await app.request('/test');
+
+            expect(res.status).toBe(500);
+            expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+            expect(consoleWarnSpy).not.toHaveBeenCalled();
+        });
+
+        it('should log to console.error for status 502', async () => {
+            app.get('/test', () => {
+                throw new HTTPException(502, { message: 'Bad Gateway' });
+            });
+
+            const res = await app.request('/test');
+
+            expect(res.status).toBe(502);
+            expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+            expect(consoleWarnSpy).not.toHaveBeenCalled();
+        });
+
+        it('should log to console.error for status 503', async () => {
+            app.get('/test', () => {
+                throw new HTTPException(503, { message: 'Service Unavailable' });
+            });
+
+            const res = await app.request('/test');
+
+            expect(res.status).toBe(503);
+            expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+            expect(consoleWarnSpy).not.toHaveBeenCalled();
+        });
+
+        it('should log to console.warn for status < 500 (client error)', async () => {
+            app.get('/test', () => {
+                throw new HTTPException(400, { message: 'Bad request' });
+            });
+
+            const res = await app.request('/test');
+
+            expect(res.status).toBe(400);
+            expect(consoleWarnSpy).toHaveBeenCalledTimes(1);
+            expect(consoleErrorSpy).not.toHaveBeenCalled();
+
+            const logCall = consoleWarnSpy.mock.calls[0];
+            expect(logCall[0]).toBe('[Error Handler] Client error:');
+            expect(logCall[1]).toEqual({
+                message: 'Bad request',
+                status: 400,
+            });
+        });
+
+        it('should log to console.warn for status 401', async () => {
+            app.get('/test', () => {
+                throw new HTTPException(401, { message: 'Unauthorized' });
+            });
+
+            const res = await app.request('/test');
+
+            expect(res.status).toBe(401);
+            expect(consoleWarnSpy).toHaveBeenCalledTimes(1);
+            expect(consoleErrorSpy).not.toHaveBeenCalled();
+        });
+
+        it('should log to console.warn for status 403', async () => {
+            app.get('/test', () => {
+                throw new HTTPException(403, { message: 'Forbidden' });
+            });
+
+            const res = await app.request('/test');
+
+            expect(res.status).toBe(403);
+            expect(consoleWarnSpy).toHaveBeenCalledTimes(1);
+            expect(consoleErrorSpy).not.toHaveBeenCalled();
+        });
+
+        it('should log to console.warn for status 404', async () => {
+            app.get('/test', () => {
+                throw new HTTPException(404, { message: 'Not found' });
+            });
+
+            const res = await app.request('/test');
+
+            expect(res.status).toBe(404);
+            expect(consoleWarnSpy).toHaveBeenCalledTimes(1);
+            expect(consoleErrorSpy).not.toHaveBeenCalled();
+        });
+
+        it('should log to console.warn for status 499 (edge case)', async () => {
+            app.get('/test', () => {
+                // 499 is non-standard (nginx) but tests the < 500 boundary
+                throw new HTTPException(499 as 400, { message: 'Client closed request' });
+            });
+
+            const res = await app.request('/test');
+
+            expect(res.status).toBe(499);
+            expect(consoleWarnSpy).toHaveBeenCalledTimes(1);
+            expect(consoleErrorSpy).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('Response Structure', () => {
+        it('should return correct JSON structure for server errors', async () => {
+            app.get('/test', () => {
+                throw new Error('Server exploded');
+            });
+
+            const res = await app.request('/test');
+            const body = await res.json() as { error: { message: string; status: number; details?: string } };
+
+            expect(res.headers.get('content-type')).toContain('application/json');
+            expect(body).toEqual({
+                error: {
+                    message: 'Server exploded',
+                    status: 500,
+                },
+            });
+        });
+
+        it('should return correct JSON structure for client errors', async () => {
+            app.get('/test', () => {
+                throw new HTTPException(422, { message: 'Validation failed' });
+            });
+
+            const res = await app.request('/test');
+            const body = await res.json() as { error: { message: string; status: number; details?: string } };
+
+            expect(res.headers.get('content-type')).toContain('application/json');
+            expect(body).toEqual({
+                error: {
+                    message: 'Validation failed',
+                    status: 422,
+                },
+            });
+        });
+
+        it('should return correct JSON structure with details when res is provided', async () => {
+            app.get('/test', () => {
+                const response = new Response('Entity Too Large', {
+                    status: 413,
+                    statusText: 'Payload Too Large',
+                });
+                throw new HTTPException(413, {
+                    message: 'File too large',
+                    res: response,
+                });
+            });
+
+            const res = await app.request('/test');
+            const body = await res.json() as { error: { message: string; status: number; details?: string } };
+
+            expect(body).toEqual({
+                error: {
+                    message: 'File too large',
+                    status: 413,
+                    details: 'Payload Too Large',
+                },
+            });
+        });
+    });
+
+    describe('Edge Cases', () => {
+        it('should handle Error subclasses correctly', async () => {
+            class CustomError extends Error {
+                constructor(message: string) {
+                    super(message);
+                    this.name = 'CustomError';
+                }
+            }
+
+            app.get('/test', () => {
+                throw new CustomError('Custom error occurred');
+            });
+
+            const res = await app.request('/test');
+            const body = await res.json() as { error: { message: string; status: number; details?: string } };
+
+            expect(res.status).toBe(500);
+            expect(body.error.message).toBe('Custom error occurred');
+            expect(consoleErrorSpy).toHaveBeenCalled();
+        });
+
+        it('should handle error with cause property but undefined value', async () => {
+            app.get('/test', () => {
+                // Create an error where 'cause' property exists but is undefined
+                const err = new Error('Error with explicit undefined cause');
+                Object.defineProperty(err, 'cause', {
+                    value: undefined,
+                    enumerable: true,
+                    configurable: true,
+                    writable: true,
+                });
+                throw err;
+            });
+
+            const res = await app.request('/test');
+
+            expect(res.status).toBe(500);
+            expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+
+            // The 'cause' in err check returns true, but errorCause is undefined
+            // so the spread should NOT include cause
+            const logCall = consoleErrorSpy.mock.calls[0];
+            expect(logCall[1]).not.toHaveProperty('cause');
+        });
+
+        it('should handle error with cause property set to null', async () => {
+            app.get('/test', () => {
+                const err = new Error('Error with null cause');
+                Object.defineProperty(err, 'cause', {
+                    value: null,
+                    enumerable: true,
+                    configurable: true,
+                    writable: true,
+                });
+                throw err;
+            });
+
+            const res = await app.request('/test');
+
+            expect(res.status).toBe(500);
+            expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+
+            // null !== undefined, so cause should be included
+            const logCall = consoleErrorSpy.mock.calls[0];
+            expect(logCall[1]).toHaveProperty('cause');
+            expect(logCall[1].cause).toBeNull();
+        });
+
+        it('should handle error with cause property set to 0', async () => {
+            app.get('/test', () => {
+                const err = new Error('Error with zero cause');
+                Object.defineProperty(err, 'cause', {
+                    value: 0,
+                    enumerable: true,
+                    configurable: true,
+                    writable: true,
+                });
+                throw err;
+            });
+
+            const res = await app.request('/test');
+
+            expect(res.status).toBe(500);
+            expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+
+            // 0 !== undefined, so cause should be included
+            const logCall = consoleErrorSpy.mock.calls[0];
+            expect(logCall[1]).toHaveProperty('cause');
+            expect(logCall[1].cause).toBe(0);
+        });
+
+        it('should handle error with cause property set to false', async () => {
+            app.get('/test', () => {
+                const err = new Error('Error with false cause');
+                Object.defineProperty(err, 'cause', {
+                    value: false,
+                    enumerable: true,
+                    configurable: true,
+                    writable: true,
+                });
+                throw err;
+            });
+
+            const res = await app.request('/test');
+
+            expect(res.status).toBe(500);
+            expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+
+            // false !== undefined, so cause should be included
+            const logCall = consoleErrorSpy.mock.calls[0];
+            expect(logCall[1]).toHaveProperty('cause');
+            expect(logCall[1].cause).toBe(false);
+        });
+
+        it('should handle error with cause property set to empty string', async () => {
+            app.get('/test', () => {
+                const err = new Error('Error with empty string cause');
+                Object.defineProperty(err, 'cause', {
+                    value: '',
+                    enumerable: true,
+                    configurable: true,
+                    writable: true,
+                });
+                throw err;
+            });
+
+            const res = await app.request('/test');
+
+            expect(res.status).toBe(500);
+            expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+
+            // '' !== undefined, so cause should be included
+            const logCall = consoleErrorSpy.mock.calls[0];
+            expect(logCall[1]).toHaveProperty('cause');
+            expect(logCall[1].cause).toBe('');
+        });
+    });
+});

@@ -434,6 +434,10 @@ export function createTestAccount(overrides: Partial<{
     firstName: string;
     lastName: string;
     username: string;
+    seq: number;
+    feedSeq: number;
+    settings: string;
+    settingsVersion: number;
     createdAt: Date;
     updatedAt: Date;
 }> = {}) {
@@ -441,13 +445,13 @@ export function createTestAccount(overrides: Partial<{
     return {
         id: overrides.id ?? generateTestId('account'),
         publicKey: overrides.publicKey ?? `ed25519_pk_test_${Date.now()}`,
-        seq: 0,
-        feedSeq: 0,
+        seq: overrides.seq ?? 0,
+        feedSeq: overrides.feedSeq ?? 0,
         firstName: overrides.firstName ?? 'Test',
         lastName: overrides.lastName ?? 'User',
         username: overrides.username ?? `testuser_${Date.now()}`,
-        settings: '{}',
-        settingsVersion: 1,
+        settings: overrides.settings ?? '{}',
+        settingsVersion: overrides.settingsVersion ?? 1,
         createdAt: overrides.createdAt ?? now,
         updatedAt: overrides.updatedAt ?? now,
     };

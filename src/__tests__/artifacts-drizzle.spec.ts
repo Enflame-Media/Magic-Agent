@@ -22,7 +22,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
     expectOk,
-    expectStatus,
     createTestArtifact,
     createMockDrizzle,
     createMockR2,
@@ -250,7 +249,7 @@ describe('Artifact Routes with Drizzle Mocking', () => {
             const res = await authRequest('/v1/artifacts/non-existent', { method: 'GET' });
             expect(res.status).toBe(404);
 
-            const body = await res.json();
+            const body = await res.json() as { error?: string };
             expect(body).toHaveProperty('error', 'Artifact not found');
         });
 
@@ -474,7 +473,7 @@ describe('Artifact Routes with Drizzle Mocking', () => {
             });
 
             expect(res.status).toBe(409);
-            const body = await res.json();
+            const body = await res.json() as { error?: string };
             expect(body).toHaveProperty('error');
             expect(body.error).toContain('already exists for another account');
         });
@@ -508,7 +507,7 @@ describe('Artifact Routes with Drizzle Mocking', () => {
             });
 
             expect(res.status).toBe(404);
-            const body = await res.json();
+            const body = await res.json() as { error?: string };
             expect(body).toHaveProperty('error', 'Artifact not found');
         });
 
@@ -745,7 +744,7 @@ describe('Artifact Routes with Drizzle Mocking', () => {
             const res = await authRequest('/v1/artifacts/non-existent', { method: 'DELETE' });
             expect(res.status).toBe(404);
 
-            const body = await res.json();
+            const body = await res.json() as { error?: string };
             expect(body).toHaveProperty('error', 'Artifact not found');
         });
 
@@ -1040,7 +1039,7 @@ describe('Artifact Routes with Drizzle Mocking', () => {
             });
 
             expect(res.status).toBe(500);
-            const body = await res.json();
+            const body = await res.json() as { error?: string };
             expect(body).toHaveProperty('error');
             expect(body.error).toContain('Failed to create artifact');
 

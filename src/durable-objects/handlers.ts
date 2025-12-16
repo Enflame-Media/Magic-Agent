@@ -675,7 +675,7 @@ export async function handleMachineMetadataUpdate(
                     createdAt: Date.now(),
                 } satisfies UpdatePayloadData,
             },
-            filter: { type: 'user-scoped-only' },
+            filter: { type: 'machine-scoped-only', machineId },
         },
     };
 }
@@ -784,7 +784,7 @@ export async function handleMachineStateUpdate(
                     createdAt: Date.now(),
                 } satisfies UpdatePayloadData,
             },
-            filter: { type: 'user-scoped-only' },
+            filter: { type: 'machine-scoped-only', machineId },
         },
     };
 }

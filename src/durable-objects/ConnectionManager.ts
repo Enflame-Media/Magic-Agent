@@ -237,10 +237,101 @@ export class ConnectionManager extends DurableObject<ConnectionManagerEnv> {
             // Create connection metadata
             const connectionId = crypto.randomUUID();
 
-            // HAP-360: Determine auth strategy based on whether token is present
-            // - Token present: Validate immediately (legacy flow for happy-cli with headers)
-            // - No token: Accept connection in pending-auth state, wait for auth message
-            if (handshake?.token) {
+            // Check for pre-validated user from route handler (HAP-375 ticket flow)
+            // The route handler validates tickets and sets this header
+            const preValidatedUserId = request.headers.get('X-Validated-User-Id');
+
+            // HAP-375: Determine auth strategy based on authentication method
+            // - Pre-validated userId: Route handler already validated (ticket flow)
+            // - Token present: Validate immediately (legacy flow for happy-cli)
+            // - No token: Accept in pending-auth state, wait for auth message (HAP-360)
+            if (preValidatedUserId) {
+                // =============================================
+                // TICKET AUTH FLOW (HAP-375)
+                // User already validated by route handler via ticket
+                // Used by happy-app (browser/React Native)
+                // =============================================
+
+                // Get client type from query params (user-scoped is default for web)
+                const clientType = (url.searchParams.get('clientType') as 'user-scoped' | 'session-scoped' | 'machine-scoped') || 'user-scoped';
+                const sessionId = url.searchParams.get('sessionId') || undefined;
+                const machineId = url.searchParams.get('machineId') || undefined;
+
+                // Validate client type requirements
+                if (clientType === 'session-scoped' && !sessionId) {
+                    return new Response('Session ID required for session-scoped connections', { status: 400 });
+                }
+                if (clientType === 'machine-scoped' && !machineId) {
+                    return new Response('Machine ID required for machine-scoped connections', { status: 400 });
+                }
+
+                // Create fully authenticated metadata
+                const metadata: ConnectionMetadata = {
+                    connectionId,
+                    userId: preValidatedUserId,
+                    clientType,
+                    sessionId,
+                    machineId,
+                    connectedAt: Date.now(),
+                    lastActivityAt: Date.now(),
+                    authState: 'authenticated',
+                };
+
+                // Build tags for efficient filtering
+                const tags = this.buildConnectionTags(metadata);
+
+                // Accept the WebSocket with hibernation support
+                this.ctx.acceptWebSocket(server, tags);
+
+                // Serialize metadata for hibernation recovery
+                server.serializeAttachment(metadata);
+
+                // Store in our local map
+                this.connections.set(server, metadata);
+
+                // Set userId if this is the first connection
+                if (!this.userId) {
+                    this.userId = preValidatedUserId;
+                }
+
+                // Send connected confirmation in client format
+                const connectedMsg: ClientMessage = {
+                    event: 'connected',
+                    data: {
+                        connectionId,
+                        userId: preValidatedUserId,
+                        clientType,
+                        sessionId,
+                        machineId,
+                        timestamp: Date.now(),
+                    },
+                };
+
+                // Queue the message to be sent after the connection is established
+                server.send(JSON.stringify(connectedMsg));
+
+                // Broadcast machine online status if applicable
+                if (clientType === 'machine-scoped' && machineId) {
+                    this.broadcastClientMessage(
+                        {
+                            event: 'machine-update',
+                            data: {
+                                machineId,
+                                active: true,
+                                timestamp: Date.now(),
+                            },
+                        },
+                        { type: 'user-scoped-only' }
+                    );
+                }
+
+                // Log connection
+                if (this.env.ENVIRONMENT !== 'production') {
+                    console.log(
+                        `[ConnectionManager] New connection (ticket auth): ${connectionId}, type: ${clientType}, user: ${preValidatedUserId}`
+                    );
+                }
+            } else if (handshake?.token) {
                 // =============================================
                 // LEGACY AUTH FLOW (token in URL/header)
                 // Used by happy-cli which can send custom headers

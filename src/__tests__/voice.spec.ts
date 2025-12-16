@@ -140,10 +140,10 @@ describe('Voice Routes', () => {
                 });
 
                 expect(res.status).toBe(401);
-                const body = await res.json();
+                const body = await res.json() as { error?: { message?: string; status: number } };
                 // Auth middleware returns { error: { message, status } }
                 expect(body.error).toBeDefined();
-                expect(body.error.status).toBe(401);
+                expect(body.error!.status).toBe(401);
             });
 
             it('should reject invalid token (401)', async () => {
@@ -160,10 +160,10 @@ describe('Voice Routes', () => {
                 );
 
                 expect(res.status).toBe(401);
-                const body = await res.json();
+                const body = await res.json() as { error?: { message?: string; status: number } };
                 // Auth middleware returns { error: { message, status } }
                 expect(body.error).toBeDefined();
-                expect(body.error.status).toBe(401);
+                expect(body.error!.status).toBe(401);
             });
         });
 
@@ -300,7 +300,7 @@ describe('Voice Routes', () => {
                 );
 
                 expect(res.status).toBe(200);
-                const body = await res.json();
+                const body = await res.json() as { allowed: boolean; token?: string };
                 expect(body.allowed).toBe(true);
                 expect(body.token).toBe('xi-staging-token');
             });
@@ -503,7 +503,7 @@ describe('Voice Routes', () => {
                 );
 
                 expect(res.status).toBe(200);
-                const body = await res.json();
+                const body = await res.json() as { allowed: boolean };
                 expect(body.allowed).toBe(false);
             });
 
@@ -534,7 +534,7 @@ describe('Voice Routes', () => {
                 );
 
                 expect(res.status).toBe(200);
-                const body = await res.json();
+                const body = await res.json() as { allowed: boolean };
                 expect(body.allowed).toBe(false);
             });
 
@@ -725,7 +725,7 @@ describe('Voice Routes', () => {
                 );
 
                 expect(res.status).toBe(400);
-                const body = await res.json();
+                const body = await res.json() as { allowed: boolean; error?: string };
                 expect(body.allowed).toBe(false);
                 expect(body.error).toBe('Failed to get ElevenLabs token');
             });
@@ -871,7 +871,7 @@ describe('Voice Routes', () => {
                 );
 
                 expect(res.status).toBe(400);
-                const body = await res.json();
+                const body = await res.json() as { allowed: boolean; error?: string };
                 expect(body.allowed).toBe(false);
                 expect(body.error).toBe('ElevenLabs API error');
             });
@@ -901,7 +901,7 @@ describe('Voice Routes', () => {
                 );
 
                 expect(res.status).toBe(400);
-                const body = await res.json();
+                const body = await res.json() as { allowed: boolean; error?: string };
                 expect(body.allowed).toBe(false);
                 expect(body.error).toBe('ElevenLabs API error');
             });
@@ -993,7 +993,7 @@ describe('Voice Routes', () => {
                 );
 
                 expect(res.status).toBe(200);
-                const body = await res.json();
+                const body = await res.json() as { allowed: boolean };
                 expect(body.allowed).toBe(false);
 
                 // ElevenLabs should NOT be called
@@ -1032,7 +1032,7 @@ describe('Voice Routes', () => {
                 );
 
                 expect(res.status).toBe(200);
-                const body = await res.json();
+                const body = await res.json() as { allowed: boolean };
                 expect(body.allowed).toBe(false);
 
                 // Only RevenueCat should be called
@@ -1069,7 +1069,7 @@ describe('Voice Routes', () => {
                 );
 
                 expect(res.status).toBe(200);
-                const body = await res.json();
+                const body = await res.json() as { agentId: string };
                 expect(body.agentId).toBe(agentIdWithSpecialChars);
             });
 
@@ -1097,7 +1097,7 @@ describe('Voice Routes', () => {
                 );
 
                 expect(res.status).toBe(200);
-                const body = await res.json();
+                const body = await res.json() as { agentId: string };
                 expect(body.agentId).toBe(longAgentId);
             });
 
@@ -1127,7 +1127,7 @@ describe('Voice Routes', () => {
 
                 // Should require revenueCatPublicKey since it's not development/staging
                 expect(res.status).toBe(400);
-                const body = await res.json();
+                const body = await res.json() as { error: string };
                 expect(body.error).toBe('RevenueCat public key required');
             });
         });

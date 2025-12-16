@@ -15,7 +15,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
     createMockDrizzle,
     createMockR2,
-    createMockDurableObjectNamespace,
     TEST_USER_ID,
     TEST_USER_ID_2,
 } from './test-utils';
@@ -89,11 +88,14 @@ function createTestEnv(overrides: Partial<{
         });
     });
 
+    // Handle both undefined and empty string for HANDY_MASTER_SECRET
+    const secretValue = 'HANDY_MASTER_SECRET' in overrides
+        ? overrides.HANDY_MASTER_SECRET
+        : 'test-secret-for-vitest-tests';
+
     return {
         ENVIRONMENT: 'development' as const,
-        HANDY_MASTER_SECRET: overrides.HANDY_MASTER_SECRET !== undefined
-            ? overrides.HANDY_MASTER_SECRET
-            : 'test-secret-for-vitest-tests',
+        HANDY_MASTER_SECRET: secretValue,
         DB: {} as D1Database,
         UPLOADS: createMockR2(),
         CONNECTION_MANAGER: {
@@ -156,11 +158,11 @@ describe('WebSocket Routes with Drizzle Mocking', () => {
 
             expect(res.status).toBe(401);
             const text = await res.text();
-            expect(text).toBe('Missing authentication token');
+            expect(text).toBe('Missing authentication (provide ticket or token)');
         });
 
         it('should extract token from query parameter', async () => {
-            const res = await app.request('/v1/updates?token=valid-token', {
+            await app.request('/v1/updates?token=valid-token', {
                 method: 'GET',
                 headers: {
                     'Upgrade': 'websocket',
@@ -172,7 +174,7 @@ describe('WebSocket Routes with Drizzle Mocking', () => {
         });
 
         it('should extract token from Authorization header when query param is missing', async () => {
-            const res = await app.request('/v1/updates', {
+            await app.request('/v1/updates', {
                 method: 'GET',
                 headers: {
                     'Upgrade': 'websocket',
@@ -221,8 +223,11 @@ describe('WebSocket Routes with Drizzle Mocking', () => {
             expect(mockInitAuth).toHaveBeenCalledWith('test-secret-for-vitest-tests');
         });
 
-        it('should not call initAuth when HANDY_MASTER_SECRET is undefined', async () => {
-            const envWithoutSecret = createTestEnv({ HANDY_MASTER_SECRET: undefined });
+        it('should skip initAuth in websocket handler when HANDY_MASTER_SECRET is falsy', async () => {
+            // Create a fresh mock to track calls
+            vi.mocked(mockInitAuth).mockClear();
+
+            const envWithoutSecret = createTestEnv({ HANDY_MASTER_SECRET: '' });
 
             await app.request('/v1/updates?token=valid-token', {
                 method: 'GET',
@@ -231,9 +236,12 @@ describe('WebSocket Routes with Drizzle Mocking', () => {
                 },
             }, envWithoutSecret);
 
-            // initAuth may still be called from other middleware, so we check
-            // that the flow proceeds even without the secret in env
+            // verifyToken should still be called as the flow continues
             expect(mockVerifyToken).toHaveBeenCalledWith('valid-token');
+
+            // initAuth should not be called with empty string (from this route)
+            // Note: Other middleware may call it, so we check it wasn't called with empty string
+            expect(mockInitAuth).not.toHaveBeenCalledWith('');
         });
 
         it('should forward request to Durable Object with correct userId', async () => {
@@ -260,7 +268,9 @@ describe('WebSocket Routes with Drizzle Mocking', () => {
             // Check that DO fetch was called with modified URL
             const doFetchCalls = testEnv._mockDoFetch.mock.calls;
             expect(doFetchCalls.length).toBeGreaterThan(0);
-            const request = doFetchCalls[0][0] as Request;
+            const firstCall = doFetchCalls[0];
+            expect(firstCall).toBeDefined();
+            const request = (firstCall as unknown as [Request])[0];
             const url = new URL(request.url);
             expect(url.pathname).toBe('/websocket');
         });
@@ -277,7 +287,7 @@ describe('WebSocket Routes with Drizzle Mocking', () => {
             // Should return 401 as Bearer prefix is required
             expect(res.status).toBe(401);
             const text = await res.text();
-            expect(text).toBe('Missing authentication token');
+            expect(text).toBe('Missing authentication (provide ticket or token)');
         });
 
         it('should handle empty Authorization header', async () => {
@@ -291,7 +301,7 @@ describe('WebSocket Routes with Drizzle Mocking', () => {
 
             expect(res.status).toBe(401);
             const text = await res.text();
-            expect(text).toBe('Missing authentication token');
+            expect(text).toBe('Missing authentication (provide ticket or token)');
         });
     });
 
@@ -389,9 +399,9 @@ describe('WebSocket Routes with Drizzle Mocking', () => {
             expect(mockInitAuth).toHaveBeenCalledWith('test-secret-for-vitest-tests');
         });
 
-        it('should not call initAuth when HANDY_MASTER_SECRET is undefined', async () => {
-            mockInitAuth.mockClear();
-            const envWithoutSecret = createTestEnv({ HANDY_MASTER_SECRET: undefined });
+        it('should skip initAuth in stats handler when HANDY_MASTER_SECRET is falsy', async () => {
+            vi.mocked(mockInitAuth).mockClear();
+            const envWithoutSecret = createTestEnv({ HANDY_MASTER_SECRET: '' });
 
             await app.request('/v1/websocket/stats', {
                 method: 'GET',
@@ -400,10 +410,11 @@ describe('WebSocket Routes with Drizzle Mocking', () => {
                 },
             }, envWithoutSecret);
 
-            // initAuth should not be called when secret is undefined
-            // (the check is if (c.env.HANDY_MASTER_SECRET))
-            // However, middleware might call it. Check that flow continues.
+            // verifyToken should still be called as the flow continues
             expect(mockVerifyToken).toHaveBeenCalledWith('valid-token');
+
+            // initAuth should not be called with empty string (from this route)
+            expect(mockInitAuth).not.toHaveBeenCalledWith('');
         });
 
         it('should return stats from Durable Object on successful auth', async () => {
@@ -538,9 +549,9 @@ describe('WebSocket Routes with Drizzle Mocking', () => {
             expect(mockInitAuth).toHaveBeenCalledWith('test-secret-for-vitest-tests');
         });
 
-        it('should not call initAuth when HANDY_MASTER_SECRET is undefined', async () => {
-            mockInitAuth.mockClear();
-            const envWithoutSecret = createTestEnv({ HANDY_MASTER_SECRET: undefined });
+        it('should skip initAuth in broadcast handler when HANDY_MASTER_SECRET is falsy', async () => {
+            vi.mocked(mockInitAuth).mockClear();
+            const envWithoutSecret = createTestEnv({ HANDY_MASTER_SECRET: '' });
 
             await app.request('/v1/websocket/broadcast', {
                 method: 'POST',
@@ -556,7 +567,11 @@ describe('WebSocket Routes with Drizzle Mocking', () => {
                 }),
             }, envWithoutSecret);
 
+            // verifyToken should still be called as the flow continues
             expect(mockVerifyToken).toHaveBeenCalledWith('valid-token');
+
+            // initAuth should not be called with empty string (from this route)
+            expect(mockInitAuth).not.toHaveBeenCalledWith('');
         });
 
         it('should return 400 when message field is missing', async () => {
@@ -681,7 +696,9 @@ describe('WebSocket Routes with Drizzle Mocking', () => {
             const doFetchCalls = testEnv._mockDoFetch.mock.calls;
             expect(doFetchCalls.length).toBeGreaterThan(0);
 
-            const request = doFetchCalls[0][0] as Request;
+            const firstCall = doFetchCalls[0];
+            expect(firstCall).toBeDefined();
+            const request = (firstCall as unknown as [Request])[0];
             expect(request.method).toBe('POST');
             const url = new URL(request.url);
             expect(url.pathname).toBe('/broadcast');
@@ -870,7 +887,9 @@ describe('WebSocket Routes with Drizzle Mocking', () => {
             const doFetchCalls = testEnv._mockDoFetch.mock.calls;
             expect(doFetchCalls.length).toBeGreaterThan(0);
 
-            const request = doFetchCalls[0][0] as Request;
+            const firstCall = doFetchCalls[0];
+            expect(firstCall).toBeDefined();
+            const request = (firstCall as unknown as [Request])[0];
             expect(request.headers.get('Upgrade')).toBe('websocket');
         });
 
@@ -889,8 +908,8 @@ describe('WebSocket Routes with Drizzle Mocking', () => {
             }, envWithBadResponse);
 
             // The handler attempts to parse JSON, which will throw
-            // But Hono's error handler should catch it
-            expect(res.status).toBe(200); // Handler returns DO response directly
+            // Hono's error handler catches it and returns 500
+            expect(res.status).toBe(500);
         });
 
         it('should handle concurrent requests to same user DO', async () => {
@@ -908,8 +927,8 @@ describe('WebSocket Routes with Drizzle Mocking', () => {
             const responses = await Promise.all(requests);
 
             // Both should succeed
-            expect(responses[0].status).toBe(200);
-            expect(responses[1].status).toBe(200);
+            expect(responses[0]!.status).toBe(200);
+            expect(responses[1]!.status).toBe(200);
 
             // Should use same user ID for both
             expect(testEnv.CONNECTION_MANAGER.idFromName).toHaveBeenCalledWith(TEST_USER_ID);
@@ -956,6 +975,7 @@ describe('WebSocket Routes with Drizzle Mocking', () => {
             }, testEnv);
 
             const firstCall = testEnv.CONNECTION_MANAGER.idFromName.mock.calls[0];
+            expect(firstCall).toBeDefined();
 
             // Second user makes a request
             await app.request('/v1/websocket/stats', {
@@ -964,9 +984,10 @@ describe('WebSocket Routes with Drizzle Mocking', () => {
             }, testEnv);
 
             const secondCall = testEnv.CONNECTION_MANAGER.idFromName.mock.calls[1];
+            expect(secondCall).toBeDefined();
 
             // Different users should get different DO IDs
-            expect(firstCall[0]).not.toBe(secondCall[0]);
+            expect(firstCall![0]).not.toBe(secondCall![0]);
         });
 
         it('should reject malformed JSON in broadcast body', async () => {

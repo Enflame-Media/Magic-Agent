@@ -332,6 +332,12 @@ export interface BroadcastFilterMachine {
     machineId: string;
 }
 
+export interface BroadcastFilterMachineScoped {
+    /** Target user-scoped connections + specific machine-scoped connection */
+    type: 'machine-scoped-only';
+    machineId: string;
+}
+
 export interface BroadcastFilterExclude {
     /** Target all except specific connection */
     type: 'exclude';
@@ -349,6 +355,7 @@ export type MessageFilter =
     | BroadcastFilterUserScoped
     | BroadcastFilterSession
     | BroadcastFilterMachine
+    | BroadcastFilterMachineScoped
     | BroadcastFilterExclude
     | BroadcastFilterInterestedInSession;
 

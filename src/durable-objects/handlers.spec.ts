@@ -1275,7 +1275,6 @@ describe('Additional Coverage Tests', () => {
     describe('handleArtifactUpdate - Success Cases', () => {
         it('should successfully update header only', async () => {
             const mockDb = createMockDb();
-            const now = new Date();
             // First select: artifact found
             mockDb._queueSelectResults([
                 [{
@@ -1692,6 +1691,117 @@ describe('Additional Coverage Tests', () => {
             expect(result.response?.result).toBe('version-mismatch');
             expect(result.response?.version).toBe(6);
             expect(result.response?.daemonState).toBe('{"concurrent":"state"}');
+        });
+
+        it('should successfully update daemon state and broadcast', async () => {
+            const mockDb = createMockDb();
+            // First select: machine found with matching version
+            mockDb._queueSelectResults([
+                [{
+                    id: 'machine-1',
+                    accountId: 'test-user-123',
+                    daemonStateVersion: 1,
+                    daemonState: '{"old":"state"}',
+                }],
+            ]);
+            // Update returns updated row
+            mockDb._queueUpdateResults([
+                [{
+                    id: 'machine-1',
+                    daemonStateVersion: 2,
+                    daemonState: '{"new":"state"}',
+                }],
+                [{ seq: 10 }], // Account seq update
+            ]);
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleMachineStateUpdate(ctx, {
+                machineId: 'machine-1',
+                daemonState: '{"new":"state"}',
+                expectedVersion: 1,
+            });
+
+            expect(result.response?.result).toBe('success');
+            expect(result.response?.version).toBe(2);
+            expect(result.response?.daemonState).toBe('{"new":"state"}');
+            expect(result.broadcast).toBeDefined();
+            expect(result.broadcast?.message.event).toBe('update');
+            expect(result.broadcast?.message.data.body.t).toBe('update-machine');
+        });
+    });
+
+    describe('handleSessionEnd - Edge Cases', () => {
+        it('should return empty if session not found', async () => {
+            const mockDb = createMockDb();
+            mockDb._setSelectResults([]);
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleSessionEnd(ctx, {
+                sid: 'nonexistent',
+                time: Date.now(),
+            });
+
+            expect(Object.keys(result)).toHaveLength(0);
+        });
+    });
+
+    describe('handleMachineAlive - Edge Cases', () => {
+        it('should clamp future timestamps to now', async () => {
+            const mockDb = createMockDb();
+            mockDb._setSelectResults([{ id: 'machine-1' }]);
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const futureTime = Date.now() + 60000; // 1 minute in future
+            const result = await handleMachineAlive(ctx, {
+                machineId: 'machine-1',
+                time: futureTime,
+            });
+
+            // Should still process (clamped to now)
+            expect(result.ephemeral).toBeDefined();
+            expect(result.ephemeral?.message.data.type).toBe('machine-activity');
+        });
+    });
+
+    describe('handleSessionStateUpdate - Early Version Mismatch', () => {
+        it('should return version-mismatch on early check before update', async () => {
+            const mockDb = createMockDb();
+            mockDb._setSelectResults([{
+                id: 'session-1',
+                accountId: 'test-user-123',
+                agentStateVersion: 5, // Different from expected
+                agentState: '{"current":"state"}',
+            }]);
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleSessionStateUpdate(ctx, {
+                sid: 'session-1',
+                agentState: '{"new":"state"}',
+                expectedVersion: 3, // Mismatch with current version 5
+            });
+
+            expect(result.response?.result).toBe('version-mismatch');
+            expect(result.response?.version).toBe(5);
+            expect(result.response?.agentState).toBe('{"current":"state"}');
+        });
+    });
+
+    describe('handleSessionEnd - Future Time Clamping', () => {
+        it('should clamp future timestamps to now', async () => {
+            const mockDb = createMockDb();
+            mockDb._setSelectResults([{ id: 'session-1' }]);
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const futureTime = Date.now() + 60000; // 1 minute in future
+            const result = await handleSessionEnd(ctx, {
+                sid: 'session-1',
+                time: futureTime,
+            });
+
+            // Should still process (clamped to now)
+            expect(result.ephemeral).toBeDefined();
+            expect(result.ephemeral?.message.data.active).toBe(false);
         });
     });
 });

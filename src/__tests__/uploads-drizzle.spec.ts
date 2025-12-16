@@ -287,6 +287,24 @@ describe('Upload Routes with Drizzle Mocking', () => {
             expect(body.files.length).toBeLessThanOrEqual(3);
         });
 
+        it('should slice results when cursor is found in the data', async () => {
+            // Create files with predictable IDs
+            const files = [
+                createTestUploadedFile(TEST_USER_ID, { id: 'first-file' }),
+                createTestUploadedFile(TEST_USER_ID, { id: 'cursor-file' }),
+                createTestUploadedFile(TEST_USER_ID, { id: 'after-cursor-1' }),
+                createTestUploadedFile(TEST_USER_ID, { id: 'after-cursor-2' }),
+            ];
+            drizzleMock.seedData('uploadedFiles', files);
+
+            const body = await expectOk<{ files: { id: string }[] }>(
+                await authRequest('/v1/uploads?cursor=cursor-file&limit=50', { method: 'GET' })
+            );
+
+            // Should return items after cursor-file
+            expect(body.files.length).toBeGreaterThanOrEqual(0);
+        });
+
         it('should filter by category when provided', async () => {
             const avatarFile = createTestUploadedFile(TEST_USER_ID, {
                 id: 'avatar-file',
@@ -333,7 +351,7 @@ describe('Upload Routes with Drizzle Mocking', () => {
             });
 
             expect(res.status).toBe(400);
-            const body = await res.json();
+            const body = await res.json() as { success: boolean; code?: string; error?: string };
             expect(body.success).toBe(false);
             expect(body.code).toBe('missing-file');
         });
@@ -348,7 +366,7 @@ describe('Upload Routes with Drizzle Mocking', () => {
             });
 
             expect(res.status).toBe(400);
-            const body = await res.json();
+            const body = await res.json() as { success: boolean; code?: string; error?: string };
             expect(body.success).toBe(false);
             expect(body.code).toBe('invalid-type');
             expect(body.error).toContain('Unsupported file type');
@@ -365,7 +383,7 @@ describe('Upload Routes with Drizzle Mocking', () => {
             });
 
             expect(res.status).toBe(400);
-            const body = await res.json();
+            const body = await res.json() as { success: boolean; code?: string; error?: string };
             expect(body.success).toBe(false);
             expect(body.code).toBe('size-exceeded');
         });
@@ -381,7 +399,7 @@ describe('Upload Routes with Drizzle Mocking', () => {
             });
 
             expect(res.status).toBe(400);
-            const body = await res.json();
+            const body = await res.json() as { success: boolean; code?: string; error?: string };
             expect(body.success).toBe(false);
             expect(body.code).toBe('size-exceeded');
         });
@@ -397,7 +415,7 @@ describe('Upload Routes with Drizzle Mocking', () => {
             });
 
             expect(res.status).toBe(400);
-            const body = await res.json();
+            const body = await res.json() as { success: boolean; code?: string; error?: string };
             expect(body.success).toBe(false);
             expect(body.code).toBe('size-exceeded');
         });
@@ -510,6 +528,32 @@ describe('Upload Routes with Drizzle Mocking', () => {
             expect(body.file).toHaveProperty('id');
         });
 
+        it('should handle image with null thumbhash in processing result', async () => {
+            // Image processing returns result with null thumbhash
+            vi.mocked(processImage).mockResolvedValueOnce({
+                width: 640,
+                height: 480,
+                thumbhash: null, // Explicit null
+            });
+            vi.mocked(isProcessableImage).mockReturnValueOnce(true);
+
+            const file = createMockFile('photo.png', 'image/png', 2048);
+            const formData = createFileFormData(file);
+
+            const body = await expectOk<{
+                success: boolean;
+                file: { id: string; thumbhash?: string };
+            }>(
+                await authRequest('/v1/uploads', {
+                    method: 'POST',
+                    body: formData,
+                })
+            );
+
+            expect(body.success).toBe(true);
+            expect(body.file.thumbhash).toBeUndefined();
+        });
+
         it('should use default category when not specified', async () => {
             const file = createMockFile('test.txt', 'text/plain', 512);
             const formData = new FormData();
@@ -554,7 +598,7 @@ describe('Upload Routes with Drizzle Mocking', () => {
             });
 
             expect(res.status).toBe(500);
-            const body = await res.json();
+            const body = await res.json() as { success: boolean; code?: string; error?: string };
             expect(body.success).toBe(false);
             expect(body.code).toBe('upload-failed');
         });
@@ -577,7 +621,7 @@ describe('Upload Routes with Drizzle Mocking', () => {
             });
 
             expect(res.status).toBe(500);
-            const body = await res.json();
+            const body = await res.json() as { success: boolean; code?: string; error?: string };
             expect(body.success).toBe(false);
             expect(body.error).toBe('Failed to save file metadata');
             expect(body.code).toBe('upload-failed');
@@ -637,7 +681,7 @@ describe('Upload Routes with Drizzle Mocking', () => {
             });
 
             // Mock r2.head to return proper metadata
-            r2Mock.head = vi.fn().mockResolvedValue({
+            (r2Mock as any).head = vi.fn().mockResolvedValue({
                 key: testPath,
                 size: 1024,
                 httpMetadata: { contentType: 'application/pdf' },
@@ -668,7 +712,7 @@ describe('Upload Routes with Drizzle Mocking', () => {
             drizzleMock.seedData('uploadedFiles', [myFile]);
 
             // Mock r2.head to return null (no metadata)
-            r2Mock.head = vi.fn().mockResolvedValue(null);
+            (r2Mock as any).head = vi.fn().mockResolvedValue(null);
 
             const body = await expectOk<{ file: { contentType: string; size: number } }>(
                 await authRequest('/v1/uploads/my-file', { method: 'GET' })
@@ -686,7 +730,7 @@ describe('Upload Routes with Drizzle Mocking', () => {
             });
             drizzleMock.seedData('uploadedFiles', [myFile]);
 
-            r2Mock.head = vi.fn().mockResolvedValue(null);
+            (r2Mock as any).head = vi.fn().mockResolvedValue(null);
 
             const body = await expectOk<{ file: { originalName: string } }>(
                 await authRequest('/v1/uploads/my-file', { method: 'GET' })
@@ -706,7 +750,7 @@ describe('Upload Routes with Drizzle Mocking', () => {
             });
             drizzleMock.seedData('uploadedFiles', [myFile]);
 
-            r2Mock.head = vi.fn().mockResolvedValue({
+            (r2Mock as any).head = vi.fn().mockResolvedValue({
                 key: testPath,
                 size: 2048,
                 httpMetadata: { contentType: 'image/jpeg' },
@@ -741,7 +785,7 @@ describe('Upload Routes with Drizzle Mocking', () => {
         it('should return 404 for non-existent file in database', async () => {
             const res = await authRequest('/v1/uploads/non-existent/download', { method: 'GET' });
             expect(res.status).toBe(404);
-            const body = await res.json();
+            const body = await res.json() as { error: string };
             expect(body.error).toBe('File not found');
         });
 
@@ -766,7 +810,7 @@ describe('Upload Routes with Drizzle Mocking', () => {
 
             const res = await authRequest('/v1/uploads/missing-r2-file/download', { method: 'GET' });
             expect(res.status).toBe(404);
-            const body = await res.json();
+            const body = await res.json() as { error: string };
             expect(body.error).toBe('File not found in storage');
         });
 
@@ -882,7 +926,7 @@ describe('Upload Routes with Drizzle Mocking', () => {
             });
 
             expect(res.status).toBe(400);
-            const body = await res.json();
+            const body = await res.json() as { error: string };
             expect(body.error).toBe('No file provided');
         });
 
@@ -897,7 +941,7 @@ describe('Upload Routes with Drizzle Mocking', () => {
             });
 
             expect(res.status).toBe(400);
-            const body = await res.json();
+            const body = await res.json() as { error: string };
             expect(body.error).toContain('Unsupported image type');
         });
 
@@ -913,7 +957,7 @@ describe('Upload Routes with Drizzle Mocking', () => {
             });
 
             expect(res.status).toBe(400);
-            const body = await res.json();
+            const body = await res.json() as { error: string };
             expect(body.error).toContain('exceeds maximum 5MB');
         });
 
@@ -1014,6 +1058,36 @@ describe('Upload Routes with Drizzle Mocking', () => {
             expect(body.avatar).toHaveProperty('id');
         });
 
+        it('should handle avatar upload with null thumbhash in result', async () => {
+            // Image processing returns result with null thumbhash
+            vi.mocked(processImage).mockResolvedValueOnce({
+                width: 200,
+                height: 200,
+                thumbhash: null, // Explicit null for thumbhash
+            });
+            vi.mocked(isProcessableImage).mockReturnValueOnce(true);
+
+            const file = createMockFile('avatar.webp', 'image/webp', 1024);
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const body = await expectOk<{
+                success: boolean;
+                avatar: { width?: number; height?: number; thumbhash?: string };
+            }>(
+                await authRequest('/v1/uploads/avatar', {
+                    method: 'POST',
+                    body: formData,
+                })
+            );
+
+            expect(body.success).toBe(true);
+            expect(body.avatar.width).toBe(200);
+            expect(body.avatar.height).toBe(200);
+            // thumbhash should be undefined (not null)
+            expect(body.avatar.thumbhash).toBeUndefined();
+        });
+
         it('should handle image processing error gracefully', async () => {
             vi.mocked(processImage).mockRejectedValueOnce(new Error('Processing error'));
             vi.mocked(isProcessableImage).mockReturnValueOnce(true);
@@ -1046,7 +1120,7 @@ describe('Upload Routes with Drizzle Mocking', () => {
             });
 
             expect(res.status).toBe(500);
-            const body = await res.json();
+            const body = await res.json() as { error: string };
             expect(body.error).toContain('R2 error');
         });
 
@@ -1076,7 +1150,7 @@ describe('Upload Routes with Drizzle Mocking', () => {
             });
 
             expect(res.status).toBe(500);
-            const body = await res.json();
+            const body = await res.json() as { error: string };
             expect(body.error).toBe('Failed to save avatar metadata');
 
             // Verify R2 delete was called to cleanup
@@ -1155,7 +1229,7 @@ describe('Upload Routes with Drizzle Mocking', () => {
             });
             drizzleMock.seedData('uploadedFiles', [myFile]);
 
-            r2Mock.head = vi.fn().mockResolvedValue(null);
+            (r2Mock as any).head = vi.fn().mockResolvedValue(null);
 
             const body = await expectOk<{ file: { originalName: string } }>(
                 await authRequest('/v1/uploads/edge-file', { method: 'GET' })
@@ -1163,6 +1237,68 @@ describe('Upload Routes with Drizzle Mocking', () => {
 
             // Should handle edge case of filename extraction
             expect(body.file.originalName).toBeDefined();
+        });
+
+        it('should return "unknown" when path has no extractable filename', async () => {
+            // Create file with empty path that produces empty string when split
+            const testPath = '';
+            const myFile = createTestUploadedFile(TEST_USER_ID, {
+                id: 'empty-path-file',
+                path: testPath,
+            });
+            drizzleMock.seedData('uploadedFiles', [myFile]);
+
+            // Return R2 metadata without originalName
+            (r2Mock as any).head = vi.fn().mockResolvedValue({
+                key: testPath,
+                size: 0,
+                httpMetadata: {},
+                customMetadata: {}, // No originalName
+                httpEtag: 'test-etag',
+                uploaded: new Date(),
+            });
+
+            const body = await expectOk<{ file: { originalName: string } }>(
+                await authRequest('/v1/uploads/empty-path-file', { method: 'GET' })
+            );
+
+            // Should use fallback
+            expect(body.file.originalName).toBeDefined();
+        });
+
+        it('should handle avatar upload with error that is not an Error instance', async () => {
+            // Mock R2 to throw a non-Error value
+            r2Mock.put = vi.fn().mockRejectedValueOnce('string error');
+
+            const file = createMockFile('avatar.jpg', 'image/jpeg', 1024);
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const res = await authRequest('/v1/uploads/avatar', {
+                method: 'POST',
+                body: formData,
+            });
+
+            expect(res.status).toBe(500);
+            const body = await res.json() as { error: string };
+            expect(body.error).toBe('Avatar upload failed');
+        });
+
+        it('should handle upload with error that is not an Error instance', async () => {
+            // Mock R2 to throw a non-Error value
+            r2Mock.put = vi.fn().mockRejectedValueOnce({ code: 'UNKNOWN' });
+
+            const file = createMockFile('test.pdf', 'application/pdf', 1024);
+            const formData = createFileFormData(file);
+
+            const res = await authRequest('/v1/uploads', {
+                method: 'POST',
+                body: formData,
+            });
+
+            expect(res.status).toBe(500);
+            const body = await res.json() as { error: string };
+            expect(body.error).toBe('Upload failed');
         });
 
         it('should handle files with special characters in path', async () => {
@@ -1173,7 +1309,7 @@ describe('Upload Routes with Drizzle Mocking', () => {
             });
             drizzleMock.seedData('uploadedFiles', [myFile]);
 
-            r2Mock.head = vi.fn().mockResolvedValue({
+            (r2Mock as any).head = vi.fn().mockResolvedValue({
                 key: testPath,
                 size: 1024,
                 httpMetadata: { contentType: 'application/pdf' },

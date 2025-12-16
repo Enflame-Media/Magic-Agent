@@ -14,7 +14,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import type { ConnectionMetadata, ClientType, MessageFilter } from '@/durable-objects/types';
+import type { ConnectionMetadata } from '@/durable-objects/types';
 
 // =============================================================================
 // CLOUDFLARE WORKERS GLOBALS MOCK
@@ -130,7 +130,7 @@ vi.mock('@/durable-objects/handlers', async () => {
 /**
  * Create a mock WebSocket for testing
  */
-function createMockWebSocket(id: string = 'ws-1'): WebSocket & {
+function createMockWebSocket(_id: string = 'ws-1'): WebSocket & {
     _messages: string[];
     _closed: boolean;
     _closeCode?: number;
@@ -303,7 +303,7 @@ describe('ConnectionManager Durable Object', () => {
         });
 
         it('should set up auto-response for ping/pong', () => {
-            const cm = new ConnectionManager(ctx, env);
+            new ConnectionManager(ctx, env);
             expect(ctx.setWebSocketAutoResponse).toHaveBeenCalled();
         });
     });
@@ -415,7 +415,9 @@ describe('ConnectionManager Durable Object', () => {
             expect(response.status).toBe(426);
         });
 
-        it('should reject requests without token', async () => {
+        it('should accept requests without token in pending-auth state (HAP-360)', async () => {
+            // HAP-360: New auth flow accepts connections without tokens
+            // and expects authentication via message after connection
             const request = new Request('http://localhost/websocket', {
                 method: 'GET',
                 headers: {
@@ -424,8 +426,17 @@ describe('ConnectionManager Durable Object', () => {
                 },
             });
 
-            const response = await connectionManager.fetch(request);
-            expect(response.status).toBe(400);
+            // Node.js Response doesn't support status 101 (WebSocket upgrade)
+            // The actual code path succeeds - we verify via acceptWebSocket being called
+            try {
+                const response = await connectionManager.fetch(request);
+                // In Cloudflare Workers runtime, this would return 101
+                expect([101, 200]).toContain(response.status);
+            } catch (e) {
+                // RangeError is expected in Node.js for status 101
+                expect((e as Error).message).toContain('status');
+            }
+            expect(ctx.acceptWebSocket).toHaveBeenCalled();
         });
 
         it('should reject requests with invalid token', async () => {
@@ -743,7 +754,7 @@ describe('ConnectionManager Durable Object', () => {
             await cm.webSocketMessage(testWs, message);
 
             expect(testWs.send).toHaveBeenCalled();
-            const sentMessage = JSON.parse((testWs.send as ReturnType<typeof vi.fn>).mock.calls[0][0]);
+            const sentMessage = JSON.parse((testWs.send as ReturnType<typeof vi.fn>).mock.calls[0]![0]);
             expect(sentMessage.event).toBe('pong');
         });
 
@@ -751,7 +762,7 @@ describe('ConnectionManager Durable Object', () => {
             await cm.webSocketMessage(testWs, 'invalid-json');
 
             expect(testWs.send).toHaveBeenCalled();
-            const sentMessage = JSON.parse((testWs.send as ReturnType<typeof vi.fn>).mock.calls[0][0]);
+            const sentMessage = JSON.parse((testWs.send as ReturnType<typeof vi.fn>).mock.calls[0]![0]);
             expect(sentMessage.event).toBe('error');
         });
 
@@ -760,22 +771,20 @@ describe('ConnectionManager Durable Object', () => {
             await cm.webSocketMessage(testWs, message);
 
             expect(testWs.send).toHaveBeenCalled();
-            const sentMessage = JSON.parse((testWs.send as ReturnType<typeof vi.fn>).mock.calls[0][0]);
+            const sentMessage = JSON.parse((testWs.send as ReturnType<typeof vi.fn>).mock.calls[0]![0]);
             expect(sentMessage.event).toBe('error');
         });
 
         it('should handle ArrayBuffer messages', async () => {
-            const message = new TextEncoder().encode(JSON.stringify({ event: 'ping' })).buffer;
-            await cm.webSocketMessage(testWs, message);
+            const message = new TextEncoder().encode(JSON.stringify({ event: 'ping' }));
+            await cm.webSocketMessage(testWs, message.buffer as ArrayBuffer);
 
             expect(testWs.send).toHaveBeenCalled();
-            const sentMessage = JSON.parse((testWs.send as ReturnType<typeof vi.fn>).mock.calls[0][0]);
+            const sentMessage = JSON.parse((testWs.send as ReturnType<typeof vi.fn>).mock.calls[0]![0]);
             expect(sentMessage.event).toBe('pong');
         });
 
         it('should update lastActivityAt on message', async () => {
-            const originalLastActivity = (testWs._attachment as ConnectionMetadata).lastActivityAt;
-
             // Wait a small amount to ensure timestamp changes
             await new Promise(resolve => setTimeout(resolve, 10));
 
@@ -1324,7 +1333,7 @@ describe('ConnectionManager Durable Object', () => {
 
             // User should receive machine-update with active: false
             expect(userWs.send).toHaveBeenCalled();
-            const sentMessage = JSON.parse((userWs.send as ReturnType<typeof vi.fn>).mock.calls[0][0]);
+            const sentMessage = JSON.parse((userWs.send as ReturnType<typeof vi.fn>).mock.calls[0]![0]);
             expect(sentMessage.event).toBe('machine-update');
             expect(sentMessage.data.machineId).toBe('machine-1');
             expect(sentMessage.data.active).toBe(false);
@@ -1704,7 +1713,7 @@ describe('ConnectionManager Durable Object', () => {
 
             // User should receive machine-update with active: true
             expect(userWs.send).toHaveBeenCalled();
-            const sentMessage = JSON.parse((userWs.send as ReturnType<typeof vi.fn>).mock.calls[0][0]);
+            const sentMessage = JSON.parse((userWs.send as ReturnType<typeof vi.fn>).mock.calls[0]![0]);
             expect(sentMessage.event).toBe('machine-update');
             expect(sentMessage.data.machineId).toBe('new-machine');
             expect(sentMessage.data.active).toBe(true);

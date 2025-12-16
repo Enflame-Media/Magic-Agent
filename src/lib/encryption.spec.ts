@@ -346,15 +346,17 @@ describe('encryption', () => {
             }
 
             // Mock Map.prototype.keys to return an iterator that yields undefined
+            // Note: MapIterator in Node 24+ requires Symbol.dispose for resource management
             const mockIterator = {
-                next: () => ({ value: undefined, done: false }),
-                [Symbol.iterator]: function () {
+                next: () => ({ value: undefined as unknown as string, done: false }),
+                [Symbol.iterator]() {
                     return this;
                 },
-            };
-            const keysSpy = vi.spyOn(Map.prototype, 'keys').mockReturnValue(
-                mockIterator as IterableIterator<string>
-            );
+                [Symbol.dispose]() {
+                    // No-op for test mock
+                },
+            } as MapIterator<string>;
+            const keysSpy = vi.spyOn(Map.prototype, 'keys').mockReturnValue(mockIterator);
 
             try {
                 // This should trigger the eviction path, but firstKey will be undefined
