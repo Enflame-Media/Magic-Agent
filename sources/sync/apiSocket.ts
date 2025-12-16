@@ -14,7 +14,7 @@ export interface SyncSocketConfig {
 
 export interface SyncSocketState {
     isConnected: boolean;
-    connectionStatus: 'disconnected' | 'connecting' | 'connected' | 'error';
+    connectionStatus: 'disconnected' | 'connecting' | 'authenticating' | 'connected' | 'error';
     lastError: Error | null;
 }
 
@@ -78,10 +78,14 @@ class ApiSocket {
     // Event handlers
     private messageHandlers: Map<string, Set<(data: unknown) => void>> = new Map();
     private reconnectedListeners: Set<() => void> = new Set();
-    private statusListeners: Set<(status: 'disconnected' | 'connecting' | 'connected' | 'error') => void> = new Set();
-    private currentStatus: 'disconnected' | 'connecting' | 'connected' | 'error' = 'disconnected';
+    private statusListeners: Set<(status: 'disconnected' | 'connecting' | 'authenticating' | 'connected' | 'error') => void> = new Set();
+    private currentStatus: 'disconnected' | 'connecting' | 'authenticating' | 'connected' | 'error' = 'disconnected';
     private lastError: Error | null = null;
     private errorListeners: Set<(error: Error | null) => void> = new Set();
+
+    // Auth handshake state (HAP-360)
+    private authTimeout: ReturnType<typeof setTimeout> | null = null;
+    private static readonly AUTH_TIMEOUT_MS = 5000;
 
     // Acknowledgement tracking for request-response pattern
     private pendingAcks: Map<string, PendingAck> = new Map();
@@ -112,18 +116,20 @@ class ApiSocket {
 
     /**
      * Internal connection logic - creates WebSocket and sets up handlers.
+     *
+     * HAP-360: Security improvement - auth token is no longer sent in the URL.
+     * Instead, we connect without auth and send an 'auth' message as the first
+     * message after connection. This prevents token exposure in server logs,
+     * browser history, and HTTP Referer headers.
      */
     private doConnect(): void {
         if (!this.config) return;
 
-        // Build WebSocket URL with auth params
+        // Build WebSocket URL WITHOUT auth params (HAP-360 security fix)
         const wsUrl = new URL('/v1/updates', this.config.endpoint);
         wsUrl.protocol = wsUrl.protocol === 'https:' ? 'wss:' : 'ws:';
 
-        // Add auth as query parameters (like happy-cli does)
-        wsUrl.searchParams.set('token', this.config.token);
-        wsUrl.searchParams.set('clientType', 'user-scoped');
-
+        // Auth will be sent via message after connection, not in URL
         this.ws = new WebSocket(wsUrl.toString());
         this.setupEventHandlers();
     }
@@ -134,6 +140,12 @@ class ApiSocket {
         if (this.reconnectTimeout) {
             clearTimeout(this.reconnectTimeout);
             this.reconnectTimeout = null;
+        }
+
+        // Clear auth timeout (HAP-360)
+        if (this.authTimeout) {
+            clearTimeout(this.authTimeout);
+            this.authTimeout = null;
         }
 
         // Reject all pending acknowledgements
@@ -195,7 +207,7 @@ class ApiSocket {
         return () => this.reconnectedListeners.delete(listener);
     };
 
-    onStatusChange = (listener: (status: 'disconnected' | 'connecting' | 'connected' | 'error') => void) => {
+    onStatusChange = (listener: (status: 'disconnected' | 'connecting' | 'authenticating' | 'connected' | 'error') => void) => {
         this.statusListeners.add(listener);
         // Immediately notify with current status
         listener(this.currentStatus);
@@ -213,7 +225,7 @@ class ApiSocket {
         return this.lastError;
     };
 
-    getStatus = (): 'disconnected' | 'connecting' | 'connected' | 'error' => {
+    getStatus = (): 'disconnected' | 'connecting' | 'authenticating' | 'connected' | 'error' => {
         return this.currentStatus;
     };
 
@@ -493,7 +505,7 @@ class ApiSocket {
     // Private Methods
     //
 
-    private updateStatus(status: 'disconnected' | 'connecting' | 'connected' | 'error', error?: Error) {
+    private updateStatus(status: 'disconnected' | 'connecting' | 'authenticating' | 'connected' | 'error', error?: Error) {
         // Update error state: store error when status is 'error', clear otherwise
         const newError = status === 'error'
             ? (error ?? new Error("Unknown error occurred in updateStatus"))
@@ -514,10 +526,46 @@ class ApiSocket {
     /**
      * Handle incoming WebSocket messages.
      * Parses JSON and dispatches to event handlers or resolves pending acks.
+     *
+     * HAP-360: Also handles the auth flow - the 'connected' event from server
+     * indicates successful authentication.
      */
     private handleMessage(data: string): void {
         try {
             const message = JSON.parse(data) as HappyMessage;
+
+            // Handle auth success response (HAP-360)
+            // Server sends 'connected' event after validating auth message
+            if (message.event === 'connected' && this.currentStatus === 'authenticating') {
+                // Clear auth timeout
+                if (this.authTimeout) {
+                    clearTimeout(this.authTimeout);
+                    this.authTimeout = null;
+                }
+
+                // Transition to connected state
+                this.updateStatus('connected');
+
+                // Notify reconnection listeners if this was a reconnection
+                if (this.wasConnectedBefore) {
+                    this.reconnectedListeners.forEach(listener => listener());
+                }
+                this.wasConnectedBefore = true;
+                return;
+            }
+
+            // Handle auth failure (HAP-360)
+            if (message.event === 'auth-error' && this.currentStatus === 'authenticating') {
+                if (this.authTimeout) {
+                    clearTimeout(this.authTimeout);
+                    this.authTimeout = null;
+                }
+
+                const errorData = message.data as { message?: string } | undefined;
+                this.updateStatus('error', new Error(errorData?.message || 'Authentication failed'));
+                this.ws?.close(4001, 'Authentication failed');
+                return;
+            }
 
             // Handle acknowledgement responses (for emitWithAck)
             if (message.ackId && message.ack !== undefined) {
@@ -543,27 +591,49 @@ class ApiSocket {
     private setupEventHandlers() {
         if (!this.ws) return;
 
-        // Connection opened
+        // Connection opened - initiate auth handshake (HAP-360)
         this.ws.onopen = () => {
             this.reconnectAttempts = 0;
-            this.updateStatus('connected');
+            this.updateStatus('authenticating');
 
-            // Notify reconnection listeners if this was a reconnection
-            if (this.wasConnectedBefore) {
-                this.reconnectedListeners.forEach(listener => listener());
+            // Send auth message as first message (HAP-360 security fix)
+            // Token is sent via message instead of URL query parameter
+            if (this.ws && this.config) {
+                this.ws.send(JSON.stringify({
+                    event: 'auth',
+                    data: {
+                        token: this.config.token,
+                        clientType: 'user-scoped'
+                    }
+                }));
             }
-            this.wasConnectedBefore = true;
+
+            // Set auth timeout - if server doesn't respond, close connection
+            this.authTimeout = setTimeout(() => {
+                this.authTimeout = null;
+                if (this.currentStatus === 'authenticating') {
+                    this.updateStatus('error', new Error('Authentication timeout'));
+                    this.ws?.close(4001, 'Authentication timeout');
+                }
+            }, ApiSocket.AUTH_TIMEOUT_MS);
         };
 
         // Connection closed
         this.ws.onclose = (_event) => {
-            const wasConnected = this.currentStatus === 'connected';
+            // Track if we should update status (was in an active state)
+            const wasInActiveState = this.currentStatus === 'connected' || this.currentStatus === 'authenticating';
             this.ws = null;
+
+            // Clear auth timeout (HAP-360)
+            if (this.authTimeout) {
+                clearTimeout(this.authTimeout);
+                this.authTimeout = null;
+            }
 
             // Reject any pending acks
             this.rejectAllPendingAcks(new Error('Connection closed'));
 
-            if (wasConnected) {
+            if (wasInActiveState) {
                 this.updateStatus('disconnected');
             }
 

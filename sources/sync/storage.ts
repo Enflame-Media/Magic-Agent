@@ -83,7 +83,7 @@ interface StorageState {
     feedLoaded: boolean;  // True after initial feed fetch
     friendsLoaded: boolean;  // True after initial friends fetch
     realtimeStatus: 'disconnected' | 'connecting' | 'connected' | 'error';
-    socketStatus: 'disconnected' | 'connecting' | 'connected' | 'error';
+    socketStatus: 'disconnected' | 'connecting' | 'authenticating' | 'connected' | 'error';
     socketLastConnectedAt: number | null;
     socketLastDisconnectedAt: number | null;
     isDataReady: boolean;
@@ -106,7 +106,7 @@ interface StorageState {
     applyNativeUpdateStatus: (status: { available: boolean; updateUrl?: string } | null) => void;
     isMutableToolCall: (sessionId: string, callId: string) => boolean;
     setRealtimeStatus: (status: 'disconnected' | 'connecting' | 'connected' | 'error') => void;
-    setSocketStatus: (status: 'disconnected' | 'connecting' | 'connected' | 'error') => void;
+    setSocketStatus: (status: 'disconnected' | 'connecting' | 'authenticating' | 'connected' | 'error') => void;
     getActiveSessions: () => Session[];
     updateSessionDraft: (sessionId: string, draft: string | null) => void;
     updateSessionPermissionMode: (sessionId: string, mode: 'default' | 'acceptEdits' | 'bypassPermissions' | 'plan' | 'read-only' | 'safe-yolo' | 'yolo') => void;
@@ -696,7 +696,7 @@ export const storage = create<StorageState>()((set, get) => {
             ...state,
             realtimeStatus: status
         })),
-        setSocketStatus: (status: 'disconnected' | 'connecting' | 'connected' | 'error') => set((state) => {
+        setSocketStatus: (status: 'disconnected' | 'connecting' | 'authenticating' | 'connected' | 'error') => set((state) => {
             const now = Date.now();
             const updates: Partial<StorageState> = {
                 socketStatus: status
