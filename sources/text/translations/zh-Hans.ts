@@ -60,6 +60,13 @@ export const zhHans: TranslationStructure = {
         retry: '重试',
         on: '在',
         undo: '撤销',
+        copy: '复制',
+    },
+
+    markdown: {
+        codeCopied: '代码已复制到剪贴板',
+        copyFailed: '复制代码失败',
+        mermaidRenderFailed: '渲染图表失败',
     },
 
     profile: {

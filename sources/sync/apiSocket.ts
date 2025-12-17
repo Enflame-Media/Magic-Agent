@@ -87,6 +87,10 @@ class ApiSocket {
     private authTimeout: ReturnType<typeof setTimeout> | null = null;
     private static readonly AUTH_TIMEOUT_MS = 5000;
 
+    // HAP-375: Track if current connection used ticket auth
+    // When true, we don't need to send auth message (server already validated via ticket)
+    private usedTicketAuth = false;
+
     // Acknowledgement tracking for request-response pattern
     private pendingAcks: Map<string, PendingAck> = new Map();
 
@@ -117,19 +121,49 @@ class ApiSocket {
     /**
      * Internal connection logic - creates WebSocket and sets up handlers.
      *
-     * HAP-360: Security improvement - auth token is no longer sent in the URL.
-     * Instead, we connect without auth and send an 'auth' message as the first
-     * message after connection. This prevents token exposure in server logs,
-     * browser history, and HTTP Referer headers.
+     * HAP-375: Uses ticket-based authentication for security.
+     * 1. First fetches a short-lived ticket from the server via HTTP
+     * 2. Then connects with the ticket in the WebSocket URL
+     * 3. Server validates ticket and creates authenticated connection immediately
+     *
+     * This approach keeps auth tokens out of WebSocket URLs while providing
+     * immediate authentication (no need to send auth message after connect).
+     *
+     * Falls back to HAP-360 message-based auth if ticket fetch fails.
      */
-    private doConnect(): void {
+    private async doConnect(): Promise<void> {
         if (!this.config) return;
 
-        // Build WebSocket URL WITHOUT auth params (HAP-360 security fix)
+        // Reset ticket auth flag
+        this.usedTicketAuth = false;
+
+        // Build WebSocket URL
         const wsUrl = new URL('/v1/updates', this.config.endpoint);
         wsUrl.protocol = wsUrl.protocol === 'https:' ? 'wss:' : 'ws:';
 
-        // Auth will be sent via message after connection, not in URL
+        // HAP-375: Try to fetch a ticket for secure authentication
+        try {
+            const ticketResponse = await fetch(`${this.config.endpoint}/v1/websocket/ticket`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${this.config.token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (ticketResponse.ok) {
+                const { ticket } = await ticketResponse.json() as { ticket: string };
+                wsUrl.searchParams.set('ticket', ticket);
+                this.usedTicketAuth = true;
+            }
+            // If ticket request fails, fall through to connect without ticket
+            // The server's HAP-360 pending-auth flow will handle it
+        } catch {
+            // Network error fetching ticket - continue without it
+            // Will use HAP-360 message-based auth as fallback
+        }
+
+        // Connect to WebSocket
         this.ws = new WebSocket(wsUrl.toString());
         this.setupEventHandlers();
     }
@@ -591,21 +625,26 @@ class ApiSocket {
     private setupEventHandlers() {
         if (!this.ws) return;
 
-        // Connection opened - initiate auth handshake (HAP-360)
+        // Connection opened - handle authentication
         this.ws.onopen = () => {
             this.reconnectAttempts = 0;
             this.updateStatus('authenticating');
 
-            // Send auth message as first message (HAP-360 security fix)
-            // Token is sent via message instead of URL query parameter
-            if (this.ws && this.config) {
-                this.ws.send(JSON.stringify({
-                    event: 'auth',
-                    data: {
-                        token: this.config.token,
-                        clientType: 'user-scoped'
-                    }
-                }));
+            // HAP-375: If we used ticket auth, server already validated us
+            // The server will send 'connected' event immediately
+            // We don't need to send an auth message
+            if (!this.usedTicketAuth) {
+                // HAP-360 fallback: Send auth message as first message
+                // Used when ticket fetch failed (e.g., network issues)
+                if (this.ws && this.config) {
+                    this.ws.send(JSON.stringify({
+                        event: 'auth',
+                        data: {
+                            token: this.config.token,
+                            clientType: 'user-scoped'
+                        }
+                    }));
+                }
             }
 
             // Set auth timeout - if server doesn't respond, close connection

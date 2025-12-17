@@ -58,6 +58,13 @@ export const pt: TranslationStructure = {
         retry: 'Tentar novamente',
         on: 'em',
         undo: 'Desfazer',
+        copy: 'Copiar',
+    },
+
+    markdown: {
+        codeCopied: 'Código copiado para a área de transferência',
+        copyFailed: 'Falha ao copiar o código',
+        mermaidRenderFailed: 'Falha ao renderizar o diagrama',
     },
 
     profile: {

@@ -58,6 +58,13 @@ export const en = {
         retry: 'Retry',
         on: 'on',
         undo: 'Undo',
+        copy: 'Copy',
+    },
+
+    markdown: {
+        codeCopied: 'Code copied to clipboard',
+        copyFailed: 'Failed to copy code',
+        mermaidRenderFailed: 'Failed to render diagram',
     },
 
     profile: {

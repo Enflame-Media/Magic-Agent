@@ -58,6 +58,13 @@ export const ca: TranslationStructure = {
         retry: 'Torna-ho a provar',
         on: 'a',
         undo: 'Desfer',
+        copy: 'Copia',
+    },
+
+    markdown: {
+        codeCopied: 'Codi copiat al porta-retalls',
+        copyFailed: 'Error en copiar el codi',
+        mermaidRenderFailed: 'Error en renderitzar el diagrama',
     },
 
     profile: {

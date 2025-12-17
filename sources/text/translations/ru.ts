@@ -69,6 +69,13 @@ export const ru: TranslationStructure = {
         retry: 'Повторить',
         on: 'на',
         undo: 'Отменить',
+        copy: 'Копировать',
+    },
+
+    markdown: {
+        codeCopied: 'Код скопирован в буфер обмена',
+        copyFailed: 'Не удалось скопировать код',
+        mermaidRenderFailed: 'Не удалось отобразить диаграмму',
     },
 
     connect: {

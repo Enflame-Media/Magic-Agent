@@ -69,6 +69,13 @@ export const pl: TranslationStructure = {
         retry: 'Ponów',
         on: 'na',
         undo: 'Cofnij',
+        copy: 'Kopiuj',
+    },
+
+    markdown: {
+        codeCopied: 'Kod skopiowany do schowka',
+        copyFailed: 'Nie udało się skopiować kodu',
+        mermaidRenderFailed: 'Nie udało się wyrenderować diagramu',
     },
 
     profile: {

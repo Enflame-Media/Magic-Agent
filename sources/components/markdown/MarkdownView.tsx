@@ -10,6 +10,9 @@ import { Modal } from '@/modal';
 import { useLocalSetting } from '@/sync/storage';
 import { storeTempText } from '@/sync/persistence';
 import { useRouter } from 'expo-router';
+import * as Clipboard from 'expo-clipboard';
+import { MermaidRenderer } from './MermaidRenderer';
+import { t } from '@/text';
 
 // Constants for lazy code block rendering
 const CODE_LINE_HEIGHT = 20;
@@ -62,8 +65,12 @@ export const MarkdownView = React.memo((props: {
                         return <RenderNumberedListBlock items={block.items} key={index} first={index === 0} last={index === blocks.length - 1} selectable={selectable} />;
                     } else if (block.type === 'code-block') {
                         return <RenderCodeBlock content={block.content} language={block.language} key={index} first={index === 0} last={index === blocks.length - 1} selectable={selectable} />;
+                    } else if (block.type === 'mermaid') {
+                        return <MermaidRenderer content={block.content} key={index} />;
                     } else if (block.type === 'options') {
                         return <RenderOptionsBlock items={block.items} key={index} first={index === 0} last={index === blocks.length - 1} selectable={selectable} onOptionPress={props.onOptionPress} />;
+                    } else if (block.type === 'table') {
+                        return <RenderTableBlock headers={block.headers} rows={block.rows} key={index} first={index === 0} last={index === blocks.length - 1} />;
                     } else {
                         return null;
                     }
@@ -125,6 +132,7 @@ function RenderNumberedListBlock(props: { items: { number: number, spans: Markdo
  */
 function RenderCodeBlock(props: { content: string, language: string | null, first: boolean, last: boolean, selectable: boolean }) {
     const [isReady, setIsReady] = React.useState(false);
+    const [isHovered, setIsHovered] = React.useState(false);
     const opacity = React.useRef(new Animated.Value(0)).current;
 
     // Calculate estimated height to prevent layout shift
@@ -134,6 +142,16 @@ function RenderCodeBlock(props: { content: string, language: string | null, firs
         lineCount * CODE_LINE_HEIGHT + CODE_PADDING_VERTICAL + (props.language ? CODE_LANGUAGE_HEIGHT : 0),
         MIN_CODE_BLOCK_HEIGHT
     );
+
+    const copyCode = React.useCallback(async () => {
+        try {
+            await Clipboard.setStringAsync(props.content);
+            Modal.alert(t('common.success'), t('markdown.codeCopied'), [{ text: t('common.ok'), style: 'cancel' }]);
+        } catch (error) {
+            console.error('Failed to copy code:', error);
+            Modal.alert(t('common.error'), t('markdown.copyFailed'), [{ text: t('common.ok'), style: 'cancel' }]);
+        }
+    }, [props.content]);
 
     React.useEffect(() => {
         // Defer syntax highlighting until after interactions complete
@@ -150,7 +168,13 @@ function RenderCodeBlock(props: { content: string, language: string | null, firs
     }, [opacity]);
 
     return (
-        <View style={[style.codeBlock, props.first && style.first, props.last && style.last, { minHeight: estimatedHeight }]}>
+        <View
+            style={[style.codeBlock, props.first && style.first, props.last && style.last, { minHeight: estimatedHeight }]}
+            // @ts-ignore - Web only events for hover copy button
+            onMouseEnter={Platform.OS === 'web' ? () => setIsHovered(true) : undefined}
+            // @ts-ignore - Web only events
+            onMouseLeave={Platform.OS === 'web' ? () => setIsHovered(false) : undefined}
+        >
             {props.language && <Text selectable={props.selectable} style={style.codeLanguage}>{props.language}</Text>}
             {!isReady ? (
                 // Placeholder: Same background, just empty space
@@ -171,6 +195,14 @@ function RenderCodeBlock(props: { content: string, language: string | null, firs
                         />
                     </ScrollView>
                 </Animated.View>
+            )}
+            {/* Web-only: Copy button appears on hover */}
+            {Platform.OS === 'web' && (
+                <View style={[style.copyButtonWrapper, isHovered && style.copyButtonWrapperVisible]}>
+                    <Pressable style={style.copyButton} onPress={copyCode}>
+                        <Text style={style.copyButtonText}>{t('common.copy')}</Text>
+                    </Pressable>
+                </View>
             )}
         </View>
     );
@@ -221,6 +253,43 @@ function RenderSpans(props: { spans: MarkdownSpan[], baseStyle?: any }) {
             }
         })}
     </>)
+}
+
+function RenderTableBlock(props: {
+    headers: string[],
+    rows: string[][],
+    first: boolean,
+    last: boolean
+}) {
+    return (
+        <View style={[style.tableContainer, props.first && style.first, props.last && style.last]}>
+            <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={true}
+                style={{ flex: 1 }}
+                contentContainerStyle={{ minWidth: '100%' }}
+            >
+                <View style={{ flexDirection: 'column', minWidth: '100%' }}>
+                    <View style={style.tableRow}>
+                        {props.headers.map((header, index) => (
+                            <View key={`header-${index}`} style={[style.tableCell, style.tableHeaderCell]}>
+                                <Text style={style.tableHeaderText}>{header}</Text>
+                            </View>
+                        ))}
+                    </View>
+                    {props.rows.map((row, rowIndex) => (
+                        <View key={`row-${rowIndex}`} style={[style.tableRow, rowIndex === props.rows.length - 1 && style.tableRowLast]}>
+                            {row.map((cell, cellIndex) => (
+                                <View key={`cell-${rowIndex}-${cellIndex}`} style={style.tableCell}>
+                                    <Text style={style.tableCellText}>{cell}</Text>
+                                </View>
+                            ))}
+                        </View>
+                    ))}
+                </View>
+            </ScrollView>
+        </View>
+    );
 }
 
 
@@ -387,6 +456,76 @@ const style = StyleSheet.create((theme) => ({
         ...Typography.default(),
         fontSize: 16,
         lineHeight: 24,
+        color: theme.colors.text,
+    },
+
+    //
+    // Copy Button (Web only)
+    //
+
+    copyButtonWrapper: {
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        opacity: 0,
+        transitionDuration: '150ms',
+        transitionProperty: 'opacity',
+    },
+    copyButtonWrapperVisible: {
+        opacity: 1,
+    },
+    copyButton: {
+        backgroundColor: theme.colors.surfaceHigh,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 4,
+        borderWidth: 1,
+        borderColor: theme.colors.divider,
+    },
+    copyButtonText: {
+        ...Typography.default('semiBold'),
+        fontSize: 12,
+        color: theme.colors.textSecondary,
+    },
+
+    //
+    // Table
+    //
+
+    tableContainer: {
+        marginVertical: 8,
+        borderRadius: 8,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: theme.colors.divider,
+    },
+    tableRow: {
+        flexDirection: 'row',
+        borderBottomWidth: 1,
+        borderBottomColor: theme.colors.divider,
+    },
+    tableRowLast: {
+        borderBottomWidth: 0,
+    },
+    tableCell: {
+        flex: 1,
+        minWidth: 100,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRightWidth: 1,
+        borderRightColor: theme.colors.divider,
+    },
+    tableHeaderCell: {
+        backgroundColor: theme.colors.surfaceHighest,
+    },
+    tableHeaderText: {
+        ...Typography.default('semiBold'),
+        fontSize: 14,
+        color: theme.colors.text,
+    },
+    tableCellText: {
+        ...Typography.default(),
+        fontSize: 14,
         color: theme.colors.text,
     },
 }));
