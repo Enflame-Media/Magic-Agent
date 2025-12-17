@@ -120,13 +120,6 @@ export async function getDaemonStatusJson(): Promise<{ status: DaemonStatusResul
     return { status: result, exitCode };
 }
 
-/**
- * Run doctor command specifically for daemon diagnostics
- */
-export async function runDoctorDaemon(): Promise<void> {
-    return runDoctorCommand('daemon');
-}
-
 export async function runDoctorCommand(filter?: 'all' | 'daemon'): Promise<void> {
     // Default to 'all' if no filter specified
     if (!filter) {

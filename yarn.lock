@@ -814,6 +814,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@hono/node-server@npm:^1.19.7":
+  version: 1.19.7
+  resolution: "@hono/node-server@npm:1.19.7"
+  peerDependencies:
+    hono: ^4
+  checksum: 10c0/293818e02a9100122a9319fba7032a3bae86d5f98f55d1a0ff4843c2b729eb6b471978ea15e29f4fb680c6a0be23a6e5a2132f3790ab31e88fb0b6b6fcc6829e
+  languageName: node
+  linkType: hard
+
 "@humanfs/core@npm:^0.19.1":
   version: 0.19.1
   resolution: "@humanfs/core@npm:0.19.1"
@@ -1151,10 +1160,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@modelcontextprotocol/sdk@npm:^1.24.3":
-  version: 1.24.3
-  resolution: "@modelcontextprotocol/sdk@npm:1.24.3"
+"@modelcontextprotocol/sdk@npm:^1.25.0":
+  version: 1.25.0
+  resolution: "@modelcontextprotocol/sdk@npm:1.25.0"
   dependencies:
+    "@hono/node-server": "npm:^1.19.7"
     ajv: "npm:^8.17.1"
     ajv-formats: "npm:^3.0.1"
     content-type: "npm:^1.0.5"
@@ -1165,6 +1175,7 @@ __metadata:
     express: "npm:^5.0.1"
     express-rate-limit: "npm:^7.5.0"
     jose: "npm:^6.1.1"
+    json-schema-typed: "npm:^8.0.2"
     pkce-challenge: "npm:^5.0.0"
     raw-body: "npm:^3.0.0"
     zod: "npm:^3.25 || ^4.0"
@@ -1177,7 +1188,7 @@ __metadata:
       optional: true
     zod:
       optional: false
-  checksum: 10c0/91746ddf347d61815c09d2a09d3dc7564576b417f7349c33c672a7e3c69dcd215a52a066b02fcd9eaab1cdeab60cc827f3382b28b2ab68e7fc46d2e1f3824cad
+  checksum: 10c0/70c6b1654464957af3cd3b3ec71a526e8dcd114d609c5a987673c0844d27fd439be6fbbcfe6d16f22d6c4e1fe5354937ba9549d7fe05f80fcabcdae20c252b46
   languageName: node
   linkType: hard
 
@@ -1751,58 +1762,58 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@oxlint/darwin-arm64@npm:1.32.0":
-  version: 1.32.0
-  resolution: "@oxlint/darwin-arm64@npm:1.32.0"
+"@oxlint/darwin-arm64@npm:1.33.0":
+  version: 1.33.0
+  resolution: "@oxlint/darwin-arm64@npm:1.33.0"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
-"@oxlint/darwin-x64@npm:1.32.0":
-  version: 1.32.0
-  resolution: "@oxlint/darwin-x64@npm:1.32.0"
+"@oxlint/darwin-x64@npm:1.33.0":
+  version: 1.33.0
+  resolution: "@oxlint/darwin-x64@npm:1.33.0"
   conditions: os=darwin & cpu=x64
   languageName: node
   linkType: hard
 
-"@oxlint/linux-arm64-gnu@npm:1.32.0":
-  version: 1.32.0
-  resolution: "@oxlint/linux-arm64-gnu@npm:1.32.0"
+"@oxlint/linux-arm64-gnu@npm:1.33.0":
+  version: 1.33.0
+  resolution: "@oxlint/linux-arm64-gnu@npm:1.33.0"
   conditions: os=linux & cpu=arm64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@oxlint/linux-arm64-musl@npm:1.32.0":
-  version: 1.32.0
-  resolution: "@oxlint/linux-arm64-musl@npm:1.32.0"
+"@oxlint/linux-arm64-musl@npm:1.33.0":
+  version: 1.33.0
+  resolution: "@oxlint/linux-arm64-musl@npm:1.33.0"
   conditions: os=linux & cpu=arm64 & libc=musl
   languageName: node
   linkType: hard
 
-"@oxlint/linux-x64-gnu@npm:1.32.0":
-  version: 1.32.0
-  resolution: "@oxlint/linux-x64-gnu@npm:1.32.0"
+"@oxlint/linux-x64-gnu@npm:1.33.0":
+  version: 1.33.0
+  resolution: "@oxlint/linux-x64-gnu@npm:1.33.0"
   conditions: os=linux & cpu=x64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@oxlint/linux-x64-musl@npm:1.32.0":
-  version: 1.32.0
-  resolution: "@oxlint/linux-x64-musl@npm:1.32.0"
+"@oxlint/linux-x64-musl@npm:1.33.0":
+  version: 1.33.0
+  resolution: "@oxlint/linux-x64-musl@npm:1.33.0"
   conditions: os=linux & cpu=x64 & libc=musl
   languageName: node
   linkType: hard
 
-"@oxlint/win32-arm64@npm:1.32.0":
-  version: 1.32.0
-  resolution: "@oxlint/win32-arm64@npm:1.32.0"
+"@oxlint/win32-arm64@npm:1.33.0":
+  version: 1.33.0
+  resolution: "@oxlint/win32-arm64@npm:1.33.0"
   conditions: os=win32 & cpu=arm64
   languageName: node
   linkType: hard
 
-"@oxlint/win32-x64@npm:1.32.0":
-  version: 1.32.0
-  resolution: "@oxlint/win32-x64@npm:1.32.0"
+"@oxlint/win32-x64@npm:1.33.0":
+  version: 1.33.0
+  resolution: "@oxlint/win32-x64@npm:1.33.0"
   conditions: os=win32 & cpu=x64
   languageName: node
   linkType: hard
@@ -2051,10 +2062,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@rollup/rollup-linux-x64-gnu@npm:4.53.3, @rollup/rollup-linux-x64-gnu@npm:^4.53.3":
+"@rollup/rollup-linux-x64-gnu@npm:4.53.3":
   version: 4.53.3
   resolution: "@rollup/rollup-linux-x64-gnu@npm:4.53.3"
-  checksum: 10c0/565815b5bb6712d5121e5f896fe4dc823b64cd52712f9d6e569f32cbb68cbc75224f22e1cdf0c12a449225c3e6b88893e57d9f48ef79d8c453794112129a2ce8
+  conditions: os=linux & cpu=x64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@rollup/rollup-linux-x64-gnu@npm:^4.53.5":
+  version: 4.53.5
+  resolution: "@rollup/rollup-linux-x64-gnu@npm:4.53.5"
+  checksum: 10c0/6215b2c9f3edacad3956075f4ffa77b6e1fa21a75afe1ededd148facbb0130b34138f82a7bc313da907c0f2770abbbab8a017d44d905ba13cc273858d58711bf
   conditions: os=linux & cpu=x64 & libc=glibc
   languageName: node
   linkType: hard
@@ -4521,8 +4539,8 @@ __metadata:
   dependencies:
     "@eslint/compat": "npm:^2.0.0"
     "@fastify/swagger": "npm:^9.6.1"
-    "@modelcontextprotocol/sdk": "npm:^1.24.3"
-    "@rollup/rollup-linux-x64-gnu": "npm:^4.53.3"
+    "@modelcontextprotocol/sdk": "npm:^1.25.0"
+    "@rollup/rollup-linux-x64-gnu": "npm:^4.53.5"
     "@sentry/node": "npm:^10.30.0"
     "@stablelib/base64": "npm:^2.0.1"
     "@stablelib/hex": "npm:^2.0.1"
@@ -4550,7 +4568,7 @@ __metadata:
     ink: "npm:^6.5.1"
     open: "npm:^11.0.0"
     openapi-types: "npm:^12.1.3"
-    oxlint: "npm:^1.32.0"
+    oxlint: "npm:^1.33.0"
     pkgroll: "npm:^2.21.4"
     ps-list: "npm:^9.0.0"
     qrcode-terminal: "npm:^0.12.0"
@@ -4565,7 +4583,7 @@ __metadata:
     typescript: "npm:^5.9.3"
     vitest: "npm:^4.0.15"
     ws: "npm:^8.18.3"
-    zod: "npm:^4.1.13"
+    zod: "npm:^4.2.1"
   bin:
     happy: ./bin/happy.mjs
     happy-mcp: ./bin/happy-mcp.mjs
@@ -5137,6 +5155,13 @@ __metadata:
   version: 1.0.0
   resolution: "json-schema-traverse@npm:1.0.0"
   checksum: 10c0/71e30015d7f3d6dc1c316d6298047c8ef98a06d31ad064919976583eb61e1018a60a0067338f0f79cabc00d84af3fcc489bd48ce8a46ea165d9541ba17fb30c6
+  languageName: node
+  linkType: hard
+
+"json-schema-typed@npm:^8.0.2":
+  version: 8.0.2
+  resolution: "json-schema-typed@npm:8.0.2"
+  checksum: 10c0/89f5e2fb1495483b705c027203c07277ee6bf2665165ad25a9cb55de5af7f72570326d13d32565180781e4083ad5c9688102f222baed7b353c2f39c1e02b0428
   languageName: node
   linkType: hard
 
@@ -5844,20 +5869,20 @@ __metadata:
   languageName: node
   linkType: hard
 
-"oxlint@npm:^1.32.0":
-  version: 1.32.0
-  resolution: "oxlint@npm:1.32.0"
+"oxlint@npm:^1.33.0":
+  version: 1.33.0
+  resolution: "oxlint@npm:1.33.0"
   dependencies:
-    "@oxlint/darwin-arm64": "npm:1.32.0"
-    "@oxlint/darwin-x64": "npm:1.32.0"
-    "@oxlint/linux-arm64-gnu": "npm:1.32.0"
-    "@oxlint/linux-arm64-musl": "npm:1.32.0"
-    "@oxlint/linux-x64-gnu": "npm:1.32.0"
-    "@oxlint/linux-x64-musl": "npm:1.32.0"
-    "@oxlint/win32-arm64": "npm:1.32.0"
-    "@oxlint/win32-x64": "npm:1.32.0"
+    "@oxlint/darwin-arm64": "npm:1.33.0"
+    "@oxlint/darwin-x64": "npm:1.33.0"
+    "@oxlint/linux-arm64-gnu": "npm:1.33.0"
+    "@oxlint/linux-arm64-musl": "npm:1.33.0"
+    "@oxlint/linux-x64-gnu": "npm:1.33.0"
+    "@oxlint/linux-x64-musl": "npm:1.33.0"
+    "@oxlint/win32-arm64": "npm:1.33.0"
+    "@oxlint/win32-x64": "npm:1.33.0"
   peerDependencies:
-    oxlint-tsgolint: ">=0.8.1"
+    oxlint-tsgolint: ">=0.9.0"
   dependenciesMeta:
     "@oxlint/darwin-arm64":
       optional: true
@@ -5881,7 +5906,7 @@ __metadata:
   bin:
     oxc_language_server: bin/oxc_language_server
     oxlint: bin/oxlint
-  checksum: 10c0/a87503f30b7f44d013f147c8c492c1b71f47045e7f45e03e5d3f042f55568b14a8856f944e393a9fdd0cf380e9544192e7e586fd8f52079143ff12ac5a628c4b
+  checksum: 10c0/7dfadaa7894a0dfbb0b6c2677561d68b8da4a23d08ad76ce5489734bbbf919c7599175658caa5a30ddfe8bab3124aa7fc149f3f6f5a43d50254744220c215775
   languageName: node
   linkType: hard
 
@@ -7807,9 +7832,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"zod@npm:^3.25 || ^4.0, zod@npm:^4.1.13":
+"zod@npm:^3.25 || ^4.0":
   version: 4.1.13
   resolution: "zod@npm:4.1.13"
   checksum: 10c0/d7e74e82dba81a91ffc3239cd85bc034abe193a28f7087a94ab258a3e48e9a7ca4141920cac979a0d781495b48fc547777394149f26be04c3dc642f58bbc3941
+  languageName: node
+  linkType: hard
+
+"zod@npm:^4.2.1":
+  version: 4.2.1
+  resolution: "zod@npm:4.2.1"
+  checksum: 10c0/ecb5219bddf76a42d092a843fb98ad4cb78f1e1077082772b03ef032ee5cbc80790a4051836b962d26fb4af854323bc784d628bd1b8d9898149eba7af21c5560
   languageName: node
   linkType: hard

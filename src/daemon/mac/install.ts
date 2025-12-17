@@ -64,10 +64,10 @@ export async function install(): Promise<void> {
                 <true/>
                 
                 <key>StandardErrorPath</key>
-                <string>${os.homedir()}/.happy/daemon.err</string>
+                <string>${os.homedir()}/.enfm-happy/daemon.err</string>
                 
                 <key>StandardOutPath</key>
-                <string>${os.homedir()}/.happy/daemon.log</string>
+                <string>${os.homedir()}/.enfm-happy/daemon.log</string>
                 
                 <key>WorkingDirectory</key>
                 <string>/tmp</string>
@@ -85,7 +85,7 @@ export async function install(): Promise<void> {
         execSync(`launchctl load ${PLIST_FILE}`, { stdio: 'inherit' });
 
         logger.info('Daemon installed and started successfully');
-        logger.info('Check logs at ~/.happy/daemon.log');
+        logger.info('Check logs at ~/.enfm-happy/daemon.log');
 
     } catch (error) {
         logger.debug('Failed to install daemon:', error);

@@ -240,11 +240,3 @@ export function clearGlobalDeduplicator(): void {
   }
   globalDeduplicatorMap.clear();
 }
-
-/**
- * Get the number of currently pending requests in the global deduplicator.
- * Useful for monitoring and debugging memory usage.
- */
-export function getGlobalDeduplicatorSize(): number {
-  return globalDeduplicatorMap.size;
-}

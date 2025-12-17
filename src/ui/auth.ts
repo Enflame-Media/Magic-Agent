@@ -15,7 +15,7 @@ import { randomUUID } from 'node:crypto';
 import { logger } from './logger';
 import { AppError, ErrorCodes } from '@/utils/errors';
 
-export async function doAuth(options?: { signal?: AbortSignal }): Promise<Credentials | null> {
+async function doAuth(options?: { signal?: AbortSignal }): Promise<Credentials | null> {
     console.clear();
 
     // Show authentication method selector
@@ -248,7 +248,7 @@ async function waitForAuthentication(keypair: tweetnacl.BoxKeyPair, options?: { 
     return null;
 }
 
-export function decryptWithEphemeralKey(encryptedBundle: Uint8Array, recipientSecretKey: Uint8Array): Uint8Array | null {
+function decryptWithEphemeralKey(encryptedBundle: Uint8Array, recipientSecretKey: Uint8Array): Uint8Array | null {
     // Extract components from bundle: ephemeral public key (32 bytes) + nonce (24 bytes) + encrypted data
     const ephemeralPublicKey = encryptedBundle.slice(0, 32);
     const nonce = encryptedBundle.slice(32, 32 + tweetnacl.box.nonceLength);

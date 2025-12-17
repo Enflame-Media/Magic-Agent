@@ -85,7 +85,7 @@ function isNewerVersion(current: string, latest: string): boolean {
  * }
  * ```
  */
-export async function checkForUpdates(): Promise<VersionCheckResult> {
+async function checkForUpdates(): Promise<VersionCheckResult> {
   const currentVersion = configuration.currentCliVersion
   const url = `${NPM_REGISTRY_URL}/${PACKAGE_NAME}/latest`
 

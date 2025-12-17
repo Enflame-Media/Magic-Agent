@@ -14,8 +14,6 @@ import { AppError, ErrorCodes } from '@/utils/errors';
  */
 export const TRANSIENT_FS_ERROR_CODES = ['EBUSY', 'EAGAIN', 'EMFILE', 'ENFILE'] as const;
 
-export type TransientFsErrorCode = typeof TRANSIENT_FS_ERROR_CODES[number];
-
 /**
  * Configuration options for retry behavior
  */

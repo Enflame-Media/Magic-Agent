@@ -47,11 +47,6 @@ export interface RpcCancelRequest {
 }
 
 /**
- * RPC response callback
- */
-export type RpcResponseCallback = (response: string) => void;
-
-/**
  * Configuration for RPC handler manager
  */
 export interface RpcHandlerConfig {
@@ -60,10 +55,3 @@ export interface RpcHandlerConfig {
     encryptionVariant: 'legacy' | 'dataKey';
     logger?: (message: string, data?: unknown) => void;
 }
-
-/**
- * Result of RPC handler execution
- */
-export type RpcHandlerResult<T = unknown> =
-    | { success: true; data: T }
-    | { success: false; error: string };

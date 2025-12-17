@@ -34,8 +34,6 @@ export interface ReasoningMessage {
     id: string;
 }
 
-export type ReasoningOutput = ReasoningToolCall | ReasoningToolResult | ReasoningMessage;
-
 export class ReasoningProcessor {
     private accumulator: string = '';
     private inTitleCapture: boolean = false;

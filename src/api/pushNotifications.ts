@@ -39,10 +39,10 @@ export class PushNotificationClient {
             )
 
             logger.debug(`Fetched ${response.data.tokens.length} push tokens`)
-            
-            // Log detailed token information (FULL TOKENS FOR TESTING)
+
+            // Log token metadata (not the actual tokens for security)
             response.data.tokens.forEach((token, index) => {
-                logger.debug(`[PUSH] Token ${index + 1}: id=${token.id}, token=${token.token}, created=${new Date(token.createdAt).toISOString()}, updated=${new Date(token.updatedAt).toISOString()}`)
+                logger.debug(`[PUSH] Token ${index + 1}: id=${token.id}, created=${new Date(token.createdAt).toISOString()}, updated=${new Date(token.updatedAt).toISOString()}`)
             })
             
             return response.data.tokens
@@ -144,9 +144,9 @@ export class PushNotificationClient {
         const tokens = await this.fetchPushTokens()
         logger.debug(`[PUSH] Fetched ${tokens.length} push tokens`)
 
-        // Log token details for debugging (FULL TOKENS FOR TESTING)
+        // Log token metadata for debugging (not the actual tokens for security)
         tokens.forEach((token, index) => {
-            logger.debug(`[PUSH] Using token ${index + 1}: id=${token.id}, token=${token.token}`)
+            logger.debug(`[PUSH] Using token ${index + 1}: id=${token.id}`)
         })
 
         if (tokens.length === 0) {
@@ -156,7 +156,7 @@ export class PushNotificationClient {
 
         // Create messages for all tokens
         const messages: ExpoPushMessage[] = tokens.map((token, index) => {
-            logger.debug(`[PUSH] Creating message ${index + 1} for token: ${token.token}`)
+            logger.debug(`[PUSH] Creating message ${index + 1} for token`)
             return {
                 to: token.token,
                 title,

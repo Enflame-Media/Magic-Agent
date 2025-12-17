@@ -68,7 +68,7 @@ export interface CommandDefinition {
 /**
  * All CLI commands with their complete definitions
  */
-export const commands: Record<string, CommandDefinition> = {
+const commands: Record<string, CommandDefinition> = {
   auth: {
     name: 'auth',
     description: 'Manage authentication',
@@ -117,7 +117,7 @@ export const commands: Record<string, CommandDefinition> = {
     notes: [
       'You must be authenticated first (run \'happy auth login\')',
       'API keys are encrypted and stored securely in Happy cloud',
-      'Manage your stored keys at app.happy.engineering',
+      'Manage your stored keys at happy.enflamemedia.com',
     ],
   },
 
@@ -196,7 +196,7 @@ export const commands: Record<string, CommandDefinition> = {
 /**
  * Default command (when no subcommand is specified)
  */
-export const defaultCommand: CommandDefinition = {
+const defaultCommand: CommandDefinition = {
   name: '',
   description: 'Start Claude with mobile control',
   detailedDescription: 'Start an interactive Claude session with Happy mobile control enabled',
@@ -367,18 +367,4 @@ export function generateCommandHelp(commandName: string): string | null {
   }
 
   return lines.join('\n')
-}
-
-/**
- * Get all command names for validation
- */
-export function getCommandNames(): string[] {
-  return Object.keys(commands)
-}
-
-/**
- * Check if a command exists
- */
-export function isValidCommand(name: string): boolean {
-  return name in commands
 }

@@ -30,8 +30,8 @@ export class Configuration {
 
   constructor() {
     // Server configuration - priority: parameter > environment > default
-    this.serverUrl = process.env.HAPPY_SERVER_URL || 'https://api.cluster-fluster.com'
-    this.webappUrl = process.env.HAPPY_WEBAPP_URL || 'https://app.happy.engineering'
+    this.serverUrl = process.env.HAPPY_SERVER_URL || 'https://happy-api.enflamemedia.com'
+    this.webappUrl = process.env.HAPPY_WEBAPP_URL || 'https://happy.enflamemedia.com'
 
     // Check if we're running as daemon based on process args
     const args = process.argv.slice(2)
@@ -43,7 +43,7 @@ export class Configuration {
       const expandedPath = process.env.HAPPY_HOME_DIR.replace(/^~/, homedir())
       this.happyHomeDir = expandedPath
     } else {
-      this.happyHomeDir = join(homedir(), '.happy')
+      this.happyHomeDir = join(homedir(), '.enfm-happy')
     }
 
     this.logsDir = join(this.happyHomeDir, 'logs')

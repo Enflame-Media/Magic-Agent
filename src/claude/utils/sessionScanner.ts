@@ -156,9 +156,6 @@ export async function createSessionScanner(opts: {
     }
 }
 
-export type SessionScanner = ReturnType<typeof createSessionScanner>;
-
-
 //
 // Helpers
 //

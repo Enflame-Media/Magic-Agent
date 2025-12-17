@@ -110,13 +110,6 @@ export function getCaffeinatePid(): number | undefined {
 }
 
 /**
- * Check if caffeinate is currently running
- */
-export function isCaffeinateRunning(): boolean {
-    return caffeinateProcess !== null && !caffeinateProcess.killed
-}
-
-/**
  * Synchronously kill the caffeinate process.
  * This is used for exit handlers where async operations are not allowed.
  */

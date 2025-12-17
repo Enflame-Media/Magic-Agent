@@ -1,4 +1,3 @@
-const crypto = require('crypto');
 const fs = require('fs');
 
 // Disable autoupdater (never works really)
@@ -13,86 +12,67 @@ function writeMessage(message) {
     }
 }
 
-// Intercept crypto.randomUUID
-const originalRandomUUID = crypto.randomUUID;
-Object.defineProperty(global, 'crypto', {
-    configurable: true,
-    enumerable: true,
-    get() {
-        return {
-            randomUUID: () => {
-                const uuid = originalRandomUUID();
-                writeMessage({ type: 'uuid', value: uuid });
-                return uuid;
-            }
-        };
-    }
-});
-Object.defineProperty(crypto, 'randomUUID', {
-    configurable: true,
-    enumerable: true,
-    get() {
-        return () => {
-            const uuid = originalRandomUUID();
-            writeMessage({ type: 'uuid', value: uuid });
-            return uuid;
-        }
-    }
-});
-
-// Intercept fetch to track activity
+// Intercept fetch to track thinking state
+// Note: UUID interception removed - using deterministic session flow instead
 const originalFetch = global.fetch;
-let fetchCounter = 0;
 
-global.fetch = function(...args) {
-    const id = ++fetchCounter;
-    const url = typeof args[0] === 'string' ? args[0] : args[0]?.url || '';
-    const method = args[1]?.method || 'GET';
-    
-    // Parse URL for privacy
-    let hostname = '';
-    let path = '';
-    try {
-        const urlObj = new URL(url, 'http://localhost');
-        hostname = urlObj.hostname;
-        path = urlObj.pathname;
-    } catch (_e) {
-        // If URL parsing fails, use defaults
-        hostname = 'unknown';
-        path = url;
-    }
-    
-    // Send fetch start event
-    writeMessage({
-        type: 'fetch-start',
-        id,
-        hostname,
-        path,
-        method,
-        timestamp: Date.now()
-    });
+// Guard for environments without global.fetch
+if (originalFetch) {
+    let fetchCounter = 0;
 
-    // Execute the original fetch immediately
-    const fetchPromise = originalFetch(...args);
-    
-    // Attach handlers to send fetch end event
-    const sendEnd = () => {
+    global.fetch = function(...args) {
+        const id = ++fetchCounter;
+        const url = typeof args[0] === 'string' ? args[0] : args[0]?.url || '';
+        const method = args[1]?.method || 'GET';
+
+        // Parse URL for privacy
+        let hostname = '';
+        let path = '';
+        try {
+            const urlObj = new URL(url, 'http://localhost');
+            hostname = urlObj.hostname;
+            path = urlObj.pathname;
+        } catch (_e) {
+            // If URL parsing fails, use defaults
+            hostname = 'unknown';
+            path = url;
+        }
+
+        // Send fetch start event
         writeMessage({
-            type: 'fetch-end',
+            type: 'fetch-start',
             id,
+            hostname,
+            path,
+            method,
             timestamp: Date.now()
         });
+
+        // Execute the original fetch immediately
+        const fetchPromise = originalFetch(...args);
+
+        // Attach handlers to send fetch end event
+        const sendEnd = () => {
+            writeMessage({
+                type: 'fetch-end',
+                id,
+                timestamp: Date.now()
+            });
+        };
+
+        // Send end event on both success and failure
+        fetchPromise.then(sendEnd, sendEnd);
+
+        // Return the original promise unchanged
+        return fetchPromise;
     };
-    
-    // Send end event on both success and failure
-    fetchPromise.then(sendEnd, sendEnd);
-    
-    // Return the original promise unchanged
-    return fetchPromise;
-};
 
-// Preserve fetch properties
-Object.defineProperty(global.fetch, 'name', { value: 'fetch' });
-Object.defineProperty(global.fetch, 'length', { value: originalFetch.length });
+    // Preserve fetch properties
+    Object.defineProperty(global.fetch, 'name', { value: 'fetch' });
+    Object.defineProperty(global.fetch, 'length', { value: originalFetch.length });
+}
 
-import('@anthropic-ai/claude-code/cli.js')
+// Import global Claude Code CLI
+const { getClaudeCliPath, runClaudeCli } = require('./claude_version_utils.cjs');
+
+runClaudeCli(getClaudeCliPath());

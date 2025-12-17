@@ -21,13 +21,13 @@ const envConfig: EnvConfig[] = [
   {
     name: 'HAPPY_SERVER_URL',
     description: 'Happy server URL for syncing sessions',
-    defaultValue: 'https://api.cluster-fluster.com',
+    defaultValue: 'https://happy-api.enflamemedia.com',
     category: 'server',
   },
   {
     name: 'HAPPY_WEBAPP_URL',
     description: 'Happy web application URL',
-    defaultValue: 'https://app.happy.engineering',
+    defaultValue: 'https://happy.enflamemedia.com',
     category: 'server',
   },
 
@@ -35,7 +35,7 @@ const envConfig: EnvConfig[] = [
   {
     name: 'HAPPY_HOME_DIR',
     description: 'Directory for happy data and logs (supports ~ expansion)',
-    defaultValue: '~/.happy',
+    defaultValue: '~/.enfm-happy',
     category: 'directories',
   },
   {
@@ -205,43 +205,4 @@ export function validateEnv(verbose = false): void {
       console.log(`  Custom: ${result.configured.join(', ')}`)
     }
   }
-}
-
-/**
- * Gets documentation for all environment variables
- */
-export function getEnvDocs(): string {
-  const lines: string[] = ['# Happy CLI Environment Variables', '']
-
-  const categories: Record<string, EnvConfig[]> = {}
-  for (const config of envConfig) {
-    if (!categories[config.category]) {
-      categories[config.category] = []
-    }
-    categories[config.category].push(config)
-  }
-
-  const categoryTitles: Record<string, string> = {
-    server: 'Server Configuration',
-    directories: 'Directory Paths',
-    features: 'Feature Flags',
-    debug: 'Debug Options',
-    tuning: 'Performance Tuning',
-    claude: 'Claude Integration',
-    codex: 'Codex Integration',
-  }
-
-  for (const [category, configs] of Object.entries(categories)) {
-    lines.push(`## ${categoryTitles[category] || category}`, '')
-    for (const config of configs) {
-      lines.push(`### ${config.name}`)
-      lines.push(config.description)
-      if (config.defaultValue) {
-        lines.push(`Default: \`${config.defaultValue}\``)
-      }
-      lines.push('')
-    }
-  }
-
-  return lines.join('\n')
 }

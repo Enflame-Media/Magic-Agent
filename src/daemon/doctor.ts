@@ -60,7 +60,7 @@ export async function findAllHappyProcesses(): Promise<Array<{ pid: number, comm
 /**
  * Find all runaway Happy CLI processes that should be killed
  */
-export async function findRunawayHappyProcesses(): Promise<Array<{ pid: number, command: string }>> {
+async function findRunawayHappyProcesses(): Promise<Array<{ pid: number, command: string }>> {
   const allProcesses = await findAllHappyProcesses();
   
   // Filter to just runaway processes (excluding current process)

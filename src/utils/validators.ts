@@ -15,7 +15,7 @@ export type StartedByValue = typeof STARTED_BY_VALUES[number]
 /**
  * Zod schema for validating --started-by argument
  */
-export const startedBySchema = z.enum(STARTED_BY_VALUES)
+const startedBySchema = z.enum(STARTED_BY_VALUES)
 
 /**
  * Validates the --started-by CLI argument.

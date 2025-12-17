@@ -99,7 +99,7 @@ let lastGCHintTime = 0
  * Parse memory threshold from environment variable.
  * Returns threshold in bytes.
  */
-export function getMemoryThresholdBytes(): number {
+function getMemoryThresholdBytes(): number {
   const thresholdMB = validatePositiveInteger(
     process.env.HAPPY_MEMORY_THRESHOLD_MB,
     'HAPPY_MEMORY_THRESHOLD_MB',
@@ -116,7 +116,7 @@ export function getMemoryThresholdBytes(): number {
  * Parse memory check interval from environment variable.
  * Returns interval in milliseconds.
  */
-export function getMemoryCheckIntervalMs(): number {
+function getMemoryCheckIntervalMs(): number {
   return validatePositiveInteger(
     process.env.HAPPY_MEMORY_CHECK_INTERVAL_MS,
     'HAPPY_MEMORY_CHECK_INTERVAL_MS',
@@ -131,7 +131,7 @@ export function getMemoryCheckIntervalMs(): number {
 /**
  * Get current memory statistics.
  */
-export function getMemoryStats(thresholdBytes: number): MemoryStats {
+function getMemoryStats(thresholdBytes: number): MemoryStats {
   const mem = memoryUsage()
   const heapUsedMB = mem.heapUsed / MB_TO_BYTES
   const thresholdMB = thresholdBytes / MB_TO_BYTES
@@ -219,7 +219,7 @@ function checkMemoryPressure(config: MemoryMonitorConfig): boolean {
  * @param config Configuration options
  * @returns Handle to stop monitoring and get stats
  */
-export function startMemoryMonitor(config: MemoryMonitorConfig): MemoryMonitorHandle {
+function startMemoryMonitor(config: MemoryMonitorConfig): MemoryMonitorHandle {
   logger.debug(
     `[MEMORY MONITOR] Starting with threshold=${config.thresholdBytes / MB_TO_BYTES}MB, ` +
     `interval=${config.checkIntervalMs}ms`

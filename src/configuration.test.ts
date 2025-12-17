@@ -61,7 +61,7 @@ describe('Configuration', () => {
     it('should use default serverUrl when HAPPY_SERVER_URL is not set', () => {
       withEnv({ HAPPY_SERVER_URL: undefined }, () => {
         const config = new Configuration()
-        expect(config.serverUrl).toBe('https://api.cluster-fluster.com')
+        expect(config.serverUrl).toBe('https://happy-api.enflamemedia.com')
       })
     })
 
@@ -75,7 +75,7 @@ describe('Configuration', () => {
     it('should use default webappUrl when HAPPY_WEBAPP_URL is not set', () => {
       withEnv({ HAPPY_WEBAPP_URL: undefined }, () => {
         const config = new Configuration()
-        expect(config.webappUrl).toBe('https://app.happy.engineering')
+        expect(config.webappUrl).toBe('https://happy.enflamemedia.com')
       })
     })
 
@@ -132,10 +132,10 @@ describe('Configuration', () => {
   })
 
   describe('HAPPY_HOME_DIR expansion', () => {
-    it('should use default ~/.happy when HAPPY_HOME_DIR is not set', () => {
+    it('should use default ~/.enfm-happy when HAPPY_HOME_DIR is not set', () => {
       withEnv({ HAPPY_HOME_DIR: undefined }, () => {
         const config = new Configuration()
-        expect(config.happyHomeDir).toBe(join(homedir(), '.happy'))
+        expect(config.happyHomeDir).toBe(join(homedir(), '.enfm-happy'))
       })
     })
 

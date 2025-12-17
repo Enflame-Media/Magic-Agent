@@ -16,7 +16,7 @@ export interface SDKMetadata {
  * Extract SDK metadata by running a minimal query and capturing the init message
  * @returns SDK metadata containing tools and slash commands
  */
-export async function extractSDKMetadata(): Promise<SDKMetadata> {
+async function extractSDKMetadata(): Promise<SDKMetadata> {
     const abortController = new AbortController()
     
     try {
