@@ -2,325 +2,209 @@ import { z } from 'zod'
 import { UsageSchema } from '@/claude/types'
 import { PermissionMode } from '@/claude/loop'
 
-/**
- * Usage data type from Claude
- */
-export type Usage = z.infer<typeof UsageSchema>
+// =============================================================================
+// IMPORTS FROM @happy/protocol (shared package)
+// =============================================================================
+// These schemas are imported from the shared protocol package to ensure
+// type consistency across happy-cli, happy-app, and happy-server.
+//
+// Note: Some schemas have minor differences between protocol and CLI expectations.
+// Where differences exist, we keep CLI-specific schemas and document why.
 
-/**
- * Base message content structure for encrypted messages
- */
-const SessionMessageContentSchema = z.object({
-  c: z.string(), // Base64 encoded encrypted content
-  t: z.literal('encrypted')
-})
+import {
+  // Update schemas
+  ApiUpdateSchema,
+  ApiUpdateContainerSchema,
+  ApiUpdateNewMessageSchema,
+  ApiDeleteSessionSchema,
+  ApiUpdateNewSessionSchema,
+  ApiNewMachineSchema,
+  ApiNewArtifactSchema,
+  ApiUpdateArtifactSchema,
+  ApiDeleteArtifactSchema,
+  ApiRelationshipUpdatedSchema,
+  ApiNewFeedPostSchema,
+  ApiKvBatchUpdateSchema,
+  ApiUpdateMachineStateSchema,
+  ApiUpdateSessionStateSchema,
+  // Common types
+  GitHubProfileSchema as SharedGitHubProfileSchema,
+  EncryptedContentSchema,
+  VersionedValueSchema,
+  NullableVersionedValueSchema,
+  // Ephemeral types
+  ApiEphemeralUpdateSchema,
+  ApiEphemeralActivityUpdateSchema,
+  ApiEphemeralUsageUpdateSchema,
+  ApiEphemeralMachineActivityUpdateSchema,
+  // Type exports
+  type ApiUpdate,
+  type ApiUpdateContainer,
+  type ApiUpdateNewMessage,
+  type ApiDeleteSession,
+  type ApiUpdateNewSession,
+  type ApiNewMachine,
+  type ApiNewArtifact,
+  type ApiUpdateArtifact,
+  type ApiDeleteArtifact,
+  type ApiRelationshipUpdated,
+  type ApiNewFeedPost,
+  type ApiKvBatchUpdate,
+  type ApiUpdateMachineState,
+  type ApiUpdateSessionState,
+  type ApiEphemeralUpdate,
+  type ApiEphemeralActivityUpdate,
+  type ApiEphemeralUsageUpdate,
+  type ApiEphemeralMachineActivityUpdate,
+  type GitHubProfile,
+  type EncryptedContent,
+  type VersionedValue,
+  type NullableVersionedValue,
+} from '@happy/protocol'
 
-/**
- * Update body for new messages
- */
-const UpdateBodySchema = z.object({
-  message: z.object({
-    id: z.string(),
-    seq: z.number(),
-    content: SessionMessageContentSchema
-  }),
-  sid: z.string(), // Session ID
-  t: z.literal('new-message')
-})
+// =============================================================================
+// RE-EXPORTS FOR BACKWARD COMPATIBILITY
+// =============================================================================
+// These re-exports maintain backward compatibility for existing code that
+// imports from @/api/types instead of directly from @happy/protocol.
 
-const UpdateSessionBodySchema = z.object({
-  t: z.literal('update-session'),
-  sid: z.string(),
-  metadata: z.object({
-    version: z.number(),
-    value: z.string()
-  }).nullish(),
-  agentState: z.object({
-    version: z.number(),
-    value: z.string()
-  }).nullish()
-})
+// Update schemas and types
+export {
+  ApiUpdateSchema,
+  ApiUpdateContainerSchema,
+  ApiUpdateNewMessageSchema,
+  ApiDeleteSessionSchema,
+  ApiUpdateNewSessionSchema,
+  ApiNewMachineSchema,
+  ApiNewArtifactSchema,
+  ApiUpdateArtifactSchema,
+  ApiDeleteArtifactSchema,
+  ApiRelationshipUpdatedSchema,
+  ApiNewFeedPostSchema,
+  ApiKvBatchUpdateSchema,
+  ApiUpdateMachineStateSchema,
+  ApiUpdateSessionStateSchema,
+  // Common types
+  EncryptedContentSchema,
+  VersionedValueSchema,
+  NullableVersionedValueSchema,
+  // Ephemeral types
+  ApiEphemeralUpdateSchema,
+  ApiEphemeralActivityUpdateSchema,
+  ApiEphemeralUsageUpdateSchema,
+  ApiEphemeralMachineActivityUpdateSchema,
+}
 
-/**
- * Update body for machine updates
- */
-const UpdateMachineBodySchema = z.object({
-  t: z.literal('update-machine'),
-  machineId: z.string(),
-  metadata: z.object({
-    version: z.number(),
-    value: z.string()
-  }).nullish(),
-  daemonState: z.object({
-    version: z.number(),
-    value: z.string()
-  }).nullish()
-})
+export type {
+  ApiUpdate,
+  ApiUpdateContainer,
+  ApiUpdateNewMessage,
+  ApiDeleteSession,
+  ApiUpdateNewSession,
+  ApiNewMachine,
+  ApiNewArtifact,
+  ApiUpdateArtifact,
+  ApiDeleteArtifact,
+  ApiRelationshipUpdated,
+  ApiNewFeedPost,
+  ApiKvBatchUpdate,
+  ApiUpdateMachineState,
+  ApiUpdateSessionState,
+  ApiEphemeralUpdate,
+  ApiEphemeralActivityUpdate,
+  ApiEphemeralUsageUpdate,
+  ApiEphemeralMachineActivityUpdate,
+  EncryptedContent,
+  VersionedValue,
+  NullableVersionedValue,
+}
 
-export type UpdateMachineBody = z.infer<typeof UpdateMachineBodySchema>
+// =============================================================================
+// LEGACY TYPE ALIASES (Deprecated - use Api* versions)
+// =============================================================================
+// These aliases maintain backward compatibility with code using the old naming.
+// New code should use the Api* prefixed versions from @happy/protocol.
 
-/**
- * Update body for new session creation
- */
-const NewSessionBodySchema = z.object({
-  t: z.literal('new-session'),
-  id: z.string(),
-  seq: z.number(),
-  metadata: z.string(),
-  metadataVersion: z.number(),
-  agentState: z.string().nullable(),
-  agentStateVersion: z.number(),
-  dataEncryptionKey: z.string().nullable(),
-  active: z.boolean(),
-  activeAt: z.number(),
-  createdAt: z.number(),
-  updatedAt: z.number()
-})
+/** @deprecated Use ApiUpdateContainer from @happy/protocol */
+export const UpdateSchema = ApiUpdateContainerSchema
+
+/** @deprecated Use ApiUpdateContainer from @happy/protocol */
+export type Update = ApiUpdateContainer
+
+/** @deprecated Use ApiDeleteSession from @happy/protocol */
+export type DeleteSessionBody = ApiDeleteSession
+
+/** @deprecated Use ApiNewArtifact from @happy/protocol */
+export type NewArtifactBody = ApiNewArtifact
+
+/** @deprecated Use ApiUpdateArtifact from @happy/protocol */
+export type UpdateArtifactBody = ApiUpdateArtifact
+
+/** @deprecated Use ApiDeleteArtifact from @happy/protocol */
+export type DeleteArtifactBody = ApiDeleteArtifact
+
+/** @deprecated Use ApiRelationshipUpdated from @happy/protocol */
+export type RelationshipUpdatedBody = ApiRelationshipUpdated
+
+/** @deprecated Use ApiNewFeedPost from @happy/protocol */
+export type NewFeedPostBody = ApiNewFeedPost
+
+/** @deprecated Use ApiKvBatchUpdate from @happy/protocol */
+export type KvBatchUpdateBody = ApiKvBatchUpdate
+
+/** @deprecated Use ApiUpdateMachineState from @happy/protocol */
+export type UpdateMachineBody = ApiUpdateMachineState
+
+// =============================================================================
+// EPHEMERAL TYPE ALIASES (Deprecated - use Api* versions)
+// =============================================================================
+
+/** @deprecated Use ApiEphemeralActivityUpdate from @happy/protocol */
+export type EphemeralActivityUpdate = ApiEphemeralActivityUpdate
+
+/** @deprecated Use ApiEphemeralUsageUpdate from @happy/protocol */
+export type EphemeralUsageUpdate = ApiEphemeralUsageUpdate
+
+/** @deprecated Use ApiEphemeralMachineActivityUpdate from @happy/protocol */
+export type EphemeralMachineActivityUpdate = ApiEphemeralMachineActivityUpdate
+
+/** @deprecated Use ApiEphemeralUpdate from @happy/protocol */
+export type EphemeralUpdate = ApiEphemeralUpdate
+
+// =============================================================================
+// GITHUB PROFILE (CLI-specific version with passthrough)
+// =============================================================================
+// CLI uses a more lenient version that allows additional fields from GitHub API.
+// This is kept local because the shared version is stricter.
 
 /**
  * GitHub profile data from OAuth
+ * Note: Uses passthrough to allow additional fields from GitHub API
  */
-const GitHubProfileSchema = z.object({
+export const GitHubProfileSchema = z.object({
   id: z.number(),
   login: z.string(),
   name: z.string().nullable().optional(),
   email: z.string().nullable().optional(),
   avatar_url: z.string().optional(),
-}).passthrough(); // Allow additional fields from GitHub API
+}).passthrough()
+
+export type { GitHubProfile }
+
+// =============================================================================
+// USAGE DATA TYPE FROM CLAUDE
+// =============================================================================
 
 /**
- * Update body for account changes
+ * Usage data type from Claude
  */
-const UpdateAccountBodySchema = z.object({
-  t: z.literal('update-account'),
-  id: z.string(),
-  settings: z.object({
-    value: z.string().nullable(),
-    version: z.number()
-  }).nullish(),
-  github: GitHubProfileSchema.nullish()
-})
+export type Usage = z.infer<typeof UsageSchema>
 
-/**
- * Update body for new machine registration
- */
-const NewMachineBodySchema = z.object({
-  t: z.literal('new-machine'),
-  machineId: z.string(),
-  seq: z.number(),
-  metadata: z.string(),
-  metadataVersion: z.number(),
-  daemonState: z.string().nullable(),
-  daemonStateVersion: z.number(),
-  dataEncryptionKey: z.string().nullable(),
-  active: z.boolean(),
-  activeAt: z.number(),
-  createdAt: z.number(),
-  updatedAt: z.number()
-})
-
-/**
- * Update body for session deletion (from mobile app archival)
- */
-const DeleteSessionBodySchema = z.object({
-  t: z.literal('delete-session'),
-  sid: z.string()
-})
-
-/**
- * Update body for new artifact creation
- */
-const NewArtifactBodySchema = z.object({
-  t: z.literal('new-artifact'),
-  artifactId: z.string(),
-  header: z.string(),
-  headerVersion: z.number(),
-  body: z.string().optional(),
-  bodyVersion: z.number().optional(),
-  dataEncryptionKey: z.string(),
-  seq: z.number(),
-  createdAt: z.number(),
-  updatedAt: z.number()
-})
-
-/**
- * Update body for artifact updates
- */
-const UpdateArtifactBodySchema = z.object({
-  t: z.literal('update-artifact'),
-  artifactId: z.string(),
-  header: z.object({
-    value: z.string(),
-    version: z.number()
-  }).optional(),
-  body: z.object({
-    value: z.string(),
-    version: z.number()
-  }).optional()
-})
-
-/**
- * Update body for artifact deletion
- */
-const DeleteArtifactBodySchema = z.object({
-  t: z.literal('delete-artifact'),
-  artifactId: z.string()
-})
-
-/**
- * Update body for relationship changes (friend/social features)
- * Note: CLI doesn't use social features, but schema needed for type completeness
- */
-const RelationshipUpdatedBodySchema = z.object({
-  t: z.literal('relationship-updated'),
-  fromUserId: z.string(),
-  toUserId: z.string(),
-  status: z.enum(['none', 'requested', 'pending', 'friend', 'rejected']),
-  action: z.enum(['created', 'updated', 'deleted']),
-  fromUser: z.object({
-    id: z.string(),
-    firstName: z.string(),
-    lastName: z.string().nullable(),
-    avatar: z.object({
-      path: z.string(),
-      url: z.string(),
-      width: z.number().optional(),
-      height: z.number().optional(),
-      thumbhash: z.string().optional()
-    }).nullable(),
-    username: z.string(),
-    bio: z.string().nullable(),
-    status: z.enum(['none', 'requested', 'pending', 'friend', 'rejected'])
-  }).optional(),
-  toUser: z.object({
-    id: z.string(),
-    firstName: z.string(),
-    lastName: z.string().nullable(),
-    avatar: z.object({
-      path: z.string(),
-      url: z.string(),
-      width: z.number().optional(),
-      height: z.number().optional(),
-      thumbhash: z.string().optional()
-    }).nullable(),
-    username: z.string(),
-    bio: z.string().nullable(),
-    status: z.enum(['none', 'requested', 'pending', 'friend', 'rejected'])
-  }).optional(),
-  timestamp: z.number()
-})
-
-/**
- * Update body for new feed posts (activity feed)
- * Note: CLI doesn't display activity feed, but schema needed for type completeness
- */
-const NewFeedPostBodySchema = z.object({
-  t: z.literal('new-feed-post'),
-  id: z.string(),
-  body: z.discriminatedUnion('kind', [
-    z.object({ kind: z.literal('friend_request'), uid: z.string() }),
-    z.object({ kind: z.literal('friend_accepted'), uid: z.string() }),
-    z.object({ kind: z.literal('text'), text: z.string() })
-  ]),
-  cursor: z.string(),
-  createdAt: z.number(),
-  repeatKey: z.string().nullable()
-})
-
-/**
- * Update body for KV batch updates (settings sync)
- */
-const KvBatchUpdateBodySchema = z.object({
-  t: z.literal('kv-batch-update'),
-  changes: z.array(z.object({
-    key: z.string(),
-    value: z.string().nullable(),
-    version: z.number()
-  }))
-})
-
-/**
- * Update event from server
- */
-const UpdateSchema = z.object({
-  id: z.string(),
-  seq: z.number(),
-  body: z.union([
-    UpdateBodySchema,
-    UpdateSessionBodySchema,
-    UpdateMachineBodySchema,
-    NewSessionBodySchema,
-    UpdateAccountBodySchema,
-    NewMachineBodySchema,
-    DeleteSessionBodySchema,
-    NewArtifactBodySchema,
-    UpdateArtifactBodySchema,
-    DeleteArtifactBodySchema,
-    RelationshipUpdatedBodySchema,
-    NewFeedPostBodySchema,
-    KvBatchUpdateBodySchema,
-  ]),
-  createdAt: z.number()
-})
-
-export type Update = z.infer<typeof UpdateSchema>
-
-/** Type exports for update body schemas */
-export type DeleteSessionBody = z.infer<typeof DeleteSessionBodySchema>
-export type NewArtifactBody = z.infer<typeof NewArtifactBodySchema>
-export type UpdateArtifactBody = z.infer<typeof UpdateArtifactBodySchema>
-export type DeleteArtifactBody = z.infer<typeof DeleteArtifactBodySchema>
-export type RelationshipUpdatedBody = z.infer<typeof RelationshipUpdatedBodySchema>
-export type NewFeedPostBody = z.infer<typeof NewFeedPostBodySchema>
-export type KvBatchUpdateBody = z.infer<typeof KvBatchUpdateBodySchema>
-
-/**
- * Ephemeral activity update - real-time session activity status
- */
-export type EphemeralActivityUpdate = {
-  type: 'activity'
-  id: string
-  active: boolean
-  activeAt: number
-  thinking: boolean
-}
-
-/**
- * Ephemeral usage update - real-time cost/token tracking
- */
-export type EphemeralUsageUpdate = {
-  type: 'usage'
-  id: string
-  key: string
-  timestamp: number
-  tokens: {
-    total: number
-    input: number
-    output: number
-    cache_creation: number
-    cache_read: number
-  }
-  cost: {
-    total: number
-    input: number
-    output: number
-  }
-}
-
-/**
- * Ephemeral machine activity update - daemon status sync
- */
-export type EphemeralMachineActivityUpdate = {
-  type: 'machine-activity'
-  id: string
-  active: boolean
-  activeAt: number
-}
-
-/**
- * Union of all ephemeral update types
- */
-export type EphemeralUpdate = EphemeralActivityUpdate | EphemeralUsageUpdate | EphemeralMachineActivityUpdate
+// =============================================================================
+// SOCKET EVENT INTERFACES (CLI-SPECIFIC)
+// =============================================================================
+// These interfaces define the WebSocket events for CLI-server communication.
+// They include CLI-specific callback signatures and must remain local.
 
 /**
  * Socket events from server to client
@@ -335,7 +219,6 @@ export interface ServerToClientEvents {
   auth: (data: { success: boolean, user: string }) => void
   error: (data: { message: string }) => void
 }
-
 
 /**
  * Socket events from client to server
@@ -393,8 +276,14 @@ export interface ClientToServerEvents {
   }) => void
 }
 
+// =============================================================================
+// CLI-SPECIFIC DOMAIN TYPES
+// =============================================================================
+// These types are specific to the CLI and include encryption-related fields
+// that are not part of the shared protocol.
+
 /**
- * Session information
+ * Session information (CLI-specific with encryption fields)
  */
 export type Session = {
   id: string,
@@ -410,7 +299,7 @@ export type Session = {
 /**
  * Machine metadata - static information (rarely changes)
  */
-const MachineMetadataSchema = z.object({
+export const MachineMetadataSchema = z.object({
   host: z.string(),
   platform: z.string(),
   happyCliVersion: z.string(),
@@ -424,7 +313,7 @@ export type MachineMetadata = z.infer<typeof MachineMetadataSchema>
 /**
  * Daemon state - dynamic runtime information (frequently updated)
  */
-const DaemonStateSchema = z.object({
+export const DaemonStateSchema = z.object({
   status: z.union([
     z.enum(['running', 'shutting-down']),
     z.string() // Forward compatibility
@@ -442,6 +331,9 @@ const DaemonStateSchema = z.object({
 
 export type DaemonState = z.infer<typeof DaemonStateSchema>
 
+/**
+ * Machine information (CLI-specific with encryption fields)
+ */
 export type Machine = {
   id: string,
   encryptionKey: Uint8Array;
@@ -451,6 +343,12 @@ export type Machine = {
   daemonState: DaemonState | null,
   daemonStateVersion: number,
 }
+
+// =============================================================================
+// CLI-SPECIFIC MESSAGE TYPES
+// =============================================================================
+// These schemas handle message parsing for the CLI, including user input
+// from mobile app and agent responses.
 
 /**
  * Message metadata schema
@@ -510,6 +408,9 @@ const MessageContentSchema = z.union([UserMessageSchema, AgentMessageSchema])
 
 export type MessageContent = z.infer<typeof MessageContentSchema>
 
+/**
+ * Session metadata - CLI-specific fields for session context
+ */
 export type Metadata = {
   path: string,
   host: string,
@@ -544,6 +445,9 @@ export type Metadata = {
  */
 export type ToolArguments = Record<string, unknown>;
 
+/**
+ * Agent state - tracks permission requests and their outcomes
+ */
 export type AgentState = {
   controlledByUser?: boolean | null | undefined
   requests?: {

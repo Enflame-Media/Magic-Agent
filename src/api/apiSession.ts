@@ -227,6 +227,11 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
                         await this.metadataLock.inLock(async () => {
                             // Re-check version inside lock to avoid stale updates
                             if (data.body.t === 'update-session' && data.body.metadata && data.body.metadata.version > this.metadataVersion) {
+                                // Null value means metadata was cleared - this shouldn't happen for sessions but handle gracefully
+                                if (!data.body.metadata.value) {
+                                    logger.debug('[SOCKET] [UPDATE] Received null metadata value - skipping update');
+                                    return;
+                                }
                                 const decryptedMetadata = decrypt<Metadata>(this.encryptionKey, this.encryptionVariant, decodeBase64(data.body.metadata.value));
                                 if (decryptedMetadata === null) {
                                     logger.debug('[SOCKET] [UPDATE] [ERROR] Failed to decrypt metadata - skipping update');
