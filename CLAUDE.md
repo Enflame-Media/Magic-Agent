@@ -169,6 +169,22 @@ See `docs/SECRET-ROTATION.md` for comprehensive rotation procedures.
 - For complex fields, use "Json" type
 - NEVER DO MIGRATION YOURSELF. Only run yarn generate when new types needed
 
+### Prisma Client Generation on noexec /tmp Systems
+
+On systems where `/tmp` is mounted with `noexec` (common on Synology NAS and some secure Linux configurations), Prisma generators that execute binaries from temp directories will fail with "Permission denied" errors.
+
+**Solution**: Set the `TMPDIR` environment variable to a directory with execute permissions:
+
+```bash
+# One-time generation
+TMPDIR=/volume1/Projects/happy/.tmp yarn prisma generate
+
+# Or add to your shell profile for persistent fix
+export TMPDIR=/volume1/Projects/happy/.tmp
+```
+
+The `.tmp` directory in the project root has execute permissions and is gitignored.
+
 ### Current Schema Status
 The project has pending Prisma migrations that need to be applied:
 - Migration: `20250715012822_add_metadata_version_agent_state`
