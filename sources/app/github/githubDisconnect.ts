@@ -44,6 +44,12 @@ export async function githubDisconnect(ctx: Context): Promise<void> {
             }
         });
 
+        // Unlink any GitHub App installations from this account
+        await tx.githubInstallation.updateMany({
+            where: { accountId: userId },
+            data: { accountId: null }
+        });
+
         // Delete GitHub user record (includes token)
         await tx.githubUser.delete({
             where: { id: githubUserId }

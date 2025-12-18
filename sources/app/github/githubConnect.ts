@@ -88,6 +88,18 @@ export async function githubConnect(
                 avatar: avatar
             }
         });
+
+        // Link any existing GitHub App installations for this GitHub user to their Happy account
+        await tx.githubInstallation.updateMany({
+            where: {
+                accountLogin: githubProfile.login,
+                accountType: 'User',
+                accountId: null
+            },
+            data: {
+                accountId: userId
+            }
+        });
     });
 
     // Step 5: Send update via socket (after transaction completes)

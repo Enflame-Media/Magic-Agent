@@ -2,6 +2,7 @@ import { App } from "octokit";
 import { Webhooks } from "@octokit/webhooks";
 import type { EmitterWebhookEvent } from "@octokit/webhooks";
 import { log } from "@/utils/log";
+import { db } from "@/storage/db";
 
 let app: App | null = null;
 let webhooks: Webhooks | null = null;
@@ -42,12 +43,13 @@ export async function initGithub() {
 function registerWebhookHandlers() {
     if (!webhooks) return;
 
-    // Installation events - App installed/uninstalled
+    // Installation events - App installed/uninstalled/suspended
     webhooks.on("installation", async ({ id, name, payload }: EmitterWebhookEvent<"installation">) => {
         const { action, installation, sender, repositories } = payload;
         const account = installation.account;
         const accountLogin = account && 'login' in account ? account.login : account?.name ?? 'unknown';
         const accountType = account && 'type' in account ? account.type : 'Enterprise';
+        const installationId = installation.id.toString();
 
         log({ module: 'github-webhook', event: 'installation' },
             `GitHub App ${action}: installation ${installation.id} by ${sender.login}`, {
@@ -59,18 +61,50 @@ function registerWebhookHandlers() {
                 repositoryCount: repositories?.length ?? 0
             });
 
-        // TODO: Store installation state in database for app features
-        // This would enable features like:
-        // - Tracking which users have the app installed
-        // - Knowing which repositories we have access to
-        // - Handling app suspension/unsuspension
+        // Persist installation state to database
+        if (action === 'created') {
+            await db.githubInstallation.upsert({
+                where: { id: installationId },
+                update: {
+                    accountLogin,
+                    accountType,
+                    status: 'active',
+                    repositoryCount: repositories?.length ?? 0
+                },
+                create: {
+                    id: installationId,
+                    accountLogin,
+                    accountType,
+                    status: 'active',
+                    repositoryCount: repositories?.length ?? 0
+                }
+            });
+        } else if (action === 'deleted') {
+            await db.githubInstallation.update({
+                where: { id: installationId },
+                data: { status: 'deleted' }
+            }).catch(() => {
+                // Installation may not exist if webhook arrived before creation was processed
+            });
+        } else if (action === 'suspend') {
+            await db.githubInstallation.update({
+                where: { id: installationId },
+                data: { status: 'suspended' }
+            }).catch(() => {});
+        } else if (action === 'unsuspend') {
+            await db.githubInstallation.update({
+                where: { id: installationId },
+                data: { status: 'active' }
+            }).catch(() => {});
+        }
     });
 
     // Installation repositories events - Repos added/removed from installation
     webhooks.on("installation_repositories", async ({ id, name, payload }: EmitterWebhookEvent<"installation_repositories">) => {
-        const { action, installation, sender, repositories_added, repositories_removed } = payload;
+        const { action, installation, sender, repositories_added, repositories_removed, repository_selection } = payload;
         const account = installation.account;
         const accountLogin = account && 'login' in account ? account.login : account?.name ?? 'unknown';
+        const installationId = installation.id.toString();
 
         log({ module: 'github-webhook', event: 'installation_repositories' },
             `Repositories ${action}: ${repositories_added.length} added, ${repositories_removed.length} removed`, {
@@ -82,7 +116,20 @@ function registerWebhookHandlers() {
                 repositoriesRemoved: repositories_removed.map(r => r.full_name)
             });
 
-        // TODO: Update repository access records in database
+        // Update repository count in database
+        // Use the repository_selection count if available, otherwise calculate delta
+        const existingInstallation = await db.githubInstallation.findUnique({
+            where: { id: installationId },
+            select: { repositoryCount: true }
+        });
+
+        if (existingInstallation) {
+            const newCount = existingInstallation.repositoryCount + repositories_added.length - repositories_removed.length;
+            await db.githubInstallation.update({
+                where: { id: installationId },
+                data: { repositoryCount: Math.max(0, newCount) }
+            });
+        }
     });
 
     // Push events - Code pushed to repository

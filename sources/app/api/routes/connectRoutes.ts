@@ -230,6 +230,78 @@ export function connectRoutes(app: Fastify) {
         }
     });
 
+    // GitHub App installation status endpoint
+    app.get('/v1/connect/github/installation', {
+        preHandler: app.authenticate,
+        schema: {
+            response: {
+                200: z.object({
+                    installed: z.boolean(),
+                    installation: z.object({
+                        id: z.string(),
+                        accountLogin: z.string(),
+                        accountType: z.string(),
+                        status: z.string(),
+                        repositoryCount: z.number()
+                    }).nullable()
+                })
+            }
+        }
+    }, async (request, reply) => {
+        const userId = request.userId;
+
+        // First check if user has linked their GitHub account
+        const account = await db.account.findUnique({
+            where: { id: userId },
+            select: {
+                githubUser: {
+                    select: {
+                        profile: true
+                    }
+                }
+            }
+        });
+
+        if (!account?.githubUser?.profile) {
+            return reply.send({ installed: false, installation: null });
+        }
+
+        const profile = account.githubUser.profile as { login?: string };
+        if (!profile.login) {
+            return reply.send({ installed: false, installation: null });
+        }
+
+        // Check if there's an active installation for this GitHub user
+        const installation = await db.githubInstallation.findFirst({
+            where: {
+                accountLogin: profile.login,
+                status: 'active'
+            },
+            select: {
+                id: true,
+                accountLogin: true,
+                accountType: true,
+                status: true,
+                repositoryCount: true
+            }
+        });
+
+        if (installation) {
+            return reply.send({
+                installed: true,
+                installation: {
+                    id: installation.id,
+                    accountLogin: installation.accountLogin,
+                    accountType: installation.accountType,
+                    status: installation.status,
+                    repositoryCount: installation.repositoryCount
+                }
+            });
+        }
+
+        return reply.send({ installed: false, installation: null });
+    });
+
     // GitHub disconnect endpoint
     app.delete('/v1/connect/github', {
         preHandler: app.authenticate,

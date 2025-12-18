@@ -3,7 +3,8 @@
 
 generator client {
     provider        = "prisma-client-js"
-    previewFeatures = ["metrics", "relationJoins"]
+    output          = "../../node_modules/.prisma/client"
+    previewFeatures = ["relationJoins"]
 }
 
 generator json {
@@ -12,7 +13,6 @@ generator json {
 
 datasource db {
     provider = "postgresql"
-    url      = env("DATABASE_URL")
 }
 
 //
@@ -52,6 +52,7 @@ model Account {
     AccessKey           AccessKey[]
     UserFeedItem        UserFeedItem[]
     UserKVStore         UserKVStore[]
+    GithubInstallation  GithubInstallation[]
 }
 
 model TerminalAuthRequest {
@@ -148,6 +149,22 @@ model GithubOrganization {
     profile   Json
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
+}
+
+model GithubInstallation {
+    id              String   @id // GitHub installation ID (as string)
+    accountId       String? // Happy user ID if linked
+    accountLogin    String // GitHub username or org name
+    accountType     String // "User" | "Organization" | "Enterprise"
+    status          String   @default("active") // "active" | "suspended" | "deleted"
+    repositoryCount Int      @default(0)
+    createdAt       DateTime @default(now())
+    updatedAt       DateTime @updatedAt
+
+    Account Account? @relation(fields: [accountId], references: [id])
+
+    @@index([accountLogin])
+    @@index([accountId])
 }
 
 //
