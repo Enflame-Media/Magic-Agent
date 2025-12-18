@@ -476,6 +476,13 @@ export const pt: TranslationStructure = {
             currentUsage: ({ tokens }: { tokens: string }) => `Atual: ${tokens} tokens`,
             dataPoints: ({ count }: { count: number }) => `${count} pontos de dados`,
         },
+        // Restore session (HAP-392)
+        restoreSession: 'Restaurar sessão',
+        restoreSessionSubtitle: 'Continuar esta conversa em uma nova sessão',
+        restoringSession: 'Restaurando sessão...',
+        restoreSessionSuccess: 'Sessão restaurada com sucesso',
+        failedToRestoreSession: 'Falha ao restaurar a sessão',
+        restoreRequiresMachine: 'A máquina precisa estar online para restaurar',
 
     },
 

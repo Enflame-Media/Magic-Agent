@@ -478,6 +478,13 @@ export const zhHans: TranslationStructure = {
             currentUsage: ({ tokens }: { tokens: string }) => `当前: ${tokens} 令牌`,
             dataPoints: ({ count }: { count: number }) => `${count} 个数据点`,
         },
+        // Restore session (HAP-392)
+        restoreSession: '恢复会话',
+        restoreSessionSubtitle: '在新会话中继续此对话',
+        restoringSession: '正在恢复会话...',
+        restoreSessionSuccess: '会话恢复成功',
+        failedToRestoreSession: '恢复会话失败',
+        restoreRequiresMachine: '机器必须在线才能恢复',
 
     },
 

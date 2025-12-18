@@ -454,6 +454,13 @@ export const en = {
             currentUsage: ({ tokens }: { tokens: string }) => `Current: ${tokens} tokens`,
             dataPoints: ({ count }: { count: number }) => `${count} data points`,
         },
+        // Restore session (HAP-392)
+        restoreSession: 'Restore Session',
+        restoreSessionSubtitle: 'Continue this conversation in a new session',
+        restoringSession: 'Restoring session...',
+        restoreSessionSuccess: 'Session restored successfully',
+        failedToRestoreSession: 'Failed to restore session',
+        restoreRequiresMachine: 'Machine must be online to restore',
 
     },
 

@@ -439,6 +439,13 @@ export const ru: TranslationStructure = {
             currentUsage: ({ tokens }: { tokens: string }) => `Текущее: ${tokens} токенов`,
             dataPoints: ({ count }: { count: number }) => `${count} точек данных`,
         },
+        // Restore session (HAP-392)
+        restoreSession: 'Восстановить сессию',
+        restoreSessionSubtitle: 'Продолжить разговор в новой сессии',
+        restoringSession: 'Восстановление сессии...',
+        restoreSessionSuccess: 'Сессия успешно восстановлена',
+        failedToRestoreSession: 'Не удалось восстановить сессию',
+        restoreRequiresMachine: 'Машина должна быть онлайн для восстановления',
     },
 
     components: {

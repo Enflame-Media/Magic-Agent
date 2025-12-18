@@ -1,5 +1,5 @@
 import React, { useCallback, useRef, useEffect } from 'react';
-import { View, Text, Animated, AccessibilityInfo } from 'react-native';
+import { View, Text, Animated, AccessibilityInfo, Platform } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Typography } from '@/constants/Typography';
@@ -12,7 +12,9 @@ import { getSessionName, useSessionStatus, formatOSPlatform, formatPathRelativeT
 import * as Clipboard from 'expo-clipboard';
 import { Modal } from '@/modal';
 import { Toast } from '@/toast';
-import { sessionKill, sessionDelete, sessionClearContext, sessionCompactContext } from '@/sync/ops';
+import { sessionKill, sessionDelete, sessionClearContext, sessionCompactContext, machineSpawnNewSession } from '@/sync/ops';
+import { useMachine } from '@/sync/storage';
+import { isMachineOnline } from '@/utils/machineUtils';
 import { useUnistyles } from 'react-native-unistyles';
 import { layout } from '@/components/layout';
 import { t } from '@/text';
@@ -39,12 +41,12 @@ function StatusDot({ color, isPulsing, size = 8 }: { color: string; isPulsing?: 
                     Animated.timing(pulseAnim, {
                         toValue: 0.3,
                         duration: 1000,
-                        useNativeDriver: true,
+                        useNativeDriver: Platform.OS !== 'web',
                     }),
                     Animated.timing(pulseAnim, {
                         toValue: 1,
                         duration: 1000,
-                        useNativeDriver: true,
+                        useNativeDriver: Platform.OS !== 'web',
                     }),
                 ])
             ).start();
@@ -73,6 +75,7 @@ function SessionInfoContent({ session }: { session: Session }) {
     const devModeEnabled = __DEV__;
     const sessionName = getSessionName(session);
     const sessionStatus = useSessionStatus(session);
+    const machine = useMachine(session.metadata?.machineId ?? '');
 
     // Check if CLI version is outdated
     const isCliOutdated = session.metadata?.version && !isVersionSupported(session.metadata.version, MINIMUM_CLI_VERSION);
@@ -218,6 +221,44 @@ function SessionInfoContent({ session }: { session: Session }) {
             ]
         );
     }, [performCompactContext]);
+
+    // HAP-392: Restore session action - resumes an archived session with conversation history
+    // Only available for Claude sessions (Codex doesn't support --resume)
+    const isClaudeSession = !session.metadata?.flavor || session.metadata.flavor === 'claude';
+    const machineOnline = machine ? isMachineOnline(machine) : false;
+    const canRestore = !sessionStatus.isConnected && !session.active && isClaudeSession && session.metadata?.machineId && session.metadata?.path;
+
+    const [_restoringSession, performRestore] = useHappyAction(async () => {
+        if (!session.metadata?.machineId || !session.metadata?.path) {
+            throw new HappyError(t('sessionInfo.failedToRestoreSession'), false);
+        }
+        if (!machineOnline) {
+            throw new HappyError(t('sessionInfo.restoreRequiresMachine'), false);
+        }
+
+        const result = await machineSpawnNewSession({
+            machineId: session.metadata.machineId,
+            directory: session.metadata.path,
+            agent: 'claude',
+            sessionId: session.id, // This triggers the --resume flag
+        });
+
+        if (result.type === 'error') {
+            throw new HappyError(result.errorMessage || t('sessionInfo.failedToRestoreSession'), true);
+        }
+        if (result.type === 'requestToApproveDirectoryCreation') {
+            throw new HappyError(t('sessionInfo.failedToRestoreSession'), false);
+        }
+
+        // Success - navigate to the new session
+        Toast.show({ message: t('sessionInfo.restoreSessionSuccess') });
+        router.replace(`/session/${result.sessionId}`);
+    });
+
+    const handleRestoreSession = useCallback(() => {
+        hapticsLight();
+        performRestore();
+    }, [performRestore]);
 
     const formatDate = useCallback((timestamp: number) => {
         return new Date(timestamp).toLocaleString();
@@ -368,6 +409,16 @@ function SessionInfoContent({ session }: { session: Session }) {
                             subtitle={t('sessionInfo.archiveSessionSubtitle')}
                             icon={<Ionicons name="archive-outline" size={29} color="#FF3B30" />}
                             onPress={handleArchiveSession}
+                        />
+                    )}
+                    {/* HAP-392: Restore session for archived Claude sessions */}
+                    {canRestore && (
+                        <Item
+                            title={t('sessionInfo.restoreSession')}
+                            subtitle={machineOnline ? t('sessionInfo.restoreSessionSubtitle') : t('sessionInfo.restoreRequiresMachine')}
+                            icon={<Ionicons name="refresh-circle-outline" size={29} color={machineOnline ? "#34C759" : "#8E8E93"} />}
+                            onPress={machineOnline ? handleRestoreSession : undefined}
+                            showChevron={machineOnline}
                         />
                     )}
                     {!sessionStatus.isConnected && !session.active && (
