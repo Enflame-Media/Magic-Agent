@@ -327,10 +327,11 @@ export const AgentInput = React.memo(React.forwardRef<MultiTextInputHandle, Agen
                             paddingTop={Platform.OS === 'web' ? 10 : 8}
                             paddingBottom={Platform.OS === 'web' ? 10 : 8}
                             onChangeText={props.onChangeText}
-                            placeholder={props.placeholder}
+                            placeholder={props.disabled ? (props.disabledPlaceholder ?? props.placeholder) : props.placeholder}
                             onKeyPress={handleKeyPress}
                             onStateChange={handleInputStateChange}
                             maxHeight={120}
+                            editable={!props.disabled}
                         />
                     </View>
 
@@ -351,7 +352,7 @@ export const AgentInput = React.memo(React.forwardRef<MultiTextInputHandle, Agen
                         onFileViewerPress={props.onFileViewerPress}
                         hasText={hasText}
                         isSending={props.isSending}
-                        isSendDisabled={props.isSendDisabled}
+                        isSendDisabled={props.isSendDisabled || props.disabled}
                         onSendPress={handleSendPress}
                         onMicPress={props.onMicPress}
                         isMicActive={props.isMicActive}

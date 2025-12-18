@@ -504,6 +504,7 @@ export const ru: TranslationStructure = {
 
     session: {
         inputPlaceholder: 'Введите сообщение...',
+        inputPlaceholderArchived: 'Сессия архивирована',
         noMessagesYet: 'Сообщений пока нет',
         createdTime: ({ time }: { time: string }) => `Создано ${time}`,
         // Expandable header metadata section (HAP-326)

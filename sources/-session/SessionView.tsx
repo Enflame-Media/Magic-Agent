@@ -534,6 +534,9 @@ function SessionViewLoaded({ sessionId, session }: { sessionId: string, session:
         </>
     ) : null;
 
+    // HAP-391: Determine if input should be disabled (archived/inactive sessions)
+    const isInputDisabled = !sessionStatus.isConnected || !session.active;
+
     const input = (
         <AgentInput
             placeholder={t('session.inputPlaceholder')}
@@ -581,6 +584,9 @@ function SessionViewLoaded({ sessionId, session }: { sessionId: string, session:
                 contextSize: session.latestUsage.contextSize
             } : undefined}
             alwaysShowContextSize={alwaysShowContextSize}
+            // HAP-391: Disable input for archived/inactive sessions
+            disabled={isInputDisabled}
+            disabledPlaceholder={t('session.inputPlaceholderArchived')}
         />
     );
 

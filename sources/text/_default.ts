@@ -324,6 +324,7 @@ export const en = {
 
     session: {
         inputPlaceholder: 'Type a message ...',
+        inputPlaceholderArchived: 'Session is archived',
         noMessagesYet: 'No messages yet',
         createdTime: ({ time }: { time: string }) => `Created ${time}`,
         // Expandable header metadata section (HAP-326)

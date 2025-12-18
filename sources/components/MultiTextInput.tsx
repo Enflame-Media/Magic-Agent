@@ -38,6 +38,8 @@ interface MultiTextInputProps {
     onKeyPress?: OnKeyPressCallback;
     onSelectionChange?: (selection: { start: number; end: number }) => void;
     onStateChange?: (state: TextInputState) => void;
+    /** Whether the input is editable. Defaults to true. */
+    editable?: boolean;
 }
 
 export const MultiTextInput = React.forwardRef<MultiTextInputHandle, MultiTextInputProps>((props, ref) => {
@@ -48,7 +50,8 @@ export const MultiTextInput = React.forwardRef<MultiTextInputHandle, MultiTextIn
         maxHeight = 120,
         onKeyPress,
         onSelectionChange,
-        onStateChange
+        onStateChange,
+        editable = true
     } = props;
 
     const { theme } = useUnistyles();
@@ -207,6 +210,7 @@ export const MultiTextInput = React.forwardRef<MultiTextInputHandle, MultiTextIn
                 autoComplete="off"
                 textContentType="none"
                 submitBehavior="newline"
+                editable={editable}
             />
         </View>
     );

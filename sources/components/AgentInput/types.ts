@@ -47,6 +47,10 @@ export interface AgentInputProps {
     isSendDisabled?: boolean;
     isSending?: boolean;
     minHeight?: number;
+    /** Whether the entire input is disabled (e.g., for archived sessions) */
+    disabled?: boolean;
+    /** Placeholder text to show when input is disabled */
+    disabledPlaceholder?: string;
 }
 
 /**
