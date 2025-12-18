@@ -199,6 +199,223 @@ describe('connectRoutes', () => {
             const body = JSON.parse(response.payload);
             expect(body.error).toBe('Webhooks not configured');
         });
+
+        it('should return 200 when signature is valid and webhook is processed', async () => {
+            const mockWebhooks = {
+                verifyAndReceive: vi.fn().mockResolvedValue(undefined),
+            };
+            vi.mocked(getWebhooks).mockReturnValue(mockWebhooks as any);
+
+            const response = await app.inject({
+                method: 'POST',
+                url: '/v1/connect/github/webhook',
+                headers: {
+                    'x-hub-signature-256': 'sha256=valid-signature',
+                    'x-github-event': 'push',
+                    'x-github-delivery': 'delivery-123',
+                    'Content-Type': 'application/json',
+                },
+                payload: { repository: { full_name: 'test/repo' } },
+            });
+
+            expect(response.statusCode).toBe(200);
+            const body = JSON.parse(response.payload);
+            expect(body.received).toBe(true);
+            expect(mockWebhooks.verifyAndReceive).toHaveBeenCalledWith({
+                id: 'delivery-123',
+                name: 'push',
+                payload: expect.any(String),
+                signature: 'sha256=valid-signature',
+            });
+        });
+
+        it('should return 401 when signature is invalid', async () => {
+            const signatureError = new Error('[@octokit/webhooks] signature does not match event payload and secret');
+            const mockWebhooks = {
+                verifyAndReceive: vi.fn().mockRejectedValue(signatureError),
+            };
+            vi.mocked(getWebhooks).mockReturnValue(mockWebhooks as any);
+
+            const response = await app.inject({
+                method: 'POST',
+                url: '/v1/connect/github/webhook',
+                headers: {
+                    'x-hub-signature-256': 'sha256=invalid-signature',
+                    'x-github-event': 'push',
+                    'x-github-delivery': 'delivery-456',
+                    'Content-Type': 'application/json',
+                },
+                payload: { repository: { full_name: 'test/repo' } },
+            });
+
+            expect(response.statusCode).toBe(401);
+            const body = JSON.parse(response.payload);
+            expect(body.error).toBe('Invalid signature');
+        });
+
+        it('should return 401 when signature error is in AggregateError format', async () => {
+            const innerError = new Error('signature does not match');
+            const aggregateError = new AggregateError([innerError], 'Validation failed');
+            (aggregateError as any).errors = [innerError];
+            const mockWebhooks = {
+                verifyAndReceive: vi.fn().mockRejectedValue(aggregateError),
+            };
+            vi.mocked(getWebhooks).mockReturnValue(mockWebhooks as any);
+
+            const response = await app.inject({
+                method: 'POST',
+                url: '/v1/connect/github/webhook',
+                headers: {
+                    'x-hub-signature-256': 'sha256=bad-signature',
+                    'x-github-event': 'installation',
+                    'x-github-delivery': 'delivery-789',
+                    'Content-Type': 'application/json',
+                },
+                payload: { action: 'created' },
+            });
+
+            expect(response.statusCode).toBe(401);
+            const body = JSON.parse(response.payload);
+            expect(body.error).toBe('Invalid signature');
+        });
+
+        it('should return 500 for non-signature processing errors', async () => {
+            const processingError = new Error('Handler threw an error');
+            const mockWebhooks = {
+                verifyAndReceive: vi.fn().mockRejectedValue(processingError),
+            };
+            vi.mocked(getWebhooks).mockReturnValue(mockWebhooks as any);
+
+            const response = await app.inject({
+                method: 'POST',
+                url: '/v1/connect/github/webhook',
+                headers: {
+                    'x-hub-signature-256': 'sha256=valid-signature',
+                    'x-github-event': 'push',
+                    'x-github-delivery': 'delivery-error',
+                    'Content-Type': 'application/json',
+                },
+                payload: { repository: { full_name: 'test/repo' } },
+            });
+
+            expect(response.statusCode).toBe(500);
+            const body = JSON.parse(response.payload);
+            expect(body.error).toBe('Internal server error');
+        });
+
+        it('should use delivery-id as unknown when not provided', async () => {
+            const mockWebhooks = {
+                verifyAndReceive: vi.fn().mockResolvedValue(undefined),
+            };
+            vi.mocked(getWebhooks).mockReturnValue(mockWebhooks as any);
+
+            const response = await app.inject({
+                method: 'POST',
+                url: '/v1/connect/github/webhook',
+                headers: {
+                    'x-hub-signature-256': 'sha256=valid-signature',
+                    'x-github-event': 'ping',
+                    'Content-Type': 'application/json',
+                },
+                payload: { zen: 'Design for failure.' },
+            });
+
+            expect(response.statusCode).toBe(200);
+            expect(mockWebhooks.verifyAndReceive).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    id: 'unknown',
+                })
+            );
+        });
+
+        it('should handle installation event type', async () => {
+            const mockWebhooks = {
+                verifyAndReceive: vi.fn().mockResolvedValue(undefined),
+            };
+            vi.mocked(getWebhooks).mockReturnValue(mockWebhooks as any);
+
+            const installationPayload = {
+                action: 'created',
+                installation: {
+                    id: 12345,
+                    account: { login: 'test-org', type: 'Organization' },
+                },
+                sender: { login: 'test-user' },
+                repositories: [{ full_name: 'test-org/repo1' }],
+            };
+
+            const response = await app.inject({
+                method: 'POST',
+                url: '/v1/connect/github/webhook',
+                headers: {
+                    'x-hub-signature-256': 'sha256=valid-signature',
+                    'x-github-event': 'installation',
+                    'x-github-delivery': 'install-delivery-id',
+                    'Content-Type': 'application/json',
+                },
+                payload: installationPayload,
+            });
+
+            expect(response.statusCode).toBe(200);
+            expect(mockWebhooks.verifyAndReceive).toHaveBeenCalledWith({
+                id: 'install-delivery-id',
+                name: 'installation',
+                payload: JSON.stringify(installationPayload),
+                signature: 'sha256=valid-signature',
+            });
+        });
+
+        it('should handle installation_repositories event type', async () => {
+            const mockWebhooks = {
+                verifyAndReceive: vi.fn().mockResolvedValue(undefined),
+            };
+            vi.mocked(getWebhooks).mockReturnValue(mockWebhooks as any);
+
+            const repoPayload = {
+                action: 'added',
+                installation: {
+                    id: 12345,
+                    account: { login: 'test-org' },
+                },
+                repositories_added: [{ full_name: 'test-org/new-repo' }],
+                repositories_removed: [],
+                sender: { login: 'test-user' },
+            };
+
+            const response = await app.inject({
+                method: 'POST',
+                url: '/v1/connect/github/webhook',
+                headers: {
+                    'x-hub-signature-256': 'sha256=valid-signature',
+                    'x-github-event': 'installation_repositories',
+                    'x-github-delivery': 'repo-delivery-id',
+                    'Content-Type': 'application/json',
+                },
+                payload: repoPayload,
+            });
+
+            expect(response.statusCode).toBe(200);
+            expect(mockWebhooks.verifyAndReceive).toHaveBeenCalledWith({
+                id: 'repo-delivery-id',
+                name: 'installation_repositories',
+                payload: JSON.stringify(repoPayload),
+                signature: 'sha256=valid-signature',
+            });
+        });
+
+        it('should return 400 when required headers are missing', async () => {
+            const response = await app.inject({
+                method: 'POST',
+                url: '/v1/connect/github/webhook',
+                headers: {
+                    'Content-Type': 'application/json',
+                    // Missing x-hub-signature-256 and x-github-event
+                },
+                payload: { test: 'data' },
+            });
+
+            expect(response.statusCode).toBe(400);
+        });
     });
 
     describe('DELETE /v1/connect/github', () => {

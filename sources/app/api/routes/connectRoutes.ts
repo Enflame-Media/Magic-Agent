@@ -210,6 +210,22 @@ export function connectRoutes(app: Fastify) {
             });
             return reply.send({ received: true });
         } catch (error: any) {
+            // Check if this is a signature verification failure
+            const isSignatureError =
+                error?.message?.includes('signature does not match') ||
+                error?.errors?.[0]?.message?.includes('signature does not match');
+
+            if (isSignatureError) {
+                log({ module: 'github-webhook', level: 'warn' },
+                    `Invalid webhook signature from ${request.ip}`, {
+                        event: eventName,
+                        deliveryId
+                    });
+                return reply.code(401).send({ error: 'Invalid signature' });
+            }
+
+            log({ module: 'github-webhook', level: 'error' },
+                `Webhook processing error: ${error.message}`, { error });
             return reply.code(500).send({ error: 'Internal server error' });
         }
     });
