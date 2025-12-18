@@ -36,6 +36,7 @@
     "@date-fns/tz": "^1.4.1",
     "@fastify/bearer-auth": "^10.1.2",
     "@fastify/cors": "^11.2.0",
+    "@happy/protocol": "workspace:*",
     "@prisma/client": "^7.1.0",
     "@socket.io/redis-streams-adapter": "^0.2.3",
     "@types/jsonwebtoken": "^9.0.10",

@@ -4,6 +4,14 @@ import { GitHubProfile } from "@/app/api/types";
 import { AccountProfile } from "@/types";
 import { getPublicUrl } from "@/storage/files";
 
+// Import shared protocol types from @happy/protocol
+import type {
+    ApiUpdate,
+    ApiEphemeralUpdate,
+    UpdatePayload,
+    EphemeralPayload,
+} from '@happy/protocol';
+
 // === CONNECTION TYPES ===
 
 export interface SessionScopedConnection {
@@ -37,166 +45,28 @@ export type RecipientFilter =
     | { type: 'all-user-authenticated-connections' };
 
 // === UPDATE EVENT TYPES (Persistent) ===
+// Now using shared types from @happy/protocol
+// ApiUpdate uses 't' as discriminator field
 
-export type UpdateEvent = {
-    type: 'new-message';
-    sessionId: string;
-    message: {
-        id: string;
-        seq: number;
-        content: any;
-        localId: string | null;
-        createdAt: number;
-        updatedAt: number;
-    }
-} | {
-    type: 'new-session';
-    sessionId: string;
-    seq: number;
-    metadata: string;
-    metadataVersion: number;
-    agentState: string | null;
-    agentStateVersion: number;
-    dataEncryptionKey: string | null;
-    active: boolean;
-    activeAt: number;
-    createdAt: number;
-    updatedAt: number;
-} | {
-    type: 'update-session';
-    sessionId: string;
-    metadata?: {
-        value: string | null;
-        version: number;
-    } | null | undefined;
-    agentState?: {
-        value: string | null;
-        version: number;
-    } | null | undefined;
-} | {
-    type: 'update-account';
-    userId: string;
-    settings?: {
-        value: string | null;
-        version: number;
-    } | null | undefined;
-    github?: GitHubProfile | null | undefined;
-} | {
-    type: 'new-machine';
-    machineId: string;
-    seq: number;
-    metadata: string;
-    metadataVersion: number;
-    daemonState: string | null;
-    daemonStateVersion: number;
-    dataEncryptionKey: string | null;
-    active: boolean;
-    activeAt: number;
-    createdAt: number;
-    updatedAt: number;
-} | {
-    type: 'update-machine';
-    machineId: string;
-    metadata?: {
-        value: string;
-        version: number;
-    };
-    daemonState?: {
-        value: string;
-        version: number;
-    };
-    activeAt?: number;
-} | {
-    type: 'new-artifact';
-    artifactId: string;
-    seq: number;
-    header: string;
-    headerVersion: number;
-    body: string;
-    bodyVersion: number;
-    dataEncryptionKey: string | null;
-    createdAt: number;
-    updatedAt: number;
-} | {
-    type: 'update-artifact';
-    artifactId: string;
-    header?: {
-        value: string;
-        version: number;
-    };
-    body?: {
-        value: string;
-        version: number;
-    };
-} | {
-    type: 'delete-artifact';
-    artifactId: string;
-} | {
-    type: 'delete-session';
-    sessionId: string;
-} | {
-    type: 'relationship-updated';
-    uid: string;
-    status: 'none' | 'requested' | 'pending' | 'friend' | 'rejected';
-    timestamp: number;
-} | {
-    type: 'new-feed-post';
-    id: string;
-    body: any;
-    cursor: string;
-    createdAt: number;
-} | {
-    type: 'kv-batch-update';
-    changes: Array<{
-        key: string;
-        value: string | null; // null indicates deletion
-        version: number; // -1 for deleted keys
-    }>;
-};
+/**
+ * Re-export ApiUpdate as UpdateEvent for backward compatibility
+ * The shared type uses 't' discriminator (e.g., t: 'new-message')
+ */
+export type UpdateEvent = ApiUpdate;
 
 // === EPHEMERAL EVENT TYPES (Transient) ===
+// Now using shared types from @happy/protocol
 
-export type EphemeralEvent = {
-    type: 'activity';
-    id: string;
-    active: boolean;
-    activeAt: number;
-    thinking?: boolean;
-} | {
-    type: 'machine-activity';
-    id: string;
-    active: boolean;
-    activeAt: number;
-} | {
-    type: 'usage';
-    id: string;
-    key: string;
-    tokens: Record<string, number>;
-    cost: Record<string, number>;
-    timestamp: number;
-} | {
-    type: 'machine-status';
-    machineId: string;
-    online: boolean;
-    timestamp: number;
-};
+/**
+ * Re-export ApiEphemeralUpdate as EphemeralEvent for backward compatibility
+ * The shared type uses 'type' discriminator (e.g., type: 'activity')
+ */
+export type EphemeralEvent = ApiEphemeralUpdate;
 
 // === EVENT PAYLOAD TYPES ===
-
-export interface UpdatePayload {
-    id: string;
-    seq: number;
-    body: {
-        t: UpdateEvent['type'];
-        [key: string]: any;
-    };
-    createdAt: number;
-}
-
-export interface EphemeralPayload {
-    type: EphemeralEvent['type'];
-    [key: string]: any;
-}
+// Re-export from @happy/protocol for type consistency
+// Note: These are re-exported with the same names from the import above
+export type { UpdatePayload, EphemeralPayload };
 
 // === EVENT ROUTER CLASS ===
 
