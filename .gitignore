@@ -20,3 +20,4 @@ dist
 # Claude configuration
 .claude/
 .yarn/install-state.gz
+.tmp

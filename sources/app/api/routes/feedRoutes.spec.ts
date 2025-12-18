@@ -37,14 +37,16 @@ describe('feedRoutes', () => {
             const mockItems = [
                 {
                     id: 'feed-1',
-                    body: { kind: 'friend_request', uid: 'user-1' },
+                    userId: TEST_USER_ID,
+                    body: { kind: 'friend_request' as const, uid: 'user-1' },
                     repeatKey: null,
                     cursor: '0-100',
                     createdAt: Date.now(),
                 },
                 {
                     id: 'feed-2',
-                    body: { kind: 'text', text: 'Welcome!' },
+                    userId: TEST_USER_ID,
+                    body: { kind: 'text' as const, text: 'Welcome!' },
                     repeatKey: 'welcome',
                     cursor: '0-99',
                     createdAt: Date.now() - 1000,
@@ -168,6 +170,7 @@ describe('feedRoutes', () => {
         it('should return hasMore true when more items exist', async () => {
             const mockItems = Array(50).fill(null).map((_, i) => ({
                 id: `feed-${i}`,
+                userId: TEST_USER_ID,
                 body: { kind: 'text' as const, text: `Item ${i}` },
                 repeatKey: null,
                 cursor: `0-${100 - i}`,
@@ -195,7 +198,8 @@ describe('feedRoutes', () => {
                 items: [
                     {
                         id: 'feed-accept',
-                        body: { kind: 'friend_accepted', uid: 'user-accepted' },
+                        userId: TEST_USER_ID,
+                        body: { kind: 'friend_accepted' as const, uid: 'user-accepted' },
                         repeatKey: null,
                         cursor: '0-200',
                         createdAt: Date.now(),
