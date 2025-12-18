@@ -1,0 +1,58 @@
+# CI Workflow for happy-shared repository
+# Builds and type-checks @happy/protocol on every push/PR to main
+# Part of HAP-395 implementation
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    name: Build & Type Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Enable Corepack (for Yarn 4)
+        run: corepack enable
+
+      - name: Get yarn cache directory
+        id: yarn-cache-dir
+        run: echo "dir=$(yarn config get cacheFolder)" >> $GITHUB_OUTPUT
+
+      - name: Cache yarn dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ steps.yarn-cache-dir.outputs.dir }}
+            .yarn/install-state.gz
+          key: ${{ runner.os }}-yarn-${{ hashFiles('yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Build @happy/protocol
+        run: yarn workspace @happy/protocol build
+
+      - name: Type check @happy/protocol
+        run: yarn workspace @happy/protocol typecheck
+
+      - name: Summary
+        run: |
+          echo "## CI Build Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "@happy/protocol built and type-checked successfully." >> $GITHUB_STEP_SUMMARY
