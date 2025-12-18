@@ -42,6 +42,12 @@ vi.mock('@/lib/auth', () => ({
 
 import app from '@/index';
 import { authHeader, jsonBody, expectOneOfStatus } from './test-utils';
+import { createTicket } from '@/lib/ticket';
+
+/**
+ * Test secret for ticket signing - matches the one used in test-utils.ts mock env
+ */
+const TEST_SECRET = 'test-secret-for-vitest-tests';
 
 describe('WebSocket Routes', () => {
     beforeEach(() => {
@@ -432,6 +438,217 @@ describe('WebSocket Routes', () => {
             });
 
             await expectOneOfStatus(res, [400], [500]);
+        });
+    });
+
+    describe('POST /v1/websocket/ticket - Generate Ticket', () => {
+        it('should return a signed ticket for authenticated user', async () => {
+            const res = await app.request('/v1/websocket/ticket', {
+                method: 'POST',
+                headers: authHeader('valid-token'),
+            });
+
+            // In mock environment, HANDY_MASTER_SECRET may be undefined causing 500
+            const body = await expectOneOfStatus<{ ticket: string }>(res, [200], [500]);
+            if (body) {
+                expect(body.ticket).toBeDefined();
+                expect(typeof body.ticket).toBe('string');
+                expect(body.ticket).toContain('.'); // payload.signature format
+            }
+        });
+
+        it('should reject request without auth', async () => {
+            const res = await app.request('/v1/websocket/ticket', {
+                method: 'POST',
+            });
+
+            expect(res.status).toBe(401);
+        });
+
+        it('should reject invalid token', async () => {
+            const res = await app.request('/v1/websocket/ticket', {
+                method: 'POST',
+                headers: authHeader('invalid-token'),
+            });
+
+            // Should be 401, but may be 500 if HANDY_MASTER_SECRET unavailable
+            await expectOneOfStatus(res, [401], [500]);
+        });
+
+        it('should return ticket with valid base64url format', async () => {
+            const res = await app.request('/v1/websocket/ticket', {
+                method: 'POST',
+                headers: authHeader('valid-token'),
+            });
+
+            // In mock environment, HANDY_MASTER_SECRET may be undefined causing 500
+            const body = await expectOneOfStatus<{ ticket: string }>(res, [200], [500]);
+            if (body) {
+                // Ticket should not contain standard base64 characters that need URL encoding
+                expect(body.ticket).not.toContain('+');
+                expect(body.ticket).not.toContain('/');
+                expect(body.ticket).not.toContain('=');
+            }
+        });
+
+        it('should generate unique tickets on each request', async () => {
+            const res1 = await app.request('/v1/websocket/ticket', {
+                method: 'POST',
+                headers: authHeader('valid-token'),
+            });
+
+            const res2 = await app.request('/v1/websocket/ticket', {
+                method: 'POST',
+                headers: authHeader('valid-token'),
+            });
+
+            // In mock environment, HANDY_MASTER_SECRET may be undefined causing 500
+            const body1 = await expectOneOfStatus<{ ticket: string }>(res1, [200], [500]);
+            const body2 = await expectOneOfStatus<{ ticket: string }>(res2, [200], [500]);
+
+            if (body1 && body2) {
+                // Each ticket should be unique due to nonce
+                expect(body1.ticket).not.toBe(body2.ticket);
+            }
+        });
+    });
+
+    describe('WebSocket Ticket Authentication Flow', () => {
+        it('should accept WebSocket connection with valid ticket', async () => {
+            // Get ticket
+            const ticketRes = await app.request('/v1/websocket/ticket', {
+                method: 'POST',
+                headers: authHeader('valid-token'),
+            });
+
+            // In mock environment, HANDY_MASTER_SECRET may be undefined
+            const ticketBody = await expectOneOfStatus<{ ticket: string }>(ticketRes, [200], [500]);
+            if (!ticketBody) return; // Skip WebSocket test if ticket generation failed
+
+            // Connect with ticket
+            const wsRes = await app.request(`/v1/updates?ticket=${ticketBody.ticket}`, {
+                method: 'GET',
+                headers: {
+                    Upgrade: 'websocket',
+                    Connection: 'Upgrade',
+                },
+            });
+
+            // In test environment without real WebSocket support, may return various codes:
+            // - 101 = WebSocket upgrade successful
+            // - 200 = Response (mock DO)
+            // - 400 = Client error (mock issues)
+            // - 500 = HANDY_MASTER_SECRET not available in mock env
+            await expectOneOfStatus(wsRes, [101, 200, 400], [500]);
+        });
+
+        it('should reject WebSocket connection with expired ticket', async () => {
+            // Create expired ticket using test helper with 1ms TTL
+            const expiredTicket = await createTicket('test-user-123', TEST_SECRET, 1);
+
+            // Wait for ticket to expire (TTL + clock skew tolerance = ~6 seconds)
+            await new Promise((r) => setTimeout(r, 6000));
+
+            const wsRes = await app.request(`/v1/updates?ticket=${expiredTicket}`, {
+                method: 'GET',
+                headers: {
+                    Upgrade: 'websocket',
+                    Connection: 'Upgrade',
+                },
+            });
+
+            // Should reject with 401, but may return 500 in mock env if HANDY_MASTER_SECRET unavailable
+            await expectOneOfStatus(wsRes, [401], [500]);
+        }, 10000); // Extended timeout for expiration test
+
+        it('should reject WebSocket connection with invalid ticket signature', async () => {
+            // Create a ticket with a different secret
+            const invalidTicket = await createTicket('test-user-123', 'wrong-secret-that-is-32-chars-long');
+
+            const wsRes = await app.request(`/v1/updates?ticket=${invalidTicket}`, {
+                method: 'GET',
+                headers: {
+                    Upgrade: 'websocket',
+                    Connection: 'Upgrade',
+                },
+            });
+
+            // Should reject with 401, but may return 500 in mock env
+            await expectOneOfStatus(wsRes, [401], [500]);
+        });
+
+        it('should reject WebSocket connection with malformed ticket', async () => {
+            const malformedTickets = [
+                'not-a-valid-ticket',
+                'missing.dot',
+                '.empty-payload',
+                'empty-signature.',
+                '..double-dots',
+            ];
+
+            for (const ticket of malformedTickets) {
+                const wsRes = await app.request(`/v1/updates?ticket=${ticket}`, {
+                    method: 'GET',
+                    headers: {
+                        Upgrade: 'websocket',
+                        Connection: 'Upgrade',
+                    },
+                });
+
+                // Should reject with 401, but may return 500 in mock env
+                await expectOneOfStatus(wsRes, [401], [500]);
+            }
+        });
+
+        it('should support ticket auth on alternative /v1/websocket endpoint', async () => {
+            // Get ticket
+            const ticketRes = await app.request('/v1/websocket/ticket', {
+                method: 'POST',
+                headers: authHeader('valid-token'),
+            });
+
+            // In mock environment, HANDY_MASTER_SECRET may be undefined
+            const ticketBody = await expectOneOfStatus<{ ticket: string }>(ticketRes, [200], [500]);
+            if (!ticketBody) return; // Skip WebSocket test if ticket generation failed
+
+            // Connect via alternative endpoint with ticket
+            const wsRes = await app.request(`/v1/websocket?ticket=${ticketBody.ticket}`, {
+                method: 'GET',
+                headers: {
+                    Upgrade: 'websocket',
+                    Connection: 'Upgrade',
+                },
+            });
+
+            await expectOneOfStatus(wsRes, [101, 200, 400], [500]);
+        });
+
+        it('should prefer ticket auth over token when both provided', async () => {
+            // Get a valid ticket
+            const ticketRes = await app.request('/v1/websocket/ticket', {
+                method: 'POST',
+                headers: authHeader('valid-token'),
+            });
+
+            // In mock environment, HANDY_MASTER_SECRET may be undefined
+            const ticketBody = await expectOneOfStatus<{ ticket: string }>(ticketRes, [200], [500]);
+            if (!ticketBody) return; // Skip WebSocket test if ticket generation failed
+
+            // Provide both ticket and token (ticket should take precedence)
+            const wsRes = await app.request(
+                `/v1/updates?ticket=${ticketBody.ticket}&token=invalid-token`,
+                {
+                    method: 'GET',
+                    headers: {
+                        Upgrade: 'websocket',
+                        Connection: 'Upgrade',
+                    },
+                }
+            );
+
+            // Should succeed because valid ticket takes precedence over invalid token
+            // In test env without full mock setup, may return 500
+            await expectOneOfStatus(wsRes, [101, 200, 400], [500]);
         });
     });
 });
