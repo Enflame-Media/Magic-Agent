@@ -1,6 +1,6 @@
 # Privacy Policy for Happy Coder
 
-**Last Updated: January 2025**
+**Last Updated: December 2025**
 
 ## Overview
 
@@ -29,6 +29,46 @@ Happy Coder is committed to protecting your privacy. This policy explains how we
 - **Account ID**: Revenue Cat uses your account ID to manage subscriptions and enable premium features
 - **Backend Integration**: This ID allows us to provide additional features from our backend while maintaining end-to-end encryption for your content
 - **Data Separation**: Purchase analytics sent to PostHog use the anonymized ID instead - we cannot match Revenue Cat data with PostHog analytics
+
+### CLI Telemetry (Happy CLI Only)
+
+The Happy CLI includes optional telemetry for error reporting and performance monitoring. This is completely separate from mobile app analytics.
+
+#### Opt-In Only
+- **Disabled by default**: No telemetry data is collected unless you explicitly enable it
+- **Master switch**: Set `HAPPY_TELEMETRY=true` to enable telemetry
+- **Anonymization enabled by default**: Even when telemetry is enabled, data is anonymized (`HAPPY_TELEMETRY_ANONYMIZE=true`)
+
+#### What CLI Telemetry Can Collect (When Enabled)
+
+| Category | Data | Purpose |
+|----------|------|---------|
+| **Errors** | Crash reports, error stack traces | Fix bugs and improve stability |
+| **Usage** | Session start/end events, feature usage | Understand how features are used |
+| **Performance** | Command duration, API latency | Identify performance bottlenecks |
+
+#### What Anonymization Removes
+
+When anonymization is enabled (default), the following data is automatically scrubbed:
+- User IP addresses
+- Usernames and email addresses
+- Session IDs and machine IDs
+- File paths and working directories
+- API keys, tokens, and credentials
+- Any data matching sensitive key patterns
+
+#### How to Control CLI Telemetry
+
+| Environment Variable | Purpose | Default |
+|---------------------|---------|---------|
+| `HAPPY_TELEMETRY` | Master switch (true/false) | `false` (disabled) |
+| `HAPPY_TELEMETRY_ANONYMIZE` | Force anonymization | `true` (enabled) |
+
+#### Technical Implementation
+- Error reporting uses Sentry (industry-standard error monitoring)
+- Usage and performance metrics are batched and sent periodically
+- All telemetry respects the master switch - no data is collected when disabled
+- Configuration is checked via environment variables first, then local settings
 
 ## What We Don't Collect
 - Your actual code or conversation content (we can't decrypt it)
@@ -69,6 +109,7 @@ Push notifications are sent directly from your devices to each other, not from o
 - Encrypted messages are retained indefinitely until you delete them
 - Metadata is retained for system functionality
 - Deleted data is permanently removed from our servers within 30 days
+- CLI telemetry data (when enabled) is retained for 90 days for error reports, 30 days for usage/performance metrics
 
 ## Your Rights
 
