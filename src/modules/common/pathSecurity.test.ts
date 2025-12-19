@@ -5,7 +5,6 @@
 import { describe, it, expect } from 'vitest';
 import { validatePath, createPathValidator, validatePathOrThrow } from './pathSecurity';
 import { join, resolve } from 'node:path';
-import { platform } from 'node:os';
 
 describe('validatePath', () => {
     const workingDir = '/home/user/project';

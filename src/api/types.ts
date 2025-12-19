@@ -28,7 +28,6 @@ import {
   ApiUpdateMachineStateSchema,
   ApiUpdateSessionStateSchema,
   // Common types
-  GitHubProfileSchema as SharedGitHubProfileSchema,
   EncryptedContentSchema,
   VersionedValueSchema,
   NullableVersionedValueSchema,
