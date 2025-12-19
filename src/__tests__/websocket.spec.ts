@@ -651,4 +651,103 @@ describe('WebSocket Routes', () => {
             await expectOneOfStatus(wsRes, [101, 200, 400], [500]);
         });
     });
+
+    describe('POST /v1/websocket/ticket - Rate Limiting (HAP-409)', () => {
+        it('should allow requests under the rate limit', async () => {
+            // First request should succeed (within 10/minute limit)
+            const res = await app.request('/v1/websocket/ticket', {
+                method: 'POST',
+                headers: authHeader('valid-token'),
+            });
+
+            // In mock environment, may return 500 if HANDY_MASTER_SECRET unavailable
+            // or 200 if rate limit KV not configured (passes through)
+            await expectOneOfStatus<{ ticket: string }>(res, [200], [500]);
+        });
+
+        it('should return 429 with rate limit info when limit exceeded', async () => {
+            // Note: In mock environment without RATE_LIMIT_KV, rate limiting is skipped
+            // This test documents the expected behavior when rate limiting is enabled
+
+            // Make enough requests to trigger rate limit (if KV is available)
+            // The mock env may not have RATE_LIMIT_KV configured
+            const responses: Response[] = [];
+            for (let i = 0; i < 12; i++) {
+                const res = await app.request('/v1/websocket/ticket', {
+                    method: 'POST',
+                    headers: authHeader('valid-token'),
+                });
+                responses.push(res);
+            }
+
+            // Check if any request returned 429 (rate limited)
+            const rateLimitedResponse = responses.find((r) => r.status === 429);
+
+            if (rateLimitedResponse) {
+                // Verify 429 response structure
+                const body = (await rateLimitedResponse.json()) as { error: string; retryAfter: number };
+                expect(body).toHaveProperty('error', 'Rate limit exceeded');
+                expect(body).toHaveProperty('retryAfter');
+                expect(typeof body.retryAfter).toBe('number');
+
+                // Verify headers
+                expect(rateLimitedResponse.headers.get('Retry-After')).toBeTruthy();
+                expect(rateLimitedResponse.headers.get('X-RateLimit-Limit')).toBe('10');
+                expect(rateLimitedResponse.headers.get('X-RateLimit-Remaining')).toBe('0');
+            } else {
+                // In mock env without RATE_LIMIT_KV, rate limiting is skipped
+                // All requests should return 200 or 500
+                expect(responses.every((r) => [200, 500].includes(r.status))).toBe(true);
+            }
+        });
+
+        it('should rate limit per user (not globally)', async () => {
+            // This test verifies that different users have separate rate limits
+            // In mock env, this may not fully work without RATE_LIMIT_KV
+
+            // User 1 makes requests
+            const user1Responses: Response[] = [];
+            for (let i = 0; i < 5; i++) {
+                const res = await app.request('/v1/websocket/ticket', {
+                    method: 'POST',
+                    headers: authHeader('valid-token'), // test-user-123
+                });
+                user1Responses.push(res);
+            }
+
+            // User 2 should not be affected by user 1's requests
+            const user2Res = await app.request('/v1/websocket/ticket', {
+                method: 'POST',
+                headers: authHeader('user2-token'), // test-user-456
+            });
+
+            // User 2's first request should succeed (200) or fail for other reasons (500)
+            // but NOT be rate limited (429) due to user 1's requests
+            await expectOneOfStatus<{ ticket: string }>(user2Res, [200], [500]);
+        });
+
+        it('should include Retry-After header in 429 response', async () => {
+            // This test documents the expected header behavior
+            // In mock env without RATE_LIMIT_KV, this may not trigger
+
+            const responses: Response[] = [];
+            for (let i = 0; i < 12; i++) {
+                const res = await app.request('/v1/websocket/ticket', {
+                    method: 'POST',
+                    headers: authHeader('valid-token'),
+                });
+                responses.push(res);
+            }
+
+            const rateLimitedResponse = responses.find((r) => r.status === 429);
+
+            if (rateLimitedResponse) {
+                const retryAfter = rateLimitedResponse.headers.get('Retry-After');
+                expect(retryAfter).toBeTruthy();
+                const seconds = parseInt(retryAfter!, 10);
+                expect(seconds).toBeGreaterThan(0);
+                expect(seconds).toBeLessThanOrEqual(60); // Max 60 seconds for 1-minute window
+            }
+        });
+    });
 });

@@ -35,6 +35,11 @@ binding = "UPLOADS"
 bucket_name = "happy-dev-uploads"
 remote = true
 
+# KV Namespace binding (development) - for rate limiting (HAP-409)
+[[env.dev.kv_namespaces]]
+binding = "RATE_LIMIT_KV"
+id = "placeholder-dev-id"
+
 # Durable Objects bindings (development)
 [[env.dev.durable_objects.bindings]]
 name = "CONNECTION_MANAGER"
@@ -82,6 +87,11 @@ remote = true
 binding = "UPLOADS"
 bucket_name = "happy-prod-uploads"
 remote = true
+
+# KV Namespace binding (production) - for rate limiting (HAP-409)
+[[env.prod.kv_namespaces]]
+binding = "RATE_LIMIT_KV"
+id = "placeholder-prod-id"
 
 # Durable Objects bindings (production)
 [[env.prod.durable_objects.bindings]]

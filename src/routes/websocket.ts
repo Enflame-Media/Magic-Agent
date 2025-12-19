@@ -13,6 +13,7 @@
 import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi';
 import { verifyToken, initAuth } from '@/lib/auth';
 import { createTicket, verifyTicket } from '@/lib/ticket';
+import { checkRateLimit, TICKET_RATE_LIMIT } from '@/lib/rate-limit';
 
 /**
  * Environment interface with Durable Object bindings
@@ -23,6 +24,9 @@ interface Env {
 
     /** Master secret for auth token verification */
     HANDY_MASTER_SECRET: string;
+
+    /** KV namespace for rate limiting (HAP-409) */
+    RATE_LIMIT_KV: KVNamespace;
 
     /** Current environment */
     ENVIRONMENT?: 'development' | 'staging' | 'production';
@@ -76,7 +80,8 @@ const ticketRoute = createRoute({
     summary: 'Generate WebSocket connection ticket',
     description:
         'Creates a short-lived ticket for WebSocket authentication. ' +
-        'Use this instead of putting auth tokens in WebSocket URLs.',
+        'Use this instead of putting auth tokens in WebSocket URLs. ' +
+        'Rate limited to 10 requests per minute per user.',
     security: [{ bearerAuth: [] }],
     responses: {
         200: {
@@ -99,6 +104,31 @@ const ticketRoute = createRoute({
                 },
             },
         },
+        429: {
+            description: 'Too Many Requests - rate limit exceeded (10 per minute)',
+            headers: {
+                'Retry-After': {
+                    description: 'Seconds until the rate limit resets',
+                    schema: { type: 'string' },
+                },
+                'X-RateLimit-Limit': {
+                    description: 'Maximum requests per window',
+                    schema: { type: 'string' },
+                },
+                'X-RateLimit-Remaining': {
+                    description: 'Remaining requests in current window',
+                    schema: { type: 'string' },
+                },
+            },
+            content: {
+                'application/json': {
+                    schema: z.object({
+                        error: z.string(),
+                        retryAfter: z.number().describe('Seconds until rate limit resets'),
+                    }),
+                },
+            },
+        },
     },
 });
 
@@ -117,6 +147,32 @@ websocketRoutes.openapi(ticketRoute, async (c) => {
     const verified = await verifyToken(token);
     if (!verified) {
         return c.json({ error: 'Invalid token' } as const, 401);
+    }
+
+    // Check rate limit (HAP-409)
+    // Rate limiting is applied after auth to ensure we limit by authenticated userId
+    if (c.env.RATE_LIMIT_KV) {
+        const rateLimitResult = await checkRateLimit(
+            c.env.RATE_LIMIT_KV,
+            'ticket',
+            verified.userId,
+            TICKET_RATE_LIMIT
+        );
+
+        if (!rateLimitResult.allowed) {
+            return c.json(
+                {
+                    error: 'Rate limit exceeded',
+                    retryAfter: rateLimitResult.retryAfter,
+                } as const,
+                429,
+                {
+                    'Retry-After': String(rateLimitResult.retryAfter),
+                    'X-RateLimit-Limit': String(rateLimitResult.limit),
+                    'X-RateLimit-Remaining': '0',
+                }
+            );
+        }
     }
 
     // Generate short-lived ticket
