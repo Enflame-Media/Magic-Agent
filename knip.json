@@ -14,5 +14,8 @@
     "scripts/claude_remote_launcher.cjs!",
     "scripts/claude_version_utils.cjs!",
     "scripts/ripgrep_launcher.cjs!"
+  ],
+  "ignoreFiles": [
+    "pkgroll.config.js"
   ]
 }
