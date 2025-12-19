@@ -128,8 +128,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         };
     }, []);
 
+    // Use a ref to track current toast to avoid stale closures in handleActionPress
+    const currentToastRef = useRef(state.current);
+    currentToastRef.current = state.current;
+
     const handleActionPress = useCallback(() => {
-        const current = state.current;
+        const current = currentToastRef.current;
         if (current?.action) {
             // Haptic feedback
             if (Platform.OS !== 'web') {
@@ -140,7 +144,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             // Dismiss toast
             hideToast(current.id);
         }
-    }, [state.current, hideToast]);
+    }, [hideToast]);
 
     const contextValue: ToastContextValue = {
         state,

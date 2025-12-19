@@ -176,8 +176,9 @@ const CircularGradientProgress: React.FC<CircularGradientProgressProps> = ({
     gradientColors = ['#F59E0B', '#EC4899', '#8B5CF6'],
 }) => {
     const radius = (size - strokeWidth) / 2;
-    const circumference = 2 * Math.PI * radius;
-    const strokeDashoffset = circumference * (1 - progress);
+    // Note: circumference and strokeDashoffset would be used for SVG-based circular progress,
+    // but this implementation uses a border-based approach instead
+    void radius; // Suppress unused warning - kept for documentation
 
     return (
         <View style={{ width: size, height: size }}>

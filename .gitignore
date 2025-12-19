@@ -46,6 +46,9 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
+# test coverage
+coverage/
+
 .claude/settings.local.json
 .plan
 

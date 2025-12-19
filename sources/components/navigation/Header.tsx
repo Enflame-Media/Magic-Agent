@@ -1,13 +1,22 @@
 import * as React from 'react';
 import { View, Text, Platform, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-// Import directly from @react-navigation/native-stack (project dependency)
-import type { NativeStackHeaderProps } from '@react-navigation/native-stack';
+import type { Stack } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { layout } from '../layout';
 import { useHeaderHeight, useIsTablet } from '@/utils/responsive';
 import { Typography } from '@/constants/Typography';
 import { StyleSheet } from 'react-native-unistyles';
+
+// Derive the NativeStackHeaderProps type from expo-router's Stack component
+// to ensure type compatibility with expo-router's bundled @react-navigation versions
+type StackScreenOptions = NonNullable<React.ComponentProps<typeof Stack>['screenOptions']>;
+type StackHeaderFunction = StackScreenOptions extends ((...args: any[]) => infer R) | infer R
+    ? R extends { header?: infer H }
+        ? H
+        : never
+    : never;
+type NativeStackHeaderProps = StackHeaderFunction extends ((props: infer P) => any) | undefined ? P : never;
 
 interface HeaderProps {
     title?: React.ReactNode;

@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Typography } from '@/constants/Typography';
 import { t } from '@/text';
-import { useSetting, useAllMachines, useMachine } from '@/sync/storage';
+import { useSetting, useAllMachines } from '@/sync/storage';
 import { layout } from './layout';
 
 /**
