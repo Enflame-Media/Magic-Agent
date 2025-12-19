@@ -46,6 +46,29 @@ export default [
             'no-undef': 'off', // TypeScript handles this
         },
     },
+    // k6 load test files - JavaScript files with k6-specific globals
+    {
+        files: ['load-tests/**/*.js'],
+        languageOptions: {
+            ecmaVersion: 2021,
+            sourceType: 'module',
+            globals: {
+                // k6 runtime globals
+                __ENV: 'readonly',
+                // Web APIs available in k6 runtime
+                btoa: 'readonly',
+                atob: 'readonly',
+                console: 'readonly',
+                // k6 built-in objects (imported, but declaring for safety)
+                JSON: 'readonly',
+                Math: 'readonly',
+            },
+        },
+        rules: {
+            // Relaxed rules for load test scripts
+            'no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+        },
+    },
     {
         ignores: ['dist/', 'node_modules/', '.wrangler/', '*.config.ts'],
     },
