@@ -38,7 +38,7 @@ remote = true
 # KV Namespace binding (development) - for rate limiting (HAP-409)
 [[env.dev.kv_namespaces]]
 binding = "RATE_LIMIT_KV"
-id = "placeholder-dev-id"
+id = "5d82d033678243aa8080971ecf538477"
 
 # Durable Objects bindings (development)
 [[env.dev.durable_objects.bindings]]
@@ -91,7 +91,7 @@ remote = true
 # KV Namespace binding (production) - for rate limiting (HAP-409)
 [[env.prod.kv_namespaces]]
 binding = "RATE_LIMIT_KV"
-id = "placeholder-prod-id"
+id = "2e9baf9f10054559a6220e78051fb336"
 
 # Durable Objects bindings (production)
 [[env.prod.durable_objects.bindings]]
