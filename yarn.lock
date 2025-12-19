@@ -3201,9 +3201,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@happy/protocol@workspace:packages/@happy/protocol"
   dependencies:
-    tsup: "npm:^8.0.0"
-    typescript: "npm:^5.0.0"
-    zod: "npm:^3.23.8"
+    tsup: "npm:^8.5.1"
+    typescript: "npm:^5.9.3"
+    zod: "npm:^4.2.1"
   peerDependencies:
     zod: ^3.0.0 || ^4.0.0
   languageName: unknown
@@ -6689,10 +6689,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@revenuecat/purchases-js@npm:^1.22.0":
-  version: 1.22.0
-  resolution: "@revenuecat/purchases-js@npm:1.22.0"
-  checksum: 10c0/22bb1c2a3a28a5ec280a698c391ffc59a2892eff974325337d54a84fc51d93a1c1454e692465261a3974c024f480ee04163379ec5b49ea9a06b8d19d4e6bdd47
+"@revenuecat/purchases-js@npm:^1.22.1":
+  version: 1.22.1
+  resolution: "@revenuecat/purchases-js@npm:1.22.1"
+  checksum: 10c0/f72d857643356755a1063fb39f1f65c72a950b0d9c6d18bc3fc35942ba85d4b77aa0beec423460f4b33553196a545e6123cadd5b2e6367bb1a98b232f631e653
   languageName: node
   linkType: hard
 
@@ -7009,20 +7009,20 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sentry/core@npm:10.32.0":
-  version: 10.32.0
-  resolution: "@sentry/core@npm:10.32.0"
-  checksum: 10c0/0c1b14e48626846fd78aebe973e5a58757532222c1c14274d28588922cd836d4d50fecb71db468bdf64b3209a741c8277fb60c12d4b0cfd80d90ec88ab39a683
+"@sentry/core@npm:10.32.1":
+  version: 10.32.1
+  resolution: "@sentry/core@npm:10.32.1"
+  checksum: 10c0/47cbbb82cb5c1841033d5a08c3edf9686516c85d799de13f9b1981fc705aaf2a9b441576ffb50e89d4554fbee3b41f73a11cb32547129c6f504dad55db985187
   languageName: node
   linkType: hard
 
-"@sentry/node-core@npm:10.32.0":
-  version: 10.32.0
-  resolution: "@sentry/node-core@npm:10.32.0"
+"@sentry/node-core@npm:10.32.1":
+  version: 10.32.1
+  resolution: "@sentry/node-core@npm:10.32.1"
   dependencies:
     "@apm-js-collab/tracing-hooks": "npm:^0.3.1"
-    "@sentry/core": "npm:10.32.0"
-    "@sentry/opentelemetry": "npm:10.32.0"
+    "@sentry/core": "npm:10.32.1"
+    "@sentry/opentelemetry": "npm:10.32.1"
     import-in-the-middle: "npm:^2"
   peerDependencies:
     "@opentelemetry/api": ^1.9.0
@@ -7032,13 +7032,13 @@ __metadata:
     "@opentelemetry/resources": ^1.30.1 || ^2.1.0 || ^2.2.0
     "@opentelemetry/sdk-trace-base": ^1.30.1 || ^2.1.0 || ^2.2.0
     "@opentelemetry/semantic-conventions": ^1.37.0
-  checksum: 10c0/563a35a5a8709ddf4114fde9a8cce35e39c698c33039b85df426263511283c214515ed33ee4dd921334e36f9f5e740fedd9a31d4301cc6a45dc2e851fef77c3b
+  checksum: 10c0/d204532c14af761e90c45fc8451261fa781d454fca93f4706ca66be4c49b1980c0fa05493783cf0d0034ad0992b2f05e3c3c7b2ff917cc8f3fcb867fb1fddf18
   languageName: node
   linkType: hard
 
-"@sentry/node@npm:^10.32.0":
-  version: 10.32.0
-  resolution: "@sentry/node@npm:10.32.0"
+"@sentry/node@npm:^10.32.1":
+  version: 10.32.1
+  resolution: "@sentry/node@npm:10.32.1"
   dependencies:
     "@opentelemetry/api": "npm:^1.9.0"
     "@opentelemetry/context-async-hooks": "npm:^2.2.0"
@@ -7070,27 +7070,27 @@ __metadata:
     "@opentelemetry/sdk-trace-base": "npm:^2.2.0"
     "@opentelemetry/semantic-conventions": "npm:^1.37.0"
     "@prisma/instrumentation": "npm:6.19.0"
-    "@sentry/core": "npm:10.32.0"
-    "@sentry/node-core": "npm:10.32.0"
-    "@sentry/opentelemetry": "npm:10.32.0"
+    "@sentry/core": "npm:10.32.1"
+    "@sentry/node-core": "npm:10.32.1"
+    "@sentry/opentelemetry": "npm:10.32.1"
     import-in-the-middle: "npm:^2"
     minimatch: "npm:^9.0.0"
-  checksum: 10c0/46673d6d387c8d08f9c59115f492928c37258ec66288017bc0673a0dd6d2813df3b6ede95c2f0e32d91f8588216d84f99d0aea8377283d5908a1a8dd81eb189b
+  checksum: 10c0/f3f8a4efdb8c1a5cd8ec1a61beb195a456955baa5df41a1fd1eda1a1a36c8f3e95301669b9cb2055e1e75370d0f5b5bc65df8765c8d76aadfd584586cf1b4bc4
   languageName: node
   linkType: hard
 
-"@sentry/opentelemetry@npm:10.32.0":
-  version: 10.32.0
-  resolution: "@sentry/opentelemetry@npm:10.32.0"
+"@sentry/opentelemetry@npm:10.32.1":
+  version: 10.32.1
+  resolution: "@sentry/opentelemetry@npm:10.32.1"
   dependencies:
-    "@sentry/core": "npm:10.32.0"
+    "@sentry/core": "npm:10.32.1"
   peerDependencies:
     "@opentelemetry/api": ^1.9.0
     "@opentelemetry/context-async-hooks": ^1.30.1 || ^2.1.0 || ^2.2.0
     "@opentelemetry/core": ^1.30.1 || ^2.1.0 || ^2.2.0
     "@opentelemetry/sdk-trace-base": ^1.30.1 || ^2.1.0 || ^2.2.0
     "@opentelemetry/semantic-conventions": ^1.37.0
-  checksum: 10c0/339c8980e324424cb294048cb0e32ce9bf47a8144a0e095ee0894b7fe3636494adabdd057b6b522e87b154b8f0a5b6e7facedc1bf9680b2dd84eb800b4f43d65
+  checksum: 10c0/48bffb7a519528a1dc3d06682e58c95cc00ffb5c3a0b816ba8e1556bab6c2930db446a08ca72ba7cae452ca84daecb38eebe0f557d49e759cd639cf9ef68ab07
   languageName: node
   linkType: hard
 
@@ -14424,7 +14424,7 @@ __metadata:
     "@fastify/swagger": "npm:^9.6.1"
     "@happy/protocol": "workspace:*"
     "@modelcontextprotocol/sdk": "npm:^1.25.1"
-    "@sentry/node": "npm:^10.32.0"
+    "@sentry/node": "npm:^10.32.1"
     "@stablelib/hex": "npm:^2.0.1"
     "@types/cross-spawn": "npm:^6.0.6"
     "@types/http-proxy": "npm:^1.17.17"
@@ -14438,7 +14438,6 @@ __metadata:
     chalk: "npm:^5.6.2"
     cross-spawn: "npm:^7.0.6"
     dotenv: "npm:^17.2.3"
-    eslint: "npm:^9.39.2"
     expo-server-sdk: "npm:^4.0.0"
     fastify: "npm:^5.6.2"
     fastify-type-provider-zod: "npm:^6.1.0"
@@ -14496,7 +14495,7 @@ __metadata:
     hono: "npm:^4.11.1"
     jose: "npm:^6.1.3"
     jpeg-js: "npm:^0.4.4"
-    knip: "npm:^5.75.1"
+    knip: "npm:^5.75.2"
     oxlint: "npm:^1.34.0"
     prettier: "npm:^3.7.4"
     thumbhash: "npm:^0.1.1"
@@ -14591,7 +14590,7 @@ __metadata:
     "@react-navigation/drawer": "npm:^7.7.10"
     "@react-navigation/native": "npm:^7.1.26"
     "@react-navigation/native-stack": "npm:7.9.0"
-    "@revenuecat/purchases-js": "npm:^1.22.0"
+    "@revenuecat/purchases-js": "npm:^1.22.1"
     "@shopify/flash-list": "npm:2.2.0"
     "@shopify/react-native-skia": "npm:2.4.7"
     "@stablelib/hex": "npm:^2.0.1"
@@ -16293,32 +16292,6 @@ __metadata:
   version: 4.1.5
   resolution: "kleur@npm:4.1.5"
   checksum: 10c0/e9de6cb49657b6fa70ba2d1448fd3d691a5c4370d8f7bbf1c2f64c24d461270f2117e1b0afe8cb3114f13bbd8e51de158c2a224953960331904e636a5e4c0f2a
-  languageName: node
-  linkType: hard
-
-"knip@npm:^5.75.1":
-  version: 5.75.1
-  resolution: "knip@npm:5.75.1"
-  dependencies:
-    "@nodelib/fs.walk": "npm:^1.2.3"
-    fast-glob: "npm:^3.3.3"
-    formatly: "npm:^0.3.0"
-    jiti: "npm:^2.6.0"
-    js-yaml: "npm:^4.1.1"
-    minimist: "npm:^1.2.8"
-    oxc-resolver: "npm:^11.15.0"
-    picocolors: "npm:^1.1.1"
-    picomatch: "npm:^4.0.1"
-    smol-toml: "npm:^1.5.2"
-    strip-json-comments: "npm:5.0.3"
-    zod: "npm:^4.1.11"
-  peerDependencies:
-    "@types/node": ">=18"
-    typescript: ">=5.0.4 <7"
-  bin:
-    knip: bin/knip.js
-    knip-bun: bin/knip-bun.js
-  checksum: 10c0/73d24c57f94a7f1f4e04afa2363deda438f7bf8328cec527e1e7f373bd0a97faff4282239515f88c3db15b3e9acebfb8fb586e8901222046cb29823ac84f6417
   languageName: node
   linkType: hard
 
@@ -22277,7 +22250,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tsup@npm:^8.0.0":
+"tsup@npm:^8.5.1":
   version: 8.5.1
   resolution: "tsup@npm:8.5.1"
   dependencies:
@@ -22482,7 +22455,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:^5.0.0, typescript@npm:^5.9.3":
+"typescript@npm:^5.9.3":
   version: 5.9.3
   resolution: "typescript@npm:5.9.3"
   bin:
@@ -22492,7 +22465,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@npm%3A^5.0.0#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.9.3#optional!builtin<compat/typescript>":
+"typescript@patch:typescript@npm%3A^5.9.3#optional!builtin<compat/typescript>":
   version: 5.9.3
   resolution: "typescript@patch:typescript@npm%3A5.9.3#optional!builtin<compat/typescript>::version=5.9.3&hash=5786d5"
   bin:
@@ -23834,7 +23807,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"zod@npm:^3.23.8, zod@npm:^3.24.3":
+"zod@npm:^3.24.3":
   version: 3.25.76
   resolution: "zod@npm:3.25.76"
   checksum: 10c0/5718ec35e3c40b600316c5b4c5e4976f7fee68151bc8f8d90ec18a469be9571f072e1bbaace10f1e85cf8892ea12d90821b200e980ab46916a6166a4260a983c
