@@ -274,9 +274,9 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
                     // Social/feed events - CLI doesn't use social features, silently ignore
                     logger.debug(`[SOCKET] Received social event ${data.body.t} - ignoring (CLI doesn't use social features)`);
                 } else if (data.body.t === 'kv-batch-update') {
-                    // KV batch updates - settings sync from mobile
-                    // TODO: Implement proper settings sync if CLI needs to track mobile settings changes
-                    logger.debug(`[SOCKET] Received kv-batch-update with ${data.body.changes.length} changes - not yet implemented`);
+                    // KV batch updates - settings sync from mobile (HAP-411)
+                    // Process each change and apply CLI-relevant settings
+                    this.handleKvBatchUpdate(data.body.changes);
                 } else {
                     // Unknown event type - log for debugging but don't crash
                     logger.debug(`[SOCKET] Received unknown update type: ${(data.body as { t: string }).t}`);
@@ -913,6 +913,75 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
                     return { ok: false };
                 }
             );
+        }
+    }
+
+    /**
+     * Handle KV batch updates from mobile settings sync.
+     *
+     * The KV store contains user settings that may affect CLI behavior.
+     * Currently CLI-relevant settings:
+     * - contextNotificationsEnabled: Controls push notifications for context usage (80%, 95% thresholds)
+     *
+     * Other mobile settings (viewInline, expandTodos, showLineNumbers, etc.) are UI-specific
+     * and are explicitly ignored by the CLI.
+     *
+     * @param changes - Array of key-value changes from kv-batch-update event
+     * @see HAP-411 for implementation details
+     */
+    private handleKvBatchUpdate(changes: Array<{ key: string; value: string | null; version: number }>): void {
+        // Define CLI-relevant settings
+        const CLI_RELEVANT_SETTINGS = new Set(['contextNotificationsEnabled']);
+
+        for (const change of changes) {
+            try {
+                if (CLI_RELEVANT_SETTINGS.has(change.key)) {
+                    // Handle CLI-relevant settings
+                    this.applyKvSetting(change.key, change.value);
+                    logger.debug(`[KV-SYNC] Applied setting: ${change.key} = ${change.value} (v${change.version})`);
+                } else {
+                    // Log but ignore UI-specific settings
+                    logger.debug(`[KV-SYNC] Ignored non-CLI setting: ${change.key} (v${change.version})`);
+                }
+            } catch (error) {
+                // Defensive: Log but don't crash on malformed payloads
+                logger.debug(`[KV-SYNC] Error processing setting ${change.key}:`, error);
+            }
+        }
+    }
+
+    /**
+     * Apply a single KV setting to the CLI.
+     *
+     * @param key - Setting key
+     * @param value - Setting value (JSON string or null for deletion)
+     */
+    private applyKvSetting(key: string, value: string | null): void {
+        switch (key) {
+            case 'contextNotificationsEnabled': {
+                // Parse boolean value (JSON encoded)
+                if (value === null) {
+                    // Key deleted - reset to default (enabled)
+                    if (this.contextNotificationService) {
+                        this.contextNotificationService.setEnabled(true);
+                    }
+                } else {
+                    // Parse JSON boolean value
+                    try {
+                        const enabled = JSON.parse(value);
+                        if (typeof enabled === 'boolean' && this.contextNotificationService) {
+                            this.contextNotificationService.setEnabled(enabled);
+                        }
+                    } catch {
+                        logger.debug(`[KV-SYNC] Invalid JSON value for ${key}: ${value}`);
+                    }
+                }
+                break;
+            }
+            // Add future CLI-relevant settings here
+            default:
+                // This shouldn't happen as we filter in handleKvBatchUpdate, but defensive
+                logger.debug(`[KV-SYNC] Unknown CLI setting: ${key}`);
         }
     }
 
