@@ -6,6 +6,7 @@ import { createHash } from 'crypto';
 import { join } from 'path';
 import { run as runRipgrep } from '@/modules/ripgrep/index';
 import { run as runDifftastic } from '@/modules/difftastic/index';
+import { startHTTPDirectProxy, HTTPProxy } from '@/modules/proxy/index';
 import { RpcHandlerManager } from '../../api/rpc/RpcHandlerManager';
 import { withRetry } from '@/utils/retry';
 import { validatePath } from './pathSecurity';
@@ -109,6 +110,54 @@ interface DifftasticResponse {
     stdout?: string;
     stderr?: string;
     error?: string;
+}
+
+interface StartProxyRequest {
+    target: string;
+    verbose?: boolean;
+}
+
+interface StartProxyResponse {
+    success: boolean;
+    proxyId?: string;
+    url?: string;
+    error?: string;
+}
+
+interface StopProxyRequest {
+    proxyId: string;
+}
+
+interface StopProxyResponse {
+    success: boolean;
+    error?: string;
+}
+
+interface ListProxiesResponse {
+    success: boolean;
+    proxies?: Array<{ id: string; url: string; target: string }>;
+    error?: string;
+}
+
+// Track running proxies per session
+const runningProxies = new Map<string, { proxy: HTTPProxy; target: string }>();
+
+/**
+ * Cleanup all running proxies. Call this when a session ends.
+ * @returns Promise that resolves when all proxies are closed
+ */
+export async function cleanupAllProxies(): Promise<void> {
+    const closePromises = Array.from(runningProxies.entries()).map(async ([id, info]) => {
+        try {
+            await info.proxy.close();
+            logger.debug(`Cleaned up proxy ${id}`);
+        } catch (error) {
+            logger.debug(`Failed to cleanup proxy ${id}:`, error);
+        }
+    });
+
+    await Promise.all(closePromises);
+    runningProxies.clear();
 }
 
 /*
@@ -500,5 +549,90 @@ export function registerCommonHandlers(rpcHandlerManager: RpcHandlerManager, wor
                 error: error instanceof Error ? error.message : 'Failed to run difftastic'
             };
         }
+    });
+
+    // Start HTTP proxy handler - creates a proxy server to forward requests
+    rpcHandlerManager.registerHandler<StartProxyRequest, StartProxyResponse>('startProxy', async (data, _signal) => {
+        logger.debug('Start proxy request for target:', data.target);
+
+        try {
+            // Validate target URL
+            const targetUrl = new URL(data.target);
+            if (!['http:', 'https:'].includes(targetUrl.protocol)) {
+                return {
+                    success: false,
+                    error: 'Target must be an HTTP or HTTPS URL'
+                };
+            }
+
+            const proxy = await startHTTPDirectProxy({
+                target: data.target,
+                verbose: data.verbose
+            });
+
+            // Generate a unique proxy ID
+            const proxyId = `proxy_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+
+            // Track the running proxy
+            runningProxies.set(proxyId, { proxy, target: data.target });
+
+            logger.debug(`Started proxy ${proxyId} at ${proxy.url} -> ${data.target}`);
+
+            return {
+                success: true,
+                proxyId,
+                url: proxy.url
+            };
+        } catch (error) {
+            logger.debug('Failed to start proxy:', error);
+            return {
+                success: false,
+                error: error instanceof Error ? error.message : 'Failed to start proxy'
+            };
+        }
+    });
+
+    // Stop HTTP proxy handler - stops a running proxy by ID
+    rpcHandlerManager.registerHandler<StopProxyRequest, StopProxyResponse>('stopProxy', async (data, _signal) => {
+        logger.debug('Stop proxy request for:', data.proxyId);
+
+        const proxyInfo = runningProxies.get(data.proxyId);
+        if (!proxyInfo) {
+            return {
+                success: false,
+                error: `Proxy not found: ${data.proxyId}`
+            };
+        }
+
+        try {
+            await proxyInfo.proxy.close();
+            runningProxies.delete(data.proxyId);
+
+            logger.debug(`Stopped proxy ${data.proxyId}`);
+
+            return { success: true };
+        } catch (error) {
+            logger.debug('Failed to stop proxy:', error);
+            return {
+                success: false,
+                error: error instanceof Error ? error.message : 'Failed to stop proxy'
+            };
+        }
+    });
+
+    // List running proxies handler
+    rpcHandlerManager.registerHandler<Record<string, never>, ListProxiesResponse>('listProxies', async (_data, _signal) => {
+        logger.debug('List proxies request');
+
+        const proxies = Array.from(runningProxies.entries()).map(([id, info]) => ({
+            id,
+            url: info.proxy.url,
+            target: info.target
+        }));
+
+        return {
+            success: true,
+            proxies
+        };
     });
 }
