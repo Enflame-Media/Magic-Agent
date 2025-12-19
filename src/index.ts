@@ -179,20 +179,38 @@ app.get('/health', (c) => {
 /**
  * Readiness check endpoint
  * @route GET /ready
- * @returns Service readiness status
+ * @returns Service readiness status with per-dependency check results
  *
  * @remarks
  * Indicates whether the service is ready to accept traffic.
- * Different from /health - this checks dependencies (DB, external services).
- * For now, always ready since we have no dependencies yet.
+ * Different from /health - this checks actual dependencies (D1, R2).
+ * Returns 200 when all checks pass, 503 when any check fails.
  */
-app.get('/ready', (c) => {
-    // TODO: Add actual dependency checks when database/cache/external services are added
-    const isReady = true;
+app.get('/ready', async (c) => {
+    const checks: Record<string, boolean> = {};
+
+    // D1 Database health check
+    try {
+        await c.env.DB.prepare('SELECT 1').first();
+        checks.database = true;
+    } catch {
+        checks.database = false;
+    }
+
+    // R2 Storage health check (list with limit 1 is O(1) and doesn't require pre-existing files)
+    try {
+        await c.env.UPLOADS.list({ limit: 1 });
+        checks.storage = true;
+    } catch {
+        checks.storage = false;
+    }
+
+    const isReady = Object.values(checks).every(Boolean);
 
     return c.json(
         {
             ready: isReady,
+            checks,
             timestamp: new Date().toISOString(),
         },
         isReady ? 200 : 503
