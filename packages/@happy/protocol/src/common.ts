@@ -10,16 +10,26 @@ import { z } from 'zod';
  * GitHub profile data from OAuth
  * Used in update-account events
  *
- * Note: Fields match happy-app's profile.ts requirements
+ * IMPORTANT: This is the CANONICAL schema - all projects must import from here.
+ *
+ * GitHub API field requirements:
+ * - id: Always present (required)
+ * - login: Always present (required)
+ * - name: User-settable, can be null or missing
+ * - avatar_url: Usually present but not guaranteed
+ * - email: User preference, can be null or missing
+ * - bio: Optional user field, can be null or missing
+ *
+ * We use .passthrough() to allow additional GitHub fields without breaking validation.
  */
 export const GitHubProfileSchema = z.object({
     id: z.number(),
     login: z.string(),
-    name: z.string(),
-    avatar_url: z.string(),
-    email: z.string().optional(),
-    bio: z.string().nullable(),
-});
+    name: z.string().nullable().optional(),
+    avatar_url: z.string().optional(),
+    email: z.string().nullable().optional(),
+    bio: z.string().nullable().optional(),
+}).passthrough();
 
 export type GitHubProfile = z.infer<typeof GitHubProfileSchema>;
 

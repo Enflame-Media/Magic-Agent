@@ -29,11 +29,14 @@
     "devDependencies": {
         "tsup": "^8.5.1",
         "typescript": "^5.9.3",
+        "vitest": "^4.0.16",
         "zod": "^4.2.1"
     },
     "scripts": {
         "build": "npx tsup",
         "typecheck": "npx tsc --noEmit",
+        "test": "vitest run",
+        "test:watch": "vitest",
         "clean": "rm -rf dist"
     },
     "keywords": [

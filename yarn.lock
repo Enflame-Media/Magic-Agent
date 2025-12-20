@@ -3203,6 +3203,7 @@ __metadata:
   dependencies:
     tsup: "npm:^8.5.1"
     typescript: "npm:^5.9.3"
+    vitest: "npm:^4.0.16"
     zod: "npm:^4.2.1"
   peerDependencies:
     zod: ^3.0.0 || ^4.0.0
@@ -4274,7 +4275,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@lottiefiles/dotlottie-react@npm:^0.17.10":
+"@lottiefiles/dotlottie-react@npm:~0.17.10":
   version: 0.17.10
   resolution: "@lottiefiles/dotlottie-react@npm:0.17.10"
   dependencies:
@@ -7723,6 +7724,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/dom-mediacapture-record@npm:^1.0.22":
+  version: 1.0.22
+  resolution: "@types/dom-mediacapture-record@npm:1.0.22"
+  checksum: 10c0/3c63cdde02f0eb5b390b0fad962d8074f7aa5173c8eb279eb3eb8d818386e540c310880a2cdddb1ae63b258f290b107a780ff1dd226769bd04dd6e6d32dba005
+  languageName: node
+  linkType: hard
+
 "@types/estree@npm:*, @types/estree@npm:1.0.8, @types/estree@npm:^1.0.0, @types/estree@npm:^1.0.6":
   version: 1.0.8
   resolution: "@types/estree@npm:1.0.8"
@@ -7928,7 +7936,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/parse-path@npm:^7.0.0":
+"@types/parse-path@npm:7.0.3":
   version: 7.0.3
   resolution: "@types/parse-path@npm:7.0.3"
   checksum: 10c0/8344b6c7acba4e4e5a8d542f56f53c297685fa92f9b0c085d7532cc7e1b661432cecfc1c75c76cdb0d161c95679b6ecfe0573d9fef7c836962aacf604150a984
@@ -8010,6 +8018,15 @@ __metadata:
   version: 1.2.7
   resolution: "@types/range-parser@npm:1.2.7"
   checksum: 10c0/361bb3e964ec5133fa40644a0b942279ed5df1949f21321d77de79f48b728d39253e5ce0408c9c17e4e0fd95ca7899da36841686393b9f7a1e209916e9381a3c
+  languageName: node
+  linkType: hard
+
+"@types/react-native@npm:^0.73.0":
+  version: 0.73.0
+  resolution: "@types/react-native@npm:0.73.0"
+  dependencies:
+    react-native: "npm:*"
+  checksum: 10c0/81b8824f3bea30f18f92bb1e7c69777801b6b91a603c712173179b10e8fd6754f3594841dc452d0fc4a4cdc597e366fdf7839d27e0c5c5957f7dadde65882212
   languageName: node
   linkType: hard
 
@@ -14447,6 +14464,7 @@ __metadata:
     "@date-fns/tz": "npm:^1.4.1"
     "@fastify/bearer-auth": "npm:^10.1.2"
     "@fastify/cors": "npm:^11.2.0"
+    "@fastify/swagger": "npm:^9.6.1"
     "@happy/protocol": "workspace:*"
     "@prisma/client": "npm:^7.2.0"
     "@socket.io/redis-streams-adapter": "npm:^0.2.3"
@@ -14469,6 +14487,7 @@ __metadata:
     jsonwebtoken: "npm:^9.0.3"
     minio: "npm:^8.0.6"
     octokit: "npm:^5.0.5"
+    openapi-types: "npm:^12.1.3"
     pino-pretty: "npm:^13.1.3"
     prisma: "npm:^7.2.0"
     prisma-json-types-generator: "npm:^4.0.1"
@@ -14497,6 +14516,7 @@ __metadata:
   resolution: "happy@workspace:happy-app"
   dependencies:
     "@babel/core": "npm:^7.28.5"
+    "@babel/runtime": "npm:^7.28.4"
     "@config-plugins/react-native-webrtc": "npm:^13.0.0"
     "@elevenlabs/react": "npm:^0.12.3"
     "@elevenlabs/react-native": "npm:^0.5.7"
@@ -14509,7 +14529,7 @@ __metadata:
     "@livekit/react-native": "npm:^2.9.6"
     "@livekit/react-native-expo-plugin": "npm:^1.0.1"
     "@livekit/react-native-webrtc": "npm:^137.0.2"
-    "@lottiefiles/dotlottie-react": "npm:^0.17.10"
+    "@lottiefiles/dotlottie-react": "npm:~0.17.10"
     "@material/material-color-utilities": "npm:^0.3.0"
     "@more-tech/react-native-libsodium": "npm:^1.5.6"
     "@peoplesgrocers/seti-ui-file-icons": "npm:1.11.3"
@@ -14518,7 +14538,9 @@ __metadata:
     "@react-native-community/slider": "npm:5.1.1"
     "@react-native-masked-view/masked-view": "npm:0.3.2"
     "@react-native-picker/picker": "npm:2.11.4"
+    "@react-native/normalize-colors": "npm:0.83.1"
     "@react-navigation/drawer": "npm:^7.7.10"
+    "@react-navigation/elements": "npm:2.9.3"
     "@react-navigation/native": "npm:^7.1.26"
     "@react-navigation/native-stack": "npm:7.9.0"
     "@revenuecat/purchases-js": "npm:^1.22.1"
@@ -14527,10 +14549,12 @@ __metadata:
     "@stablelib/hex": "npm:^2.0.1"
     "@tauri-apps/cli": "npm:^2.9.6"
     "@tauri-apps/plugin-http": "npm:^2.5.4"
+    "@types/dom-mediacapture-record": "npm:^1.0.22"
     "@types/libsodium-wrappers": "npm:^0.7.14"
     "@types/node": "npm:^25.0.3"
     "@types/qrcode": "npm:^1.5.6"
     "@types/react": "npm:~19.2.7"
+    "@types/react-native": "npm:^0.73.0"
     "@types/react-syntax-highlighter": "npm:^15.5.13"
     "@types/resolve-path": "npm:^1.4.3"
     "@types/uuid": "npm:^11.0.0"
@@ -14593,7 +14617,7 @@ __metadata:
     expo-updates: "npm:~29.0.15"
     expo-web-browser: "npm:~15.0.10"
     fuse.js: "npm:^7.1.0"
-    knip: "npm:^5.75.2"
+    knip: "npm:^5.76.0"
     libsodium-wrappers: "npm:^0.7.15"
     livekit-client: "npm:^2.16.1"
     lottie-react-native: "npm:~7.3.4"
@@ -14608,6 +14632,7 @@ __metadata:
     react-native-audio-api: "npm:^0.10.3"
     react-native-device-info: "npm:^15.0.1"
     react-native-diff-view: "npm:^1.1.2"
+    react-native-edge-to-edge: "npm:^1.7.0"
     react-native-enriched: "npm:^0.2.1"
     react-native-gesture-handler: "npm:~2.30.0"
     react-native-incall-manager: "npm:^4.2.1"
@@ -16249,6 +16274,32 @@ __metadata:
     knip: bin/knip.js
     knip-bun: bin/knip-bun.js
   checksum: 10c0/69173990d339fdb75504fdeb509fb302b066b4ffc4fc3b00ed38b340d263336954c2b3b9cc26cfe2bd6b30fa7af529e23a5a551b902d07d5635f236f05d8eb7c
+  languageName: node
+  linkType: hard
+
+"knip@npm:^5.76.0":
+  version: 5.76.0
+  resolution: "knip@npm:5.76.0"
+  dependencies:
+    "@nodelib/fs.walk": "npm:^1.2.3"
+    fast-glob: "npm:^3.3.3"
+    formatly: "npm:^0.3.0"
+    jiti: "npm:^2.6.0"
+    js-yaml: "npm:^4.1.1"
+    minimist: "npm:^1.2.8"
+    oxc-resolver: "npm:^11.15.0"
+    picocolors: "npm:^1.1.1"
+    picomatch: "npm:^4.0.1"
+    smol-toml: "npm:^1.5.2"
+    strip-json-comments: "npm:5.0.3"
+    zod: "npm:^4.1.11"
+  peerDependencies:
+    "@types/node": ">=18"
+    typescript: ">=5.0.4 <7"
+  bin:
+    knip: bin/knip.js
+    knip-bun: bin/knip-bun.js
+  checksum: 10c0/9be6437b69495cc9424247fc9dcf70951d9900c6149dde30a32f8b79f1aaa767e9c72222366e88a8f02b4b92f95e8851b58eb8f75cca65dbfd8ef2d5bbcbd243
   languageName: node
   linkType: hard
 
@@ -18315,12 +18366,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"parse-path@npm:^7.0.0":
-  version: 7.1.0
-  resolution: "parse-path@npm:7.1.0"
+"parse-path@npm:7.0.3":
+  version: 7.0.3
+  resolution: "parse-path@npm:7.0.3"
   dependencies:
     protocols: "npm:^2.0.0"
-  checksum: 10c0/8c8c8b3019323d686e7b1cd6fd9653bc233404403ad68827836fbfe59dfe26aaef64ed4e0396d0e20c4a7e1469312ec969a679618960e79d5e7c652dc0da5a0f
+  checksum: 10c0/91f3f6eb83a2be7847f51111391a0baad01dd2711a9c164911fd18e50019c85f2f718d8548ca5f86d75e7e6953c362a237efa506736b874cd9367476dcf5de08
   languageName: node
   linkType: hard
 
@@ -19206,7 +19257,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"punycode@npm:^2.1.0, punycode@npm:^2.1.1":
+"punycode@npm:^2.1.0, punycode@npm:^2.1.1, punycode@npm:^2.3.1":
   version: 2.3.1
   resolution: "punycode@npm:2.3.1"
   checksum: 10c0/14f76a8206bc3464f794fb2e3d3cc665ae416c01893ad7a02b23766eb07159144ee612ad67af5e84fa4479ccfe67678c4feb126b0485651b302babf66f04f9e9
@@ -19469,6 +19520,16 @@ __metadata:
     react-native-gesture-handler: ">= 2.0.0"
     react-native-reanimated: ">= 2.0.0"
   checksum: 10c0/156960cf9947db0628e4ae5f4ba39c85c4fd75825326090eb9a3051aec94bd0b429e6f90e5983e3da64fe124ef41887e344cf08e5f40a27a2d6a81e0ebeec3b2
+  languageName: node
+  linkType: hard
+
+"react-native-edge-to-edge@npm:^1.7.0":
+  version: 1.7.0
+  resolution: "react-native-edge-to-edge@npm:1.7.0"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  checksum: 10c0/809dcf1c68f79cff788963ec7691b37024986e82470be5047bfbe42929fc2c7d45db23eab816321e776f0bb3a8295f7efa526377bce6a559c10681cd409d597d
   languageName: node
   linkType: hard
 
@@ -19805,7 +19866,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native@npm:0.83.1":
+"react-native@npm:*, react-native@npm:0.83.1":
   version: 0.83.1
   resolution: "react-native@npm:0.83.1"
   dependencies:
@@ -22062,10 +22123,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tr46@npm:~0.0.3":
-  version: 0.0.3
-  resolution: "tr46@npm:0.0.3"
-  checksum: 10c0/047cb209a6b60c742f05c9d3ace8fa510bff609995c129a37ace03476a9b12db4dbf975e74600830ef0796e18882b2381fb5fb1f6b4f96b832c374de3ab91a11
+"tr46@npm:^6.0.0":
+  version: 6.0.0
+  resolution: "tr46@npm:6.0.0"
+  dependencies:
+    punycode: "npm:^2.3.1"
+  checksum: 10c0/83130df2f649228aa91c17754b66248030a3af34911d713b5ea417066fa338aa4bc8668d06bd98aa21a2210f43fc0a3db8b9099e7747fb5830e40e39a6a1058e
   languageName: node
   linkType: hard
 
@@ -23108,17 +23171,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"webidl-conversions@npm:^3.0.0":
-  version: 3.0.1
-  resolution: "webidl-conversions@npm:3.0.1"
-  checksum: 10c0/5612d5f3e54760a797052eb4927f0ddc01383550f542ccd33d5238cfd65aeed392a45ad38364970d0a0f4fea32e1f4d231b3d8dac4a3bdd385e5cf802ae097db
-  languageName: node
-  linkType: hard
-
 "webidl-conversions@npm:^5.0.0":
   version: 5.0.0
   resolution: "webidl-conversions@npm:5.0.0"
   checksum: 10c0/bf31df332ed11e1114bfcae7712d9ab2c37e7faa60ba32d8fdbee785937c0b012eee235c19d2b5d84f5072db84a160e8d08dd382da7f850feec26a4f46add8ff
+  languageName: node
+  linkType: hard
+
+"webidl-conversions@npm:^8.0.0":
+  version: 8.0.0
+  resolution: "webidl-conversions@npm:8.0.0"
+  checksum: 10c0/3244e8a6534163bc3ee5f5f48b507b4bb74e34e7cc7c86a50cd02734753042b88343dae48321f34ad61ddc6b5c90cb1a5b2ee757b8be8e6fadc587a9f3db76cd
   languageName: node
   linkType: hard
 
@@ -23159,13 +23222,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"whatwg-url@npm:^5.0.0":
-  version: 5.0.0
-  resolution: "whatwg-url@npm:5.0.0"
+"whatwg-url@npm:15.1.0":
+  version: 15.1.0
+  resolution: "whatwg-url@npm:15.1.0"
   dependencies:
-    tr46: "npm:~0.0.3"
-    webidl-conversions: "npm:^3.0.0"
-  checksum: 10c0/1588bed84d10b72d5eec1d0faa0722ba1962f1821e7539c535558fb5398d223b0c50d8acab950b8c488b4ba69043fd833cc2697056b167d8ad46fac3995a55d5
+    tr46: "npm:^6.0.0"
+    webidl-conversions: "npm:^8.0.0"
+  checksum: 10c0/40c49b47044787c87486aaaa5b504da122820661c45ae20ab466c62595ed03c64be7c10c1d180d028949a393cd455db14144966a68359cd37fe6417e3426d128
   languageName: node
   linkType: hard
 
