@@ -141,7 +141,7 @@ describe('macOS LaunchDaemon plist generation', () => {
 
       // Verify DOCTYPE is present for macOS compatibility
       expect(plistContent).toContain('<!DOCTYPE plist PUBLIC')
-      expect(plistContent).toContain('http://www.apple.com/DTDs/PropertyList-1.0.dtd')
+      expect(plistContent).toContain('https://www.apple.com/DTDs/PropertyList-1.0.dtd')
     })
   })
 })
