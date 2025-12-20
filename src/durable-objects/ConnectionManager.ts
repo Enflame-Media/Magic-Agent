@@ -1158,6 +1158,9 @@ export class ConnectionManager extends DurableObject<ConnectionManagerEnv> {
      * Tags are used by getWebSockets() to filter connections efficiently.
      * Max 10 tags per connection, max 256 chars each.
      *
+     * HAP-456: Added 'auth:yes' tag for authenticated connections to enable
+     * O(1) broadcast filtering that excludes pending-auth connections.
+     *
      * @param metadata - Connection metadata
      * @returns Array of tags for this connection
      */
@@ -1166,6 +1169,12 @@ export class ConnectionManager extends DurableObject<ConnectionManagerEnv> {
             `type:${metadata.clientType}`,
             `conn:${metadata.connectionId.slice(0, 8)}`, // Shortened for tag limit
         ];
+
+        // HAP-456: Only authenticated connections get the auth tag
+        // This enables O(1) filtering in broadcast methods
+        if (metadata.authState !== 'pending-auth') {
+            tags.push('auth:yes');
+        }
 
         if (metadata.sessionId) {
             tags.push(`session:${metadata.sessionId.slice(0, 50)}`);
@@ -1176,6 +1185,32 @@ export class ConnectionManager extends DurableObject<ConnectionManagerEnv> {
         }
 
         return tags;
+    }
+
+    /**
+     * Send a message to all WebSockets matching a tag (HAP-456)
+     *
+     * Uses ctx.getWebSockets(tag) for O(1) lookup instead of iterating all connections.
+     * This is the core optimization for broadcast performance.
+     *
+     * @param tag - Tag to filter WebSockets by
+     * @param messageStr - Pre-serialized message string
+     * @returns Number of WebSockets the message was delivered to
+     */
+    private sendToTag(tag: string, messageStr: string): number {
+        const sockets = this.ctx.getWebSockets(tag);
+        let delivered = 0;
+
+        for (const ws of sockets) {
+            try {
+                ws.send(messageStr);
+                delivered++;
+            } catch {
+                // Connection may be dead, will be cleaned up on next close event
+            }
+        }
+
+        return delivered;
     }
 
     /**
@@ -1222,12 +1257,71 @@ export class ConnectionManager extends DurableObject<ConnectionManagerEnv> {
     /**
      * Broadcast a message to connections matching a filter
      *
+     * HAP-456: Optimized to use tag-based O(1) lookups where possible.
+     * Falls back to O(n) iteration only for complex hybrid filters.
+     *
      * @param message - Message to broadcast
      * @param filter - Optional filter to select target connections
      * @returns Number of connections the message was delivered to
      */
     private broadcast(message: WebSocketMessage, filter?: MessageFilter): number {
         const messageStr = JSON.stringify(message);
+
+        // HAP-456: Use tag-based O(1) lookups for simple filter types
+        const tag = this.getTagForFilter(filter);
+        if (tag) {
+            return this.sendToTag(tag, messageStr);
+        }
+
+        // Fall back to O(n) iteration for complex hybrid filters
+        return this.broadcastWithIteration(messageStr, filter);
+    }
+
+    /**
+     * Get the tag to use for a simple filter type (HAP-456)
+     *
+     * Returns the tag for O(1) lookup, or null if the filter requires iteration.
+     *
+     * @param filter - Filter to convert to tag
+     * @returns Tag string for simple filters, null for complex filters
+     */
+    private getTagForFilter(filter?: MessageFilter): string | null {
+        if (!filter || filter.type === 'all') {
+            // All authenticated connections
+            return 'auth:yes';
+        }
+
+        switch (filter.type) {
+            case 'user-scoped-only':
+                return 'type:user-scoped';
+
+            case 'session':
+                return `session:${filter.sessionId.slice(0, 50)}`;
+
+            case 'machine':
+                return `machine:${filter.machineId.slice(0, 50)}`;
+
+            // Complex filters that require iteration
+            case 'machine-scoped-only':
+            case 'exclude':
+            case 'all-interested-in-session':
+                return null;
+
+            default:
+                return null;
+        }
+    }
+
+    /**
+     * Broadcast using O(n) iteration for complex filters (HAP-456)
+     *
+     * Used as fallback for filters that can't be expressed as a single tag.
+     *
+     * @param messageStr - Pre-serialized message string
+     * @param filter - Filter to apply
+     * @returns Number of connections the message was delivered to
+     */
+    private broadcastWithIteration(messageStr: string, filter?: MessageFilter): number {
         let delivered = 0;
 
         for (const [ws, metadata] of this.connections.entries()) {
@@ -1254,6 +1348,8 @@ export class ConnectionManager extends DurableObject<ConnectionManagerEnv> {
      * Used for forwarding messages between clients (CLI ↔ Mobile) where
      * both sides expect the Socket.io-style format.
      *
+     * HAP-456: Optimized to use tag-based O(1) lookups where possible.
+     *
      * @param message Client-format message to broadcast
      * @param filter Optional filter to target specific connections
      * @returns Number of connections the message was delivered to
@@ -1262,20 +1358,15 @@ export class ConnectionManager extends DurableObject<ConnectionManagerEnv> {
      */
     private broadcastClientMessage(message: ClientMessage, filter?: MessageFilter): number {
         const messageStr = JSON.stringify(message);
-        let delivered = 0;
 
-        for (const [ws, metadata] of this.connections.entries()) {
-            if (this.matchesFilter(metadata, filter)) {
-                try {
-                    ws.send(messageStr);
-                    delivered++;
-                } catch {
-                    // Connection may be dead, will be cleaned up on next close event
-                }
-            }
+        // HAP-456: Use tag-based O(1) lookups for simple filter types
+        const tag = this.getTagForFilter(filter);
+        if (tag) {
+            return this.sendToTag(tag, messageStr);
         }
 
-        return delivered;
+        // Fall back to O(n) iteration for complex hybrid filters
+        return this.broadcastWithIteration(messageStr, filter);
     }
 
     /**
