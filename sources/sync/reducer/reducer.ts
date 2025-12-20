@@ -113,9 +113,10 @@
 import { Message, ToolCall } from "../typesMessage";
 import { AgentEvent, NormalizedMessage, UsageData } from "../typesRaw";
 import { createTracer, traceMessages, TracerState } from "./reducerTracer";
-import { AgentState, UsageHistoryEntry, MAX_USAGE_HISTORY_SIZE, MIN_CONTEXT_CHANGE_FOR_HISTORY } from "../storageTypes";
+import { AgentState, UsageHistoryEntry, MAX_USAGE_HISTORY_SIZE, MIN_CONTEXT_CHANGE_FOR_HISTORY, REDUCER_MAP_MAX_SIZE } from "../storageTypes";
 import { MessageMeta } from "../typesMessageMeta";
 import { parseMessageAsEvent } from "./messageToEvent";
+import { LRUCache } from "@/utils/LRUCache";
 
 type ReducerMessage = {
     id: string;
@@ -141,14 +142,24 @@ type StoredPermission = {
     decision?: 'approved' | 'approved_for_session' | 'denied' | 'abort';
 };
 
+/**
+ * Reducer state maintains mappings for message deduplication and tracking.
+ *
+ * HAP-457: All Maps are now bounded using LRU caches to prevent unbounded
+ * memory growth in long-running sessions. When the cache exceeds REDUCER_MAP_MAX_SIZE,
+ * the least recently used entries are evicted. This is safe because:
+ * - Once a message is processed and stored, we rarely need to look it up again
+ * - The actual message data lives in the messages Map; tracking Maps are just indexes
+ * - Evicted entries will be re-created if the same message is processed again
+ */
 export type ReducerState = {
-    toolIdToMessageId: Map<string, string>; // toolId/permissionId -> messageId (since they're the same now)
-    sidechainToolIdToMessageId: Map<string, string>; // toolId -> sidechain messageId (for dual tracking)
-    permissions: Map<string, StoredPermission>; // Store permission details by ID for quick lookup
-    localIds: Map<string, string>;
-    messageIds: Map<string, string>; // originalId -> internalId
-    messages: Map<string, ReducerMessage>;
-    sidechains: Map<string, ReducerMessage[]>;
+    toolIdToMessageId: LRUCache<string, string>; // toolId/permissionId -> messageId (since they're the same now)
+    sidechainToolIdToMessageId: LRUCache<string, string>; // toolId -> sidechain messageId (for dual tracking)
+    permissions: LRUCache<string, StoredPermission>; // Store permission details by ID for quick lookup
+    localIds: LRUCache<string, string>;
+    messageIds: LRUCache<string, string>; // originalId -> internalId
+    messages: LRUCache<string, ReducerMessage>;
+    sidechains: LRUCache<string, ReducerMessage[]>;
     tracerState: TracerState; // Tracer state for sidechain processing
     latestTodos?: {
         todos: Array<{
@@ -173,17 +184,17 @@ export type ReducerState = {
 
 export function createReducer(): ReducerState {
     return {
-        toolIdToMessageId: new Map(),
-        sidechainToolIdToMessageId: new Map(),
-        permissions: new Map(),
-        messages: new Map(),
-        localIds: new Map(),
-        messageIds: new Map(),
-        sidechains: new Map(),
+        toolIdToMessageId: new LRUCache(REDUCER_MAP_MAX_SIZE),
+        sidechainToolIdToMessageId: new LRUCache(REDUCER_MAP_MAX_SIZE),
+        permissions: new LRUCache(REDUCER_MAP_MAX_SIZE),
+        messages: new LRUCache(REDUCER_MAP_MAX_SIZE),
+        localIds: new LRUCache(REDUCER_MAP_MAX_SIZE),
+        messageIds: new LRUCache(REDUCER_MAP_MAX_SIZE),
+        sidechains: new LRUCache(REDUCER_MAP_MAX_SIZE),
         tracerState: createTracer(),
         usageHistory: []
-    }
-};
+    };
+}
 
 const ENABLE_LOGGING = false;
 

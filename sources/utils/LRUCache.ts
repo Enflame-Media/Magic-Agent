@@ -90,4 +90,36 @@ export class LRUCache<K, V> {
         }
         this.cache.clear();
     }
+
+    /**
+     * Iterate over all entries. Does NOT update access order.
+     * Returns entries in insertion order (oldest first).
+     */
+    entries(): IterableIterator<[K, V]> {
+        return this.cache.entries();
+    }
+
+    /**
+     * Iterate over all keys. Does NOT update access order.
+     * Returns keys in insertion order (oldest first).
+     */
+    keys(): IterableIterator<K> {
+        return this.cache.keys();
+    }
+
+    /**
+     * Iterate over all values. Does NOT update access order.
+     * Returns values in insertion order (oldest first).
+     */
+    values(): IterableIterator<V> {
+        return this.cache.values();
+    }
+
+    /**
+     * Make the cache iterable with for...of.
+     * Does NOT update access order.
+     */
+    [Symbol.iterator](): IterableIterator<[K, V]> {
+        return this.cache[Symbol.iterator]();
+    }
 }

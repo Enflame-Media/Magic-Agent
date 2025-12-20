@@ -25,6 +25,23 @@ export const MAX_USAGE_HISTORY_SIZE = 50;
  */
 export const MIN_CONTEXT_CHANGE_FOR_HISTORY = 1000;
 
+/**
+ * Maximum entries for reducer Maps to prevent unbounded memory growth (HAP-457)
+ * These are LRU caches that evict oldest entries when limit is reached.
+ *
+ * Size rationale:
+ * - Typical sessions have 50-200 messages
+ * - Long sessions can exceed 500-1000 messages
+ * - 2000 entries provides ~10x headroom for heavy usage
+ */
+export const REDUCER_MAP_MAX_SIZE = 2000;
+
+/**
+ * Maximum entries for tracer Maps (HAP-457)
+ * Tracer tracks sidechain relationships which tend to be shorter-lived
+ */
+export const TRACER_MAP_MAX_SIZE = 1000;
+
 export const MetadataSchema = z.object({
     path: z.string(),
     host: z.string(),

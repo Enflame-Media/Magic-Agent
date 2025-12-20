@@ -54,39 +54,50 @@
 // the complete context of Task executions, even when messages arrive out
 // of order or from different execution contexts.
 //
+// HAP-457: All Maps are now bounded using LRU caches to prevent unbounded
+// memory growth in long-running sessions.
+//
 // ============================================================================
 
 import { NormalizedMessage } from '../typesRaw';
+import { LRUCache } from '@/utils/LRUCache';
+import { TRACER_MAP_MAX_SIZE } from '../storageTypes';
 
 // Extended message type with sidechain ID for tracking message relationships
 export type TracedMessage = NormalizedMessage & {
     sidechainId?: string;  // ID of the Task message that initiated this sidechain
 }
 
-// Tracer state for tracking message relationships and sidechain processing
+/**
+ * Tracer state for tracking message relationships and sidechain processing.
+ *
+ * HAP-457: All Maps/Sets are now bounded using LRU caches to prevent unbounded
+ * memory growth in long-running sessions. processedIds uses a custom LRU Set
+ * implementation that evicts oldest entries when capacity is reached.
+ */
 export interface TracerState {
     // Task tracking - stores Task tool calls by their message ID
-    taskTools: Map<string, { messageId: string; prompt: string }>;  // messageId -> Task info
-    promptToTaskId: Map<string, string>;  // prompt -> task message ID (for matching sidechains)
-    
+    taskTools: LRUCache<string, { messageId: string; prompt: string }>;  // messageId -> Task info
+    promptToTaskId: LRUCache<string, string>;  // prompt -> task message ID (for matching sidechains)
+
     // Sidechain tracking - maps message UUIDs to their originating Task message ID
-    uuidToSidechainId: Map<string, string>;  // uuid -> sidechain ID (originating task message ID)
-    
+    uuidToSidechainId: LRUCache<string, string>;  // uuid -> sidechain ID (originating task message ID)
+
     // Buffering for out-of-order messages that arrive before their parent
-    orphanMessages: Map<string, NormalizedMessage[]>;  // parentUuid -> orphan messages waiting for parent
-    
-    // Track already processed messages to avoid duplicates
-    processedIds: Set<string>;
+    orphanMessages: LRUCache<string, NormalizedMessage[]>;  // parentUuid -> orphan messages waiting for parent
+
+    // Track already processed messages to avoid duplicates (uses LRU with dummy values)
+    processedIds: LRUCache<string, boolean>;
 }
 
-// Create a new tracer state with empty collections
+// Create a new tracer state with bounded LRU caches
 export function createTracer(): TracerState {
     return {
-        taskTools: new Map(),
-        promptToTaskId: new Map(),
-        uuidToSidechainId: new Map(),
-        orphanMessages: new Map(),
-        processedIds: new Set()
+        taskTools: new LRUCache(TRACER_MAP_MAX_SIZE),
+        promptToTaskId: new LRUCache(TRACER_MAP_MAX_SIZE),
+        uuidToSidechainId: new LRUCache(TRACER_MAP_MAX_SIZE),
+        orphanMessages: new LRUCache(TRACER_MAP_MAX_SIZE),
+        processedIds: new LRUCache(TRACER_MAP_MAX_SIZE)
     };
 }
 
@@ -129,7 +140,7 @@ function processOrphans(state: TracerState, parentUuid: string, sidechainId: str
         const uuid = getMessageUuid(orphan);
         
         // Mark as processed
-        state.processedIds.add(orphan.id);
+        state.processedIds.set(orphan.id, true);
         
         // Assign sidechain ID
         if (uuid) {
@@ -181,7 +192,7 @@ export function traceMessages(state: TracerState, messages: NormalizedMessage[])
         
         // Non-sidechain messages are returned immediately without sidechain ID
         if (!message.isSidechain) {
-            state.processedIds.add(message.id);
+            state.processedIds.set(message.id, true);
             const tracedMessage: TracedMessage = {
                 ...message
             };
@@ -213,7 +224,7 @@ export function traceMessages(state: TracerState, messages: NormalizedMessage[])
         
         if (isSidechainRoot && uuid && sidechainId) {
             // This is a sidechain root - mark it and process any waiting orphans
-            state.processedIds.add(message.id);
+            state.processedIds.set(message.id, true);
             state.uuidToSidechainId.set(uuid, sidechainId);
             
             const tracedMessage: TracedMessage = {
@@ -231,7 +242,7 @@ export function traceMessages(state: TracerState, messages: NormalizedMessage[])
             
             if (parentSidechainId) {
                 // Parent is known - inherit the same sidechain ID
-                state.processedIds.add(message.id);
+                state.processedIds.set(message.id, true);
                 if (uuid) {
                     state.uuidToSidechainId.set(uuid, parentSidechainId);
                 }
@@ -255,7 +266,7 @@ export function traceMessages(state: TracerState, messages: NormalizedMessage[])
             }
         } else {
             // Sidechain message with no parent and not a root - process as standalone
-            state.processedIds.add(message.id);
+            state.processedIds.set(message.id, true);
             const tracedMessage: TracedMessage = {
                 ...message
             };
