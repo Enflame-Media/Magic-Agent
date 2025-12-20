@@ -3,8 +3,8 @@ import { View, Pressable, Platform } from 'react-native';
 import { Text } from '@/components/StyledText';
 import { Session, Machine } from '@/sync/storageTypes';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { getSessionName, useSessionStatus, getSessionAvatarId, formatPathRelativeToHome, getLastUserMessagePreview } from '@/utils/sessionUtils';
-import { useSessionMessages } from '@/sync/storage';
+import { getSessionName, useSessionStatus, getSessionAvatarId, formatPathRelativeToHome } from '@/utils/sessionUtils';
+import { useLastMessagePreview } from '@/sync/storage';
 import { Avatar } from './Avatar';
 import { Typography } from '@/constants/Typography';
 import { StatusDot } from './StatusDot';
@@ -359,16 +359,12 @@ const CompactSessionRow = React.memo(({ session, selected, showBorder }: { sessi
     const navigateToSession = useNavigateToSession();
     const isTablet = useIsTablet();
     const { showContextMenu } = useSessionContextMenu(session);
-    const { messages } = useSessionMessages(session.id);
+    // Use optimized preview-only selector instead of full message subscription
+    const messagePreview = useLastMessagePreview(session.id);
 
     const avatarId = React.useMemo(() => {
         return getSessionAvatarId(session);
     }, [session]);
-
-    // Get last user message preview - only show when not actively thinking/permission required
-    const messagePreview = React.useMemo(() => {
-        return getLastUserMessagePreview(messages);
-    }, [messages]);
 
     // Show preview only when session is waiting (not actively busy)
     const showMessagePreview = messagePreview && sessionStatus.state === 'waiting';

@@ -21,6 +21,7 @@ import { projectManager } from "./projectManager";
 import { DecryptedArtifact } from "./artifactTypes";
 import { FeedItem } from "./feedTypes";
 import { t } from "@/text";
+import { getLastUserMessagePreview } from "@/utils/sessionUtils";
 
 /**
  * Centralized session online state resolver
@@ -1063,6 +1064,21 @@ export function useSessionMessages(sessionId: string): { messages: Message[], is
             messages: session?.messages ?? emptyArray,
             isLoaded: session?.isLoaded ?? false
         };
+    }));
+}
+
+/**
+ * Returns the last user message preview for a session.
+ * This is an optimized selector that only returns a string, preventing
+ * unnecessary re-renders when displaying session lists. Unlike useSessionMessages,
+ * this won't trigger re-renders on every message array change - only when
+ * the actual preview text changes.
+ */
+export function useLastMessagePreview(sessionId: string): string | null {
+    return storage(useShallow((state) => {
+        const sessionData = state.sessionMessages[sessionId];
+        if (!sessionData?.isLoaded || !sessionData.messages.length) return null;
+        return getLastUserMessagePreview(sessionData.messages);
     }));
 }
 

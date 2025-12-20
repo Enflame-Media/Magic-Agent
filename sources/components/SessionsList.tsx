@@ -4,8 +4,8 @@ import { Text } from '@/components/StyledText';
 import { usePathname } from 'expo-router';
 import { SessionListViewItem } from '@/sync/storage';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { getSessionName, useSessionStatus, getSessionSubtitle, getSessionAvatarId, getLastUserMessagePreview } from '@/utils/sessionUtils';
-import { useSessionMessages } from '@/sync/storage';
+import { getSessionName, useSessionStatus, getSessionSubtitle, getSessionAvatarId } from '@/utils/sessionUtils';
+import { useLastMessagePreview } from '@/sync/storage';
 import { Avatar } from './Avatar';
 import { ActiveSessionsGroup } from './ActiveSessionsGroup';
 import { ActiveSessionsGroupCompact } from './ActiveSessionsGroupCompact';
@@ -16,6 +16,8 @@ import { Typography } from '@/constants/Typography';
 import { Session } from '@/sync/storageTypes';
 import { StatusDot } from './StatusDot';
 import { ContextMeter } from './ContextMeter';
+import { CompactGitStatus } from './CompactGitStatus';
+import { entitySessionColor } from './entityColor';
 import { StyleSheet } from 'react-native-unistyles';
 import { useIsTablet } from '@/utils/responsive';
 import { requestReview } from '@/utils/requestReview';
@@ -193,6 +195,14 @@ const stylesheet = StyleSheet.create((theme) => ({
         position: 'relative',
         width: 48,
         height: 48,
+    },
+    projectColorIndicator: {
+        position: 'absolute',
+        left: -8,
+        top: 0,
+        bottom: 0,
+        width: 3,
+        borderRadius: 1.5,
     },
     draftIconContainer: {
         position: 'absolute',
@@ -475,7 +485,8 @@ const SessionItem = React.memo(({ session, selected, isFirst, isLast, isSingle, 
     const sessionSubtitle = getSessionSubtitle(session);
     const navigateToSession = useNavigateToSession();
     const isTablet = useIsTablet();
-    const { messages } = useSessionMessages(session.id);
+    // Use optimized preview-only selector instead of full message subscription
+    const messagePreview = useLastMessagePreview(session.id);
     const { isSelectMode, isSelected, toggleItem, enterSelectMode } = useMultiSelectContext();
 
     // Callback for "Select" option in context menu - enters multi-select mode and pre-selects this session
@@ -489,11 +500,6 @@ const SessionItem = React.memo(({ session, selected, isFirst, isLast, isSingle, 
         onSelect: handleSelectFromContextMenu,
     } : undefined);
 
-    // Get last user message preview for session identification
-    const messagePreview = React.useMemo(() => {
-        return getLastUserMessagePreview(messages);
-    }, [messages]);
-
     // Inactive sessions start collapsed, expand on tap
     // Animation value: 0 = collapsed, 1 = expanded
     const expandProgress = useSharedValue(0);
@@ -501,6 +507,11 @@ const SessionItem = React.memo(({ session, selected, isFirst, isLast, isSingle, 
 
     const avatarId = React.useMemo(() => {
         return getSessionAvatarId(session);
+    }, [session]);
+
+    // Get project color for visual distinction
+    const projectColor = React.useMemo(() => {
+        return entitySessionColor(session);
     }, [session]);
 
     // Determine background tinting for active states
@@ -631,6 +642,8 @@ const SessionItem = React.memo(({ session, selected, isFirst, isLast, isSingle, 
                     delayLongPress={500}
                 >
                     <View style={styles.avatarContainer}>
+                        {/* Project color indicator for visual distinction */}
+                        <View style={[styles.projectColorIndicator, { backgroundColor: projectColor }]} />
                         <Avatar id={avatarId} size={48} monochrome={!sessionStatus.isConnected} flavor={session.metadata?.flavor} />
                         {session.draft && (
                             <View style={styles.draftIconContainer}>
@@ -695,6 +708,8 @@ const SessionItem = React.memo(({ session, selected, isFirst, isLast, isSingle, 
 
                             {/* Status indicators on the right side - animated visibility */}
                             <Animated.View style={[styles.statusIndicators, indicatorsAnimatedStyle]}>
+                                {/* Git status indicator */}
+                                <CompactGitStatus sessionId={session.id} />
                                 {/* Context usage indicator with sparkline (HAP-344) */}
                                 {session.latestUsage?.contextSize != null && session.latestUsage.contextSize > 0 && (
                                     <ContextMeter
