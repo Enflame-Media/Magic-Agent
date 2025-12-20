@@ -25,8 +25,8 @@ export function useAutocomplete(query: string | null, resolver: (text: string) =
     const [results, setResults] = React.useState<AutocompleteResult[]>([]);
 
     const sync = React.useMemo(() => {
-
-        const state = { query };
+        // Use mutable state object to avoid recreating cache on query changes
+        const state = { query: null as string | null };
         let cache = new Map<string, AutocompleteResult[]>();
 
         let sync = new InvalidateSync(async () => {
@@ -53,7 +53,7 @@ export function useAutocomplete(query: string | null, resolver: (text: string) =
                 sync.invalidate();
             },
         };
-    }, [resolver, query]);
+    }, [resolver]); // ✅ Only resolver triggers rebuild - cache persists across query changes
 
     // Trigger sync
     React.useEffect(() => {
