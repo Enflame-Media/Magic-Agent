@@ -273,16 +273,8 @@ app.onError(errorHandler);
  * Catches all unmatched routes
  */
 app.notFound((c) => {
-    return c.json(
-        {
-            error: {
-                message: 'Not Found',
-                status: 404,
-                path: c.req.path,
-            },
-        },
-        404
-    );
+    // Use flat error format for consistency with route handlers
+    return c.json({ error: `Not found: ${c.req.path}` }, 404);
 });
 
 /*

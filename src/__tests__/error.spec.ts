@@ -2,10 +2,13 @@
  * Unit Tests for Error Handler Middleware
  *
  * Tests the global error handler middleware for complete branch coverage:
- * - Error message fallback (empty message -> 'Internal Server Error')
+ * - Error message fallback (empty message -> 'Internal server error')
  * - Error cause handling (with and without cause property)
- * - HTTPException handling (with and without err.res)
+ * - HTTPException handling
  * - Status code branches (>= 500 server errors vs < 500 client errors)
+ *
+ * Note: All error responses use the flat { error: string } format for
+ * consistency with route handlers and OpenAPI schemas.
  *
  * @module __tests__/error.spec
  */
@@ -40,25 +43,25 @@ describe('Error Handler Middleware', () => {
             });
 
             const res = await app.request('/test');
-            const body = await res.json() as { error: { message: string; status: number; details?: string } };
+            const body = await res.json() as { error: string };
 
             expect(res.status).toBe(500);
-            expect(body.error.message).toBe('Custom error message');
+            expect(body.error).toBe('Custom error message');
         });
 
-        it('should use "Internal Server Error" when message is empty string', async () => {
+        it('should use "Internal server error" when message is empty string', async () => {
             app.get('/test', () => {
                 throw new Error('');
             });
 
             const res = await app.request('/test');
-            const body = await res.json() as { error: { message: string; status: number; details?: string } };
+            const body = await res.json() as { error: string };
 
             expect(res.status).toBe(500);
-            expect(body.error.message).toBe('Internal Server Error');
+            expect(body.error).toBe('Internal server error');
         });
 
-        it('should use "Internal Server Error" when error has no message', async () => {
+        it('should use "Internal server error" when error has no message', async () => {
             app.get('/test', () => {
                 const err = new Error();
                 err.message = ''; // Explicitly empty
@@ -66,10 +69,10 @@ describe('Error Handler Middleware', () => {
             });
 
             const res = await app.request('/test');
-            const body = await res.json() as { error: { message: string; status: number; details?: string } };
+            const body = await res.json() as { error: string };
 
             expect(res.status).toBe(500);
-            expect(body.error.message).toBe('Internal Server Error');
+            expect(body.error).toBe('Internal server error');
         });
     });
 
@@ -165,14 +168,13 @@ describe('Error Handler Middleware', () => {
             });
 
             const res = await app.request('/test');
-            const body = await res.json() as { error: { message: string; status: number; details?: string } };
+            const body = await res.json() as { error: string };
 
             expect(res.status).toBe(404);
-            expect(body.error.status).toBe(404);
-            expect(body.error.message).toBe('Resource not found');
+            expect(body.error).toBe('Resource not found');
         });
 
-        it('should include details when HTTPException has res property', async () => {
+        it('should handle HTTPException with res property (message takes precedence)', async () => {
             app.get('/test', () => {
                 const response = new Response('Not Found', {
                     status: 404,
@@ -185,27 +187,26 @@ describe('Error Handler Middleware', () => {
             });
 
             const res = await app.request('/test');
-            const body = await res.json() as { error: { message: string; status: number; details?: string } };
+            const body = await res.json() as { error: string };
 
             expect(res.status).toBe(404);
-            expect(body.error.message).toBe('Resource not found');
-            expect(body.error.details).toBe('Not Found');
+            // Flat error format only includes message, not details
+            expect(body.error).toBe('Resource not found');
         });
 
-        it('should NOT include details when HTTPException has no res property', async () => {
+        it('should handle HTTPException without res property', async () => {
             app.get('/test', () => {
                 throw new HTTPException(403, { message: 'Forbidden' });
             });
 
             const res = await app.request('/test');
-            const body = await res.json() as { error: { message: string; status: number; details?: string } };
+            const body = await res.json() as { error: string };
 
             expect(res.status).toBe(403);
-            expect(body.error.message).toBe('Forbidden');
-            expect(body.error).not.toHaveProperty('details');
+            expect(body.error).toBe('Forbidden');
         });
 
-        it('should NOT include details when HTTPException res is null-like', async () => {
+        it('should handle HTTPException with undefined res', async () => {
             app.get('/test', () => {
                 // HTTPException constructor doesn't accept null for res,
                 // but we can test the branch by not providing res at all
@@ -216,11 +217,10 @@ describe('Error Handler Middleware', () => {
             });
 
             const res = await app.request('/test');
-            const body = await res.json() as { error: { message: string; status: number; details?: string } };
+            const body = await res.json() as { error: string };
 
             expect(res.status).toBe(400);
-            expect(body.error.message).toBe('Bad Request');
-            expect(body.error).not.toHaveProperty('details');
+            expect(body.error).toBe('Bad Request');
         });
     });
 
@@ -351,41 +351,31 @@ describe('Error Handler Middleware', () => {
     });
 
     describe('Response Structure', () => {
-        it('should return correct JSON structure for server errors', async () => {
+        it('should return flat { error: string } structure for server errors', async () => {
             app.get('/test', () => {
                 throw new Error('Server exploded');
             });
 
             const res = await app.request('/test');
-            const body = await res.json() as { error: { message: string; status: number; details?: string } };
+            const body = await res.json() as { error: string };
 
             expect(res.headers.get('content-type')).toContain('application/json');
-            expect(body).toEqual({
-                error: {
-                    message: 'Server exploded',
-                    status: 500,
-                },
-            });
+            expect(body).toEqual({ error: 'Server exploded' });
         });
 
-        it('should return correct JSON structure for client errors', async () => {
+        it('should return flat { error: string } structure for client errors', async () => {
             app.get('/test', () => {
                 throw new HTTPException(422, { message: 'Validation failed' });
             });
 
             const res = await app.request('/test');
-            const body = await res.json() as { error: { message: string; status: number; details?: string } };
+            const body = await res.json() as { error: string };
 
             expect(res.headers.get('content-type')).toContain('application/json');
-            expect(body).toEqual({
-                error: {
-                    message: 'Validation failed',
-                    status: 422,
-                },
-            });
+            expect(body).toEqual({ error: 'Validation failed' });
         });
 
-        it('should return correct JSON structure with details when res is provided', async () => {
+        it('should return flat { error: string } structure even when res is provided', async () => {
             app.get('/test', () => {
                 const response = new Response('Entity Too Large', {
                     status: 413,
@@ -398,15 +388,10 @@ describe('Error Handler Middleware', () => {
             });
 
             const res = await app.request('/test');
-            const body = await res.json() as { error: { message: string; status: number; details?: string } };
+            const body = await res.json() as { error: string };
 
-            expect(body).toEqual({
-                error: {
-                    message: 'File too large',
-                    status: 413,
-                    details: 'Payload Too Large',
-                },
-            });
+            // Flat format - no details field
+            expect(body).toEqual({ error: 'File too large' });
         });
     });
 
@@ -424,10 +409,10 @@ describe('Error Handler Middleware', () => {
             });
 
             const res = await app.request('/test');
-            const body = await res.json() as { error: { message: string; status: number; details?: string } };
+            const body = await res.json() as { error: string };
 
             expect(res.status).toBe(500);
-            expect(body.error.message).toBe('Custom error occurred');
+            expect(body.error).toBe('Custom error occurred');
             expect(consoleErrorSpy).toHaveBeenCalled();
         });
 

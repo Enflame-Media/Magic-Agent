@@ -21,7 +21,7 @@ export const errorHandler: ErrorHandler = (err, c) => {
     const status = isHTTPException ? err.status : 500;
 
     // Extract error message
-    const message = err.message || 'Internal Server Error';
+    const message = err.message || 'Internal server error';
 
     // Log error details (include stack trace for debugging)
     if (status >= 500) {
@@ -47,18 +47,7 @@ export const errorHandler: ErrorHandler = (err, c) => {
         });
     }
 
-    // Return structured error response
-    return c.json(
-        {
-            error: {
-                message,
-                status,
-                // Only include additional details for HTTPException
-                ...(isHTTPException && err.res
-                    ? { details: err.res.statusText }
-                    : {}),
-            },
-        },
-        status
-    );
+    // Return flat error response matching route handler format
+    // This ensures consistent { error: string } structure across all error responses
+    return c.json({ error: message }, status);
 };

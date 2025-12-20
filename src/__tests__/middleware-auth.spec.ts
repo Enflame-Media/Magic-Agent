@@ -67,8 +67,8 @@ describe('Auth Middleware', () => {
             });
 
             expect(res.status).toBe(401);
-            const data = (await res.json()) as { error: { message: string } };
-            expect(data.error.message).toContain('Missing Authorization header');
+            const data = (await res.json()) as { error: string };
+            expect(data.error).toContain('Missing Authorization header');
         });
 
         it('should return 401 when Authorization format is invalid', async () => {
@@ -80,8 +80,8 @@ describe('Auth Middleware', () => {
             });
 
             expect(res.status).toBe(401);
-            const data = (await res.json()) as { error: { message: string } };
-            expect(data.error.message).toContain('Invalid Authorization header format');
+            const data = (await res.json()) as { error: string };
+            expect(data.error).toContain('Invalid Authorization header format');
         });
 
         it('should return 401 when Bearer token is empty', async () => {
@@ -93,10 +93,10 @@ describe('Auth Middleware', () => {
             });
 
             expect(res.status).toBe(401);
-            const data = (await res.json()) as { error?: { message: string }; userId?: string; extras?: unknown; authenticated?: boolean };
+            const data = (await res.json()) as { error?: string; userId?: string; extras?: unknown; authenticated?: boolean };
             // Could be "Empty token" or "Invalid Authorization header format" depending on split behavior
             expect(data.error).toBeDefined();
-            expect(data.error!.message).toMatch(/Empty token|Invalid Authorization header format/);
+            expect(data.error).toMatch(/Empty token|Invalid Authorization header format/);
         });
 
         it('should return 401 when token verification fails', async () => {
@@ -110,9 +110,9 @@ describe('Auth Middleware', () => {
             });
 
             expect(res.status).toBe(401);
-            const data = (await res.json()) as { error?: { message: string }; userId?: string; extras?: unknown; authenticated?: boolean };
+            const data = (await res.json()) as { error?: string; userId?: string; extras?: unknown; authenticated?: boolean };
             expect(data.error).toBeDefined();
-            expect(data.error!.message).toContain('Invalid or expired token');
+            expect(data.error).toContain('Invalid or expired token');
         });
 
         it('should set userId when token is valid', async () => {

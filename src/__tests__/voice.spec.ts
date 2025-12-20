@@ -140,10 +140,10 @@ describe('Voice Routes', () => {
                 });
 
                 expect(res.status).toBe(401);
-                const body = await res.json() as { error?: { message?: string; status: number } };
-                // Auth middleware returns { error: { message, status } }
+                const body = await res.json() as { error: string };
+                // Auth middleware returns flat { error: string } format
                 expect(body.error).toBeDefined();
-                expect(body.error!.status).toBe(401);
+                expect(typeof body.error).toBe('string');
             });
 
             it('should reject invalid token (401)', async () => {
@@ -160,10 +160,10 @@ describe('Voice Routes', () => {
                 );
 
                 expect(res.status).toBe(401);
-                const body = await res.json() as { error?: { message?: string; status: number } };
-                // Auth middleware returns { error: { message, status } }
+                const body = await res.json() as { error: string };
+                // Auth middleware returns flat { error: string } format
                 expect(body.error).toBeDefined();
-                expect(body.error!.status).toBe(401);
+                expect(typeof body.error).toBe('string');
             });
         });
 

@@ -94,23 +94,21 @@ describe('Happy Server Workers - Main Routes', () => {
     describe('404 Handler', () => {
         it('should return 404 for unknown routes', async () => {
             const res = await app.request('/unknown-route');
-            const json = (await res.json()) as JsonResponse;
+            const json = (await res.json()) as { error: string };
 
             expect(res.status).toBe(404);
             expect(json.error).toBeDefined();
-            const error = json.error as JsonResponse;
-            expect(error.message).toBe('Not Found');
-            expect(error.status).toBe(404);
-            expect(error.path).toBe('/unknown-route');
+            // Flat error format includes path in message
+            expect(json.error).toContain('/unknown-route');
         });
 
         it('should include requested path in error response', async () => {
             const testPath = '/api/v1/non-existent';
             const res = await app.request(testPath);
-            const json = (await res.json()) as JsonResponse;
+            const json = (await res.json()) as { error: string };
 
-            const error = json.error as JsonResponse;
-            expect(error.path).toBe(testPath);
+            // Flat error format includes path in message
+            expect(json.error).toContain(testPath);
         });
     });
 
