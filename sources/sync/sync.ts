@@ -43,6 +43,26 @@ import { UserProfile } from './friendTypes';
 import { initializeTodoSync } from '../-zen/model/ops';
 
 /**
+ * HAP-441: Delta sync response type from server.
+ * Contains updates since the given seq numbers.
+ */
+interface DeltaSyncResponse {
+    success: boolean;
+    error?: string;
+    updates?: Array<{
+        type: string;
+        data: unknown;
+        seq: number;
+        createdAt: number;
+    }>;
+    counts?: {
+        sessions: number;
+        machines: number;
+        artifacts: number;
+    };
+}
+
+/**
  * Compares two arrays for shallow equality.
  * More efficient than JSON.stringify comparison as it:
  * - Returns true immediately for reference equality
@@ -73,6 +93,9 @@ const MAX_CACHED_MESSAGE_SYNCS = 20;
 const MAX_CACHED_ARTIFACT_KEYS = 100;
 
 class Sync {
+    // Spawned agents (especially in spawn mode) can take noticeable time to connect.
+    // This timeout allows the first message to wait for the agent's websocket connection.
+    private static readonly SESSION_READY_TIMEOUT_MS = 10000;
 
     encryption!: Encryption;
     serverID!: string;
@@ -106,6 +129,13 @@ class Sync {
     private activityAccumulator: ActivityUpdateAccumulator;
     private pendingSettings: Partial<Settings> = loadPendingSettings();
     revenueCatInitialized = false;
+
+    /**
+     * HAP-441: Track last known sequence numbers per entity type for delta sync.
+     * On WebSocket reconnection, we request updates since these seqs instead of
+     * triggering a full refetch, reducing bandwidth and preventing missed updates.
+     */
+    private lastKnownSeq = new Map<string, number>();
 
     // Generic locking mechanism
     private recalculationLockCount = 0;
@@ -364,6 +394,12 @@ class Sync {
         const normalizedMessage = normalizeRawMessage(localId, localId, createdAt, content);
         if (normalizedMessage) {
             this.applyMessages(sessionId, [normalizedMessage]);
+        }
+
+        // Wait for agent to be ready before sending (prevents first message loss on slow startup)
+        const ready = await this.waitForAgentReady(sessionId);
+        if (!ready) {
+            log.log(`Session ${sessionId} not ready after timeout, sending anyway`);
         }
 
         // Send message with optional permission mode and source identifier
@@ -1519,11 +1555,12 @@ class Sync {
     private fetchMessages = async (sessionId: string) => {
         log.log(`💬 fetchMessages starting for session ${sessionId} - acquiring lock`);
 
-        // Get encryption
+        // Get encryption - may not be ready yet if session was just created
+        // Throwing an error triggers backoff retry in InvalidateSync
         const encryption = this.encryption.getSessionEncryption(sessionId);
-        if (!encryption) { // Should never happen
-            console.error(`Session ${sessionId} not found`);
-            return;
+        if (!encryption) {
+            log.log(`💬 fetchMessages: Session encryption not ready for ${sessionId}, will retry`);
+            throw new Error(`Session encryption not ready for ${sessionId}`);
         }
 
         // Request
@@ -1620,25 +1657,160 @@ class Sync {
             // Subscribe to connection state changes
             apiSocket.onReconnected(() => {
                 log.log('🔌 Socket reconnected');
-                this.sessionsSync.invalidate();
-                this.machinesSync.invalidate();
-                log.log('🔌 Socket reconnected: Invalidating artifacts sync');
-                this.artifactsSync.invalidate();
-                this.friendsSync.invalidate();
-                this.friendRequestsSync.invalidate();
-                this.feedSync.invalidate();
-                const sessionsData = storage.getState().sessionsData;
-                if (sessionsData) {
-                    for (const item of sessionsData) {
-                        if (typeof item !== 'string') {
-                            this.messagesSync.get(item.id)?.invalidate();
-                            // Also invalidate git status on reconnection
-                            gitStatusSync.invalidate(item.id);
-                        }
-                    }
-                }
+                // HAP-441: Request delta sync instead of full invalidation
+                this.requestDeltaSync();
             })
         );
+    }
+
+    /**
+     * HAP-441: Request delta sync on reconnection.
+     * Sends last known seq numbers to server to get only missed updates.
+     * Falls back to full invalidation if delta sync fails or times out.
+     */
+    private requestDeltaSync = async () => {
+        const sessionsSeq = this.getLastKnownSeq('sessions');
+        const machinesSeq = this.getLastKnownSeq('machines');
+        const artifactsSeq = this.getLastKnownSeq('artifacts');
+
+        // Only attempt delta sync if we have any seq data
+        // (if all seqs are 0, this is a fresh connection, do full sync)
+        if (sessionsSeq === 0 && machinesSeq === 0 && artifactsSeq === 0) {
+            log.log('🔌 No previous seq data, performing full sync');
+            this.performFullInvalidation();
+            return;
+        }
+
+        log.log(`🔌 Requesting delta sync since: sessions=${sessionsSeq}, machines=${machinesSeq}, artifacts=${artifactsSeq}`);
+
+        try {
+            // Request delta updates from server with acknowledgement
+            const response = await apiSocket.emitWithAck<DeltaSyncResponse>(
+                'request-updates-since',
+                {
+                    sessions: sessionsSeq,
+                    machines: machinesSeq,
+                    artifacts: artifactsSeq,
+                },
+                10000 // 10 second timeout for delta sync
+            );
+
+            if (!response.success) {
+                log.log('🔌 Delta sync failed, falling back to full sync');
+                this.performFullInvalidation();
+                return;
+            }
+
+            log.log(`🔌 Delta sync received: sessions=${response.counts?.sessions ?? 0}, machines=${response.counts?.machines ?? 0}, artifacts=${response.counts?.artifacts ?? 0}`);
+
+            // Process each update through the normal update handler
+            if (response.updates && response.updates.length > 0) {
+                for (const update of response.updates) {
+                    // Wrap in update container format expected by handleUpdate
+                    await this.handleUpdate({
+                        seq: update.seq,
+                        createdAt: update.createdAt,
+                        body: update.data,
+                    });
+                }
+            }
+
+            // If no updates were found but we had seqs, server returned empty - that's fine
+            // If server returned too many updates, do full sync as fallback
+            if (
+                (response.counts?.sessions ?? 0) >= 100 ||
+                (response.counts?.machines ?? 0) >= 50 ||
+                (response.counts?.artifacts ?? 0) >= 100
+            ) {
+                log.log('🔌 Delta sync hit limits, performing full sync for completeness');
+                this.performFullInvalidation();
+                return;
+            }
+
+            // Delta sync successful, invalidate non-delta syncs
+            log.log('🔌 Delta sync complete, invalidating non-delta syncs');
+            this.friendsSync.invalidate();
+            this.friendRequestsSync.invalidate();
+            this.feedSync.invalidate();
+
+            // Invalidate git status for all sessions on reconnection
+            const sessionsData = storage.getState().sessionsData;
+            if (sessionsData) {
+                for (const item of sessionsData) {
+                    if (typeof item !== 'string') {
+                        gitStatusSync.invalidate(item.id);
+                    }
+                }
+            }
+        } catch (error) {
+            log.log('🔌 Delta sync request failed, falling back to full sync: ' + String(error));
+            this.performFullInvalidation();
+        }
+    }
+
+    /**
+     * HAP-441: Perform full invalidation (original behavior).
+     * Used as fallback when delta sync fails or on fresh connections.
+     */
+    private performFullInvalidation = () => {
+        this.sessionsSync.invalidate();
+        this.machinesSync.invalidate();
+        log.log('🔌 Full sync: Invalidating artifacts sync');
+        this.artifactsSync.invalidate();
+        this.friendsSync.invalidate();
+        this.friendRequestsSync.invalidate();
+        this.feedSync.invalidate();
+        const sessionsData = storage.getState().sessionsData;
+        if (sessionsData) {
+            for (const item of sessionsData) {
+                if (typeof item !== 'string') {
+                    this.messagesSync.get(item.id)?.invalidate();
+                    gitStatusSync.invalidate(item.id);
+                }
+            }
+        }
+    }
+
+    /**
+     * HAP-441: Map update types to entity types for seq tracking.
+     * Returns the entity type (sessions, machines, artifacts) or null if not trackable.
+     */
+    private getEntityTypeFromUpdate(updateType: string): string | null {
+        switch (updateType) {
+            case 'new-session':
+            case 'update-session':
+            case 'delete-session':
+            case 'new-message':
+                return 'sessions';
+            case 'new-machine':
+            case 'update-machine':
+                return 'machines';
+            case 'new-artifact':
+            case 'update-artifact':
+            case 'delete-artifact':
+                return 'artifacts';
+            default:
+                return null;
+        }
+    }
+
+    /**
+     * HAP-441: Track the last known sequence number for an entity type.
+     * Called whenever we receive an update to ensure we know the latest seq.
+     */
+    private trackSeq(entityType: string, seq: number | undefined) {
+        if (seq === undefined) return;
+        const currentSeq = this.lastKnownSeq.get(entityType) ?? 0;
+        if (seq > currentSeq) {
+            this.lastKnownSeq.set(entityType, seq);
+        }
+    }
+
+    /**
+     * HAP-441: Get last known seq for an entity type, defaulting to 0.
+     */
+    private getLastKnownSeq(entityType: string): number {
+        return this.lastKnownSeq.get(entityType) ?? 0;
     }
 
     private handleUpdate = async (update: unknown) => {
@@ -1651,6 +1823,13 @@ class Sync {
         }
         const updateData = validatedUpdate.data;
         console.log(`🔄 Sync: Validated update type: ${updateData.body.t}`);
+
+        // HAP-441: Track seq for delta sync on reconnection
+        // Map update types to their entity type for seq tracking
+        const entityType = this.getEntityTypeFromUpdate(updateData.body.t);
+        if (entityType) {
+            this.trackSeq(entityType, updateData.seq);
+        }
 
         if (updateData.body.t === 'new-message') {
 
@@ -1761,6 +1940,15 @@ class Sync {
                         const firstRequest = agentState.requests[requestIds[0]];
                         const toolName = firstRequest?.tool;
                         voiceHooks.onPermissionRequested(updateData.body.id, requestIds[0], toolName, firstRequest?.arguments);
+                    }
+
+                    // Re-fetch messages when control returns to mobile (local -> remote mode switch)
+                    // This catches up on any messages that were exchanged while desktop had control
+                    const wasControlledByUser = session.agentState?.controlledByUser;
+                    const isNowControlledByUser = agentState?.controlledByUser;
+                    if (!wasControlledByUser && isNowControlledByUser) {
+                        log.log(`🔄 Control returned to mobile for session ${updateData.body.id}, re-fetching messages`);
+                        this.onSessionVisible(updateData.body.id);
                     }
                 }
             }
@@ -2205,6 +2393,39 @@ class Sync {
                 ).catch(() => {}); // Fire and forget - CLI may not support this RPC
             }
         }
+    }
+
+    /**
+     * Waits for the CLI agent to be ready by watching agentStateVersion.
+     *
+     * When a session is created, agentStateVersion starts at 0. Once the CLI
+     * connects and sends its first state update (via updateAgentState()), the
+     * version becomes > 0. This serves as a reliable signal that the CLI's
+     * WebSocket is connected and ready to receive messages.
+     */
+    private waitForAgentReady(sessionId: string, timeoutMs: number = Sync.SESSION_READY_TIMEOUT_MS): Promise<boolean> {
+        const startedAt = Date.now();
+
+        return new Promise((resolve) => {
+            const done = (ready: boolean, reason: string) => {
+                clearTimeout(timeout);
+                unsubscribe();
+                const duration = Date.now() - startedAt;
+                log.log(`Session ${sessionId} ${reason} after ${duration}ms`);
+                resolve(ready);
+            };
+
+            const check = () => {
+                const s = storage.getState().sessions[sessionId];
+                if (s && s.agentStateVersion > 0) {
+                    done(true, `ready (agentStateVersion=${s.agentStateVersion})`);
+                }
+            };
+
+            const timeout = setTimeout(() => done(false, 'ready wait timed out'), timeoutMs);
+            const unsubscribe = storage.subscribe(check);
+            check(); // Check current state immediately
+        });
     }
 }
 
