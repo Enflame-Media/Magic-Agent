@@ -1,12 +1,13 @@
 /**
  * Simple remote logger for React Native
  * Patches console to send logs to remote server
- * 
+ *
  * ONLY ENABLE IN LOCAL BUILD
  * PRIMARILY FOR AI AUTO DEBUGGING
  */
 
 import { config } from '@/config';
+import { fetchWithTimeout } from '@/utils/fetchWithTimeout';
 
 
 let logBuffer: any[] = []
@@ -37,19 +38,20 @@ export function monkeyPatchConsoleForRemoteLoggingForFasterAiAutoDebuggingOnlyIn
 
   const sendLog = async (level: string, args: any[]) => {
     try {
-      await fetch(url + '/logs-combined-from-cli-and-mobile-for-simple-ai-debugging', {
+      await fetchWithTimeout(url + '/logs-combined-from-cli-and-mobile-for-simple-ai-debugging', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           timestamp: new Date().toISOString(),
           level,
-          message: args.map(a => 
+          message: args.map(a =>
             typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)
           ).join('\n'),
           messageRawObject: args,
           source: 'mobile',
           platform: 'ios', // or android
-        })
+        }),
+        timeoutMs: 5000, // 5s - logger should not block app
       })
     } catch {
       // Remote logging is optional - silently ignore failures

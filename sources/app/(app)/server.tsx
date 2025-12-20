@@ -11,6 +11,7 @@ import { layout } from '@/components/layout';
 import { t } from '@/text';
 import { getServerUrl, setServerUrl, validateServerUrl, getServerInfo, ServerInfoResponse } from '@/sync/serverConfig';
 import { isVersionSupported, MINIMUM_SERVER_VERSION } from '@/utils/versionUtils';
+import { fetchWithTimeout } from '@/utils/fetchWithTimeout';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
 const stylesheet = StyleSheet.create((theme) => ({
@@ -95,11 +96,12 @@ function ServerConfigScreen() {
             setError(null);
 
             // Fetch with JSON accept header
-            const response = await fetch(url, {
+            const response = await fetchWithTimeout(url, {
                 method: 'GET',
                 headers: {
                     'Accept': 'application/json'
-                }
+                },
+                timeoutMs: 10000, // 10s - user is waiting for result
             });
 
             // Handle HTTP errors

@@ -1,6 +1,7 @@
 import { getRandomBytes } from 'expo-crypto';
 import * as Crypto from 'expo-crypto';
 import { AppError, ErrorCodes } from '@/utils/errors';
+import { fetchWithTimeout } from '@/utils/fetchWithTimeout';
 
 // OAuth Configuration for Claude.ai
 export const CLAUDE_OAUTH_CONFIG = {
@@ -88,7 +89,7 @@ export async function exchangeCodeForTokens(
     verifier: string,
     state: string
 ): Promise<ClaudeAuthTokens> {
-    const tokenResponse = await fetch(CLAUDE_OAUTH_CONFIG.TOKEN_URL, {
+    const tokenResponse = await fetchWithTimeout(CLAUDE_OAUTH_CONFIG.TOKEN_URL, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -101,6 +102,7 @@ export async function exchangeCodeForTokens(
             code_verifier: verifier,
             state: state,
         }),
+        timeoutMs: 30000, // 30s - OAuth servers can be slow
     });
 
     if (!tokenResponse.ok) {
