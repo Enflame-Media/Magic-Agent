@@ -73,8 +73,9 @@ yarn dev
 ```
 
 Access the development server:
-- Root: http://localhost:8787/
-- Health check: http://localhost:8787/health
+
+- Root: <http://localhost:8787/>
+- Health check: <http://localhost:8787/health>
 
 ## Code Style and Structure
 
@@ -116,21 +117,25 @@ Access the development server:
 ### Quick Start
 
 1. Copy the template:
+
    ```bash
    cp .dev.vars.example .dev.vars
    ```
 
 2. Generate a master secret:
+
    ```bash
    openssl rand -hex 32
    ```
 
 3. Add it to `.dev.vars`:
+
    ```bash
    HANDY_MASTER_SECRET=your-generated-secret-here
    ```
 
 4. Start development:
+
    ```bash
    yarn dev
    ```
@@ -478,6 +483,7 @@ yarn db:compare
 #### Initial Setup (One-time per environment)
 
 1. **Create the D1 database:**
+
    ```bash
    # Development database
    yarn db:create
@@ -487,6 +493,7 @@ yarn db:compare
    ```
 
 2. **Update wrangler.toml** with the database ID printed by the create command:
+
    ```toml
    [[env.dev.d1_databases]]
    binding = "DB"
@@ -495,6 +502,7 @@ yarn db:compare
    ```
 
 3. **Apply migrations:**
+
    ```bash
    # Local development (auto-created by wrangler dev)
    yarn db:migrate
@@ -509,6 +517,7 @@ yarn db:compare
 #### Development Workflow
 
 1. **Start local development** (D1 is auto-created locally):
+
    ```bash
    yarn dev
    ```
@@ -516,16 +525,19 @@ yarn db:compare
 2. **Make schema changes** in `src/db/schema.ts`
 
 3. **Generate new migration:**
+
    ```bash
    yarn db:generate
    ```
 
 4. **Apply migration locally:**
+
    ```bash
    yarn db:migrate
    ```
 
 5. **Test changes, then apply to remote:**
+
    ```bash
    yarn db:migrate:remote  # dev environment
    yarn db:migrate:prod    # production (after testing)
@@ -534,6 +546,7 @@ yarn db:compare
 #### Idempotent Migration Application
 
 Migrations are idempotent:
+
 - Running `yarn db:migrate` multiple times is safe
 - The script applies each migration file in order
 - D1 tracks which migrations have been applied via the drizzle `_journal`
@@ -573,6 +586,7 @@ Migrations are idempotent:
 ### Usage Examples
 
 #### Basic Query
+
 ```typescript
 import { getDb } from '@/db/client';
 
@@ -589,6 +603,7 @@ export default {
 ```
 
 #### Relational Query
+
 ```typescript
 import { getDb } from '@/db/client';
 
@@ -612,6 +627,7 @@ export default {
 ```
 
 #### Insert with Generated ID
+
 ```typescript
 import { createId } from '@/utils/id';
 import { getDb } from '@/db/client';
@@ -635,6 +651,7 @@ export default {
 ```
 
 #### Transaction Example
+
 ```typescript
 import { getDb } from '@/db/client';
 import { schema } from '@/db/schema';
@@ -677,6 +694,7 @@ export default {
 ### Schema Validation
 
 The `src/db/comparison-tool.ts` validates 100% parity with the original Prisma schema:
+
 - Table count (20 tables)
 - Expected table names
 - Key field presence (Account, Session, etc.)
@@ -684,6 +702,7 @@ The `src/db/comparison-tool.ts` validates 100% parity with the original Prisma s
 - Schema adjustments (avatar removal, enum conversions)
 
 Run validation:
+
 ```bash
 yarn db:compare
 ```
@@ -691,17 +710,21 @@ yarn db:compare
 ### Troubleshooting
 
 **Error: "Table already exists"**
+
 - Drop and recreate local D1 database: `wrangler d1 execute DB --local --command="DROP TABLE IF EXISTS ..."`
 
 **Error: "Foreign key constraint failed"**
+
 - Ensure `PRAGMA foreign_keys = ON` in migration files
 - Check that referenced records exist before inserting
 
 **Error: "No such table"**
+
 - Run migrations: `yarn db:migrate`
 - Verify D1 database exists: `wrangler d1 list`
 
 **Type errors in queries**
+
 - Regenerate schema: `yarn db:generate`
 - Ensure `@/*` path aliases working in tsconfig.json
 
@@ -716,11 +739,13 @@ The authentication system uses **privacy-kit** for token generation/verification
 The server uses `@hono/zod-openapi` to automatically generate OpenAPI 3.1 documentation from Zod schemas.
 
 **Access the OpenAPI spec:**
+
 ```bash
 curl http://localhost:8787/openapi.json
 ```
 
 **Key features:**
+
 - All routes defined with `createRoute()` from `@hono/zod-openapi`
 - Request/response validation via Zod schemas
 - Automatic OpenAPI documentation generation
@@ -731,6 +756,7 @@ curl http://localhost:8787/openapi.json
 **Location:** `src/lib/auth.ts`
 
 **Initialization:**
+
 ```typescript
 import { initAuth } from '@/lib/auth';
 
@@ -739,6 +765,7 @@ await initAuth(env.HANDY_MASTER_SECRET);
 ```
 
 **Token Generation:**
+
 ```typescript
 import { createToken } from '@/lib/auth';
 
@@ -747,6 +774,7 @@ const token = await createToken(userId, { session: 'session_id' });
 ```
 
 **Token Verification:**
+
 ```typescript
 import { verifyToken } from '@/lib/auth';
 
@@ -758,6 +786,7 @@ if (verified) {
 ```
 
 **Cache Management:**
+
 ```typescript
 import { invalidateUserTokens, invalidateToken, getCacheStats } from '@/lib/auth';
 
@@ -777,6 +806,7 @@ console.log(`Cache size: ${stats.size} tokens`);
 **Location:** `src/middleware/auth.ts`
 
 **Protecting Routes:**
+
 ```typescript
 import { authMiddleware } from '@/middleware/auth';
 
@@ -792,6 +822,7 @@ app.use('/v1/sessions/*', authMiddleware());
 ```
 
 **Optional Authentication:**
+
 ```typescript
 import { optionalAuthMiddleware } from '@/middleware/auth';
 
@@ -816,6 +847,7 @@ All auth routes are OpenAPI-documented and use Zod validation.
 **Use case:** Client has Ed25519 keypair and wants to authenticate directly.
 
 **Request:**
+
 ```json
 {
     "publicKey": "base64-encoded-ed25519-public-key",
@@ -825,6 +857,7 @@ All auth routes are OpenAPI-documented and use Zod validation.
 ```
 
 **Response (200):**
+
 ```json
 {
     "success": true,
@@ -833,6 +866,7 @@ All auth routes are OpenAPI-documented and use Zod validation.
 ```
 
 **Flow:**
+
 1. Client generates Ed25519 keypair
 2. Server sends challenge (not implemented yet - client generates challenge)
 3. Client signs challenge with private key
@@ -845,6 +879,7 @@ All auth routes are OpenAPI-documented and use Zod validation.
 **Use case:** happy-cli wants to pair with happy-app.
 
 **Request:**
+
 ```json
 {
     "publicKey": "base64-encoded-x25519-public-key",
@@ -853,6 +888,7 @@ All auth routes are OpenAPI-documented and use Zod validation.
 ```
 
 **Response (200) - Pending:**
+
 ```json
 {
     "state": "requested"
@@ -860,6 +896,7 @@ All auth routes are OpenAPI-documented and use Zod validation.
 ```
 
 **Response (200) - Already Authorized:**
+
 ```json
 {
     "state": "authorized",
@@ -869,6 +906,7 @@ All auth routes are OpenAPI-documented and use Zod validation.
 ```
 
 **Flow:**
+
 1. CLI generates X25519 keypair
 2. CLI displays QR code with public key
 3. CLI calls POST /v1/auth/request (creates pending request)
@@ -879,9 +917,11 @@ All auth routes are OpenAPI-documented and use Zod validation.
 #### GET /v1/auth/request/status - Check Pairing Status
 
 **Query Parameters:**
+
 - `publicKey`: Base64-encoded public key to check
 
 **Response:**
+
 ```json
 {
     "status": "not_found" | "pending" | "authorized",
@@ -894,6 +934,7 @@ All auth routes are OpenAPI-documented and use Zod validation.
 **Auth Required:** Yes (Bearer token)
 
 **Request:**
+
 ```json
 {
     "publicKey": "base64-encoded-public-key-of-terminal",
@@ -902,6 +943,7 @@ All auth routes are OpenAPI-documented and use Zod validation.
 ```
 
 **Response (200):**
+
 ```json
 {
     "success": true
@@ -909,6 +951,7 @@ All auth routes are OpenAPI-documented and use Zod validation.
 ```
 
 **Flow:**
+
 1. Mobile app is already authenticated (has token)
 2. Mobile scans CLI's QR code (gets public key)
 3. Mobile approves pairing via this endpoint
@@ -930,21 +973,25 @@ All auth routes are OpenAPI-documented and use Zod validation.
 ### Security Considerations
 
 **Token Security:**
+
 - Tokens are generated using privacy-kit persistent tokens (cryptographically signed)
 - Tokens are cached in-memory for fast verification
 - No expiration implemented yet (privacy-kit tokens can be configured with TTL)
 
 **Public Key Cryptography:**
+
 - Ed25519 for signature verification (direct auth)
 - X25519 for encryption (pairing flows)
 - TweetNaCl library used for all crypto operations
 
 **Database Storage:**
+
 - Public keys stored as hex strings
 - No private keys ever stored on server
 - Auth requests store encrypted responses (server cannot decrypt)
 
 **Best Practices:**
+
 - Always use HTTPS in production
 - Set HANDY_MASTER_SECRET via `wrangler secret` (never commit)
 - Validate public key lengths before processing
@@ -1030,6 +1077,7 @@ Sessions track Claude Code/Codex work sessions with encrypted metadata and messa
 Returns up to 150 sessions ordered by most recent. Use v2 endpoint for pagination.
 
 **Response (200):**
+
 ```json
 {
   "sessions": [{
@@ -1054,11 +1102,13 @@ Returns up to 150 sessions ordered by most recent. Use v2 endpoint for paginatio
 **Auth Required:** Yes (Bearer token)
 
 **Query Parameters:**
+
 - `cursor`: Pagination cursor (format: `cursor_v1_{sessionId}`)
 - `limit`: Results per page (default: 50, max: 200)
 - `changedSince`: ISO timestamp to filter by update time
 
 **Response (200):**
+
 ```json
 {
   "sessions": [...],
@@ -1073,6 +1123,7 @@ Returns up to 150 sessions ordered by most recent. Use v2 endpoint for paginatio
 Returns sessions active in the last 15 minutes, ordered by most recent activity.
 
 **Query Parameters:**
+
 - `limit`: Max results (default: 150)
 
 #### POST /v1/sessions - Create Session
@@ -1082,6 +1133,7 @@ Returns sessions active in the last 15 minutes, ordered by most recent activity.
 Creates a new session with tag-based deduplication. If a session with the same tag exists, returns the existing session.
 
 **Request:**
+
 ```json
 {
   "tag": "unique_session_tag",
@@ -1092,6 +1144,7 @@ Creates a new session with tag-based deduplication. If a session with the same t
 ```
 
 **Response (200):**
+
 ```json
 {
   "session": { ... }
@@ -1105,6 +1158,7 @@ Creates a new session with tag-based deduplication. If a session with the same t
 Returns a single session by ID. User must own the session.
 
 **Response (200/404):**
+
 ```json
 {
   "session": { ... }
@@ -1118,6 +1172,7 @@ Returns a single session by ID. User must own the session.
 Soft deletes a session by setting `active=false`. User must own the session.
 
 **Response (200):**
+
 ```json
 {
   "success": true
@@ -1131,6 +1186,7 @@ Soft deletes a session by setting `active=false`. User must own the session.
 Creates a new message in a session. User must own the session.
 
 **Request:**
+
 ```json
 {
   "localId": "optional_client_id",
@@ -1139,6 +1195,7 @@ Creates a new message in a session. User must own the session.
 ```
 
 **Response (200):**
+
 ```json
 {
   "message": {
@@ -1165,6 +1222,7 @@ Machines represent CLI devices (terminals) that connect to the Happy platform.
 Registers a new machine or returns existing machine with same ID. Composite key: (accountId + machineId).
 
 **Request:**
+
 ```json
 {
   "id": "machine_uuid",
@@ -1175,6 +1233,7 @@ Registers a new machine or returns existing machine with same ID. Composite key:
 ```
 
 **Response (200):**
+
 ```json
 {
   "machine": {
@@ -1199,6 +1258,7 @@ Registers a new machine or returns existing machine with same ID. Composite key:
 **Auth Required:** Yes (Bearer token)
 
 **Query Parameters:**
+
 - `limit`: Max results (default: 50)
 - `activeOnly`: Filter to active machines only (default: false)
 
@@ -1215,6 +1275,7 @@ Returns a single machine by ID. User must own the machine.
 Updates machine status, metadata, or daemon state. Always updates `lastActiveAt`.
 
 **Request:**
+
 ```json
 {
   "active": true,
@@ -1236,6 +1297,7 @@ Artifacts store encrypted files/outputs from Claude Code sessions.
 Returns artifact headers (without body content) ordered by most recent.
 
 **Response (200):**
+
 ```json
 {
   "artifacts": [{
@@ -1257,6 +1319,7 @@ Returns artifact headers (without body content) ordered by most recent.
 Returns full artifact including body content. User must own the artifact.
 
 **Response (200):**
+
 ```json
 {
   "artifact": {
@@ -1280,6 +1343,7 @@ Returns full artifact including body content. User must own the artifact.
 Creates a new artifact. Idempotent by ID - returns existing artifact if ID matches for same user.
 
 **Request:**
+
 ```json
 {
   "id": "artifact_id",
@@ -1290,6 +1354,7 @@ Creates a new artifact. Idempotent by ID - returns existing artifact if ID match
 ```
 
 **Response (200/409):**
+
 - 200: Artifact created or existing returned
 - 409: Artifact ID exists for different user
 
@@ -1300,6 +1365,7 @@ Creates a new artifact. Idempotent by ID - returns existing artifact if ID match
 Updates artifact header and/or body with optimistic locking.
 
 **Request:**
+
 ```json
 {
   "header": "new_base64_encrypted_header",
@@ -1310,6 +1376,7 @@ Updates artifact header and/or body with optimistic locking.
 ```
 
 **Response (200):**
+
 ```json
 {
   "success": true,
@@ -1319,6 +1386,7 @@ Updates artifact header and/or body with optimistic locking.
 ```
 
 Or on version mismatch:
+
 ```json
 {
   "success": false,
@@ -1347,6 +1415,7 @@ Access keys store encrypted session-machine access credentials.
 Returns access key for a session-machine pair, or null if not found.
 
 **Response (200):**
+
 ```json
 {
   "accessKey": {
@@ -1359,6 +1428,7 @@ Returns access key for a session-machine pair, or null if not found.
 ```
 
 Or if not found:
+
 ```json
 {
   "accessKey": null
@@ -1372,6 +1442,7 @@ Or if not found:
 Creates a new access key. Fails if key already exists.
 
 **Request:**
+
 ```json
 {
   "data": "encrypted_access_data"
@@ -1379,6 +1450,7 @@ Creates a new access key. Fails if key already exists.
 ```
 
 **Response (200/409):**
+
 - 200: Access key created
 - 409: Access key already exists
 
@@ -1389,6 +1461,7 @@ Creates a new access key. Fails if key already exists.
 Updates access key with optimistic locking.
 
 **Request:**
+
 ```json
 {
   "data": "new_encrypted_access_data",
@@ -1397,6 +1470,7 @@ Updates access key with optimistic locking.
 ```
 
 **Response (200):**
+
 ```json
 {
   "success": true,
@@ -1421,6 +1495,7 @@ Connect routes handle third-party integrations (GitHub OAuth, AI service tokens)
 Returns GitHub OAuth authorization URL with state token.
 
 **Response (200):**
+
 ```json
 {
   "url": "https://github.com/login/oauth/authorize?client_id=...&state=..."
@@ -1450,9 +1525,11 @@ Stores encrypted API tokens for AI services (OpenAI, Anthropic, Gemini).
 **Auth Required:** Yes
 
 **Path Parameters:**
+
 - `vendor`: `openai` | `anthropic` | `gemini`
 
 **Request:**
+
 ```json
 {
   "token": "sk-..."
@@ -1460,6 +1537,7 @@ Stores encrypted API tokens for AI services (OpenAI, Anthropic, Gemini).
 ```
 
 **Response (200):**
+
 ```json
 {
   "success": true
@@ -1473,6 +1551,7 @@ Stores encrypted API tokens for AI services (OpenAI, Anthropic, Gemini).
 Returns decrypted token for the specified vendor, or null if not registered.
 
 **Response (200):**
+
 ```json
 {
   "token": "sk-..."
@@ -1492,6 +1571,7 @@ Removes the stored token for the specified vendor.
 Lists all registered AI service tokens for the user.
 
 **Response (200):**
+
 ```json
 {
   "tokens": [
@@ -1506,6 +1586,7 @@ Lists all registered AI service tokens for the user.
 All routes follow consistent error response patterns:
 
 **401 Unauthorized:**
+
 ```json
 {
   "error": "Unauthorized"
@@ -1513,6 +1594,7 @@ All routes follow consistent error response patterns:
 ```
 
 **404 Not Found:**
+
 ```json
 {
   "error": "Session not found"
@@ -1520,6 +1602,7 @@ All routes follow consistent error response patterns:
 ```
 
 **400 Bad Request:**
+
 ```json
 {
   "error": "Invalid cursor format"
@@ -1527,6 +1610,7 @@ All routes follow consistent error response patterns:
 ```
 
 **409 Conflict:**
+
 ```json
 {
   "error": "Access key already exists"
@@ -1550,6 +1634,7 @@ Account routes manage the current user's profile and preferences.
 Returns the current user's profile including connected services.
 
 **Response (200):**
+
 ```json
 {
   "id": "user_id",
@@ -1569,6 +1654,7 @@ Returns the current user's profile including connected services.
 Updates the current user's profile fields.
 
 **Request:**
+
 ```json
 {
   "firstName": "John",
@@ -1578,6 +1664,7 @@ Updates the current user's profile fields.
 ```
 
 **Response (200):**
+
 ```json
 {
   "success": true,
@@ -1586,6 +1673,7 @@ Updates the current user's profile fields.
 ```
 
 **Response (409) - Username Taken:**
+
 ```json
 {
   "success": false,
@@ -1600,6 +1688,7 @@ Updates the current user's profile fields.
 Returns encrypted account settings with version for optimistic concurrency.
 
 **Response (200):**
+
 ```json
 {
   "settings": "{\"theme\":\"dark\"}",
@@ -1614,6 +1703,7 @@ Returns encrypted account settings with version for optimistic concurrency.
 Updates account settings with optimistic locking.
 
 **Request:**
+
 ```json
 {
   "settings": "{\"theme\":\"light\"}",
@@ -1622,6 +1712,7 @@ Updates account settings with optimistic locking.
 ```
 
 **Response (200) - Success:**
+
 ```json
 {
   "success": true,
@@ -1630,6 +1721,7 @@ Updates account settings with optimistic locking.
 ```
 
 **Response (200) - Version Mismatch:**
+
 ```json
 {
   "success": false,
@@ -1652,10 +1744,12 @@ User routes enable user discovery and profile viewing.
 Search for users by username prefix (case-insensitive).
 
 **Query Parameters:**
+
 - `query`: Search string (username prefix)
 - `limit`: Maximum results (1-50, default 10)
 
 **Response (200):**
+
 ```json
 {
   "users": [
@@ -1679,6 +1773,7 @@ Search for users by username prefix (case-insensitive).
 Returns a user's profile by ID with relationship status.
 
 **Response (200):**
+
 ```json
 {
   "user": {
@@ -1692,6 +1787,7 @@ Returns a user's profile by ID with relationship status.
 ```
 
 **Response (404):**
+
 ```json
 {
   "error": "User not found"
@@ -1711,11 +1807,13 @@ Feed routes provide activity feed with cursor-based pagination.
 Returns user's activity feed with cursor-based pagination.
 
 **Query Parameters:**
+
 - `before`: Cursor for older items (e.g., `cursor_42`)
 - `after`: Cursor for newer items
 - `limit`: Maximum items (1-200, default 50)
 
 **Response (200):**
+
 ```json
 {
   "items": [
@@ -1732,6 +1830,7 @@ Returns user's activity feed with cursor-based pagination.
 ```
 
 **Pagination:**
+
 - Use `before` cursor to get older items
 - Use `after` cursor to get newer items
 - Cursors are in format `cursor_{counter}`
@@ -1749,6 +1848,7 @@ The following routes provide utility functions: version checking, development lo
 Check if the client app version requires an update.
 
 **Request:**
+
 ```json
 {
     "platform": "ios",
@@ -1758,6 +1858,7 @@ Check if the client app version requires an update.
 ```
 
 **Response (200):**
+
 ```json
 {
     "updateUrl": "https://apps.apple.com/us/app/happy-claude-code-client/id6748571505"
@@ -1775,6 +1876,7 @@ Returns `null` for `updateUrl` if the version is up to date.
 Combined logging endpoint for debugging. Only enabled when `DANGEROUSLY_LOG_TO_SERVER_FOR_AI_AUTO_DEBUGGING` environment variable is set.
 
 **Request:**
+
 ```json
 {
     "timestamp": "2024-01-15T10:30:00.000Z",
@@ -1786,6 +1888,7 @@ Combined logging endpoint for debugging. Only enabled when `DANGEROUSLY_LOG_TO_S
 ```
 
 **Response (200):**
+
 ```json
 {
     "success": true
@@ -1803,6 +1906,7 @@ Combined logging endpoint for debugging. Only enabled when `DANGEROUSLY_LOG_TO_S
 Get an ElevenLabs conversation token for voice synthesis. In production, requires RevenueCat subscription verification.
 
 **Request:**
+
 ```json
 {
     "agentId": "agent_abc123",
@@ -1811,6 +1915,7 @@ Get an ElevenLabs conversation token for voice synthesis. In production, require
 ```
 
 **Response (200) - Success:**
+
 ```json
 {
     "allowed": true,
@@ -1820,6 +1925,7 @@ Get an ElevenLabs conversation token for voice synthesis. In production, require
 ```
 
 **Response (200) - Denied (no subscription):**
+
 ```json
 {
     "allowed": false,
@@ -1838,6 +1944,7 @@ Key-value storage with optimistic locking. All routes require authentication.
 Get a single key-value pair.
 
 **Response (200):**
+
 ```json
 {
     "key": "settings:theme",
@@ -1851,10 +1958,12 @@ Get a single key-value pair.
 List key-value pairs with optional prefix filter.
 
 **Query Parameters:**
+
 - `prefix`: Filter by key prefix (e.g., `settings:`)
 - `limit`: Maximum items (1-1000, default: 100)
 
 **Response (200):**
+
 ```json
 {
     "items": [
@@ -1868,6 +1977,7 @@ List key-value pairs with optional prefix filter.
 Bulk get multiple keys.
 
 **Request:**
+
 ```json
 {
     "keys": ["settings:theme", "settings:notifications"]
@@ -1875,6 +1985,7 @@ Bulk get multiple keys.
 ```
 
 **Response (200):**
+
 ```json
 {
     "values": [
@@ -1888,6 +1999,7 @@ Bulk get multiple keys.
 Atomic batch mutation (create/update/delete). Uses optimistic locking with version numbers.
 
 **Request:**
+
 ```json
 {
     "mutations": [
@@ -1901,6 +2013,7 @@ Atomic batch mutation (create/update/delete). Uses optimistic locking with versi
 - `value: null` to delete
 
 **Response (200) - Success:**
+
 ```json
 {
     "success": true,
@@ -1911,6 +2024,7 @@ Atomic batch mutation (create/update/delete). Uses optimistic locking with versi
 ```
 
 **Response (409) - Version Mismatch:**
+
 ```json
 {
     "success": false,
@@ -1931,6 +2045,7 @@ Push notification token management. All routes require authentication.
 Register a push notification token. Idempotent - updates timestamp if token already exists.
 
 **Request:**
+
 ```json
 {
     "token": "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]"
@@ -1938,6 +2053,7 @@ Register a push notification token. Idempotent - updates timestamp if token alre
 ```
 
 **Response (200):**
+
 ```json
 {
     "success": true
@@ -1949,6 +2065,7 @@ Register a push notification token. Idempotent - updates timestamp if token alre
 Delete a push notification token.
 
 **Response (200):**
+
 ```json
 {
     "success": true
@@ -1960,6 +2077,7 @@ Delete a push notification token.
 List all push tokens for the authenticated user.
 
 **Response (200):**
+
 ```json
 {
     "tokens": [
@@ -2021,18 +2139,21 @@ Three client types supported (matching happy-server Socket.io):
 WebSocket upgrade endpoint. Authentication via query params or headers.
 
 **Query Parameters:**
+
 - `token` (required): Auth token from privacy-kit
 - `clientType`: `user-scoped` | `session-scoped` | `machine-scoped` (default: user-scoped)
 - `sessionId`: Required for session-scoped connections
 - `machineId`: Required for machine-scoped connections
 
 **Headers Alternative:**
+
 - `Authorization: Bearer <token>`
 - `X-Client-Type: <type>`
 - `X-Session-Id: <id>`
 - `X-Machine-Id: <id>`
 
 **Example (JavaScript client):**
+
 ```javascript
 const ws = new WebSocket(
     'wss://api.example.com/v1/updates?token=xxx&clientType=user-scoped'
@@ -2052,6 +2173,7 @@ ws.onmessage = (event) => {
 Returns connection statistics for the authenticated user.
 
 **Response:**
+
 ```json
 {
     "totalConnections": 3,
@@ -2071,6 +2193,7 @@ Returns connection statistics for the authenticated user.
 Send a message to user's WebSocket connections with optional filtering.
 
 **Request:**
+
 ```json
 {
     "message": {
@@ -2085,6 +2208,7 @@ Send a message to user's WebSocket connections with optional filtering.
 ```
 
 **Filter Types:**
+
 - `{ type: "all" }` - All connections
 - `{ type: "user-scoped-only" }` - Only mobile apps
 - `{ type: "session", sessionId: "xxx" }` - Specific session
@@ -2105,6 +2229,7 @@ interface WebSocketMessage {
 ```
 
 **Built-in Message Types:**
+
 - `ping` / `pong`: Keep-alive (auto-handled during hibernation)
 - `connected`: Sent after successful connection with connectionId
 - `error`: Error notification with code and message
@@ -2156,6 +2281,7 @@ yarn test src/durable-objects/
 ### Overview
 
 File storage is implemented using Cloudflare R2 (S3-compatible object storage). The implementation provides:
+
 - File upload/download with authentication
 - Support for avatars, documents, and general files
 - Proper content-type validation
@@ -2205,9 +2331,11 @@ await r2.delete(path);
 ### Supported File Types
 
 **Images:**
+
 - `image/jpeg`, `image/png`, `image/gif`, `image/webp`, `image/svg+xml`
 
 **Documents:**
+
 - `application/pdf`, `text/plain`, `application/json`, `text/markdown`
 
 ### Size Limits
@@ -2229,11 +2357,13 @@ All routes require authentication (Bearer token).
 Upload a file to R2 storage.
 
 **Request:** `multipart/form-data`
+
 - `file`: File content (required)
 - `category`: `avatars` | `documents` | `files` (optional, default: `files`)
 - `reuseKey`: Deduplication key (optional)
 
 **Response (200):**
+
 ```json
 {
     "success": true,
@@ -2254,6 +2384,7 @@ Upload a file to R2 storage.
 List uploaded files for the authenticated user.
 
 **Query Parameters:**
+
 - `category`: Filter by category (optional)
 - `limit`: Max results (1-200, default: 50)
 - `cursor`: Pagination cursor (optional)
@@ -2273,14 +2404,17 @@ Delete an uploaded file from both R2 and the database.
 #### POST /v1/uploads/avatar - Upload Avatar
 
 Convenience endpoint for avatar uploads. Automatically:
+
 - Validates image type (JPEG, PNG, GIF, WebP only)
 - Enforces 5MB size limit
 - Replaces existing avatar (using `profile-avatar` reuseKey)
 
 **Request:** `multipart/form-data`
+
 - `file`: Image file (required)
 
 **Response (200):**
+
 ```json
 {
     "success": true,
