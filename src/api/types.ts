@@ -134,22 +134,13 @@ export type EphemeralMachineActivityUpdate = ApiEphemeralMachineActivityUpdate
 export type EphemeralUpdate = ApiEphemeralUpdate
 
 // =============================================================================
-// GITHUB PROFILE (CLI-specific version with passthrough)
+// GITHUB PROFILE (Re-exported from @happy/protocol)
 // =============================================================================
-// CLI uses a more lenient version that allows additional fields from GitHub API.
-// This is kept local because the shared version is stricter.
+// The canonical GitHubProfileSchema is now in @happy/protocol with proper
+// nullable/optional fields and passthrough. Re-export here for backward
+// compatibility with code that imports from @/api/types.
 
-/**
- * GitHub profile data from OAuth
- * Note: Uses passthrough to allow additional fields from GitHub API
- */
-export const GitHubProfileSchema = z.object({
-  id: z.number(),
-  login: z.string(),
-  name: z.string().nullable().optional(),
-  email: z.string().nullable().optional(),
-  avatar_url: z.string().optional(),
-}).passthrough()
+export { GitHubProfileSchema } from '@happy/protocol'
 
 // Note: GitHubProfile type is re-exported from @happy/protocol at the top of this file
 
