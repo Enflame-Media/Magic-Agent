@@ -7,6 +7,7 @@ import { randomKeyNaked } from "@/utils/randomKeyNaked";
 import { allocateUserSeq } from "@/storage/seq";
 import { log } from "@/utils/log";
 import { AccountProfile } from "@/types";
+import { createHash } from "crypto";
 
 export function accountRoutes(app: Fastify) {
     app.get('/v1/account/profile', {
@@ -24,16 +25,36 @@ export function accountRoutes(app: Fastify) {
             }
         });
         const connectedVendors = new Set((await db.serviceAccountToken.findMany({ where: { accountId: userId } })).map(t => t.vendor));
-        return reply.send({
+
+        // Build profile response (excluding timestamp for ETag calculation)
+        const avatarData = user.avatar ? { ...user.avatar, url: getPublicUrl(user.avatar.path) } : null;
+        const profileData = {
             id: userId,
-            timestamp: Date.now(),
             firstName: user.firstName,
             lastName: user.lastName,
             username: user.username,
-            avatar: user.avatar ? { ...user.avatar, url: getPublicUrl(user.avatar.path) } : null,
+            avatar: avatarData,
             github: user.githubUser ? user.githubUser.profile : null,
-            connectedServices: Array.from(connectedVendors)
-        });
+            connectedServices: Array.from(connectedVendors).sort() // Sort for deterministic ETag
+        };
+
+        // Generate ETag from stable profile content (excluding timestamp)
+        const etagContent = JSON.stringify(profileData);
+        const etag = `"${createHash('sha256').update(etagContent).digest('hex').substring(0, 16)}"`;
+
+        // Check If-None-Match header for conditional request
+        const ifNoneMatch = request.headers['if-none-match'];
+        if (ifNoneMatch === etag) {
+            return reply.status(304).send();
+        }
+
+        // Return full response with ETag header
+        return reply
+            .header('ETag', etag)
+            .send({
+                ...profileData,
+                timestamp: Date.now()
+            });
     });
 
     // Get Account Settings API

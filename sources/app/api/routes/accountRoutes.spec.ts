@@ -136,6 +136,114 @@ describe('accountRoutes', () => {
             expect(body.github).toBeNull();
             expect(body.connectedServices).toHaveLength(0);
         });
+
+        // HAP-491: ETag conditional request tests
+        it('should include ETag header in profile response', async () => {
+            const mockUser = {
+                firstName: 'John',
+                lastName: 'Doe',
+                username: 'johndoe',
+                avatar: null,
+                githubUser: null,
+            };
+            vi.mocked(db.account.findUniqueOrThrow).mockResolvedValue(mockUser as any);
+            vi.mocked(db.serviceAccountToken.findMany).mockResolvedValue([]);
+
+            const response = await app.inject({
+                method: 'GET',
+                url: '/v1/account/profile',
+                headers: authHeader(),
+            });
+
+            expect(response.statusCode).toBe(200);
+            expect(response.headers['etag']).toBeDefined();
+            expect(response.headers['etag']).toMatch(/^"[a-f0-9]{16}"$/);
+        });
+
+        it('should return 304 Not Modified when If-None-Match matches ETag', async () => {
+            const mockUser = {
+                firstName: 'John',
+                lastName: 'Doe',
+                username: 'johndoe',
+                avatar: null,
+                githubUser: null,
+            };
+            vi.mocked(db.account.findUniqueOrThrow).mockResolvedValue(mockUser as any);
+            vi.mocked(db.serviceAccountToken.findMany).mockResolvedValue([]);
+
+            // First request to get the ETag
+            const response1 = await app.inject({
+                method: 'GET',
+                url: '/v1/account/profile',
+                headers: authHeader(),
+            });
+            const etag = response1.headers['etag'] as string;
+
+            // Second request with If-None-Match header
+            const response2 = await app.inject({
+                method: 'GET',
+                url: '/v1/account/profile',
+                headers: {
+                    ...authHeader(),
+                    'If-None-Match': etag,
+                },
+            });
+
+            expect(response2.statusCode).toBe(304);
+            expect(response2.payload).toBe('');
+        });
+
+        it('should return full response when If-None-Match does not match', async () => {
+            const mockUser = {
+                firstName: 'John',
+                lastName: 'Doe',
+                username: 'johndoe',
+                avatar: null,
+                githubUser: null,
+            };
+            vi.mocked(db.account.findUniqueOrThrow).mockResolvedValue(mockUser as any);
+            vi.mocked(db.serviceAccountToken.findMany).mockResolvedValue([]);
+
+            const response = await app.inject({
+                method: 'GET',
+                url: '/v1/account/profile',
+                headers: {
+                    ...authHeader(),
+                    'If-None-Match': '"stale-etag-value"',
+                },
+            });
+
+            expect(response.statusCode).toBe(200);
+            expect(response.headers['etag']).toBeDefined();
+            const body = JSON.parse(response.payload);
+            expect(body.firstName).toBe('John');
+        });
+
+        it('should generate consistent ETag for same profile data', async () => {
+            const mockUser = {
+                firstName: 'Jane',
+                lastName: 'Smith',
+                username: 'janesmith',
+                avatar: null,
+                githubUser: null,
+            };
+            vi.mocked(db.account.findUniqueOrThrow).mockResolvedValue(mockUser as any);
+            vi.mocked(db.serviceAccountToken.findMany).mockResolvedValue([]);
+
+            const response1 = await app.inject({
+                method: 'GET',
+                url: '/v1/account/profile',
+                headers: authHeader(),
+            });
+
+            const response2 = await app.inject({
+                method: 'GET',
+                url: '/v1/account/profile',
+                headers: authHeader(),
+            });
+
+            expect(response1.headers['etag']).toBe(response2.headers['etag']);
+        });
     });
 
     describe('GET /v1/account/settings', () => {
