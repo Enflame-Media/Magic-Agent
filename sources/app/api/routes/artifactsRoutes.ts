@@ -14,19 +14,26 @@ function toBytes(data: Uint8Array): Uint8Array<ArrayBuffer> {
 
 export function artifactsRoutes(app: Fastify) {
     // GET /v1/artifacts - List all artifacts for the account
+    // Supports incremental sync via optional sinceSeq query parameter (HAP-492)
     app.get('/v1/artifacts', {
         preHandler: app.authenticate,
         schema: {
+            querystring: z.object({
+                sinceSeq: z.coerce.number().int().min(0).optional()
+            }),
             response: {
-                200: z.array(z.object({
-                    id: z.string(),
-                    header: z.string(),
-                    headerVersion: z.number(),
-                    dataEncryptionKey: z.string(),
-                    seq: z.number(),
-                    createdAt: z.number(),
-                    updatedAt: z.number()
-                })),
+                200: z.object({
+                    artifacts: z.array(z.object({
+                        id: z.string(),
+                        header: z.string(),
+                        headerVersion: z.number(),
+                        dataEncryptionKey: z.string(),
+                        seq: z.number(),
+                        createdAt: z.number(),
+                        updatedAt: z.number()
+                    })),
+                    maxSeq: z.number()
+                }),
                 500: z.object({
                     error: z.literal('Failed to get artifacts')
                 })
@@ -34,10 +41,19 @@ export function artifactsRoutes(app: Fastify) {
         }
     }, async (request, reply) => {
         const userId = request.userId;
+        const { sinceSeq } = request.query as { sinceSeq?: number };
 
         try {
+            // Build where clause - filter by sinceSeq if provided
+            const whereClause: { accountId: string; seq?: { gt: number } } = {
+                accountId: userId
+            };
+            if (sinceSeq !== undefined && sinceSeq > 0) {
+                whereClause.seq = { gt: sinceSeq };
+            }
+
             const artifacts = await db.artifact.findMany({
-                where: { accountId: userId },
+                where: whereClause,
                 orderBy: { updatedAt: 'desc' },
                 select: {
                     id: true,
@@ -50,15 +66,21 @@ export function artifactsRoutes(app: Fastify) {
                 }
             });
 
-            return reply.send(artifacts.map(a => ({
-                id: a.id,
-                header: privacyKit.encodeBase64(a.header),
-                headerVersion: a.headerVersion,
-                dataEncryptionKey: privacyKit.encodeBase64(a.dataEncryptionKey),
-                seq: a.seq,
-                createdAt: a.createdAt.getTime(),
-                updatedAt: a.updatedAt.getTime()
-            })));
+            // Calculate maxSeq from returned artifacts
+            const maxSeq = artifacts.reduce((max, a) => Math.max(max, a.seq), sinceSeq ?? 0);
+
+            return reply.send({
+                artifacts: artifacts.map(a => ({
+                    id: a.id,
+                    header: privacyKit.encodeBase64(a.header),
+                    headerVersion: a.headerVersion,
+                    dataEncryptionKey: privacyKit.encodeBase64(a.dataEncryptionKey),
+                    seq: a.seq,
+                    createdAt: a.createdAt.getTime(),
+                    updatedAt: a.updatedAt.getTime()
+                })),
+                maxSeq
+            });
         } catch (error) {
             log({ module: 'api', level: 'error' }, `Failed to get artifacts: ${error}`);
             return reply.code(500).send({ error: 'Failed to get artifacts' });
