@@ -444,6 +444,98 @@ describe('sessionRoutes', () => {
 
             expect(response.statusCode).toBe(401);
         });
+
+        it('should filter messages by sinceSeq parameter', async () => {
+            const session = createMockSession({ id: 'sess-123' });
+            vi.mocked(db.session.findFirst).mockResolvedValue(session as any);
+
+            const mockMessages = [
+                {
+                    id: 'msg-3',
+                    seq: 3,
+                    localId: 'local-3',
+                    content: { text: 'Third' },
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                },
+                {
+                    id: 'msg-4',
+                    seq: 4,
+                    localId: 'local-4',
+                    content: { text: 'Fourth' },
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                },
+            ];
+            vi.mocked(db.sessionMessage.findMany).mockResolvedValue(mockMessages as any);
+
+            const response = await app.inject({
+                method: 'GET',
+                url: '/v1/sessions/sess-123/messages?sinceSeq=2',
+                headers: authHeader(),
+            });
+
+            expect(response.statusCode).toBe(200);
+            const body = JSON.parse(response.payload);
+            expect(body.messages).toHaveLength(2);
+
+            // Verify the query was called with seq filter
+            expect(db.sessionMessage.findMany).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    where: {
+                        sessionId: 'sess-123',
+                        seq: { gt: 2 },
+                    },
+                })
+            );
+        });
+
+        it('should return empty array when no messages after sinceSeq', async () => {
+            const session = createMockSession({ id: 'sess-123' });
+            vi.mocked(db.session.findFirst).mockResolvedValue(session as any);
+            vi.mocked(db.sessionMessage.findMany).mockResolvedValue([]);
+
+            const response = await app.inject({
+                method: 'GET',
+                url: '/v1/sessions/sess-123/messages?sinceSeq=100',
+                headers: authHeader(),
+            });
+
+            expect(response.statusCode).toBe(200);
+            const body = JSON.parse(response.payload);
+            expect(body.messages).toHaveLength(0);
+        });
+
+        it('should return all messages when sinceSeq is 0', async () => {
+            const session = createMockSession({ id: 'sess-123' });
+            vi.mocked(db.session.findFirst).mockResolvedValue(session as any);
+
+            const mockMessages = [
+                { id: 'msg-1', seq: 1, localId: null, content: {}, createdAt: new Date(), updatedAt: new Date() },
+                { id: 'msg-2', seq: 2, localId: null, content: {}, createdAt: new Date(), updatedAt: new Date() },
+            ];
+            vi.mocked(db.sessionMessage.findMany).mockResolvedValue(mockMessages as any);
+
+            const response = await app.inject({
+                method: 'GET',
+                url: '/v1/sessions/sess-123/messages?sinceSeq=0',
+                headers: authHeader(),
+            });
+
+            expect(response.statusCode).toBe(200);
+            const body = JSON.parse(response.payload);
+            expect(body.messages).toHaveLength(2);
+
+            // sinceSeq=0 should filter for seq > 0, which includes all messages
+            expect(db.sessionMessage.findMany).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    where: {
+                        sessionId: 'sess-123',
+                        seq: { gt: 0 },
+                    },
+                })
+            );
+        });
     });
 
     describe('DELETE /v1/sessions/:sessionId', () => {
