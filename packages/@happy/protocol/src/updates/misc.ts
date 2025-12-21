@@ -37,6 +37,7 @@ export const ApiNewFeedPostSchema = z.object({
     cursor: z.string(),
     createdAt: z.number(),
     repeatKey: z.string().nullable(),
+    counter: z.number(),
 });
 
 export type ApiNewFeedPost = z.infer<typeof ApiNewFeedPostSchema>;
