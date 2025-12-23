@@ -13,7 +13,7 @@ import { render } from 'ink';
 import React from 'react';
 import { randomUUID } from 'node:crypto';
 import { logger } from './logger';
-import { AppError, ErrorCodes } from '@/utils/errors';
+import { AppError, ErrorCodes, fromUnknownSafe } from '@/utils/errors';
 
 async function doAuth(options?: { signal?: AbortSignal }): Promise<Credentials | null> {
     console.clear();
@@ -49,7 +49,7 @@ async function doAuth(options?: { signal?: AbortSignal }): Promise<Credentials |
         // Handle cancellation with a clean error message
         if (axios.isCancel(error)) {
             logger.debug('[AUTH] Auth request was cancelled');
-            throw AppError.fromUnknownSafe(ErrorCodes.OPERATION_CANCELLED, 'Auth request was cancelled', error);
+            throw fromUnknownSafe(ErrorCodes.OPERATION_CANCELLED, 'Auth request was cancelled', error);
         }
         logger.debug('[AUTH] [ERROR] Failed to send auth request:', error);
         console.log('Failed to create authentication request, please try again later.');
@@ -223,7 +223,7 @@ async function waitForAuthentication(keypair: tweetnacl.BoxKeyPair, options?: { 
                 // Handle cancellation with a clean error message
                 if (axios.isCancel(error)) {
                     logger.debug('[AUTH] Authentication polling was cancelled');
-                    throw AppError.fromUnknownSafe(ErrorCodes.OPERATION_CANCELLED, 'Authentication was cancelled', error);
+                    throw fromUnknownSafe(ErrorCodes.OPERATION_CANCELLED, 'Authentication was cancelled', error);
                 }
                 console.log('\n\nFailed to check authentication status. Please try again.');
                 return null;

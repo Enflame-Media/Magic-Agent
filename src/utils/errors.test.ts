@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { AxiosError } from 'axios'
-import { AppError, ErrorCodes, getSafeErrorMessage, type ErrorCode } from './errors'
+import { AppError, ErrorCodes, getSafeErrorMessage, fromUnknownSafe, type ErrorCode } from './errors'
 
 /** Helper to capture thrown errors for testing - avoids no-conditional-expect lint warnings */
 function getError<T extends Error>(fn: () => unknown): T {
@@ -90,7 +90,7 @@ describe('AppError', () => {
 
     it('should create error with cause chain', () => {
       const originalError = new Error('Network timeout')
-      const error = new AppError(ErrorCodes.CONNECT_FAILED, 'Failed to connect', originalError)
+      const error = new AppError(ErrorCodes.CONNECT_FAILED, 'Failed to connect', { cause: originalError })
 
       expect(error.code).toBe(ErrorCodes.CONNECT_FAILED)
       expect(error.message).toBe('Failed to connect')
@@ -125,7 +125,7 @@ describe('AppError', () => {
 
     it('should include cause message when cause exists', () => {
       const originalError = new Error('Original error')
-      const error = new AppError(ErrorCodes.OPERATION_FAILED, 'Wrapped error', originalError)
+      const error = new AppError(ErrorCodes.OPERATION_FAILED, 'Wrapped error', { cause: originalError })
       const json = error.toJSON()
 
       expect(json.cause).toBe('Original error')
@@ -203,7 +203,7 @@ describe('AppError', () => {
   describe('fromUnknownSafe', () => {
     it('should create error with safe message from Error', () => {
       const originalError = new Error('Sensitive data: password123')
-      const appError = AppError.fromUnknownSafe(
+      const appError = fromUnknownSafe(
         ErrorCodes.OPERATION_FAILED,
         'Operation failed',
         originalError
@@ -224,14 +224,14 @@ describe('AppError', () => {
         config: {} as any,
       }
 
-      const appError = AppError.fromUnknownSafe(ErrorCodes.CONNECT_FAILED, 'API call failed', axiosError)
+      const appError = fromUnknownSafe(ErrorCodes.CONNECT_FAILED, 'API call failed', axiosError)
 
       expect(appError.message).toBe('API call failed: Server returned 404: Not Found')
     })
 
     it('should handle AppError specially', () => {
       const originalAppError = new AppError(ErrorCodes.AUTH_FAILED, 'Authentication failed')
-      const wrappedError = AppError.fromUnknownSafe(
+      const wrappedError = fromUnknownSafe(
         ErrorCodes.OPERATION_FAILED,
         'Operation failed',
         originalAppError
@@ -242,7 +242,7 @@ describe('AppError', () => {
     })
 
     it('should handle non-Error values safely', () => {
-      const appError = AppError.fromUnknownSafe(
+      const appError = fromUnknownSafe(
         ErrorCodes.UNKNOWN_ERROR,
         'Something went wrong',
         'sensitive string'
@@ -349,8 +349,8 @@ describe('getSafeErrorMessage', () => {
 describe('Error handling patterns', () => {
   it('should support cause chain traversal', () => {
     const rootError = new Error('Root cause')
-    const midError = new AppError(ErrorCodes.OPERATION_FAILED, 'Mid level', rootError)
-    const topError = new AppError(ErrorCodes.INTERNAL_ERROR, 'Top level', midError)
+    const midError = new AppError(ErrorCodes.OPERATION_FAILED, 'Mid level', { cause: rootError })
+    const topError = new AppError(ErrorCodes.INTERNAL_ERROR, 'Top level', { cause: midError })
 
     expect(topError.cause).toBe(midError)
     expect(topError.cause?.cause).toBe(rootError)

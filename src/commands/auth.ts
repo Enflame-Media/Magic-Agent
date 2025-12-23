@@ -7,7 +7,7 @@ import { createInterface } from 'node:readline';
 import { stopDaemon, checkIfDaemonRunningAndCleanupStaleState } from '@/daemon/controlClient';
 import { logger } from '@/ui/logger';
 import os from 'node:os';
-import { AppError, ErrorCodes } from '@/utils/errors';
+import { ErrorCodes, fromUnknownSafe } from '@/utils/errors';
 
 export async function handleAuthCommand(args: string[]): Promise<void> {
   const subcommand = args[0];
@@ -154,7 +154,7 @@ async function handleAuthLogout(): Promise<void> {
       console.log(chalk.green('✓ Successfully logged out'));
       console.log(chalk.gray('  Run "happy auth login" to authenticate again'));
     } catch (error) {
-      throw AppError.fromUnknownSafe(ErrorCodes.AUTH_FAILED, 'Failed to logout', error);
+      throw fromUnknownSafe(ErrorCodes.AUTH_FAILED, 'Failed to logout', error);
     }
   } else {
     console.log(chalk.blue('Logout cancelled'));

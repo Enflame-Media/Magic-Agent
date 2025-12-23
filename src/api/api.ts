@@ -8,7 +8,7 @@ import { PushNotificationClient } from './pushNotifications';
 import { configuration } from '@/configuration';
 import chalk from 'chalk';
 import { Credentials } from '@/persistence';
-import { AppError, ErrorCodes } from '@/utils/errors';
+import { AppError, ErrorCodes, fromUnknownSafe } from '@/utils/errors';
 import { createDeduplicator, type Deduplicator } from '@/utils/requestDeduplication';
 
 export class ApiClient {
@@ -131,10 +131,10 @@ export class ApiClient {
       // Handle cancellation with a clean error message
       if (axios.isCancel(error)) {
         logger.debug('[API] Session creation was cancelled');
-        throw AppError.fromUnknownSafe(ErrorCodes.OPERATION_CANCELLED, 'Session creation was cancelled', error);
+        throw fromUnknownSafe(ErrorCodes.OPERATION_CANCELLED, 'Session creation was cancelled', error);
       }
       logger.debug('[API] [ERROR] Failed to get or create session:', error);
-      throw AppError.fromUnknownSafe(ErrorCodes.CONNECT_FAILED, 'Failed to get or create session', error);
+      throw fromUnknownSafe(ErrorCodes.CONNECT_FAILED, 'Failed to get or create session', error);
     }
   }
 
@@ -233,10 +233,10 @@ export class ApiClient {
         // Handle cancellation with a clean error message
         if (axios.isCancel(error)) {
           logger.debug('[API] Machine creation was cancelled');
-          throw AppError.fromUnknownSafe(ErrorCodes.OPERATION_CANCELLED, 'Machine creation was cancelled', error);
+          throw fromUnknownSafe(ErrorCodes.OPERATION_CANCELLED, 'Machine creation was cancelled', error);
         }
         logger.debug('[API] [ERROR] Failed to get or create machine:', error);
-        throw AppError.fromUnknownSafe(ErrorCodes.CONNECT_FAILED, 'Failed to get or create machine', error);
+        throw fromUnknownSafe(ErrorCodes.CONNECT_FAILED, 'Failed to get or create machine', error);
       }
     });
   }
@@ -296,10 +296,10 @@ export class ApiClient {
         // Handle cancellation with a clean error message
         if (axios.isCancel(error)) {
           logger.debug('[API] Vendor token registration was cancelled');
-          throw AppError.fromUnknownSafe(ErrorCodes.OPERATION_CANCELLED, 'Vendor token registration was cancelled', error);
+          throw fromUnknownSafe(ErrorCodes.OPERATION_CANCELLED, 'Vendor token registration was cancelled', error);
         }
         logger.debug('[API] [ERROR] Failed to register vendor token:', error);
-        throw AppError.fromUnknownSafe(ErrorCodes.CONNECT_FAILED, 'Failed to register vendor token', error);
+        throw fromUnknownSafe(ErrorCodes.CONNECT_FAILED, 'Failed to register vendor token', error);
       }
     });
   }

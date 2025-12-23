@@ -1,10 +1,8 @@
 /**
  * Error utilities for safe error handling and standardized error management.
  *
- * This module provides:
- * - AppError: Custom error class with error codes and cause chain support
- * - ErrorCodes: Standardized error code constants for the application
- * - getSafeErrorMessage: Utility to extract safe error messages without leaking sensitive data
+ * This module re-exports the shared AppError from @happy/errors and provides
+ * CLI-specific error codes and utilities.
  *
  * @module utils/errors
  *
@@ -29,8 +27,65 @@
  */
 import axios from 'axios'
 
+// Re-export AppError and types from shared package
+export { AppError } from '@happy/errors'
+export type { AppErrorOptions, AppErrorJSON } from '@happy/errors'
+
 /**
- * Standardized error codes for the application.
+ * Base URL for error documentation.
+ * In the future, this could point to a public documentation site.
+ */
+const ERROR_DOCS_BASE = 'https://github.com/Enflame-Media/happy-shared/blob/main/docs/errors'
+
+/**
+ * Maps error codes to their documentation anchors/pages.
+ * Used to generate help URLs for self-service debugging.
+ */
+const ERROR_DOC_MAP: Partial<Record<string, string>> = {
+  // Connection/Network errors - common troubleshooting
+  CONNECT_FAILED: 'CONNECTION.md#connect-failed',
+  NO_RESPONSE: 'CONNECTION.md#no-response',
+  REQUEST_CONFIG_ERROR: 'CONNECTION.md#request-config-error',
+
+  // Authentication errors - auth flow issues
+  AUTH_FAILED: 'AUTHENTICATION.md#auth-failed',
+  TOKEN_EXCHANGE_FAILED: 'AUTHENTICATION.md#token-exchange-failed',
+
+  // Session/Process errors - daemon and session management
+  SESSION_NOT_FOUND: 'SESSIONS.md#session-not-found',
+  DAEMON_START_FAILED: 'DAEMON.md#start-failed',
+  PROCESS_TIMEOUT: 'DAEMON.md#process-timeout',
+  VERSION_MISMATCH: 'CLI.md#version-mismatch',
+
+  // Resource errors - file and lock issues
+  LOCK_ACQUISITION_FAILED: 'CLI.md#lock-acquisition-failed',
+  DIRECTORY_REQUIRED: 'CLI.md#directory-required',
+  RESOURCE_NOT_FOUND: 'CLI.md#resource-not-found',
+
+  // Encryption errors - key and encryption issues
+  ENCRYPTION_ERROR: 'ENCRYPTION.md#encryption-error',
+  NONCE_TOO_SHORT: 'ENCRYPTION.md#nonce-too-short',
+}
+
+/**
+ * Get the documentation URL for a given error code.
+ *
+ * @param code - The error code to look up
+ * @returns Documentation URL if available, undefined otherwise
+ *
+ * @example
+ * ```typescript
+ * const url = getErrorDocUrl('AUTH_FAILED');
+ * // Returns: 'https://github.com/Enflame-Media/happy-shared/blob/main/docs/errors/AUTHENTICATION.md#auth-failed'
+ * ```
+ */
+export function getErrorDocUrl(code: string): string | undefined {
+  const docPath = ERROR_DOC_MAP[code]
+  return docPath ? `${ERROR_DOCS_BASE}/${docPath}` : undefined
+}
+
+/**
+ * Standardized error codes for the CLI application.
  * These codes provide programmatic error identification and consistent categorization.
  *
  * @example
@@ -87,175 +142,70 @@ export const ErrorCodes = {
 export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes]
 
 /**
- * Structured JSON representation of an AppError.
- * Used for serialization, logging, and API responses.
+ * Extended AppError utilities for CLI-specific features.
+ * These functions work with the shared AppError class.
  */
-export interface AppErrorJSON {
-  code: ErrorCode
-  message: string
-  name: string
-  cause?: string
-  stack?: string
+import { AppError } from '@happy/errors'
+
+/**
+ * Get the documentation URL for an AppError, if available.
+ *
+ * @param error - The AppError instance
+ * @returns Documentation URL or undefined
+ */
+export function getAppErrorDocUrl(error: AppError): string | undefined {
+  return getErrorDocUrl(error.code)
 }
 
 /**
- * Application-specific error class with standardized error codes and cause chain support.
+ * Get a formatted error message with documentation link if available.
+ * Useful for CLI output where users can follow up for more information.
  *
- * AppError provides:
- * - Consistent error identification via error codes
- * - Error cause chain preservation (ES2022 compatible)
- * - Structured JSON serialization for logging and API responses
- * - Proper prototype chain for instanceof checks
+ * @param error - The AppError instance
+ * @returns Formatted message with optional documentation link
  *
  * @example
  * ```typescript
- * // Basic usage
- * throw new AppError(ErrorCodes.AUTH_FAILED, 'Session expired');
- *
- * // With cause chain
- * try {
- *   await connectToServer();
- * } catch (error) {
- *   throw new AppError(
- *     ErrorCodes.CONNECT_FAILED,
- *     'Failed to connect to server',
- *     error instanceof Error ? error : undefined
- *   );
- * }
- *
- * // Serialization
- * const appError = new AppError(ErrorCodes.VALIDATION_FAILED, 'Invalid input');
- * console.log(JSON.stringify(appError)); // Uses toJSON() automatically
+ * const error = new AppError(ErrorCodes.AUTH_FAILED, 'Token expired');
+ * console.error(getHelpfulMessage(error));
+ * // Output: "Token expired\n  For more information, see: https://..."
  * ```
  */
-export class AppError extends Error {
-  /** Error code for programmatic identification */
-  public readonly code: ErrorCode
-
-  /**
-   * Original error that caused this error, if any.
-   * Note: Using Error.cause pattern from ES2022, but not using 'override' keyword
-   * due to lib configuration compatibility.
-   */
-  public readonly cause?: Error
-
-  /**
-   * Creates a new AppError instance.
-   *
-   * @param code - Error code from ErrorCodes constant
-   * @param message - Human-readable error message
-   * @param cause - Optional original error that caused this error
-   */
-  constructor(code: ErrorCode, message: string, cause?: Error) {
-    super(message)
-    this.code = code
-    this.cause = cause
-    this.name = 'AppError'
-
-    // Fix prototype chain for ES5 compatibility with extending built-ins
-    Object.setPrototypeOf(this, AppError.prototype)
+export function getHelpfulMessage(error: AppError): string {
+  const docUrl = getAppErrorDocUrl(error)
+  if (docUrl) {
+    return `${error.message}\n  For more information, see: ${docUrl}`
   }
+  return error.message
+}
 
-  /**
-   * Converts the error to a structured JSON object.
-   * Called automatically by JSON.stringify().
-   *
-   * @returns Structured error representation
-   */
-  toJSON(): AppErrorJSON {
-    const json: AppErrorJSON = {
-      code: this.code,
-      message: this.message,
-      name: this.name,
-    }
-
-    // Only include optional fields if they exist
-    if (this.cause?.message) {
-      json.cause = this.cause.message
-    }
-    if (this.stack) {
-      json.stack = this.stack
-    }
-
-    return json
-  }
-
-  /**
-   * Creates an AppError from an unknown error value.
-   * Useful for wrapping caught errors of unknown type.
-   *
-   * @param code - Error code to assign
-   * @param message - Error message
-   * @param error - Unknown error value to wrap
-   * @returns AppError instance with cause chain if error was an Error
-   *
-   * @example
-   * ```typescript
-   * try {
-   *   await riskyOperation();
-   * } catch (error) {
-   *   throw AppError.fromUnknown(
-   *     ErrorCodes.OPERATION_FAILED,
-   *     'Failed to complete operation',
-   *     error
-   *   );
-   * }
-   * ```
-   */
-  static fromUnknown(code: ErrorCode, message: string, error: unknown): AppError {
-    const cause = error instanceof Error ? error : undefined
-    return new AppError(code, message, cause)
-  }
-
-  /**
-   * Type guard to check if an error is an AppError.
-   *
-   * @param error - Value to check
-   * @returns True if error is an AppError instance
-   *
-   * @example
-   * ```typescript
-   * try {
-   *   await someOperation();
-   * } catch (error) {
-   *   if (AppError.isAppError(error)) {
-   *     console.log('Error code:', error.code);
-   *   }
-   * }
-   * ```
-   */
-  static isAppError(error: unknown): error is AppError {
-    return error instanceof AppError
-  }
-
-  /**
-   * Wraps an error with a safe message using AppError.
-   * Combines getSafeErrorMessage() logic with AppError creation.
-   *
-   * @param code - Error code to assign
-   * @param contextMessage - Context message to prepend
-   * @param error - Unknown error value to wrap
-   * @returns AppError with safe message
-   *
-   * @example
-   * ```typescript
-   * try {
-   *   await axios.post('/api/endpoint', data);
-   * } catch (error) {
-   *   throw AppError.fromUnknownSafe(
-   *     ErrorCodes.CONNECT_FAILED,
-   *     'Failed to connect to API',
-   *     error
-   *   );
-   * }
-   * ```
-   */
-  static fromUnknownSafe(code: ErrorCode, contextMessage: string, error: unknown): AppError {
-    const safeMessage = getSafeErrorMessage(error)
-    const fullMessage = `${contextMessage}: ${safeMessage}`
-    const cause = error instanceof Error ? error : undefined
-    return new AppError(code, fullMessage, cause)
-  }
+/**
+ * Creates an AppError from an unknown error with a safe, user-facing message.
+ * Combines getSafeErrorMessage() logic with AppError creation.
+ *
+ * @param code - Error code to assign
+ * @param contextMessage - Context message to prepend
+ * @param error - Unknown error value to wrap
+ * @returns AppError with safe message
+ *
+ * @example
+ * ```typescript
+ * try {
+ *   await axios.post('/api/endpoint', data);
+ * } catch (error) {
+ *   throw fromUnknownSafe(
+ *     ErrorCodes.CONNECT_FAILED,
+ *     'Failed to connect to API',
+ *     error
+ *   );
+ * }
+ * ```
+ */
+export function fromUnknownSafe(code: ErrorCode, contextMessage: string, error: unknown): AppError {
+  const safeMessage = getSafeErrorMessage(error)
+  const fullMessage = `${contextMessage}: ${safeMessage}`
+  const cause = error instanceof Error ? error : undefined
+  return new AppError(code, fullMessage, { cause })
 }
 
 /**
@@ -275,7 +225,7 @@ export class AppError extends Error {
  */
 export function getSafeErrorMessage(error: unknown): string {
   // Handle AppError specially - it's already safe to expose
-  if (error instanceof AppError) {
+  if (AppError.isAppError(error)) {
     return error.message
   }
 
