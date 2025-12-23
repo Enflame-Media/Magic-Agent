@@ -1,32 +1,211 @@
 /**
  * Unified error handling for the Happy monorepo.
  *
- * This package provides a standardized AppError class that works across all projects
- * (CLI, Server, App) with a consistent options-based constructor pattern.
+ * This package provides:
+ * - A standardized AppError class that works across all projects
+ * - Unified ErrorCodes covering CLI, Server, and App
  *
  * @module @happy/errors
  *
- * @example Basic usage
+ * @example Basic usage with ErrorCodes
  * ```typescript
- * import { AppError } from '@happy/errors';
+ * import { AppError, ErrorCodes } from '@happy/errors';
  *
- * // Throw with just code and message
- * throw new AppError('AUTH_FAILED', 'Session expired');
+ * // Throw with error code constant
+ * throw new AppError(ErrorCodes.AUTH_FAILED, 'Session expired');
  *
  * // Throw with options
- * throw new AppError('FETCH_FAILED', 'Network error', { canTryAgain: true });
+ * throw new AppError(ErrorCodes.FETCH_FAILED, 'Network error', { canTryAgain: true });
  *
  * // Wrap an existing error
  * try {
  *   await fetch(url);
  * } catch (error) {
- *   throw new AppError('API_ERROR', 'Failed to fetch data', {
+ *   throw new AppError(ErrorCodes.API_ERROR, 'Failed to fetch data', {
  *     canTryAgain: true,
  *     cause: error instanceof Error ? error : undefined
  *   });
  * }
  * ```
  */
+
+// ============================================================================
+// ERROR CODES
+// ============================================================================
+
+/**
+ * Unified error codes for all Happy projects.
+ *
+ * Error codes are organized into categories:
+ * - **Shared**: Used across all projects (CLI, Server, App)
+ * - **CLI-specific**: Only used in happy-cli
+ * - **App-specific**: Only used in happy-app
+ * - **Server-specific**: Only used in happy-server
+ *
+ * @example
+ * ```typescript
+ * import { ErrorCodes } from '@happy/errors';
+ *
+ * throw new AppError(ErrorCodes.AUTH_FAILED, 'Authentication failed');
+ * ```
+ */
+export const ErrorCodes = {
+    // ========================================================================
+    // SHARED - Used across all projects
+    // ========================================================================
+
+    // Authentication errors
+    /** Authentication failed (bad credentials, expired session, etc.) */
+    AUTH_FAILED: 'AUTH_FAILED',
+    /** User is not authenticated (no credentials provided) */
+    NOT_AUTHENTICATED: 'NOT_AUTHENTICATED',
+    /** Authentication token has expired */
+    TOKEN_EXPIRED: 'TOKEN_EXPIRED',
+
+    // Encryption errors
+    /** General encryption/decryption error */
+    ENCRYPTION_ERROR: 'ENCRYPTION_ERROR',
+    /** Failed to decrypt data */
+    DECRYPTION_FAILED: 'DECRYPTION_FAILED',
+
+    // Validation errors
+    /** Invalid input provided */
+    INVALID_INPUT: 'INVALID_INPUT',
+    /** Validation of data failed */
+    VALIDATION_FAILED: 'VALIDATION_FAILED',
+
+    // Resource errors
+    /** Requested resource was not found */
+    NOT_FOUND: 'NOT_FOUND',
+
+    // Internal errors
+    /** Internal error occurred */
+    INTERNAL_ERROR: 'INTERNAL_ERROR',
+
+    // ========================================================================
+    // CLI-SPECIFIC
+    // ========================================================================
+
+    // Connection/Network errors (CLI)
+    /** Failed to connect to server */
+    CONNECT_FAILED: 'CONNECT_FAILED',
+    /** No response received from server */
+    NO_RESPONSE: 'NO_RESPONSE',
+    /** Error in request configuration */
+    REQUEST_CONFIG_ERROR: 'REQUEST_CONFIG_ERROR',
+
+    // Authentication errors (CLI)
+    /** Token exchange during auth failed */
+    TOKEN_EXCHANGE_FAILED: 'TOKEN_EXCHANGE_FAILED',
+
+    // Session/Process errors (CLI)
+    /** Session not found */
+    SESSION_NOT_FOUND: 'SESSION_NOT_FOUND',
+    /** Failed to start daemon process */
+    DAEMON_START_FAILED: 'DAEMON_START_FAILED',
+    /** Process timed out */
+    PROCESS_TIMEOUT: 'PROCESS_TIMEOUT',
+    /** Version mismatch between components */
+    VERSION_MISMATCH: 'VERSION_MISMATCH',
+
+    // Resource errors (CLI)
+    /** Failed to acquire lock */
+    LOCK_ACQUISITION_FAILED: 'LOCK_ACQUISITION_FAILED',
+    /** Directory is required but not found */
+    DIRECTORY_REQUIRED: 'DIRECTORY_REQUIRED',
+    /** Resource not found (CLI-specific context) */
+    RESOURCE_NOT_FOUND: 'RESOURCE_NOT_FOUND',
+
+    // Encryption errors (CLI)
+    /** Nonce is too short for encryption */
+    NONCE_TOO_SHORT: 'NONCE_TOO_SHORT',
+
+    // Operation errors (CLI)
+    /** Operation was cancelled by user */
+    OPERATION_CANCELLED: 'OPERATION_CANCELLED',
+    /** Operation failed */
+    OPERATION_FAILED: 'OPERATION_FAILED',
+    /** Operation is not supported */
+    UNSUPPORTED_OPERATION: 'UNSUPPORTED_OPERATION',
+
+    // Queue/Stream errors (CLI)
+    /** Queue was closed */
+    QUEUE_CLOSED: 'QUEUE_CLOSED',
+    /** Operation already started */
+    ALREADY_STARTED: 'ALREADY_STARTED',
+
+    // Generic errors (CLI)
+    /** Unknown error occurred */
+    UNKNOWN_ERROR: 'UNKNOWN_ERROR',
+
+    // ========================================================================
+    // APP-SPECIFIC
+    // ========================================================================
+
+    // Authentication errors (App)
+    /** Invalid encryption key */
+    INVALID_KEY: 'INVALID_KEY',
+
+    // Socket/RPC errors (App)
+    /** WebSocket is not connected */
+    SOCKET_NOT_CONNECTED: 'SOCKET_NOT_CONNECTED',
+    /** RPC call was cancelled */
+    RPC_CANCELLED: 'RPC_CANCELLED',
+    /** RPC call failed */
+    RPC_FAILED: 'RPC_FAILED',
+    /** Data synchronization failed */
+    SYNC_FAILED: 'SYNC_FAILED',
+
+    // API errors (App)
+    /** General API error */
+    API_ERROR: 'API_ERROR',
+    /** Failed to fetch data */
+    FETCH_FAILED: 'FETCH_FAILED',
+    /** Fetch was aborted */
+    FETCH_ABORTED: 'FETCH_ABORTED',
+    /** Request timed out */
+    TIMEOUT: 'TIMEOUT',
+
+    // Resource errors (App)
+    /** Version conflict during update */
+    VERSION_CONFLICT: 'VERSION_CONFLICT',
+    /** Resource already exists */
+    ALREADY_EXISTS: 'ALREADY_EXISTS',
+
+    // Configuration errors (App)
+    /** Service or feature is not configured */
+    NOT_CONFIGURED: 'NOT_CONFIGURED',
+
+    // Subscription/Purchase errors (App)
+    /** Product not found in store */
+    PRODUCT_NOT_FOUND: 'PRODUCT_NOT_FOUND',
+
+    // Service errors (App)
+    /** General service error */
+    SERVICE_ERROR: 'SERVICE_ERROR',
+    /** Service is not connected */
+    SERVICE_NOT_CONNECTED: 'SERVICE_NOT_CONNECTED',
+
+    // ========================================================================
+    // SERVER-SPECIFIC
+    // ========================================================================
+
+    /** Authentication not initialized on server */
+    AUTH_NOT_INITIALIZED: 'AUTH_NOT_INITIALIZED',
+    /** Invariant violation (unexpected state) */
+    INVARIANT_VIOLATION: 'INVARIANT_VIOLATION',
+    /** Configuration error */
+    CONFIG_ERROR: 'CONFIG_ERROR',
+} as const;
+
+/**
+ * Type representing any valid error code from the ErrorCodes constant.
+ */
+export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];
+
+// ============================================================================
+// APP ERROR CLASS
+// ============================================================================
 
 /**
  * Options for creating an AppError instance.
