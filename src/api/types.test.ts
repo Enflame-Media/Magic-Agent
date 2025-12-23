@@ -151,7 +151,8 @@ describe('Update body schemas - HAP-352', () => {
                 body: { kind: 'friend_request', uid: 'user-123' },
                 cursor: 'cursor-123',
                 createdAt: Date.now(),
-                repeatKey: null
+                repeatKey: null,
+                counter: 1
             }
             expect(body.t).toBe('new-feed-post')
             expect(body.body.kind).toBe('friend_request')
@@ -164,7 +165,8 @@ describe('Update body schemas - HAP-352', () => {
                 body: { kind: 'text', text: 'Hello world' },
                 cursor: 'cursor-123',
                 createdAt: Date.now(),
-                repeatKey: 'repeat-key'
+                repeatKey: 'repeat-key',
+                counter: 2
             }
             expect(body.body.kind).toBe('text')
             // Type narrowing handled by discriminated union - cast for direct access
