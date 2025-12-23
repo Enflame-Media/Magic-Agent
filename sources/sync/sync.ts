@@ -182,22 +182,51 @@ class Sync {
         this.appStateSubscription = AppState.addEventListener('change', (nextAppState) => {
             if (nextAppState === 'active') {
                 log.log('📱 App became active');
-                this.purchasesSync.invalidate();
-                this.profileSync.invalidate();
-                this.machinesSync.invalidate();
-                this.pushTokenSync.invalidate();
-                this.sessionsSync.invalidate();
-                this.nativeUpdateSync.invalidate();
-                log.log('📱 App became active: Invalidating artifacts sync');
-                this.artifactsSync.invalidate();
-                this.friendsSync.invalidate();
-                this.friendRequestsSync.invalidate();
-                this.feedSync.invalidate();
-                this.todosSync.invalidate();
+                this.invalidateOnResume();
             } else {
                 log.log(`📱 App state changed to: ${nextAppState}`);
             }
         });
+    }
+
+    /**
+     * HAP-455: Prioritized staggered invalidation to prevent network spike on app resume.
+     *
+     * Syncs are organized into priority tiers:
+     * - Priority 1 (immediate): Core UX syncs - sessions, profile, settings-related
+     * - Priority 2 (100ms delay): Important but not blocking - machines, purchases
+     * - Priority 3 (200ms delay): Secondary features - artifacts, push tokens
+     * - Priority 4 (300ms delay): Social/background - friends, feed, todos
+     *
+     * This reduces concurrent network requests from 11 to ~3 per wave,
+     * preventing rate limiting, reducing battery drain, and improving perceived performance.
+     */
+    private invalidateOnResume() {
+        // Priority 1: Core UX (immediate) - user sees these immediately
+        this.sessionsSync.invalidate();
+        this.profileSync.invalidate();
+        this.nativeUpdateSync.invalidate();
+
+        // Priority 2: Important features (100ms delay)
+        setTimeout(() => {
+            this.machinesSync.invalidate();
+            this.purchasesSync.invalidate();
+        }, 100);
+
+        // Priority 3: Secondary features (200ms delay)
+        setTimeout(() => {
+            log.log('📱 App resume: Invalidating artifacts sync (staggered)');
+            this.artifactsSync.invalidate();
+            this.pushTokenSync.invalidate();
+        }, 200);
+
+        // Priority 4: Social/background features (300ms delay)
+        setTimeout(() => {
+            this.friendsSync.invalidate();
+            this.friendRequestsSync.invalidate();
+            this.feedSync.invalidate();
+            this.todosSync.invalidate();
+        }, 300);
     }
 
     async create(credentials: AuthCredentials, encryption: Encryption) {
@@ -1824,25 +1853,42 @@ class Sync {
 
     /**
      * HAP-441: Perform full invalidation (original behavior).
+     * HAP-455: Now with staggered invalidation to prevent network spike.
      * Used as fallback when delta sync fails or on fresh connections.
+     *
+     * Priority tiers for reconnection:
+     * - Priority 1 (immediate): Sessions - core data users see first
+     * - Priority 2 (100ms delay): Machines, artifacts - secondary data
+     * - Priority 3 (200ms delay): Social features, message syncs
      */
     private performFullInvalidation = () => {
+        // Priority 1: Sessions (immediate) - most visible to user
         this.sessionsSync.invalidate();
-        this.machinesSync.invalidate();
-        log.log('🔌 Full sync: Invalidating artifacts sync');
-        this.artifactsSync.invalidate();
-        this.friendsSync.invalidate();
-        this.friendRequestsSync.invalidate();
-        this.feedSync.invalidate();
-        const sessionsData = storage.getState().sessionsData;
-        if (sessionsData) {
-            for (const item of sessionsData) {
-                if (typeof item !== 'string') {
-                    this.messagesSync.get(item.id)?.invalidate();
-                    gitStatusSync.invalidate(item.id);
+
+        // Priority 2: Machines and artifacts (100ms delay)
+        setTimeout(() => {
+            this.machinesSync.invalidate();
+            log.log('🔌 Full sync: Invalidating artifacts sync (staggered)');
+            this.artifactsSync.invalidate();
+        }, 100);
+
+        // Priority 3: Social features and per-session syncs (200ms delay)
+        setTimeout(() => {
+            this.friendsSync.invalidate();
+            this.friendRequestsSync.invalidate();
+            this.feedSync.invalidate();
+
+            // Invalidate per-session message syncs and git status
+            const sessionsData = storage.getState().sessionsData;
+            if (sessionsData) {
+                for (const item of sessionsData) {
+                    if (typeof item !== 'string') {
+                        this.messagesSync.get(item.id)?.invalidate();
+                        gitStatusSync.invalidate(item.id);
+                    }
                 }
             }
-        }
+        }, 200);
     }
 
     /**
