@@ -43,7 +43,13 @@ export async function initEncryption(masterSecret: string): Promise<void> {
     }
 
     if (!masterSecret || masterSecret.length < 32) {
-        throw new Error('HANDY_MASTER_SECRET must be at least 32 characters');
+        throw new Error(
+            'HANDY_MASTER_SECRET must be at least 32 characters. ' +
+            'Generate a secure secret with: openssl rand -hex 32. ' +
+            'For local development, add it to .dev.vars. ' +
+            'For production, use: wrangler secret put HANDY_MASTER_SECRET. ' +
+            'See docs/SECRETS.md for detailed configuration instructions.'
+        );
     }
 
     // Derive a 32-byte master key from the secret using HKDF
@@ -94,7 +100,13 @@ export function resetEncryption(): void {
  */
 async function deriveKey(path: string[]): Promise<Uint8Array> {
     if (!masterKey) {
-        throw new Error('Encryption not initialized. Call initEncryption() first.');
+        throw new Error(
+            'Encryption not initialized. ' +
+            'In Cloudflare Workers, initEncryption(env.HANDY_MASTER_SECRET) must be called at startup. ' +
+            'This is typically done in src/middleware/encryption.ts or alongside auth initialization. ' +
+            'Ensure initEncryption() is called in your Worker fetch handler before any encryption operations. ' +
+            'See docs/SECRETS.md for HANDY_MASTER_SECRET configuration.'
+        );
     }
 
     const pathString = path.join('/');
