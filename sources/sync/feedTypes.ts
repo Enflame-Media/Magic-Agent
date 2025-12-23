@@ -1,13 +1,9 @@
 import { z } from 'zod';
+import { FeedBodySchema } from '@happy/protocol';
 
-// Feed body schema matching backend exactly
-export const FeedBodySchema = z.discriminatedUnion('kind', [
-    z.object({ kind: z.literal('friend_request'), uid: z.string() }),
-    z.object({ kind: z.literal('friend_accepted'), uid: z.string() }),
-    z.object({ kind: z.literal('text'), text: z.string() })
-]);
-
-export type FeedBody = z.infer<typeof FeedBodySchema>;
+// Re-export FeedBodySchema from @happy/protocol for consistency
+// This is the canonical schema for feed body types
+export { FeedBodySchema, type FeedBody } from '@happy/protocol';
 
 // Feed item schema
 export const FeedItemSchema = z.object({

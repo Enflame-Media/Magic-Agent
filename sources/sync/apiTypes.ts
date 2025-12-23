@@ -13,7 +13,7 @@
 import { z } from 'zod';
 import { GitHubProfileSchema as LocalGitHubProfileSchema, ImageRefSchema as LocalImageRefSchema } from './profile';
 import { RelationshipStatusSchema as LocalRelationshipStatusSchema, UserProfileSchema as LocalUserProfileSchema } from './friendTypes';
-import { FeedBodySchema as LocalFeedBodySchema } from './feedTypes';
+import { FeedBodySchema as ProtocolFeedBodySchema, type FeedBody as ProtocolFeedBody } from '@happy/protocol';
 
 // ============================================================================
 // Re-export protocol schemas from @happy/protocol
@@ -115,5 +115,5 @@ export type RelationshipStatus = z.infer<typeof LocalRelationshipStatusSchema>;
 export const UserProfileSchema = LocalUserProfileSchema;
 export type UserProfile = z.infer<typeof LocalUserProfileSchema>;
 
-export const FeedBodySchema = LocalFeedBodySchema;
-export type FeedBody = z.infer<typeof LocalFeedBodySchema>;
+export const FeedBodySchema = ProtocolFeedBodySchema;
+export type FeedBody = ProtocolFeedBody;
