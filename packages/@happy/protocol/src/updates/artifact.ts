@@ -11,6 +11,22 @@ import { VersionedValueSchema } from '../common';
  * New artifact update
  *
  * Sent when a new artifact (file/output) is created.
+ *
+ * @example
+ * ```typescript
+ * const newArtifact = ApiNewArtifactSchema.parse({
+ *     t: 'new-artifact',
+ *     artifactId: 'artifact_code1',
+ *     header: 'encryptedHeader',
+ *     headerVersion: 1,
+ *     body: 'encryptedCodeBody',
+ *     bodyVersion: 1,
+ *     dataEncryptionKey: 'base64EncodedKey==',
+ *     seq: 5,
+ *     createdAt: Date.now(),
+ *     updatedAt: Date.now()
+ * });
+ * ```
  */
 export const ApiNewArtifactSchema = z.object({
     t: z.literal('new-artifact'),
@@ -31,6 +47,15 @@ export type ApiNewArtifact = z.infer<typeof ApiNewArtifactSchema>;
  * Update artifact
  *
  * Sent when artifact header or body changes.
+ *
+ * @example
+ * ```typescript
+ * const artifactUpdate = ApiUpdateArtifactSchema.parse({
+ *     t: 'update-artifact',
+ *     artifactId: 'artifact_code1',
+ *     body: { version: 2, value: 'updatedEncryptedBody' }
+ * });
+ * ```
  */
 export const ApiUpdateArtifactSchema = z.object({
     t: z.literal('update-artifact'),
@@ -45,6 +70,14 @@ export type ApiUpdateArtifact = z.infer<typeof ApiUpdateArtifactSchema>;
  * Delete artifact
  *
  * Sent when an artifact is deleted.
+ *
+ * @example
+ * ```typescript
+ * const deleteArtifact = ApiDeleteArtifactSchema.parse({
+ *     t: 'delete-artifact',
+ *     artifactId: 'artifact_code1'
+ * });
+ * ```
  */
 export const ApiDeleteArtifactSchema = z.object({
     t: z.literal('delete-artifact'),

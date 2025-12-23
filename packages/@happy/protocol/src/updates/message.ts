@@ -11,6 +11,17 @@ import { EncryptedContentSchema } from '../common';
  * API Message schema - encrypted message structure
  *
  * Messages are stored encrypted; the server cannot read content.
+ *
+ * @example
+ * ```typescript
+ * const message = ApiMessageSchema.parse({
+ *     id: 'msg_xyz789',
+ *     seq: 42,
+ *     localId: 'local_123',
+ *     content: { t: 'encrypted', c: 'base64EncryptedContent==' },
+ *     createdAt: Date.now()
+ * });
+ * ```
  */
 export const ApiMessageSchema = z.object({
     id: z.string(),
@@ -27,6 +38,20 @@ export type ApiMessage = z.infer<typeof ApiMessageSchema>;
  *
  * CRITICAL: Uses 'sid' (not 'sessionId') per client expectation.
  * This was the source of the bug that motivated HAP-383.
+ *
+ * @example
+ * ```typescript
+ * const newMessage = ApiUpdateNewMessageSchema.parse({
+ *     t: 'new-message',
+ *     sid: 'session_abc123',
+ *     message: {
+ *         id: 'msg_xyz789',
+ *         seq: 42,
+ *         content: { t: 'encrypted', c: 'base64EncryptedContent==' },
+ *         createdAt: Date.now()
+ *     }
+ * });
+ * ```
  */
 export const ApiUpdateNewMessageSchema = z.object({
     t: z.literal('new-message'),
@@ -40,6 +65,14 @@ export type ApiUpdateNewMessage = z.infer<typeof ApiUpdateNewMessageSchema>;
  * Delete session update
  *
  * Sent when a session is archived or deleted.
+ *
+ * @example
+ * ```typescript
+ * const deleteSession = ApiDeleteSessionSchema.parse({
+ *     t: 'delete-session',
+ *     sid: 'session_abc123'
+ * });
+ * ```
  */
 export const ApiDeleteSessionSchema = z.object({
     t: z.literal('delete-session'),

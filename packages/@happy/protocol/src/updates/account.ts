@@ -11,6 +11,21 @@ import { GitHubProfileSchema, ImageRefSchema, NullableVersionedValueSchema } fro
  * Update account
  *
  * Sent when user account settings or profile changes.
+ *
+ * @example
+ * ```typescript
+ * const accountUpdate = ApiUpdateAccountSchema.parse({
+ *     t: 'update-account',
+ *     id: 'user_abc123',
+ *     firstName: 'Jane',
+ *     lastName: 'Doe',
+ *     avatar: {
+ *         path: 'avatars/user_abc123/profile.jpg',
+ *         url: 'https://cdn.example.com/avatars/user_abc123/profile.jpg'
+ *     },
+ *     github: { id: 12345678, login: 'janedoe', name: 'Jane Doe' }
+ * });
+ * ```
  */
 export const ApiUpdateAccountSchema = z.object({
     t: z.literal('update-account'),

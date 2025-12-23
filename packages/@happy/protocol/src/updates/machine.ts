@@ -11,6 +11,24 @@ import { VersionedValueSchema } from '../common';
  * New machine update
  *
  * Sent when a new CLI machine is registered.
+ *
+ * @example
+ * ```typescript
+ * const newMachine = ApiNewMachineSchema.parse({
+ *     t: 'new-machine',
+ *     machineId: 'machine_laptop1',
+ *     seq: 1,
+ *     metadata: 'encryptedMachineMetadata',
+ *     metadataVersion: 1,
+ *     daemonState: null,
+ *     daemonStateVersion: 0,
+ *     dataEncryptionKey: 'base64EncodedKey==',
+ *     active: true,
+ *     activeAt: Date.now(),
+ *     createdAt: Date.now(),
+ *     updatedAt: Date.now()
+ * });
+ * ```
  */
 export const ApiNewMachineSchema = z.object({
     t: z.literal('new-machine'),
@@ -33,6 +51,17 @@ export type ApiNewMachine = z.infer<typeof ApiNewMachineSchema>;
  * Update machine state
  *
  * Sent when machine metadata or daemon state changes.
+ *
+ * @example
+ * ```typescript
+ * const machineUpdate = ApiUpdateMachineStateSchema.parse({
+ *     t: 'update-machine',
+ *     machineId: 'machine_laptop1',
+ *     daemonState: { version: 2, value: 'encryptedDaemonState' },
+ *     active: true,
+ *     activeAt: Date.now()
+ * });
+ * ```
  */
 export const ApiUpdateMachineStateSchema = z.object({
     t: z.literal('update-machine'),

@@ -28,6 +28,23 @@ import { ApiRelationshipUpdatedSchema, ApiNewFeedPostSchema, ApiKvBatchUpdateSch
  *
  * This is the main type for all persistent updates sent via WebSocket.
  * Uses 't' (type) as the discriminator field.
+ *
+ * @example
+ * ```typescript
+ * // Parse any incoming WebSocket update
+ * const update = ApiUpdateSchema.parse(incomingData);
+ *
+ * // Type-safe handling based on discriminator
+ * switch (update.t) {
+ *     case 'new-session':
+ *         console.log('New session:', update.id);
+ *         break;
+ *     case 'new-message':
+ *         console.log('Message in session:', update.sid);
+ *         break;
+ *     // ... handle other update types
+ * }
+ * ```
  */
 export const ApiUpdateSchema = z.discriminatedUnion('t', [
     ApiUpdateNewMessageSchema,
