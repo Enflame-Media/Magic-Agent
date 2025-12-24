@@ -29,7 +29,7 @@ yarn install
 
 # Configure local secrets
 cp .dev.vars.example .dev.vars
-# Edit .dev.vars and add your HANDY_MASTER_SECRET
+# Edit .dev.vars and add your HAPPY_MASTER_SECRET
 
 # Start local development server
 yarn dev
@@ -171,7 +171,7 @@ yarn deploy:prod      # Deploy to production
 
 ```bash
 # 1. Set secrets (first time only)
-wrangler secret put HANDY_MASTER_SECRET --env prod
+wrangler secret put HAPPY_MASTER_SECRET --env prod
 
 # 2. Deploy
 yarn deploy:prod

@@ -240,7 +240,7 @@ wrangler d1 execute happy-prod --remote --command="SELECT name FROM sqlite_maste
 
 | Secret | Required | Purpose |
 |--------|----------|---------|
-| `HANDY_MASTER_SECRET` | Yes | Auth token generation |
+| `HAPPY_MASTER_SECRET` | Yes | Auth token generation |
 | `ELEVENLABS_API_KEY` | No | Voice synthesis |
 | `GITHUB_CLIENT_SECRET` | No | GitHub OAuth |
 | `GITHUB_WEBHOOK_SECRET` | No | GitHub webhooks |
@@ -249,10 +249,10 @@ wrangler d1 execute happy-prod --remote --command="SELECT name FROM sqlite_maste
 
 ```bash
 # Development
-wrangler secret put HANDY_MASTER_SECRET --env dev
+wrangler secret put HAPPY_MASTER_SECRET --env dev
 
 # Production
-wrangler secret put HANDY_MASTER_SECRET --env prod
+wrangler secret put HAPPY_MASTER_SECRET --env prod
 ```
 
 ### List Secrets
@@ -267,7 +267,7 @@ wrangler secret list --env prod
 
 ### Rotate Secrets
 
-> **WARNING**: Rotating `HANDY_MASTER_SECRET` invalidates ALL existing auth tokens.
+> **WARNING**: Rotating `HAPPY_MASTER_SECRET` invalidates ALL existing auth tokens.
 
 1. Generate new secret:
    ```bash
@@ -276,7 +276,7 @@ wrangler secret list --env prod
 
 2. Set new secret:
    ```bash
-   wrangler secret put HANDY_MASTER_SECRET --env prod
+   wrangler secret put HAPPY_MASTER_SECRET --env prod
    ```
 
 3. Deploy (optional but recommended):

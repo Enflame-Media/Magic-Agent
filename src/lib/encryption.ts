@@ -2,7 +2,7 @@
  * Encryption utilities for Cloudflare Workers
  *
  * This module provides symmetric encryption/decryption using TweetNaCl's secretbox
- * (XSalsa20-Poly1305) with key derivation from HANDY_MASTER_SECRET.
+ * (XSalsa20-Poly1305) with key derivation from HAPPY_MASTER_SECRET.
  *
  * The API matches happy-server's privacy-kit KeyTree pattern:
  * - Path-based key derivation (e.g., ['user', userId, 'vendors', vendor, 'token'])
@@ -26,15 +26,17 @@ let initialized = false;
 /**
  * Initialize the encryption module with the master secret.
  *
- * Must be called once at Worker startup with env.HANDY_MASTER_SECRET.
+ * Must be called once at Worker startup with the master secret.
  *
- * @param masterSecret - The HANDY_MASTER_SECRET from environment
+ * @param masterSecret - The master secret from getMasterSecret(env)
  * @throws Error if masterSecret is empty or invalid
  *
  * @example
  * ```typescript
  * // In Worker fetch handler or middleware
- * await initEncryption(env.HANDY_MASTER_SECRET);
+ * import { getMasterSecret } from '@/config/env';
+ * const secret = getMasterSecret(env);
+ * if (secret) await initEncryption(secret);
  * ```
  */
 export async function initEncryption(masterSecret: string): Promise<void> {
@@ -44,10 +46,10 @@ export async function initEncryption(masterSecret: string): Promise<void> {
 
     if (!masterSecret || masterSecret.length < 32) {
         throw new Error(
-            'HANDY_MASTER_SECRET must be at least 32 characters. ' +
+            'HAPPY_MASTER_SECRET must be at least 32 characters. ' +
             'Generate a secure secret with: openssl rand -hex 32. ' +
             'For local development, add it to .dev.vars. ' +
-            'For production, use: wrangler secret put HANDY_MASTER_SECRET. ' +
+            'For production, use: wrangler secret put HAPPY_MASTER_SECRET. ' +
             'See docs/SECRETS.md for detailed configuration instructions.'
         );
     }
@@ -102,10 +104,10 @@ async function deriveKey(path: string[]): Promise<Uint8Array> {
     if (!masterKey) {
         throw new Error(
             'Encryption not initialized. ' +
-            'In Cloudflare Workers, initEncryption(env.HANDY_MASTER_SECRET) must be called at startup. ' +
+            'In Cloudflare Workers, initEncryption must be called at startup. ' +
             'This is typically done in src/middleware/encryption.ts or alongside auth initialization. ' +
             'Ensure initEncryption() is called in your Worker fetch handler before any encryption operations. ' +
-            'See docs/SECRETS.md for HANDY_MASTER_SECRET configuration.'
+            'See docs/SECRETS.md for HAPPY_MASTER_SECRET configuration.'
         );
     }
 

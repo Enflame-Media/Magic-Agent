@@ -231,7 +231,7 @@ function createMockDurableObjectState(existingWebSockets: WebSocket[] = []): Dur
 function createMockEnv() {
     return {
         DB: {} as D1Database,
-        HANDY_MASTER_SECRET: 'test-secret-32-bytes-for-tests!',
+        HAPPY_MASTER_SECRET: 'test-secret-32-bytes-for-tests!',
         ENVIRONMENT: 'development' as const,
     };
 }

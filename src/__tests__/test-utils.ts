@@ -224,7 +224,7 @@ export function createMockDurableObjectNamespace() {
 export function createMockEnv() {
     return {
         ENVIRONMENT: 'development' as const,
-        HANDY_MASTER_SECRET: 'test-secret-for-vitest-tests',
+        HAPPY_MASTER_SECRET: 'test-secret-for-vitest-tests',
         DB: createMockDb(),
         UPLOADS: createMockR2(),
         CONNECTION_MANAGER: createMockDurableObjectNamespace(),

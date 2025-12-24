@@ -174,19 +174,21 @@ async function exportPublicKey(publicKey: CryptoKey): Promise<string> {
 /**
  * Initialize the auth module with master secret
  *
- * Must be called once during Worker initialization with the HANDY_MASTER_SECRET.
+ * Must be called once during Worker initialization with the master secret.
  * Derives deterministic Ed25519 keys from the seed for persistent token generation.
  *
- * @param masterSecret - The master secret for token generation (from env.HANDY_MASTER_SECRET)
+ * @param masterSecret - The master secret for token generation (from getMasterSecret(env))
  * @param ephemeralTtl - TTL for ephemeral tokens in milliseconds (default: 5 minutes)
  * @returns Promise that resolves when initialization is complete
  *
  * @example
  * ```typescript
  * // In your worker handler
+ * import { getMasterSecret } from '@/config/env';
  * export default {
  *     async fetch(request: Request, env: Env) {
- *         await initAuth(env.HANDY_MASTER_SECRET);
+ *         const secret = getMasterSecret(env);
+ *         if (secret) await initAuth(secret);
  *         // ... rest of your handler
  *     }
  * }
@@ -236,10 +238,10 @@ export function getPublicKey(): string {
     if (!authState) {
         throw new Error(
             'Auth module not initialized. ' +
-            'In Cloudflare Workers, initAuth(env.HANDY_MASTER_SECRET) must be called before accessing auth functions. ' +
+            'In Cloudflare Workers, initAuth must be called before accessing auth functions. ' +
             'This is typically done in src/middleware/auth.ts which runs before route handlers. ' +
             'Ensure your route is registered after the auth middleware in src/index.ts. ' +
-            'See docs/SECRETS.md for HANDY_MASTER_SECRET configuration.'
+            'See docs/SECRETS.md for HAPPY_MASTER_SECRET configuration.'
         );
     }
     return authState.persistentPublicKey;
@@ -255,10 +257,10 @@ export function getEphemeralPublicKey(): string {
     if (!authState) {
         throw new Error(
             'Auth module not initialized. ' +
-            'In Cloudflare Workers, initAuth(env.HANDY_MASTER_SECRET) must be called before accessing auth functions. ' +
+            'In Cloudflare Workers, initAuth must be called before accessing auth functions. ' +
             'This is typically done in src/middleware/auth.ts which runs before route handlers. ' +
             'Ensure your route is registered after the auth middleware in src/index.ts. ' +
-            'See docs/SECRETS.md for HANDY_MASTER_SECRET configuration.'
+            'See docs/SECRETS.md for HAPPY_MASTER_SECRET configuration.'
         );
     }
     return authState.ephemeralPublicKey;
@@ -285,10 +287,10 @@ export async function createToken(userId: string, extras?: TokenExtras): Promise
     if (!authState) {
         throw new Error(
             'Auth module not initialized. ' +
-            'In Cloudflare Workers, initAuth(env.HANDY_MASTER_SECRET) must be called before accessing auth functions. ' +
+            'In Cloudflare Workers, initAuth must be called before accessing auth functions. ' +
             'This is typically done in src/middleware/auth.ts which runs before route handlers. ' +
             'Ensure your route is registered after the auth middleware in src/index.ts. ' +
-            'See docs/SECRETS.md for HANDY_MASTER_SECRET configuration.'
+            'See docs/SECRETS.md for HAPPY_MASTER_SECRET configuration.'
         );
     }
 
@@ -362,10 +364,10 @@ export async function verifyToken(
         console.error('[Auth] ERROR: Auth module not initialized!');
         throw new Error(
             'Auth module not initialized. ' +
-            'In Cloudflare Workers, initAuth(env.HANDY_MASTER_SECRET) must be called before accessing auth functions. ' +
+            'In Cloudflare Workers, initAuth must be called before accessing auth functions. ' +
             'This is typically done in src/middleware/auth.ts which runs before route handlers. ' +
             'Ensure your route is registered after the auth middleware in src/index.ts. ' +
-            'See docs/SECRETS.md for HANDY_MASTER_SECRET configuration.'
+            'See docs/SECRETS.md for HAPPY_MASTER_SECRET configuration.'
         );
     }
 
@@ -442,10 +444,10 @@ export async function createEphemeralToken(userId: string, purpose: string): Pro
     if (!authState) {
         throw new Error(
             'Auth module not initialized. ' +
-            'In Cloudflare Workers, initAuth(env.HANDY_MASTER_SECRET) must be called before accessing auth functions. ' +
+            'In Cloudflare Workers, initAuth must be called before accessing auth functions. ' +
             'This is typically done in src/middleware/auth.ts which runs before route handlers. ' +
             'Ensure your route is registered after the auth middleware in src/index.ts. ' +
-            'See docs/SECRETS.md for HANDY_MASTER_SECRET configuration.'
+            'See docs/SECRETS.md for HAPPY_MASTER_SECRET configuration.'
         );
     }
 
@@ -480,10 +482,10 @@ export async function verifyEphemeralToken(
     if (!authState) {
         throw new Error(
             'Auth module not initialized. ' +
-            'In Cloudflare Workers, initAuth(env.HANDY_MASTER_SECRET) must be called before accessing auth functions. ' +
+            'In Cloudflare Workers, initAuth must be called before accessing auth functions. ' +
             'This is typically done in src/middleware/auth.ts which runs before route handlers. ' +
             'Ensure your route is registered after the auth middleware in src/index.ts. ' +
-            'See docs/SECRETS.md for HANDY_MASTER_SECRET configuration.'
+            'See docs/SECRETS.md for HAPPY_MASTER_SECRET configuration.'
         );
     }
 

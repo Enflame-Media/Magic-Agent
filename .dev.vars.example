@@ -8,7 +8,7 @@
 # NEVER commit .dev.vars (it's gitignored)
 #
 # For production, use Cloudflare Secrets:
-#   wrangler secret put HANDY_MASTER_SECRET --env prod
+#   wrangler secret put HAPPY_MASTER_SECRET --env prod
 #
 # To generate secrets, run from happy-server/:
 #   ./scripts/generate-secrets.sh
@@ -26,7 +26,7 @@ ENVIRONMENT=development
 # Master secret for authentication token generation
 # Generate with: openssl rand -hex 32
 # WARNING: Changing this invalidates ALL existing auth tokens
-HANDY_MASTER_SECRET=your-32-byte-hex-secret-here
+HAPPY_MASTER_SECRET=your-32-byte-hex-secret-here
 
 # ============================================================
 # OPTIONAL SECRETS

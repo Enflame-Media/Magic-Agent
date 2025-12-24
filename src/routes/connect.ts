@@ -12,6 +12,7 @@ import {
     decryptString,
 } from '@/lib/encryption';
 import { getEventRouter, buildUpdateAccountUpdate } from '@/lib/eventRouter';
+import { getMasterSecret } from '@/config/env';
 import {
     GitHubOAuthParamsResponseSchema,
     GitHubOAuthCallbackQuerySchema,
@@ -84,7 +85,10 @@ interface Env {
     GITHUB_CLIENT_SECRET?: string;
     GITHUB_REDIRECT_URL?: string;
     GITHUB_WEBHOOK_SECRET?: string;
-    HANDY_MASTER_SECRET: string;
+    /** Master secret (preferred) */
+    HAPPY_MASTER_SECRET?: string;
+    /** Master secret (deprecated) */
+    HANDY_MASTER_SECRET?: string;
     CONNECTION_MANAGER: DurableObjectNamespace;
 }
 
@@ -155,7 +159,7 @@ connectRoutes.openapi(githubOAuthParamsRoute, async (c) => {
         return c.json({ error: 'GitHub OAuth not configured' }, 400);
     }
 
-    // Generate ephemeral state token (placeholder - should use auth.createGithubToken)
+    // Generate ephemeral state token (placeholder - should use auth.createGitHubToken)
     // For now, just use a simple implementation
     const state = `state_${userId}_${Date.now()}`;
 
@@ -294,8 +298,9 @@ connectRoutes.openapi(githubOAuthCallbackRoute, async (c) => {
         const db = getDb(c.env.DB);
 
         // Initialize encryption for storing the access token
-        if (!isEncryptionInitialized()) {
-            await initEncryption(c.env.HANDY_MASTER_SECRET);
+        const secret = getMasterSecret(c.env);
+        if (!isEncryptionInitialized() && secret) {
+            await initEncryption(secret);
         }
 
         // Encrypt the access token for storage
@@ -765,8 +770,9 @@ connectRoutes.openapi(registerAITokenRoute, async (c) => {
     const db = getDb(c.env.DB);
 
     // Initialize encryption if not already done
-    if (!isEncryptionInitialized()) {
-        await initEncryption(c.env.HANDY_MASTER_SECRET);
+    const secret = getMasterSecret(c.env);
+    if (!isEncryptionInitialized() && secret) {
+        await initEncryption(secret);
     }
 
     // Encrypt token using path-based key derivation (matches happy-server pattern)
@@ -857,8 +863,9 @@ connectRoutes.openapi(getAITokenRoute, async (c) => {
     }
 
     // Initialize encryption if not already done
-    if (!isEncryptionInitialized()) {
-        await initEncryption(c.env.HANDY_MASTER_SECRET);
+    const secret = getMasterSecret(c.env);
+    if (!isEncryptionInitialized() && secret) {
+        await initEncryption(secret);
     }
 
     // Decrypt token using path-based key derivation (matches happy-server pattern)
@@ -961,8 +968,9 @@ connectRoutes.openapi(listAITokensRoute, async (c) => {
     });
 
     // Initialize encryption if not already done
-    if (!isEncryptionInitialized()) {
-        await initEncryption(c.env.HANDY_MASTER_SECRET);
+    const secret = getMasterSecret(c.env);
+    if (!isEncryptionInitialized() && secret) {
+        await initEncryption(secret);
     }
 
     // Decrypt all tokens using path-based key derivation

@@ -86,7 +86,9 @@ describe('WebSocket Routes', () => {
                 },
             });
 
-            await expectOneOfStatus(res, [401], [500]);
+            // WebSocket routes return plain text errors, not JSON
+            // Accept both 401 (auth failed) and 500 (server config issue)
+            expect([401, 500]).toContain(res.status);
         });
 
         it('should accept valid WebSocket upgrade request', async () => {
@@ -448,7 +450,7 @@ describe('WebSocket Routes', () => {
                 headers: authHeader('valid-token'),
             });
 
-            // In mock environment, HANDY_MASTER_SECRET may be undefined causing 500
+            // In mock environment, HAPPY_MASTER_SECRET may be undefined causing 500
             const body = await expectOneOfStatus<{ ticket: string }>(res, [200], [500]);
             if (body) {
                 expect(body.ticket).toBeDefined();
@@ -471,7 +473,7 @@ describe('WebSocket Routes', () => {
                 headers: authHeader('invalid-token'),
             });
 
-            // Should be 401, but may be 500 if HANDY_MASTER_SECRET unavailable
+            // Should be 401, but may be 500 if HAPPY_MASTER_SECRET unavailable
             await expectOneOfStatus(res, [401], [500]);
         });
 
@@ -481,7 +483,7 @@ describe('WebSocket Routes', () => {
                 headers: authHeader('valid-token'),
             });
 
-            // In mock environment, HANDY_MASTER_SECRET may be undefined causing 500
+            // In mock environment, HAPPY_MASTER_SECRET may be undefined causing 500
             const body = await expectOneOfStatus<{ ticket: string }>(res, [200], [500]);
             if (body) {
                 // Ticket should not contain standard base64 characters that need URL encoding
@@ -502,7 +504,7 @@ describe('WebSocket Routes', () => {
                 headers: authHeader('valid-token'),
             });
 
-            // In mock environment, HANDY_MASTER_SECRET may be undefined causing 500
+            // In mock environment, HAPPY_MASTER_SECRET may be undefined causing 500
             const body1 = await expectOneOfStatus<{ ticket: string }>(res1, [200], [500]);
             const body2 = await expectOneOfStatus<{ ticket: string }>(res2, [200], [500]);
 
@@ -521,7 +523,7 @@ describe('WebSocket Routes', () => {
                 headers: authHeader('valid-token'),
             });
 
-            // In mock environment, HANDY_MASTER_SECRET may be undefined
+            // In mock environment, HAPPY_MASTER_SECRET may be undefined
             const ticketBody = await expectOneOfStatus<{ ticket: string }>(ticketRes, [200], [500]);
             if (!ticketBody) return; // Skip WebSocket test if ticket generation failed
 
@@ -538,7 +540,7 @@ describe('WebSocket Routes', () => {
             // - 101 = WebSocket upgrade successful
             // - 200 = Response (mock DO)
             // - 400 = Client error (mock issues)
-            // - 500 = HANDY_MASTER_SECRET not available in mock env
+            // - 500 = HAPPY_MASTER_SECRET not available in mock env
             await expectOneOfStatus(wsRes, [101, 200, 400], [500]);
         });
 
@@ -557,7 +559,7 @@ describe('WebSocket Routes', () => {
                 },
             });
 
-            // Should reject with 401, but may return 500 in mock env if HANDY_MASTER_SECRET unavailable
+            // Should reject with 401, but may return 500 in mock env if HAPPY_MASTER_SECRET unavailable
             await expectOneOfStatus(wsRes, [401], [500]);
         }, 10000); // Extended timeout for expiration test
 
@@ -607,7 +609,7 @@ describe('WebSocket Routes', () => {
                 headers: authHeader('valid-token'),
             });
 
-            // In mock environment, HANDY_MASTER_SECRET may be undefined
+            // In mock environment, HAPPY_MASTER_SECRET may be undefined
             const ticketBody = await expectOneOfStatus<{ ticket: string }>(ticketRes, [200], [500]);
             if (!ticketBody) return; // Skip WebSocket test if ticket generation failed
 
@@ -630,7 +632,7 @@ describe('WebSocket Routes', () => {
                 headers: authHeader('valid-token'),
             });
 
-            // In mock environment, HANDY_MASTER_SECRET may be undefined
+            // In mock environment, HAPPY_MASTER_SECRET may be undefined
             const ticketBody = await expectOneOfStatus<{ ticket: string }>(ticketRes, [200], [500]);
             if (!ticketBody) return; // Skip WebSocket test if ticket generation failed
 
@@ -660,7 +662,7 @@ describe('WebSocket Routes', () => {
                 headers: authHeader('valid-token'),
             });
 
-            // In mock environment, may return 500 if HANDY_MASTER_SECRET unavailable
+            // In mock environment, may return 500 if HAPPY_MASTER_SECRET unavailable
             // or 200 if rate limit KV not configured (passes through)
             await expectOneOfStatus<{ ticket: string }>(res, [200], [500]);
         });

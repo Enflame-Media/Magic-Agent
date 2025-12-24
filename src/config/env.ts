@@ -15,11 +15,17 @@ export interface Env {
     ENVIRONMENT?: 'development' | 'staging' | 'production';
 
     /**
-     * Master secret for token generation
+     * Master secret for token generation (preferred)
      * Used to generate cryptographic keys for persistent tokens
-     * @required
+     * @required (either this or HANDY_MASTER_SECRET)
      */
-    HANDY_MASTER_SECRET: string;
+    HAPPY_MASTER_SECRET?: string;
+
+    /**
+     * Master secret for token generation (deprecated)
+     * @deprecated Use HAPPY_MASTER_SECRET instead. This will be removed in a future version.
+     */
+    HANDY_MASTER_SECRET?: string;
 
     /**
      * Trusted origins for CORS
@@ -42,18 +48,74 @@ export interface Env {
     TOKEN_CACHE?: KVNamespace;
 }
 
+// Track whether deprecation warning has been logged (per Worker instance)
+let deprecationWarningLogged = false;
+
+/**
+ * Get the master secret from environment with backward compatibility.
+ *
+ * Prefers HAPPY_MASTER_SECRET (new standard) but falls back to HANDY_MASTER_SECRET
+ * (legacy) with a deprecation warning.
+ *
+ * @param env - Environment object containing secrets
+ * @returns The master secret string, or undefined if neither is set
+ *
+ * @example
+ * ```typescript
+ * const secret = getMasterSecret(c.env);
+ * if (secret) {
+ *     await initAuth(secret);
+ * }
+ * ```
+ */
+export function getMasterSecret(env: Partial<Env> | undefined): string | undefined {
+    // Handle undefined env (e.g., in tests without environment bindings)
+    if (!env) {
+        return undefined;
+    }
+
+    // Prefer the new HAPPY_MASTER_SECRET
+    if (env.HAPPY_MASTER_SECRET) {
+        return env.HAPPY_MASTER_SECRET;
+    }
+
+    // Fall back to legacy HANDY_MASTER_SECRET with deprecation warning
+    if (env.HANDY_MASTER_SECRET) {
+        if (!deprecationWarningLogged) {
+            console.warn(
+                '[DEPRECATED] HANDY_MASTER_SECRET is deprecated. ' +
+                'Please migrate to HAPPY_MASTER_SECRET. ' +
+                'For local development, update your .dev.vars file. ' +
+                'For production, run: wrangler secret put HAPPY_MASTER_SECRET --env prod'
+            );
+            deprecationWarningLogged = true;
+        }
+        return env.HANDY_MASTER_SECRET;
+    }
+
+    return undefined;
+}
+
+/**
+ * Reset deprecation warning state (for testing only)
+ */
+export function resetDeprecationWarning(): void {
+    deprecationWarningLogged = false;
+}
+
 /**
  * Type guard to validate environment configuration
  * @param env - Environment object to validate
  * @returns True if all required variables are present
  */
 export function validateEnv(env: Partial<Env>): env is Env {
-    if (!env.HANDY_MASTER_SECRET) {
+    const secret = getMasterSecret(env);
+    if (!secret) {
         throw new Error(
-            'HANDY_MASTER_SECRET is required. ' +
+            'HAPPY_MASTER_SECRET is required (HANDY_MASTER_SECRET is deprecated). ' +
             'Generate a 32+ character secret with: openssl rand -hex 32. ' +
             'For local development, add it to .dev.vars file. ' +
-            'For production, use: wrangler secret put HANDY_MASTER_SECRET. ' +
+            'For production, use: wrangler secret put HAPPY_MASTER_SECRET. ' +
             'See docs/SECRETS.md for detailed setup instructions.'
         );
     }

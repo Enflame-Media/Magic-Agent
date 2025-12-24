@@ -70,7 +70,7 @@ function createTestEnv(overrides: {
 } = {}) {
     return {
         ENVIRONMENT: overrides.ENVIRONMENT ?? 'development',
-        HANDY_MASTER_SECRET: 'test-secret-for-vitest-tests',
+        HAPPY_MASTER_SECRET: 'test-secret-for-vitest-tests',
         DB: {} as D1Database,
         UPLOADS: createMockR2(),
         CONNECTION_MANAGER: createMockDurableObjectNamespace(),
@@ -1105,7 +1105,7 @@ describe('Voice Routes', () => {
                 // When ENVIRONMENT is undefined, isDevelopment will be false
                 // So it should require revenueCatPublicKey
                 const env = {
-                    HANDY_MASTER_SECRET: 'test-secret-for-vitest-tests',
+                    HAPPY_MASTER_SECRET: 'test-secret-for-vitest-tests',
                     DB: {} as D1Database,
                     UPLOADS: createMockR2(),
                     CONNECTION_MANAGER: createMockDurableObjectNamespace(),

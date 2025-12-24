@@ -88,13 +88,15 @@ async function importHmacKey(secret: string): Promise<CryptoKey> {
  * The ticket can be used once to establish a WebSocket connection.
  *
  * @param userId - The authenticated user's ID
- * @param secret - The HANDY_MASTER_SECRET for signing
+ * @param secret - The master secret from getMasterSecret(env)
  * @param ttlMs - Ticket validity period in milliseconds (default: 30s)
  * @returns Signed ticket string in format: base64url(payload).base64url(signature)
  *
  * @example
  * ```typescript
- * const ticket = await createTicket('user_abc123', env.HANDY_MASTER_SECRET);
+ * import { getMasterSecret } from '@/config/env';
+ * const secret = getMasterSecret(env);
+ * const ticket = await createTicket('user_abc123', secret);
  * // Returns: "eyJ1c2VySWQiOiJ1c2VyX2FiYzEyMyIsImV4cCI6MTcwMjMxMjM0NTY3OCwibm9uY2UiOiJhYmMxMjMifQ.HMAC_SIGNATURE"
  * ```
  */
@@ -129,12 +131,14 @@ export async function createTicket(
  * Includes a small clock skew tolerance for distributed systems.
  *
  * @param ticket - The ticket string to verify
- * @param secret - The HANDY_MASTER_SECRET for verification
+ * @param secret - The master secret from getMasterSecret(env)
  * @returns VerifiedTicket with userId if valid, null if invalid or expired
  *
  * @example
  * ```typescript
- * const result = await verifyTicket(ticket, env.HANDY_MASTER_SECRET);
+ * import { getMasterSecret } from '@/config/env';
+ * const secret = getMasterSecret(env);
+ * const result = await verifyTicket(ticket, secret);
  * if (result) {
  *     console.log('Valid ticket for user:', result.userId);
  * } else {

@@ -31,14 +31,14 @@ This guide covers common issues and their solutions for Happy Server Workers dev
 
    # If missing, create from template
    cp .dev.vars.example .dev.vars
-   # Edit and add HANDY_MASTER_SECRET
+   # Edit and add HAPPY_MASTER_SECRET
    ```
 
 2. **Invalid secret format**:
    ```bash
    # .dev.vars format should be (no quotes, no spaces around =)
    ENVIRONMENT=development
-   HANDY_MASTER_SECRET=64_hex_characters_here
+   HAPPY_MASTER_SECRET=64_hex_characters_here
    ```
 
 3. **Port already in use**:
@@ -60,7 +60,7 @@ This guide covers common issues and their solutions for Happy Server Workers dev
    nvm use 18
    ```
 
-### "HANDY_MASTER_SECRET is required" Error
+### "HAPPY_MASTER_SECRET is required" Error
 
 **Symptom**: Server fails to start with secret error
 
@@ -73,7 +73,7 @@ cat .dev.vars
 openssl rand -hex 32
 
 # 3. Add to .dev.vars (no quotes!)
-echo "HANDY_MASTER_SECRET=your_generated_secret" >> .dev.vars
+echo "HAPPY_MASTER_SECRET=your_generated_secret" >> .dev.vars
 
 # 4. Restart dev server
 yarn dev
@@ -114,7 +114,7 @@ yarn dev
    ```
 
 3. **Token from wrong environment**:
-   - Dev tokens don't work in prod (different `HANDY_MASTER_SECRET`)
+   - Dev tokens don't work in prod (different `HAPPY_MASTER_SECRET`)
 
 **Debug Steps**:
 ```bash
@@ -454,7 +454,7 @@ interface Env {
     DB: D1Database;
     UPLOADS: R2Bucket;
     CONNECTION_MANAGER: DurableObjectNamespace;
-    HANDY_MASTER_SECRET: string;
+    HAPPY_MASTER_SECRET: string;
     // ...
 }
 ```

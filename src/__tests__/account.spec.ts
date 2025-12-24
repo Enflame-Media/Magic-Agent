@@ -73,7 +73,7 @@ import app from '@/index';
 function createTestEnv() {
     return {
         ENVIRONMENT: 'development' as const,
-        HANDY_MASTER_SECRET: 'test-secret-for-vitest-tests',
+        HAPPY_MASTER_SECRET: 'test-secret-for-vitest-tests',
         DB: {} as D1Database, // Placeholder - actual DB calls are intercepted by getDb mock
         UPLOADS: createMockR2(),
         CONNECTION_MANAGER: createMockDurableObjectNamespace(),

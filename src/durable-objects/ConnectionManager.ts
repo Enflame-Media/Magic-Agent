@@ -37,6 +37,7 @@ import {
 } from './types';
 import { verifyToken, initAuth } from '@/lib/auth';
 import { getDb } from '@/db/client';
+import { getMasterSecret } from '@/config/env';
 import type { HandlerResult, HandlerContext } from './handlers';
 import {
     handleSessionMetadataUpdate,
@@ -63,8 +64,11 @@ export interface ConnectionManagerEnv {
     /** D1 Database binding for database updates */
     DB: D1Database;
 
-    /** Master secret for auth token verification */
-    HANDY_MASTER_SECRET: string;
+    /** Master secret for auth token verification (preferred) */
+    HAPPY_MASTER_SECRET?: string;
+
+    /** Master secret for auth token verification (deprecated) */
+    HANDY_MASTER_SECRET?: string;
 
     /** Current environment */
     ENVIRONMENT?: 'development' | 'staging' | 'production';
@@ -181,8 +185,9 @@ export class ConnectionManager extends DurableObject<ConnectionManagerEnv> {
      * Initialize authentication module if not already done
      */
     private async ensureAuthInitialized(): Promise<void> {
-        if (!this.authInitialized && this.env.HANDY_MASTER_SECRET) {
-            await initAuth(this.env.HANDY_MASTER_SECRET);
+        const secret = getMasterSecret(this.env);
+        if (!this.authInitialized && secret) {
+            await initAuth(secret);
             this.authInitialized = true;
         }
     }

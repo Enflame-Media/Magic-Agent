@@ -110,7 +110,7 @@ function signChallenge(challenge: string, secretKey: Uint8Array): string {
 function createTestEnv() {
     return {
         ENVIRONMENT: 'development' as const,
-        HANDY_MASTER_SECRET: 'test-secret-for-vitest-tests',
+        HAPPY_MASTER_SECRET: 'test-secret-for-vitest-tests',
         DB: {} as D1Database,
         UPLOADS: createMockR2(),
         CONNECTION_MANAGER: createMockDurableObjectNamespace(),

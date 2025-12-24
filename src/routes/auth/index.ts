@@ -28,7 +28,10 @@ import {
  */
 interface Env {
     DB: D1Database;
-    HANDY_MASTER_SECRET: string;
+    /** Master secret (preferred) */
+    HAPPY_MASTER_SECRET?: string;
+    /** Master secret (deprecated) */
+    HANDY_MASTER_SECRET?: string;
 }
 
 /**

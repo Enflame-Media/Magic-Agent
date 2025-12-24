@@ -14,6 +14,7 @@ import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi';
 import { verifyToken, initAuth } from '@/lib/auth';
 import { createTicket, verifyTicket } from '@/lib/ticket';
 import { checkRateLimit, TICKET_RATE_LIMIT } from '@/lib/rate-limit';
+import { getMasterSecret } from '@/config/env';
 
 /**
  * Environment interface with Durable Object bindings
@@ -22,8 +23,11 @@ interface Env {
     /** Durable Object namespace for ConnectionManager */
     CONNECTION_MANAGER: DurableObjectNamespace;
 
-    /** Master secret for auth token verification */
-    HANDY_MASTER_SECRET: string;
+    /** Master secret for auth token verification (preferred) */
+    HAPPY_MASTER_SECRET?: string;
+
+    /** Master secret for auth token verification (deprecated) */
+    HANDY_MASTER_SECRET?: string;
 
     /** KV namespace for rate limiting (HAP-409) */
     RATE_LIMIT_KV: KVNamespace;
@@ -140,8 +144,9 @@ websocketRoutes.openapi(ticketRoute, async (c) => {
     }
 
     const token = authHeader.slice(7);
-    if (c.env.HANDY_MASTER_SECRET) {
-        await initAuth(c.env.HANDY_MASTER_SECRET);
+    const secret = getMasterSecret(c.env);
+    if (secret) {
+        await initAuth(secret);
     }
 
     const verified = await verifyToken(token);
@@ -176,7 +181,7 @@ websocketRoutes.openapi(ticketRoute, async (c) => {
     }
 
     // Generate short-lived ticket
-    const ticket = await createTicket(verified.userId, c.env.HANDY_MASTER_SECRET);
+    const ticket = await createTicket(verified.userId, secret!);
 
     return c.json({ ticket }, 200);
 });
@@ -209,8 +214,17 @@ async function handleWebSocketUpgrade(c: any): Promise<Response> {
 
     // Try ticket authentication first (HAP-375 flow for web clients)
     const ticket = url.searchParams.get('ticket');
+    const secret = getMasterSecret(c.env);
     if (ticket) {
-        const ticketResult = await verifyTicket(ticket, c.env.HANDY_MASTER_SECRET);
+        // If ticket is provided but no secret available, we can't verify it
+        // This is a server configuration issue, not a client auth failure
+        if (!secret) {
+            return new Response('Server configuration error: master secret not set', {
+                status: 500,
+                headers: { 'Content-Type': 'text/plain' },
+            });
+        }
+        const ticketResult = await verifyTicket(ticket, secret);
         if (!ticketResult) {
             return new Response('Invalid or expired ticket', {
                 status: 401,
@@ -239,8 +253,8 @@ async function handleWebSocketUpgrade(c: any): Promise<Response> {
         }
 
         // Verify token to get userId
-        if (c.env.HANDY_MASTER_SECRET) {
-            await initAuth(c.env.HANDY_MASTER_SECRET);
+        if (secret) {
+            await initAuth(secret);
         }
 
         const verified = await verifyToken(token);
@@ -330,8 +344,9 @@ websocketRoutes.openapi(statsRoute, async (c) => {
     }
 
     const token = authHeader.slice(7);
-    if (c.env.HANDY_MASTER_SECRET) {
-        await initAuth(c.env.HANDY_MASTER_SECRET);
+    const secret = getMasterSecret(c.env);
+    if (secret) {
+        await initAuth(secret);
     }
 
     const verified = await verifyToken(token);
@@ -430,8 +445,9 @@ websocketRoutes.openapi(broadcastRoute, async (c) => {
     }
 
     const token = authHeader.slice(7);
-    if (c.env.HANDY_MASTER_SECRET) {
-        await initAuth(c.env.HANDY_MASTER_SECRET);
+    const secret = getMasterSecret(c.env);
+    if (secret) {
+        await initAuth(secret);
     }
 
     const verified = await verifyToken(token);

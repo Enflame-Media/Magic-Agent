@@ -81,7 +81,7 @@ import { processImage, isProcessableImage } from '@/lib/image-processing';
 function createTestEnv() {
     return {
         ENVIRONMENT: 'development' as const,
-        HANDY_MASTER_SECRET: 'test-secret-for-vitest-tests',
+        HAPPY_MASTER_SECRET: 'test-secret-for-vitest-tests',
         DB: {} as D1Database,
         UPLOADS: r2Mock,
         CONNECTION_MANAGER: createMockDurableObjectNamespace(),

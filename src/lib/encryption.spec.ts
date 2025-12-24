@@ -38,13 +38,13 @@ describe('encryption', () => {
 
         it('should throw if secret is too short', async () => {
             await expect(initEncryption('short')).rejects.toThrow(
-                'HANDY_MASTER_SECRET must be at least 32 characters'
+                'HAPPY_MASTER_SECRET must be at least 32 characters'
             );
         });
 
         it('should throw if secret is empty', async () => {
             await expect(initEncryption('')).rejects.toThrow(
-                'HANDY_MASTER_SECRET must be at least 32 characters'
+                'HAPPY_MASTER_SECRET must be at least 32 characters'
             );
         });
 

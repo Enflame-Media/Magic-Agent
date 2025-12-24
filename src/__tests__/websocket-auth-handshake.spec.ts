@@ -63,7 +63,7 @@ const mockD1Database = {
 
 // Mock environment
 const mockEnv = {
-    HANDY_MASTER_SECRET: 'test-secret-for-vitest-tests',
+    HAPPY_MASTER_SECRET: 'test-secret-for-vitest-tests',
     ENVIRONMENT: 'development' as const,
     DB: mockD1Database,
 };

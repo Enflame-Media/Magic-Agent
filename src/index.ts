@@ -4,6 +4,7 @@ import { cors } from '@/middleware/cors';
 import { timing, addServerTiming } from '@/middleware/timing';
 import { errorHandler } from '@/middleware/error';
 import { initAuth } from '@/lib/auth';
+import { getMasterSecret } from '@/config/env';
 import authRoutes from '@/routes/auth';
 import testRoutes from '@/routes/test/privacy-kit-test';
 import sessionsRoutes from '@/routes/sessions';
@@ -48,10 +49,16 @@ interface Env {
     DB: D1Database;
 
     /**
-     * Master secret for token generation/verification
+     * Master secret for token generation/verification (preferred)
      * @required Must be set via wrangler secret in production
      */
-    HANDY_MASTER_SECRET: string;
+    HAPPY_MASTER_SECRET?: string;
+
+    /**
+     * Master secret for token generation/verification (deprecated)
+     * @deprecated Use HAPPY_MASTER_SECRET instead. This will be removed in a future version.
+     */
+    HANDY_MASTER_SECRET?: string;
 
     /**
      * Test secret for privacy-kit integration tests
@@ -100,16 +107,16 @@ app.use('*', cors());
 /*
  * Initialize auth module on every request
  * In Cloudflare Workers, we need to initialize per-request due to stateless nature
- * Skip initialization in test environments where HANDY_MASTER_SECRET might not be set
+ * Skip initialization in test environments where master secret might not be set
  */
 app.use('*', async (c, next) => {
-    const secret = c.env?.HANDY_MASTER_SECRET;
+    const secret = getMasterSecret(c.env);
     if (secret) {
         // Debug: Log secret info (NOT the actual secret, just metadata)
         console.log('[Auth Init] Secret present, length:', secret.length, 'first 4 chars:', secret.substring(0, 4) + '...');
         await initAuth(secret);
     } else {
-        console.error('[Auth Init] WARNING: HANDY_MASTER_SECRET is NOT SET!');
+        console.error('[Auth Init] WARNING: HAPPY_MASTER_SECRET is NOT SET!');
     }
     await next();
 });

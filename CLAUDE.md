@@ -131,7 +131,7 @@ Access the development server:
 3. Add it to `.dev.vars`:
 
    ```bash
-   HANDY_MASTER_SECRET=your-generated-secret-here
+   HAPPY_MASTER_SECRET=your-generated-secret-here
    ```
 
 4. Start development:
@@ -144,7 +144,7 @@ Access the development server:
 
 | Secret | Purpose | Generation |
 |--------|---------|------------|
-| `HANDY_MASTER_SECRET` | Auth token generation | `openssl rand -hex 32` |
+| `HAPPY_MASTER_SECRET` | Auth token generation | `openssl rand -hex 32` |
 
 ### Local Development (.dev.vars)
 
@@ -152,7 +152,7 @@ Environment variables for local development are stored in `.dev.vars`:
 
 ```bash
 ENVIRONMENT=development
-HANDY_MASTER_SECRET=your-32-byte-hex-secret
+HAPPY_MASTER_SECRET=your-32-byte-hex-secret
 ```
 
 ⚠️ **IMPORTANT**: Never commit `.dev.vars` to version control - it's gitignored by default.
@@ -164,7 +164,7 @@ In Workers, access environment variables via the context:
 ```typescript
 app.get('/example', (c) => {
     const env = c.env.ENVIRONMENT;
-    const secret = c.env.HANDY_MASTER_SECRET; // Required
+    const secret = c.env.HAPPY_MASTER_SECRET; // Required
     return c.json({ env });
 });
 ```
@@ -177,10 +177,10 @@ For production, use Wrangler secrets (never put secrets in `wrangler.toml`):
 
 ```bash
 # Set required secret for production
-wrangler secret put HANDY_MASTER_SECRET --env prod
+wrangler secret put HAPPY_MASTER_SECRET --env prod
 
 # Set required secret for development (remote)
-wrangler secret put HANDY_MASTER_SECRET --env dev
+wrangler secret put HAPPY_MASTER_SECRET --env dev
 
 # List all secrets
 wrangler secret list --env prod
@@ -193,7 +193,7 @@ wrangler secret delete SECRET_NAME --env prod
 
 See `happy-server/docs/SECRET-ROTATION.md` for detailed rotation procedures.
 
-**Warning:** Rotating `HANDY_MASTER_SECRET` invalidates all existing auth tokens.
+**Warning:** Rotating `HAPPY_MASTER_SECRET` invalidates all existing auth tokens.
 
 ## Middleware
 
@@ -761,7 +761,7 @@ curl http://localhost:8787/openapi.json
 import { initAuth } from '@/lib/auth';
 
 // Initialize with master secret (done automatically in middleware)
-await initAuth(env.HANDY_MASTER_SECRET);
+await initAuth(env.HAPPY_MASTER_SECRET);
 ```
 
 **Token Generation:**
@@ -993,7 +993,7 @@ All auth routes are OpenAPI-documented and use Zod validation.
 **Best Practices:**
 
 - Always use HTTPS in production
-- Set HANDY_MASTER_SECRET via `wrangler secret` (never commit)
+- Set HAPPY_MASTER_SECRET via `wrangler secret` (never commit)
 - Validate public key lengths before processing
 - Rate limit auth endpoints to prevent brute force
 

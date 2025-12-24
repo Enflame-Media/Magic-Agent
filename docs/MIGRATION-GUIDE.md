@@ -269,7 +269,7 @@ No changes to authentication flows:
 
 ### Token Compatibility
 
-**Important**: Tokens from happy-server are NOT compatible with happy-server-workers because they use different `HANDY_MASTER_SECRET` values. Users must re-authenticate when switching backends.
+**Important**: Tokens from happy-server are NOT compatible with happy-server-workers because they use different `HAPPY_MASTER_SECRET` values. Users must re-authenticate when switching backends.
 
 ---
 
@@ -313,13 +313,13 @@ S3_ENDPOINT=https://minio.example.com
 S3_ACCESS_KEY=...
 S3_SECRET_KEY=...
 S3_BUCKET=happy-uploads
-HANDY_MASTER_SECRET=...
+HAPPY_MASTER_SECRET=...
 ```
 
 **happy-server-workers (.dev.vars / wrangler secrets):**
 ```bash
 ENVIRONMENT=development
-HANDY_MASTER_SECRET=...
+HAPPY_MASTER_SECRET=...
 ELEVENLABS_API_KEY=...  # Optional
 GITHUB_CLIENT_SECRET=...  # Optional
 ```
@@ -422,7 +422,7 @@ No code changes required. WebSocket already migrated to native WebSocket (HAP-26
 
 ### Re-authentication Required
 
-Because the `HANDY_MASTER_SECRET` differs between backends, users will need to:
+Because the `HAPPY_MASTER_SECRET` differs between backends, users will need to:
 1. Re-authenticate the mobile app
 2. Re-pair CLI devices with the mobile app
 

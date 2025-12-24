@@ -13,7 +13,7 @@ Happy Server Workers requires cryptographic secrets for:
 
 | Secret | Purpose | Required |
 |--------|---------|----------|
-| `HANDY_MASTER_SECRET` | Master key for auth token generation | **Yes** |
+| `HAPPY_MASTER_SECRET` | Master key for auth token generation | **Yes** |
 | `ELEVENLABS_API_KEY` | Voice synthesis API | No |
 | `GITHUB_CLIENT_SECRET` | GitHub OAuth login | No |
 | `GITHUB_WEBHOOK_SECRET` | Webhook signature verification | No |
@@ -35,7 +35,7 @@ From the `happy-server` directory:
 ### Manual Generation
 
 ```bash
-# Generate HANDY_MASTER_SECRET (32 bytes = 64 hex characters)
+# Generate HAPPY_MASTER_SECRET (32 bytes = 64 hex characters)
 openssl rand -hex 32
 
 # Example output:
@@ -55,7 +55,7 @@ openssl rand -hex 32
 2. Edit `.dev.vars` with your development secrets:
    ```bash
    ENVIRONMENT=development
-   HANDY_MASTER_SECRET=your-generated-secret-here
+   HAPPY_MASTER_SECRET=your-generated-secret-here
    ```
 
 3. Start local development:
@@ -73,7 +73,7 @@ Set secrets for the dev environment:
 cd happy-server-workers
 
 # Set required secret
-wrangler secret put HANDY_MASTER_SECRET --env dev
+wrangler secret put HAPPY_MASTER_SECRET --env dev
 # Paste secret when prompted
 
 # Optional: Set additional secrets
@@ -93,7 +93,7 @@ Set secrets for production:
 cd happy-server-workers
 
 # Set required secret
-wrangler secret put HANDY_MASTER_SECRET --env prod
+wrangler secret put HAPPY_MASTER_SECRET --env prod
 # Paste secret when prompted
 
 # Optional: Set additional secrets
@@ -150,7 +150,7 @@ See `happy-server/docs/SECRET-ROTATION.md` for detailed rotation procedures.
 
 2. **Update in Cloudflare:**
    ```bash
-   wrangler secret put HANDY_MASTER_SECRET --env prod
+   wrangler secret put HAPPY_MASTER_SECRET --env prod
    ```
 
 3. **Deploy (optional but recommended):**
@@ -158,11 +158,11 @@ See `happy-server/docs/SECRET-ROTATION.md` for detailed rotation procedures.
    wrangler deploy --env prod
    ```
 
-**Warning:** Rotating `HANDY_MASTER_SECRET` invalidates all existing authentication tokens. Users will need to re-authenticate.
+**Warning:** Rotating `HAPPY_MASTER_SECRET` invalidates all existing authentication tokens. Users will need to re-authenticate.
 
 ## Troubleshooting
 
-### "HANDY_MASTER_SECRET is required" Error
+### "HAPPY_MASTER_SECRET is required" Error
 
 The worker requires this secret to start. Ensure it's set:
 
@@ -171,12 +171,12 @@ The worker requires this secret to start. Ensure it's set:
 wrangler secret list --env dev
 
 # Set if missing
-wrangler secret put HANDY_MASTER_SECRET --env dev
+wrangler secret put HAPPY_MASTER_SECRET --env dev
 ```
 
 ### "Invalid token" Errors After Rotation
 
-This is expected behavior. When `HANDY_MASTER_SECRET` changes:
+This is expected behavior. When `HAPPY_MASTER_SECRET` changes:
 - All existing tokens become invalid
 - Users must re-authenticate
 - CLI devices must re-pair with mobile app

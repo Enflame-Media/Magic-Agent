@@ -67,7 +67,7 @@ import app from '@/index';
  * Create mock environment for Hono app.request()
  */
 function createTestEnv(overrides: Partial<{
-    HANDY_MASTER_SECRET: string | undefined;
+    HAPPY_MASTER_SECRET: string | undefined;
     doFetchResponse: Response;
 }> = {}) {
     const mockDoFetch = vi.fn(async () => {
@@ -88,14 +88,14 @@ function createTestEnv(overrides: Partial<{
         });
     });
 
-    // Handle both undefined and empty string for HANDY_MASTER_SECRET
-    const secretValue = 'HANDY_MASTER_SECRET' in overrides
-        ? overrides.HANDY_MASTER_SECRET
+    // Handle both undefined and empty string for HAPPY_MASTER_SECRET
+    const secretValue = 'HAPPY_MASTER_SECRET' in overrides
+        ? overrides.HAPPY_MASTER_SECRET
         : 'test-secret-for-vitest-tests';
 
     return {
         ENVIRONMENT: 'development' as const,
-        HANDY_MASTER_SECRET: secretValue,
+        HAPPY_MASTER_SECRET: secretValue,
         DB: {} as D1Database,
         UPLOADS: createMockR2(),
         CONNECTION_MANAGER: {
@@ -212,7 +212,7 @@ describe('WebSocket Routes with Drizzle Mocking', () => {
             expect(text).toBe('Invalid authentication token');
         });
 
-        it('should call initAuth with HANDY_MASTER_SECRET when present', async () => {
+        it('should call initAuth with HAPPY_MASTER_SECRET when present', async () => {
             await app.request('/v1/updates?token=valid-token', {
                 method: 'GET',
                 headers: {
@@ -223,11 +223,11 @@ describe('WebSocket Routes with Drizzle Mocking', () => {
             expect(mockInitAuth).toHaveBeenCalledWith('test-secret-for-vitest-tests');
         });
 
-        it('should skip initAuth in websocket handler when HANDY_MASTER_SECRET is falsy', async () => {
+        it('should skip initAuth in websocket handler when HAPPY_MASTER_SECRET is falsy', async () => {
             // Create a fresh mock to track calls
             vi.mocked(mockInitAuth).mockClear();
 
-            const envWithoutSecret = createTestEnv({ HANDY_MASTER_SECRET: '' });
+            const envWithoutSecret = createTestEnv({ HAPPY_MASTER_SECRET: '' });
 
             await app.request('/v1/updates?token=valid-token', {
                 method: 'GET',
@@ -388,7 +388,7 @@ describe('WebSocket Routes with Drizzle Mocking', () => {
             expect(body).toEqual({ error: 'Invalid token' });
         });
 
-        it('should call initAuth with HANDY_MASTER_SECRET when present', async () => {
+        it('should call initAuth with HAPPY_MASTER_SECRET when present', async () => {
             await app.request('/v1/websocket/stats', {
                 method: 'GET',
                 headers: {
@@ -399,9 +399,9 @@ describe('WebSocket Routes with Drizzle Mocking', () => {
             expect(mockInitAuth).toHaveBeenCalledWith('test-secret-for-vitest-tests');
         });
 
-        it('should skip initAuth in stats handler when HANDY_MASTER_SECRET is falsy', async () => {
+        it('should skip initAuth in stats handler when HAPPY_MASTER_SECRET is falsy', async () => {
             vi.mocked(mockInitAuth).mockClear();
-            const envWithoutSecret = createTestEnv({ HANDY_MASTER_SECRET: '' });
+            const envWithoutSecret = createTestEnv({ HAPPY_MASTER_SECRET: '' });
 
             await app.request('/v1/websocket/stats', {
                 method: 'GET',
@@ -531,7 +531,7 @@ describe('WebSocket Routes with Drizzle Mocking', () => {
             expect(body).toEqual({ error: 'Invalid token' });
         });
 
-        it('should call initAuth with HANDY_MASTER_SECRET when present', async () => {
+        it('should call initAuth with HAPPY_MASTER_SECRET when present', async () => {
             await app.request('/v1/websocket/broadcast', {
                 method: 'POST',
                 headers: {
@@ -549,9 +549,9 @@ describe('WebSocket Routes with Drizzle Mocking', () => {
             expect(mockInitAuth).toHaveBeenCalledWith('test-secret-for-vitest-tests');
         });
 
-        it('should skip initAuth in broadcast handler when HANDY_MASTER_SECRET is falsy', async () => {
+        it('should skip initAuth in broadcast handler when HAPPY_MASTER_SECRET is falsy', async () => {
             vi.mocked(mockInitAuth).mockClear();
-            const envWithoutSecret = createTestEnv({ HANDY_MASTER_SECRET: '' });
+            const envWithoutSecret = createTestEnv({ HAPPY_MASTER_SECRET: '' });
 
             await app.request('/v1/websocket/broadcast', {
                 method: 'POST',

@@ -100,7 +100,7 @@ function createTestEnv(overrides: Partial<{
 }> = {}) {
     return {
         ENVIRONMENT: 'development' as const,
-        HANDY_MASTER_SECRET: 'test-secret-for-vitest-tests-min-32-chars',
+        HAPPY_MASTER_SECRET: 'test-secret-for-vitest-tests-min-32-chars',
         DB: {} as D1Database,
         UPLOADS: createMockR2(),
         CONNECTION_MANAGER: createMockDurableObjectNamespace(),
