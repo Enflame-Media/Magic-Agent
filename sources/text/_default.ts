@@ -205,6 +205,8 @@ export const en = {
         markdownCopyV2Subtitle: 'Long press opens copy modal',
         hideInactiveSessions: 'Hide inactive sessions',
         hideInactiveSessionsSubtitle: 'Show only active chats in your list',
+        groupSessionsByProject: 'Group sessions by project',
+        groupSessionsByProjectSubtitle: 'Group past sessions by their working directory',
         // Notifications section
         notifications: 'Notifications',
         notificationsDescription: 'Configure how you receive alerts about your sessions.',
@@ -313,6 +315,8 @@ export const en = {
         today: 'Today',
         yesterday: 'Yesterday',
         daysAgo: ({ count }: { count: number }) => `${count} ${count === 1 ? 'day' : 'days'} ago`,
+        projects: 'Projects',
+        sessionsCount: ({ count }: { count: number }) => `${count} ${count === 1 ? 'session' : 'sessions'}`,
         viewAll: 'View all sessions',
         // Resume session functionality
         resume: 'Resume',

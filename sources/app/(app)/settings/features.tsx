@@ -13,6 +13,7 @@ function FeaturesSettingsScreen() {
     const [commandPaletteEnabled, setCommandPaletteEnabled] = useLocalSettingMutable('commandPaletteEnabled');
     const [markdownCopyV2, setMarkdownCopyV2] = useLocalSettingMutable('markdownCopyV2');
     const [hideInactiveSessions, setHideInactiveSessions] = useSettingMutable('hideInactiveSessions');
+    const [groupSessionsByProject, setGroupSessionsByProject] = useSettingMutable('groupSessionsByProject');
     const [contextNotificationsEnabled, setContextNotificationsEnabled] = useSettingMutable('contextNotificationsEnabled');
 
     return (
@@ -75,6 +76,18 @@ function FeaturesSettingsScreen() {
                         <Switch
                             value={hideInactiveSessions}
                             onValueChange={setHideInactiveSessions}
+                        />
+                    }
+                    showChevron={false}
+                />
+                <Item
+                    title={t('settingsFeatures.groupSessionsByProject')}
+                    subtitle={t('settingsFeatures.groupSessionsByProjectSubtitle')}
+                    icon={<Ionicons name="folder-outline" size={29} color="#30B0C7" />}
+                    rightElement={
+                        <Switch
+                            value={groupSessionsByProject}
+                            onValueChange={setGroupSessionsByProject}
                         />
                     }
                     showChevron={false}

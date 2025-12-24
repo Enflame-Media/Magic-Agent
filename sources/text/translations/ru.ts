@@ -188,6 +188,8 @@ export const ru: TranslationStructure = {
         markdownCopyV2Subtitle: 'Долгое нажатие открывает модальное окно копирования',
         hideInactiveSessions: 'Скрывать неактивные сессии',
         hideInactiveSessionsSubtitle: 'Показывать в списке только активные чаты',
+        groupSessionsByProject: 'Группировать сессии по проектам',
+        groupSessionsByProjectSubtitle: 'Группирует предыдущие сессии по их рабочей директории',
         // Notifications section
         notifications: 'Уведомления',
         notificationsDescription: 'Настройте получение уведомлений о ваших сессиях.',
@@ -296,6 +298,8 @@ export const ru: TranslationStructure = {
         today: 'Сегодня',
         yesterday: 'Вчера',
         daysAgo: ({ count }: { count: number }) => `${count} ${plural({ count, one: 'день', few: 'дня', many: 'дней' })} назад`,
+        projects: 'Проекты',
+        sessionsCount: ({ count }: { count: number }) => `${count} ${plural({ count, one: 'сессия', few: 'сессии', many: 'сессий' })}`,
         viewAll: 'Посмотреть все сессии',
         // Resume session functionality
         resume: 'Продолжить',

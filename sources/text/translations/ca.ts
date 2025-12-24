@@ -205,6 +205,8 @@ export const ca: TranslationStructure = {
         markdownCopyV2Subtitle: 'Pulsació llarga obre modal de còpia',
         hideInactiveSessions: 'Amaga les sessions inactives',
         hideInactiveSessionsSubtitle: 'Mostra només els xats actius a la llista',
+        groupSessionsByProject: 'Agrupa sessions per projecte',
+        groupSessionsByProjectSubtitle: 'Agrupa les sessions passades pel seu directori de treball',
         // Notifications section
         notifications: 'Notificacions',
         notificationsDescription: 'Configura com reps alertes sobre les teves sessions.',
@@ -313,6 +315,8 @@ export const ca: TranslationStructure = {
         today: 'Avui',
         yesterday: 'Ahir',
         daysAgo: ({ count }: { count: number }) => `fa ${count} ${count === 1 ? 'dia' : 'dies'}`,
+        projects: 'Projectes',
+        sessionsCount: ({ count }: { count: number }) => `${count} ${count === 1 ? 'sessió' : 'sessions'}`,
         viewAll: 'Veure totes les sessions',
         // Resume session functionality
         resume: 'Reprendre',

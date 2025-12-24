@@ -207,6 +207,8 @@ export const zhHans: TranslationStructure = {
         markdownCopyV2Subtitle: '长按打开复制模态框',
         hideInactiveSessions: '隐藏非活跃会话',
         hideInactiveSessionsSubtitle: '仅在列表中显示活跃的聊天',
+        groupSessionsByProject: '按项目分组会话',
+        groupSessionsByProjectSubtitle: '根据工作目录对历史会话进行分组',
         // Notifications section
         notifications: '通知',
         notificationsDescription: '配置会话提醒方式。',
@@ -315,6 +317,8 @@ export const zhHans: TranslationStructure = {
         today: '今天',
         yesterday: '昨天',
         daysAgo: ({ count }: { count: number }) => `${count} 天前`,
+        projects: '项目',
+        sessionsCount: ({ count }: { count: number }) => `${count} 个会话`,
         viewAll: '查看所有会话',
         // Resume session functionality
         resume: '继续',

@@ -216,6 +216,8 @@ export const pl: TranslationStructure = {
         markdownCopyV2Subtitle: 'Długie naciśnięcie otwiera modal kopiowania',
         hideInactiveSessions: 'Ukryj nieaktywne sesje',
         hideInactiveSessionsSubtitle: 'Wyświetlaj tylko aktywne czaty na liście',
+        groupSessionsByProject: 'Grupuj sesje według projektu',
+        groupSessionsByProjectSubtitle: 'Grupuj poprzednie sesje według ich katalogu roboczego',
         // Notifications section
         notifications: 'Powiadomienia',
         notificationsDescription: 'Skonfiguruj jak otrzymujesz alerty o swoich sesjach.',
@@ -324,6 +326,8 @@ export const pl: TranslationStructure = {
         today: 'Dzisiaj',
         yesterday: 'Wczoraj',
         daysAgo: ({ count }: { count: number }) => `${count} ${plural({ count, one: 'dzień', few: 'dni', many: 'dni' })} temu`,
+        projects: 'Projekty',
+        sessionsCount: ({ count }: { count: number }) => `${count} ${plural({ count, one: 'sesja', few: 'sesje', many: 'sesji' })}`,
         viewAll: 'Zobacz wszystkie sesje',
         // Resume session functionality
         resume: 'Wznów',

@@ -205,6 +205,8 @@ export const pt: TranslationStructure = {
         markdownCopyV2Subtitle: 'Pressione e segure para abrir modal de cópia',
         hideInactiveSessions: 'Ocultar sessões inativas',
         hideInactiveSessionsSubtitle: 'Mostre apenas os chats ativos na sua lista',
+        groupSessionsByProject: 'Agrupar sessões por projeto',
+        groupSessionsByProjectSubtitle: 'Agrupa sessões passadas pelo seu diretório de trabalho',
         // Notifications section
         notifications: 'Notificações',
         notificationsDescription: 'Configure como receber alertas sobre suas sessões.',
@@ -313,6 +315,8 @@ export const pt: TranslationStructure = {
         today: 'Hoje',
         yesterday: 'Ontem',
         daysAgo: ({ count }: { count: number }) => `há ${count} ${count === 1 ? 'dia' : 'dias'}`,
+        projects: 'Projetos',
+        sessionsCount: ({ count }: { count: number }) => `${count} ${count === 1 ? 'sessão' : 'sessões'}`,
         viewAll: 'Ver todas as sessões',
         // Resume session functionality
         resume: 'Retomar',

@@ -26,6 +26,7 @@ import { useNavigateToSession } from '@/hooks/useNavigateToSession';
 import { useSessionContextMenu } from '@/hooks/useSessionContextMenu';
 import { QuickStartCard } from './QuickStartCard';
 import { SwipeableSessionRow } from './SwipeableSessionRow';
+import { ProjectGroupCard } from './ProjectGroupCard';
 import { SelectableCheckbox } from './SelectableCheckbox';
 import { useMultiSelectContext } from './MultiSelectContext';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing, interpolate } from 'react-native-reanimated';
@@ -287,7 +288,7 @@ export function SessionsList({ eligibleSessionIds }: SessionsListProps) {
         switch (item.type) {
             case 'header': return `header-${item.title}-${index}`;
             case 'active-sessions': return 'active-sessions';
-            case 'project-group': return `project-group-${item.machine.id}-${item.displayPath}-${index}`;
+            case 'project-group': return `project-group-${item.projectId}`;
             case 'session': return `session-${item.session.id}`;
         }
     }, []);
@@ -388,17 +389,24 @@ export function SessionsList({ eligibleSessionIds }: SessionsListProps) {
                     />
                 );
 
-            case 'project-group':
+            case 'project-group': {
+                // Extract selected session ID for tablet view
+                let projectSelectedId: string | undefined;
+                if (isTablet && pathname.startsWith('/session/')) {
+                    const parts = pathname.split('/');
+                    projectSelectedId = parts[2];
+                }
+
                 return (
-                    <View style={styles.projectGroup}>
-                        <Text style={styles.projectGroupTitle}>
-                            {item.displayPath}
-                        </Text>
-                        <Text style={styles.projectGroupSubtitle}>
-                            {item.machine.metadata?.displayName || item.machine.metadata?.host || item.machine.id}
-                        </Text>
-                    </View>
+                    <ProjectGroupCard
+                        projectId={item.projectId}
+                        displayPath={item.displayPath}
+                        machineName={item.machineName}
+                        sessions={item.sessions}
+                        selectedSessionId={projectSelectedId}
+                    />
                 );
+            }
 
             case 'session':
                 // Determine card styling based on position within date group

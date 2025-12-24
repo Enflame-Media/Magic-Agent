@@ -57,7 +57,7 @@ interface SessionMessages {
 export type SessionListViewItem =
     | { type: 'header'; title: string }
     | { type: 'active-sessions'; sessions: Session[] }
-    | { type: 'project-group'; displayPath: string; machine: Machine }
+    | { type: 'project-group'; projectId: string; displayPath: string; machineName: string; sessions: Session[] }
     | { type: 'session'; session: Session; variant?: 'default' | 'no-path' };
 
 // Legacy type for backward compatibility - to be removed
@@ -194,9 +194,17 @@ function getHeaderTitle(dateString: string, todayTime: number, yesterdayTime: nu
     return title;
 }
 
+// Helper to get project display name from path
+function getProjectDisplayName(path: string): string {
+    const pathParts = path.split('/').filter(Boolean);
+    return pathParts[pathParts.length - 1] || path || 'Unknown Project';
+}
+
 // Helper function to build unified list view data from sessions and machines
 function buildSessionListViewData(
-    sessions: Record<string, Session>
+    sessions: Record<string, Session>,
+    machines: Record<string, Machine>,
+    groupByProject: boolean = false
 ): SessionListViewItem[] {
     // Separate active and inactive sessions
     const activeSessions: Session[] = [];
@@ -222,18 +230,99 @@ function buildSessionListViewData(
         listData.push({ type: 'active-sessions', sessions: activeSessions });
     }
 
-    // Get cached date boundaries (auto-invalidates on new day)
-    const { todayTime, yesterdayTime } = getDateBoundaries();
+    // If grouping by project is enabled, group inactive sessions by project
+    if (groupByProject) {
+        // Group sessions by project key (machineId + path)
+        const projectGroups = new Map<string, {
+            machineId: string;
+            path: string;
+            machineName: string;
+            sessions: Session[]
+        }>();
+        const ungroupedSessions: Session[] = [];
 
-    let currentDateGroup: Session[] = [];
-    let currentDateString: string | null = null;
+        for (const session of inactiveSessions) {
+            const machineId = session.metadata?.machineId;
+            const path = session.metadata?.path;
 
-    for (const session of inactiveSessions) {
-        const sessionDate = new Date(session.updatedAt);
-        const dateString = sessionDate.toDateString();
+            if (machineId && path) {
+                const projectKey = `${machineId}:${path}`;
 
-        if (currentDateString !== dateString) {
-            // Process previous group using cached header title
+                if (!projectGroups.has(projectKey)) {
+                    // Get machine name
+                    const machine = machines[machineId];
+                    const machineName = machine?.metadata?.displayName ||
+                                       machine?.metadata?.host ||
+                                       session.metadata?.host ||
+                                       machineId;
+
+                    projectGroups.set(projectKey, {
+                        machineId,
+                        path,
+                        machineName,
+                        sessions: []
+                    });
+                }
+                projectGroups.get(projectKey)!.sessions.push(session);
+            } else {
+                // Sessions without machine/path metadata go to ungrouped
+                ungroupedSessions.push(session);
+            }
+        }
+
+        // Convert project groups to list items, sorted by most recent activity
+        const sortedGroups = Array.from(projectGroups.entries())
+            .map(([key, group]) => ({
+                key,
+                ...group,
+                lastUpdated: Math.max(...group.sessions.map(s => s.updatedAt))
+            }))
+            .sort((a, b) => b.lastUpdated - a.lastUpdated);
+
+        // Add "Projects" header if we have project groups
+        if (sortedGroups.length > 0) {
+            listData.push({ type: 'header', title: t('sessionHistory.projects') });
+        }
+
+        // Add project groups
+        for (const group of sortedGroups) {
+            // Sort sessions within each project by updatedAt
+            group.sessions.sort((a, b) => b.updatedAt - a.updatedAt);
+
+            listData.push({
+                type: 'project-group',
+                projectId: group.key,
+                displayPath: getProjectDisplayName(group.path),
+                machineName: group.machineName,
+                sessions: group.sessions
+            });
+        }
+
+        // Add ungrouped sessions with date grouping
+        if (ungroupedSessions.length > 0) {
+            const { todayTime, yesterdayTime } = getDateBoundaries();
+            let currentDateGroup: Session[] = [];
+            let currentDateString: string | null = null;
+
+            for (const session of ungroupedSessions) {
+                const sessionDate = new Date(session.updatedAt);
+                const dateString = sessionDate.toDateString();
+
+                if (currentDateString !== dateString) {
+                    if (currentDateGroup.length > 0 && currentDateString) {
+                        const headerTitle = getHeaderTitle(currentDateString, todayTime, yesterdayTime);
+                        listData.push({ type: 'header', title: headerTitle });
+                        currentDateGroup.forEach(sess => {
+                            listData.push({ type: 'session', session: sess });
+                        });
+                    }
+                    currentDateString = dateString;
+                    currentDateGroup = [session];
+                } else {
+                    currentDateGroup.push(session);
+                }
+            }
+
             if (currentDateGroup.length > 0 && currentDateString) {
                 const headerTitle = getHeaderTitle(currentDateString, todayTime, yesterdayTime);
                 listData.push({ type: 'header', title: headerTitle });
@@ -241,22 +330,44 @@ function buildSessionListViewData(
                     listData.push({ type: 'session', session: sess });
                 });
             }
-
-            // Start new group
-            currentDateString = dateString;
-            currentDateGroup = [session];
-        } else {
-            currentDateGroup.push(session);
         }
-    }
+    } else {
+        // Original date-based grouping
+        const { todayTime, yesterdayTime } = getDateBoundaries();
 
-    // Process final group using cached header title
-    if (currentDateGroup.length > 0 && currentDateString) {
-        const headerTitle = getHeaderTitle(currentDateString, todayTime, yesterdayTime);
-        listData.push({ type: 'header', title: headerTitle });
-        currentDateGroup.forEach(sess => {
-            listData.push({ type: 'session', session: sess });
-        });
+        let currentDateGroup: Session[] = [];
+        let currentDateString: string | null = null;
+
+        for (const session of inactiveSessions) {
+            const sessionDate = new Date(session.updatedAt);
+            const dateString = sessionDate.toDateString();
+
+            if (currentDateString !== dateString) {
+                // Process previous group using cached header title
+                if (currentDateGroup.length > 0 && currentDateString) {
+                    const headerTitle = getHeaderTitle(currentDateString, todayTime, yesterdayTime);
+                    listData.push({ type: 'header', title: headerTitle });
+                    currentDateGroup.forEach(sess => {
+                        listData.push({ type: 'session', session: sess });
+                    });
+                }
+
+                // Start new group
+                currentDateString = dateString;
+                currentDateGroup = [session];
+            } else {
+                currentDateGroup.push(session);
+            }
+        }
+
+        // Process final group using cached header title
+        if (currentDateGroup.length > 0 && currentDateString) {
+            const headerTitle = getHeaderTitle(currentDateString, todayTime, yesterdayTime);
+            listData.push({ type: 'header', title: headerTitle });
+            currentDateGroup.forEach(sess => {
+                listData.push({ type: 'session', session: sess });
+            });
+        }
     }
 
     return listData;
@@ -464,7 +575,9 @@ export const storage = create<StorageState>()((set, get) => {
 
             // Build new unified list view data
             const sessionListViewData = buildSessionListViewData(
-                mergedSessions
+                mergedSessions,
+                state.machines,
+                state.settings.groupSessionsByProject
             );
 
             // Update project manager with current sessions and machines
@@ -650,20 +763,52 @@ export const storage = create<StorageState>()((set, get) => {
             return result;
         }),
         applySettingsLocal: (settings: Partial<Settings>) => set((state) => {
-            saveSettings(applySettings(state.settings, settings), state.settingsVersion ?? 0);
-            return {
+            const newSettings = applySettings(state.settings, settings);
+            saveSettings(newSettings, state.settingsVersion ?? 0);
+
+            // Check if groupSessionsByProject changed - if so, rebuild the list
+            const groupingChanged = settings.groupSessionsByProject !== undefined &&
+                                   settings.groupSessionsByProject !== state.settings.groupSessionsByProject;
+
+            const result: Partial<StorageState> = {
                 ...state,
-                settings: applySettings(state.settings, settings)
+                settings: newSettings
             };
+
+            // Rebuild session list view data if grouping preference changed
+            if (groupingChanged) {
+                result.sessionListViewData = buildSessionListViewData(
+                    state.sessions,
+                    state.machines,
+                    newSettings.groupSessionsByProject
+                );
+            }
+
+            return result;
         }),
         applySettings: (settings: Settings, version: number) => set((state) => {
             if (state.settingsVersion === null || state.settingsVersion < version) {
                 saveSettings(settings, version);
-                return {
+
+                // Check if groupSessionsByProject changed - if so, rebuild the list
+                const groupingChanged = settings.groupSessionsByProject !== state.settings.groupSessionsByProject;
+
+                const result: Partial<StorageState> = {
                     ...state,
                     settings,
                     settingsVersion: version
                 };
+
+                // Rebuild session list view data if grouping preference changed
+                if (groupingChanged) {
+                    result.sessionListViewData = buildSessionListViewData(
+                        state.sessions,
+                        state.machines,
+                        settings.groupSessionsByProject
+                    );
+                }
+
+                return result;
             } else {
                 return state;
             }
@@ -772,7 +917,9 @@ export const storage = create<StorageState>()((set, get) => {
 
             // Rebuild sessionListViewData to update the UI immediately
             const sessionListViewData = buildSessionListViewData(
-                updatedSessions
+                updatedSessions,
+                state.machines,
+                state.settings.groupSessionsByProject
             );
 
             return {
@@ -863,7 +1010,9 @@ export const storage = create<StorageState>()((set, get) => {
 
             // Rebuild sessionListViewData to reflect machine changes
             const sessionListViewData = buildSessionListViewData(
-                state.sessions
+                state.sessions,
+                mergedMachines,
+                state.settings.groupSessionsByProject
             );
 
             return {
@@ -936,8 +1085,12 @@ export const storage = create<StorageState>()((set, get) => {
             saveSessionPermissionModes(modes);
             
             // Rebuild sessionListViewData without the deleted session
-            const sessionListViewData = buildSessionListViewData(remainingSessions);
-            
+            const sessionListViewData = buildSessionListViewData(
+                remainingSessions,
+                state.machines,
+                state.settings.groupSessionsByProject
+            );
+
             return {
                 ...state,
                 sessions: remainingSessions,
