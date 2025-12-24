@@ -528,6 +528,10 @@ export const zhHans: TranslationStructure = {
             title: '出错了',
             message: '此部分发生错误。请重试，如果问题仍然存在，请重新启动应用程序。',
         },
+        chatFooter: {
+            // Used by ChatFooter component
+            permissionsWarning: '权限仅在终端中显示。重置或发送消息以从应用程序控制。',
+        },
     },
 
     agentInput: {

@@ -536,6 +536,10 @@ export const pl: TranslationStructure = {
             title: 'Coś poszło nie tak',
             message: 'Wystąpił błąd w tej sekcji. Spróbuj ponownie lub uruchom aplikację ponownie, jeśli problem nie ustępuje.',
         },
+        chatFooter: {
+            // Used by ChatFooter component
+            permissionsWarning: 'Uprawnienia widoczne tylko w terminalu. Zresetuj lub wyślij wiadomość, aby sterować z aplikacji.',
+        },
     },
 
     agentInput: {

@@ -527,6 +527,10 @@ export const en = {
             title: 'Something went wrong',
             message: 'An error occurred in this section. Try again or restart the app if the problem persists.',
         },
+        chatFooter: {
+            // Used by ChatFooter component
+            permissionsWarning: 'Permissions shown in terminal only. Reset or send a message to control from app.',
+        },
     },
 
     agentInput: {

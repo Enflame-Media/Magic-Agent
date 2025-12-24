@@ -526,6 +526,10 @@ export const ca: TranslationStructure = {
             title: 'Alguna cosa ha fallat',
             message: 'S\'ha produït un error en aquesta secció. Torna-ho a provar o reinicia l\'aplicació si el problema persisteix.',
         },
+        chatFooter: {
+            // Used by ChatFooter component
+            permissionsWarning: 'Els permisos només es mostren al terminal. Reinicia o envia un missatge per controlar des de l\'aplicació.',
+        },
     },
 
     agentInput: {

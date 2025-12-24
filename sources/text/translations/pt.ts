@@ -526,6 +526,10 @@ export const pt: TranslationStructure = {
             title: 'Algo deu errado',
             message: 'Ocorreu um erro nesta seção. Tente novamente ou reinicie o aplicativo se o problema persistir.',
         },
+        chatFooter: {
+            // Used by ChatFooter component
+            permissionsWarning: 'Permissões exibidas apenas no terminal. Reinicie ou envie uma mensagem para controlar pelo aplicativo.',
+        },
     },
 
     agentInput: {
