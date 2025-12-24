@@ -25,8 +25,16 @@ import type {
     ConnectionManagerConfig,
     ClientMessage,
     AuthMessagePayload,
+    AlarmRetryState,
+    AlarmDeadLetterEntry,
 } from './types';
-import { CloseCode, DEFAULT_CONFIG, normalizeMessage } from './types';
+import {
+    CloseCode,
+    DEFAULT_CONFIG,
+    normalizeMessage,
+    DEFAULT_ALARM_RETRY_CONFIG,
+    calculateBackoffDelay,
+} from './types';
 import { verifyToken, initAuth } from '@/lib/auth';
 import { getDb } from '@/db/client';
 import type { HandlerResult, HandlerContext } from './handlers';
@@ -115,6 +123,16 @@ export class ConnectionManager extends DurableObject<ConnectionManagerEnv> {
      * Used to close connections that don't authenticate in time
      */
     private pendingAuthAlarms: Map<string, number> = new Map();
+
+    /**
+     * Storage key for alarm retry state (HAP-479)
+     */
+    private static readonly ALARM_RETRY_STATE_KEY = 'alarm:retry:state';
+
+    /**
+     * Storage key prefix for dead letter entries (HAP-479)
+     */
+    private static readonly DEAD_LETTER_PREFIX = 'alarm:deadletter:';
 
     constructor(ctx: DurableObjectState, env: ConnectionManagerEnv) {
         super(ctx, env);
@@ -1504,12 +1522,94 @@ export class ConnectionManager extends DurableObject<ConnectionManagerEnv> {
     }
 
     /**
-     * Durable Object alarm handler (HAP-360)
+     * Durable Object alarm handler with retry logic (HAP-360, HAP-479)
      *
-     * Called when an auth timeout expires. Closes all connections
-     * that haven't authenticated in time.
+     * This method wraps the actual alarm processing with error recovery:
+     * - Automatic retry with exponential backoff on failure
+     * - Dead letter logging after max retries exhausted
+     * - Persistent retry state across DO hibernation
+     *
+     * @see HAP-479 - Durable Object alarm scheduling lacks error recovery
      */
     override async alarm(): Promise<void> {
+        // Check if this is a retry attempt
+        const retryState = await this.ctx.storage.get<AlarmRetryState>(
+            ConnectionManager.ALARM_RETRY_STATE_KEY
+        );
+
+        const currentAttempt = retryState?.attempt ?? 0;
+        const context = retryState?.context ?? 'auth-timeout';
+        const originalScheduledAt = retryState?.originalScheduledAt ?? Date.now();
+
+        try {
+            // Execute the actual alarm logic
+            await this.executeAlarmLogic();
+
+            // Success - clear retry state if it exists
+            if (retryState) {
+                await this.ctx.storage.delete(ConnectionManager.ALARM_RETRY_STATE_KEY);
+            }
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const errorStack = error instanceof Error ? error.stack : undefined;
+
+            // Log the error
+            console.error(
+                `[ConnectionManager] Alarm failed (attempt ${currentAttempt + 1}/${DEFAULT_ALARM_RETRY_CONFIG.maxRetries}):`,
+                errorMessage
+            );
+
+            // Check if we should retry
+            if (currentAttempt < DEFAULT_ALARM_RETRY_CONFIG.maxRetries - 1) {
+                // Schedule retry with exponential backoff
+                const delay = calculateBackoffDelay(currentAttempt);
+                const nextAlarmTime = Date.now() + delay;
+
+                // Save retry state for next attempt
+                const nextRetryState: AlarmRetryState = {
+                    attempt: currentAttempt + 1,
+                    originalScheduledAt,
+                    lastError: errorMessage,
+                    context,
+                };
+                await this.ctx.storage.put(
+                    ConnectionManager.ALARM_RETRY_STATE_KEY,
+                    nextRetryState
+                );
+
+                // Schedule the retry alarm
+                await this.ctx.storage.setAlarm(nextAlarmTime);
+
+                if (this.env.ENVIRONMENT !== 'production') {
+                    console.log(
+                        `[ConnectionManager] Scheduling alarm retry in ${delay}ms (attempt ${currentAttempt + 2})`
+                    );
+                }
+            } else {
+                // Max retries exhausted - dead letter
+                await this.handleAlarmDeadLetter(
+                    originalScheduledAt,
+                    currentAttempt + 1,
+                    errorMessage,
+                    context,
+                    errorStack
+                );
+
+                // Clear retry state
+                await this.ctx.storage.delete(ConnectionManager.ALARM_RETRY_STATE_KEY);
+            }
+        }
+    }
+
+    /**
+     * Execute the actual alarm processing logic
+     *
+     * Separated from the alarm() method to allow error wrapping.
+     * This contains the original auth timeout handling.
+     *
+     * @throws Error if processing fails (will trigger retry)
+     */
+    private async executeAlarmLogic(): Promise<void> {
         const now = Date.now();
 
         // Find all expired auth deadlines
@@ -1560,6 +1660,76 @@ export class ConnectionManager extends DurableObject<ConnectionManagerEnv> {
 
         // Reschedule for remaining pending auths
         await this.scheduleAuthTimeout();
+    }
+
+    /**
+     * Handle a dead-lettered alarm (HAP-479)
+     *
+     * Called when an alarm has exhausted all retry attempts.
+     * Logs the failure for debugging and stores in DO storage for later analysis.
+     *
+     * @param originalScheduledAt - When the alarm was originally scheduled
+     * @param attempts - Number of retry attempts made
+     * @param finalError - The error that caused the final failure
+     * @param context - Context about what the alarm was trying to do
+     * @param stack - Optional stack trace
+     */
+    private async handleAlarmDeadLetter(
+        originalScheduledAt: number,
+        attempts: number,
+        finalError: string,
+        context: string,
+        stack?: string
+    ): Promise<void> {
+        const deadLetterEntry: AlarmDeadLetterEntry = {
+            id: crypto.randomUUID(),
+            originalScheduledAt,
+            deadLetteredAt: Date.now(),
+            attempts,
+            finalError,
+            context,
+            stack,
+        };
+
+        // Log prominently for monitoring/alerting
+        console.error('[ConnectionManager] ALARM DEAD LETTER:', JSON.stringify(deadLetterEntry));
+
+        // Store in DO storage for later analysis
+        // Use timestamp-based key for chronological ordering
+        const storageKey = `${ConnectionManager.DEAD_LETTER_PREFIX}${deadLetterEntry.deadLetteredAt}:${deadLetterEntry.id}`;
+        await this.ctx.storage.put(storageKey, deadLetterEntry);
+
+        // Cleanup old dead letter entries (keep last 100)
+        await this.cleanupDeadLetterEntries(100);
+    }
+
+    /**
+     * Cleanup old dead letter entries to prevent unbounded storage growth (HAP-479)
+     *
+     * @param maxEntries - Maximum number of dead letter entries to keep
+     */
+    private async cleanupDeadLetterEntries(maxEntries: number): Promise<void> {
+        // List all dead letter entries
+        const entries = await this.ctx.storage.list<AlarmDeadLetterEntry>({
+            prefix: ConnectionManager.DEAD_LETTER_PREFIX,
+        });
+
+        // If within limits, nothing to do
+        if (entries.size <= maxEntries) {
+            return;
+        }
+
+        // Sort by key (which includes timestamp) and delete oldest
+        const sortedKeys = [...entries.keys()].sort();
+        const keysToDelete = sortedKeys.slice(0, entries.size - maxEntries);
+
+        for (const key of keysToDelete) {
+            await this.ctx.storage.delete(key);
+        }
+
+        if (this.env.ENVIRONMENT !== 'production') {
+            console.log(`[ConnectionManager] Cleaned up ${keysToDelete.length} old dead letter entries`);
+        }
     }
 
     /**

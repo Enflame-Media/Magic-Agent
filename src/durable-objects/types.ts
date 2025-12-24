@@ -496,6 +496,123 @@ export interface AuthMessagePayload {
 }
 
 // =============================================================================
+// ALARM RECOVERY TYPES (HAP-479)
+// =============================================================================
+
+/**
+ * Configuration for alarm retry behavior
+ *
+ * Implements exponential backoff with jitter for resilient alarm scheduling.
+ *
+ * @see HAP-479 - Durable Object alarm scheduling lacks error recovery
+ */
+export interface AlarmRetryConfig {
+    /**
+     * Maximum number of retry attempts before dead letter
+     * @default 3
+     */
+    maxRetries: number;
+
+    /**
+     * Base delay in milliseconds for exponential backoff
+     * Actual delay = baseDelayMs * 2^attempt + random jitter
+     * @default 1000 (1 second)
+     */
+    baseDelayMs: number;
+
+    /**
+     * Maximum delay in milliseconds (caps exponential growth)
+     * @default 30000 (30 seconds)
+     */
+    maxDelayMs: number;
+
+    /**
+     * Jitter factor (0-1) to randomize delay and prevent thundering herd
+     * @default 0.2 (20% jitter)
+     */
+    jitterFactor: number;
+}
+
+/**
+ * Default alarm retry configuration
+ */
+export const DEFAULT_ALARM_RETRY_CONFIG: AlarmRetryConfig = {
+    maxRetries: 3,
+    baseDelayMs: 1000,
+    maxDelayMs: 30000,
+    jitterFactor: 0.2,
+};
+
+/**
+ * State tracking for alarm retries
+ *
+ * Stored in DO storage to persist across hibernation.
+ */
+export interface AlarmRetryState {
+    /** Number of retry attempts so far */
+    attempt: number;
+
+    /** Original scheduled time for this alarm */
+    originalScheduledAt: number;
+
+    /** Last error message if any */
+    lastError?: string;
+
+    /** Context for the alarm (e.g., what operation it was for) */
+    context: string;
+}
+
+/**
+ * Dead letter entry for alarms that exhausted retries
+ *
+ * Logged for later analysis and debugging.
+ *
+ * @see HAP-479 - Durable Object alarm scheduling lacks error recovery
+ */
+export interface AlarmDeadLetterEntry {
+    /** Unique ID for this dead letter entry */
+    id: string;
+
+    /** Timestamp when the alarm was originally scheduled */
+    originalScheduledAt: number;
+
+    /** Timestamp when the alarm was finally dead-lettered */
+    deadLetteredAt: number;
+
+    /** Number of retry attempts made */
+    attempts: number;
+
+    /** The error that caused the final failure */
+    finalError: string;
+
+    /** Context about what the alarm was trying to do */
+    context: string;
+
+    /** Stack trace if available */
+    stack?: string;
+}
+
+/**
+ * Calculate delay with exponential backoff and jitter
+ *
+ * @param attempt - Current attempt number (0-indexed)
+ * @param config - Retry configuration
+ * @returns Delay in milliseconds
+ */
+export function calculateBackoffDelay(attempt: number, config: AlarmRetryConfig = DEFAULT_ALARM_RETRY_CONFIG): number {
+    // Exponential backoff: baseDelay * 2^attempt
+    const exponentialDelay = config.baseDelayMs * Math.pow(2, attempt);
+
+    // Cap at max delay
+    const cappedDelay = Math.min(exponentialDelay, config.maxDelayMs);
+
+    // Add jitter to prevent thundering herd
+    const jitter = cappedDelay * config.jitterFactor * Math.random();
+
+    return Math.floor(cappedDelay + jitter);
+}
+
+// =============================================================================
 // EVENT BROADCASTING TYPES
 // =============================================================================
 // NOTE: UpdateEvent, EphemeralEvent, UpdatePayload, EphemeralPayload, and GitHubProfile
