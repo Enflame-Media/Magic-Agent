@@ -30,8 +30,8 @@ export const ServiceVendorSchema = z
  *
  * Note: We cast to add openapi() method since @hono/zod-openapi extends Zod
  */
-export const GithubProfileSchema = (CanonicalGitHubProfileSchema as z.ZodTypeAny)
-    .openapi('GithubProfile');
+export const GitHubProfileSchema = (CanonicalGitHubProfileSchema as z.ZodTypeAny)
+    .openapi('GitHubProfile');
 
 /**
  * Schema for user account profile returned in API responses
@@ -58,7 +58,7 @@ export const AccountProfileSchema = z
             description: 'Unique username for discovery',
             example: 'johndoe',
         }),
-        github: GithubProfileSchema.nullable().openapi({
+        github: GitHubProfileSchema.nullable().openapi({
             description: 'Connected GitHub profile data or null',
         }),
         connectedServices: z.array(z.string()).openapi({
