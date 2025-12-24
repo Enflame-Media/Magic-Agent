@@ -361,7 +361,7 @@ export class ConnectionManager extends DurableObject<ConnectionManagerEnv> {
                 // Used by happy-cli which can send custom headers
                 // =============================================
 
-                const verified = await verifyToken(handshake.token);
+                const verified = await verifyToken(handshake.token, this.env.DB);
                 if (!verified) {
                     return new Response('Authentication failed', { status: 401 });
                 }
@@ -1753,8 +1753,8 @@ export class ConnectionManager extends DurableObject<ConnectionManagerEnv> {
         metadata: ConnectionMetadata,
         payload: AuthMessagePayload
     ): Promise<ConnectionMetadata | null> {
-        // Verify the token
-        const verified = await verifyToken(payload.token);
+        // Verify the token (with distributed blacklist check - HAP-507)
+        const verified = await verifyToken(payload.token, this.env.DB);
         if (!verified) {
             const errorMsg: ClientMessage = {
                 event: 'auth-error',

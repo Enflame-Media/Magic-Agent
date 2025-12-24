@@ -23,6 +23,9 @@ interface Env {
     /** Durable Object namespace for ConnectionManager */
     CONNECTION_MANAGER: DurableObjectNamespace;
 
+    /** D1 Database binding for distributed token blacklist (HAP-507) */
+    DB: D1Database;
+
     /** Master secret for auth token verification (preferred) */
     HAPPY_MASTER_SECRET?: string;
 
@@ -149,7 +152,7 @@ websocketRoutes.openapi(ticketRoute, async (c) => {
         await initAuth(secret);
     }
 
-    const verified = await verifyToken(token);
+    const verified = await verifyToken(token, c.env.DB);
     if (!verified) {
         return c.json({ error: 'Invalid token' } as const, 401);
     }
@@ -257,7 +260,7 @@ async function handleWebSocketUpgrade(c: any): Promise<Response> {
             await initAuth(secret);
         }
 
-        const verified = await verifyToken(token);
+        const verified = await verifyToken(token, c.env.DB);
         if (!verified) {
             return new Response('Invalid authentication token', {
                 status: 401,
@@ -349,7 +352,7 @@ websocketRoutes.openapi(statsRoute, async (c) => {
         await initAuth(secret);
     }
 
-    const verified = await verifyToken(token);
+    const verified = await verifyToken(token, c.env.DB);
     if (!verified) {
         return c.json({ error: 'Invalid token' } as const, 401);
     }
@@ -450,7 +453,7 @@ websocketRoutes.openapi(broadcastRoute, async (c) => {
         await initAuth(secret);
     }
 
-    const verified = await verifyToken(token);
+    const verified = await verifyToken(token, c.env.DB);
     if (!verified) {
         return c.json({ error: 'Invalid token' } as const, 401);
     }
