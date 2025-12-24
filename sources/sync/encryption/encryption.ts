@@ -145,6 +145,16 @@ export class Encryption {
         return this.machineEncryptions.get(machineId) || null;
     }
 
+    /**
+     * Remove machine encryption from memory when machine is deleted (HAP-499)
+     * Currently unused since machine deletion isn't implemented, but ready for future use
+     */
+    removeMachineEncryption(machineId: string): void {
+        this.machineEncryptions.delete(machineId);
+        // Also clear any cached data for this machine
+        this.cache.clearMachineCache(machineId);
+    }
+
     //
     // Legacy methods for machine metadata (temporary until machines are migrated)
     //

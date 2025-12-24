@@ -30,6 +30,7 @@ import { config } from '@/config';
 import { log } from '@/log';
 import { gitStatusSync } from './gitStatusSync';
 import { projectManager } from './projectManager';
+import { fileSearchCache } from './suggestionFile';
 import { voiceHooks } from '@/realtime/hooks/voiceHooks';
 import { Message } from './typesMessage';
 import { systemPrompt } from './prompt/systemPrompt';
@@ -111,6 +112,10 @@ class Sync {
             sync.stop();
             // Clean up associated data when session is evicted (HAP-469)
             this.sessionLastSeq.delete(sessionId);
+            // HAP-499: Clean up additional session-scoped caches to prevent memory leaks
+            this.encryption.removeSessionEncryption(sessionId);
+            gitStatusSync.clearForSession(sessionId);
+            fileSearchCache.clearCache(sessionId);
         }
     );
     /**
@@ -2089,19 +2094,22 @@ class Sync {
         } else if (updateData.body.t === 'delete-session') {
             log.log('🗑️ Delete session update received');
             const sessionId = updateData.body.sid;
-            
+
             // Remove session from storage
             storage.getState().deleteSession(sessionId);
-            
+
             // Remove encryption keys from memory
             this.encryption.removeSessionEncryption(sessionId);
-            
+
             // Remove from project manager
             projectManager.removeSession(sessionId);
-            
+
             // Clear any cached git status
             gitStatusSync.clearForSession(sessionId);
-            
+
+            // HAP-499: Clear file search cache
+            fileSearchCache.clearCache(sessionId);
+
             log.log(`🗑️ Session ${sessionId} deleted from local storage`);
         } else if (updateData.body.t === 'update-session') {
             const session = storage.getState().sessions[updateData.body.id];

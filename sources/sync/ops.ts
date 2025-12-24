@@ -594,6 +594,9 @@ export async function sessionDelete(sessionId: string): Promise<{ success: boole
             projectManager.removeSession(sessionId);
             const { gitStatusSync } = await import('./gitStatusSync');
             gitStatusSync.clearForSession(sessionId);
+            // HAP-499: Clear file search cache
+            const { fileSearchCache } = await import('./suggestionFile');
+            fileSearchCache.clearCache(sessionId);
 
             return { success: true };
         } else {
