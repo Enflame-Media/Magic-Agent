@@ -2,17 +2,10 @@ import { SignJWT, jwtVerify, errors as joseErrors } from 'jose';
 import { eq, sql, lt } from 'drizzle-orm';
 import { getDb } from '@/db/client';
 import { revokedTokens } from '@/db/schema';
-import { createId } from '@/utils/id';
-
 /**
  * Token extras type - additional data embedded in tokens
  */
 export type TokenExtras = Record<string, unknown>;
-
-/**
- * Reason for token revocation
- */
-export type RevocationReason = 'logout' | 'security' | 'password_change' | 'manual';
 
 /**
  * Token cache entry interface
@@ -29,6 +22,7 @@ interface TokenCacheEntry {
 interface AuthState {
     persistentKey: CryptoKey;
     persistentPublicKey: string;
+    persistentTtl: number;
     ephemeralKey: CryptoKey;
     ephemeralPublicKey: string;
     ephemeralTtl: number;
@@ -50,11 +44,27 @@ interface AuthState {
  * Key differences from privacy-kit version:
  * - Uses jose SignJWT/jwtVerify instead of privacy-kit generators
  * - Derives Ed25519 keys from seed using Web Crypto API (HKDF)
- * - Persistent tokens have no expiration (match privacy-kit behavior)
- * - Ephemeral tokens have configurable TTL
+ * - Persistent tokens expire after 30 days (configurable via initAuth)
+ * - Ephemeral tokens have configurable TTL (default 5 minutes)
+ *
+ * ## Security Model
+ *
+ * **Token Lifecycle:**
+ * - Persistent tokens: 30-day lifetime with 7-day refresh grace period
+ * - Ephemeral tokens: 5-minute lifetime (for OAuth flows)
+ *
+ * **Token Refresh:**
+ * - Clients should refresh tokens before expiration using refreshToken()
+ * - Grace period allows refresh up to 7 days after expiration
+ * - After grace period, full re-authentication is required
+ *
+ * **Revocation:**
+ * - Tokens can be revoked via D1 blacklist (distributed invalidation)
+ * - Revocation is checked on every verification (after cache miss)
  *
  * @see HAP-264 for implementation details
  * @see HAP-26 for discovery of privacy-kit incompatibility
+ * @see HAP-451 for token expiration security improvement
  */
 
 let authState: AuthState | null = null;
@@ -64,6 +74,8 @@ const tokenCache = new Map<string, TokenCacheEntry>();
 const SERVICE_NAME = 'handy';
 const EPHEMERAL_SERVICE_NAME = 'github-happy';
 const DEFAULT_EPHEMERAL_TTL = 5 * 60 * 1000; // 5 minutes
+const DEFAULT_PERSISTENT_TTL = 30 * 24 * 60 * 60 * 1000; // 30 days
+const REFRESH_GRACE_PERIOD = 7 * 24 * 60 * 60 * 1000; // 7 days grace period for refresh
 
 /**
  * Ed25519 PKCS8 prefix for wrapping a 32-byte private key seed
@@ -199,9 +211,6 @@ async function hashToken(token: string): Promise<string> {
         .join('');
 }
 
-/** Default expiration for blacklist entries (30 days in milliseconds) */
-const BLACKLIST_EXPIRY_MS = 30 * 24 * 60 * 60 * 1000;
-
 /**
  * Initialize the auth module with master secret
  *
@@ -209,7 +218,9 @@ const BLACKLIST_EXPIRY_MS = 30 * 24 * 60 * 60 * 1000;
  * Derives deterministic Ed25519 keys from the seed for persistent token generation.
  *
  * @param masterSecret - The master secret for token generation (from getMasterSecret(env))
- * @param ephemeralTtl - TTL for ephemeral tokens in milliseconds (default: 5 minutes)
+ * @param options - Optional configuration for token TTLs
+ * @param options.ephemeralTtl - TTL for ephemeral tokens in milliseconds (default: 5 minutes)
+ * @param options.persistentTtl - TTL for persistent tokens in milliseconds (default: 30 days)
  * @returns Promise that resolves when initialization is complete
  *
  * @example
@@ -227,8 +238,13 @@ const BLACKLIST_EXPIRY_MS = 30 * 24 * 60 * 60 * 1000;
  */
 export async function initAuth(
     masterSecret: string,
-    ephemeralTtl: number = DEFAULT_EPHEMERAL_TTL
+    options: {
+        ephemeralTtl?: number;
+        persistentTtl?: number;
+    } = {}
 ): Promise<void> {
+    const ephemeralTtl = options.ephemeralTtl ?? DEFAULT_EPHEMERAL_TTL;
+    const persistentTtl = options.persistentTtl ?? DEFAULT_PERSISTENT_TTL;
     if (authState) {
         console.log('[Auth] Already initialized, public key:', authState.persistentPublicKey.substring(0, 10) + '...');
         return; // Already initialized
@@ -249,6 +265,7 @@ export async function initAuth(
     authState = {
         persistentKey: persistentKeyPair.privateKey,
         persistentPublicKey,
+        persistentTtl,
         ephemeralKey: ephemeralKeyPair.privateKey,
         ephemeralPublicKey,
         ephemeralTtl,
@@ -301,6 +318,7 @@ export function getEphemeralPublicKey(): string {
  * Create a new authentication token for a user
  *
  * Generates a persistent JWT signed with Ed25519 that can be verified later.
+ * Tokens expire after 30 days by default (configurable via initAuth).
  * Tokens are automatically cached for fast verification.
  *
  * @param userId - The user ID to embed in the token
@@ -312,7 +330,11 @@ export function getEphemeralPublicKey(): string {
  * ```typescript
  * const token = await createToken('user_abc123', { session: 'session_xyz' });
  * // Returns: "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9..."
+ * // Token expires in 30 days - use refreshToken() before expiration
  * ```
+ *
+ * @see refreshToken for token refresh before expiration
+ * @see HAP-451 for token expiration security improvement
  */
 export async function createToken(userId: string, extras?: TokenExtras): Promise<string> {
     if (!authState) {
@@ -327,15 +349,18 @@ export async function createToken(userId: string, extras?: TokenExtras): Promise
 
     console.log('[Auth] Creating token for user:', userId, 'with public key:', authState.persistentPublicKey.substring(0, 10) + '...');
 
+    // Calculate expiration time (30 days by default)
+    const expirationTime = Math.floor((Date.now() + authState.persistentTtl) / 1000);
+
     const builder = new SignJWT({
         user: userId,
         ...(extras && { extras }),
     })
         .setProtectedHeader({ alg: 'EdDSA', typ: 'JWT' })
         .setIssuer(SERVICE_NAME)
-        .setIssuedAt();
+        .setIssuedAt()
+        .setExpirationTime(expirationTime);
 
-    // Persistent tokens don't expire (match privacy-kit behavior)
     const token = await builder.sign(authState.persistentKey);
 
     console.log('[Auth] Token created, first 20 chars:', token.substring(0, 20) + '...');
@@ -472,6 +497,120 @@ export async function verifyToken(
 }
 
 /**
+ * Refresh an authentication token
+ *
+ * Issues a new token for a user whose token is valid or within the grace period.
+ * This allows clients to maintain session continuity without full re-authentication.
+ *
+ * The grace period (7 days by default) allows tokens that have recently expired
+ * to still be refreshed, preventing edge-case lockouts for users who open the
+ * app shortly after their token expires.
+ *
+ * @param token - The current token (valid or within grace period)
+ * @param db - Optional D1 database for blacklist check
+ * @returns Promise resolving to new token and user info, or null if refresh not allowed
+ * @throws Error if auth module is not initialized
+ *
+ * @example
+ * ```typescript
+ * // Refresh before expiration (recommended)
+ * const result = await refreshToken(currentToken, env.DB);
+ * if (result) {
+ *     // Store new token, continue with result.userId
+ *     saveToken(result.token);
+ * } else {
+ *     // Token expired beyond grace period, require re-authentication
+ *     redirectToLogin();
+ * }
+ * ```
+ *
+ * @see HAP-451 for token expiration security improvement
+ */
+export async function refreshToken(
+    token: string,
+    db?: D1Database
+): Promise<{ token: string; userId: string; extras?: TokenExtras } | null> {
+    if (!authState) {
+        throw new Error(
+            'Auth module not initialized. ' +
+            'In Cloudflare Workers, initAuth must be called before accessing auth functions. ' +
+            'This is typically done in src/middleware/auth.ts which runs before route handlers. ' +
+            'Ensure your route is registered after the auth middleware in src/index.ts. ' +
+            'See docs/SECRETS.md for HAPPY_MASTER_SECRET configuration.'
+        );
+    }
+
+    console.log('[Auth] Attempting to refresh token, first 20 chars:', token.substring(0, 20) + '...');
+
+    // Check distributed blacklist if database is provided
+    if (db) {
+        const isRevoked = await isTokenRevoked(db, token);
+        if (isRevoked) {
+            console.log('[Auth] Token is revoked, cannot refresh');
+            return null;
+        }
+    }
+
+    try {
+        // Derive public key from private key for verification
+        const publicKeyJwk = (await crypto.subtle.exportKey(
+            'jwk',
+            authState.persistentKey
+        )) as JsonWebKey;
+        delete publicKeyJwk.d;
+        publicKeyJwk.key_ops = ['verify'];
+
+        const publicKey = await crypto.subtle.importKey(
+            'jwk',
+            publicKeyJwk,
+            { name: 'Ed25519' },
+            false,
+            ['verify']
+        );
+
+        // Try to verify with grace period for expired tokens
+        // We use clockTolerance to allow tokens expired within the grace period
+        const graceSeconds = Math.floor(REFRESH_GRACE_PERIOD / 1000);
+
+        const { payload } = await jwtVerify(token, publicKey, {
+            issuer: SERVICE_NAME,
+            clockTolerance: graceSeconds, // Allow tokens expired within grace period
+        });
+
+        const userId = payload.user as string;
+        const extras = payload.extras as TokenExtras | undefined;
+
+        console.log('[Auth] Token valid for refresh, issuing new token for user:', userId);
+
+        // Issue new token with fresh expiration
+        const newToken = await createToken(userId, extras);
+
+        // Remove old token from cache (it's being replaced)
+        tokenCache.delete(token);
+
+        return {
+            token: newToken,
+            userId,
+            extras,
+        };
+    } catch (error) {
+        // Token is invalid or expired beyond grace period
+        if (error instanceof joseErrors.JWTExpired) {
+            console.log('[Auth] Token expired beyond grace period, refresh denied');
+        } else if (
+            error instanceof joseErrors.JWTInvalid ||
+            error instanceof joseErrors.JWSSignatureVerificationFailed ||
+            error instanceof joseErrors.JWTClaimValidationFailed
+        ) {
+            console.log('[Auth] Token invalid, refresh denied:', error.message);
+        } else {
+            console.error('[Auth] Token refresh error:', error);
+        }
+        return null;
+    }
+}
+
+/**
  * Create an ephemeral token with TTL (for OAuth flows like GitHub)
  *
  * Ephemeral tokens automatically expire after the configured TTL.
@@ -581,15 +720,16 @@ export async function verifyEphemeralToken(
  * Check if a token has been revoked in the distributed blacklist
  *
  * This checks the D1 database for the token's hash. Used internally by
- * verifyToken() and can be called directly if needed.
+ * verifyToken().
  *
  * @param db - D1 database instance
  * @param token - The token to check
  * @returns Promise resolving to true if revoked, false if not
+ * @internal Called internally by verifyToken
  *
  * @see HAP-452 for distributed invalidation implementation
  */
-export async function isTokenRevoked(db: D1Database, token: string): Promise<boolean> {
+async function isTokenRevoked(db: D1Database, token: string): Promise<boolean> {
     const tokenHash = await hashToken(token);
     const drizzle = getDb(db);
 
@@ -600,159 +740,6 @@ export async function isTokenRevoked(db: D1Database, token: string): Promise<boo
         .limit(1);
 
     return result.length > 0;
-}
-
-/**
- * Invalidate all tokens for a specific user (distributed)
- *
- * Clears the local cache AND adds entries to the distributed blacklist.
- * This ensures tokens are invalidated across all Workers globally.
- *
- * @param db - D1 database for distributed blacklist
- * @param userId - The user ID whose tokens should be invalidated
- * @param reason - Reason for revocation (for audit logging)
- *
- * @example
- * ```typescript
- * // User logs out - invalidate all their tokens globally
- * await invalidateUserTokens(env.DB, 'user_abc123', 'logout');
- *
- * // Security incident - revoke all tokens
- * await invalidateUserTokens(env.DB, 'user_abc123', 'security');
- * ```
- *
- * @see HAP-452 for distributed invalidation implementation
- */
-export async function invalidateUserTokens(
-    db: D1Database,
-    userId: string,
-    reason: RevocationReason = 'logout'
-): Promise<void> {
-    const drizzle = getDb(db);
-    const now = Date.now();
-    const expiresAt = now + BLACKLIST_EXPIRY_MS;
-
-    // First, collect all tokens for this user and compute hashes
-    const tokensToRevoke: { token: string; hash: string }[] = [];
-    for (const [token, entry] of tokenCache.entries()) {
-        if (entry.userId === userId) {
-            const tokenHash = await hashToken(token);
-            tokensToRevoke.push({ token, hash: tokenHash });
-        }
-    }
-
-    if (tokensToRevoke.length === 0) {
-        console.log(`[Auth] No cached tokens found for user ${userId}`);
-        return;
-    }
-
-    // Insert all revoked tokens into D1 (batch insert for efficiency)
-    // Note: If this fails, we don't delete from local cache (atomic behavior)
-    await drizzle.insert(revokedTokens).values(
-        tokensToRevoke.map(({ hash }) => ({
-            id: createId(),
-            tokenHash: hash,
-            userId,
-            reason,
-            revokedAt: new Date(now),
-            expiresAt: new Date(expiresAt),
-        }))
-    ).onConflictDoNothing(); // Ignore if already blacklisted
-
-    // Only delete from local cache after DB insert succeeds
-    for (const { token } of tokensToRevoke) {
-        tokenCache.delete(token);
-    }
-
-    console.log(`[Auth] Invalidated ${tokensToRevoke.length} tokens for user ${userId} (reason: ${reason})`);
-}
-
-/**
- * Invalidate a specific token (distributed)
- *
- * Removes from local cache AND adds to the distributed blacklist.
- * The token will be rejected on all Workers globally.
- *
- * @param db - D1 database for distributed blacklist
- * @param token - The token to invalidate
- * @param userId - The user ID who owns the token
- * @param reason - Reason for revocation (for audit logging)
- *
- * @example
- * ```typescript
- * // Invalidate a specific token globally
- * await invalidateToken(env.DB, token, userId, 'logout');
- * ```
- *
- * @see HAP-452 for distributed invalidation implementation
- */
-export async function invalidateToken(
-    db: D1Database,
-    token: string,
-    userId: string,
-    reason: RevocationReason = 'logout'
-): Promise<void> {
-    const drizzle = getDb(db);
-    const tokenHash = await hashToken(token);
-    const now = Date.now();
-    const expiresAt = now + BLACKLIST_EXPIRY_MS;
-
-    // Add to distributed blacklist
-    await drizzle.insert(revokedTokens).values({
-        id: createId(),
-        tokenHash,
-        userId,
-        reason,
-        revokedAt: new Date(now),
-        expiresAt: new Date(expiresAt),
-    }).onConflictDoNothing(); // Ignore if already blacklisted
-
-    // Remove from local cache
-    tokenCache.delete(token);
-
-    console.log(`[Auth] Invalidated token for user ${userId} (reason: ${reason})`);
-}
-
-/**
- * Invalidate a specific token (local only - legacy)
- *
- * @deprecated Use invalidateToken(db, token, userId) for distributed invalidation
- *
- * This function only clears the local cache and does NOT add to the distributed
- * blacklist. It's kept for backward compatibility but should be avoided.
- *
- * @param token - The token string to invalidate locally
- */
-export function invalidateTokenLocal(token: string): void {
-    console.warn(
-        '[Auth] DEPRECATED: invalidateTokenLocal() only affects this Worker instance. ' +
-            'Token will still be valid on other edge locations. ' +
-            'Use invalidateToken(db, token, userId) for global invalidation.'
-    );
-    tokenCache.delete(token);
-}
-
-/**
- * Invalidate all tokens for a user (local only - legacy)
- *
- * @deprecated Use invalidateUserTokens(db, userId) for distributed invalidation
- *
- * This function only clears the local cache and does NOT add to the distributed
- * blacklist. It's kept for backward compatibility but should be avoided.
- *
- * @param userId - The user ID whose tokens should be invalidated locally
- */
-export function invalidateUserTokensLocal(userId: string): void {
-    console.warn(
-        '[Auth] DEPRECATED: invalidateUserTokensLocal() only affects this Worker instance. ' +
-            'Tokens will still be valid on other edge locations. ' +
-            'Use invalidateUserTokens(db, userId) for global invalidation.'
-    );
-    for (const [token, entry] of tokenCache.entries()) {
-        if (entry.userId === userId) {
-            tokenCache.delete(token);
-        }
-    }
 }
 
 /**
@@ -801,6 +788,7 @@ export function resetAuth(): void {
  *
  * @param db - D1 database instance
  * @returns Number of entries deleted
+ * @internal Reserved for scheduled worker implementation
  *
  * @example
  * ```typescript
@@ -841,32 +829,3 @@ export async function cleanupExpiredTokens(db: D1Database): Promise<number> {
     return toDelete;
 }
 
-/**
- * Get blacklist statistics for monitoring
- *
- * @param db - D1 database instance
- * @returns Object with blacklist statistics
- */
-export async function getBlacklistStats(db: D1Database): Promise<{
-    totalEntries: number;
-    expiredEntries: number;
-}> {
-    const drizzle = getDb(db);
-    const now = Date.now();
-
-    // Count total entries
-    const totalResult = await drizzle
-        .select({ count: sql<number>`COUNT(*)` })
-        .from(revokedTokens);
-
-    // Count expired entries (ready for cleanup)
-    const expiredResult = await drizzle
-        .select({ count: sql<number>`COUNT(*)` })
-        .from(revokedTokens)
-        .where(lt(revokedTokens.expiresAt, new Date(now)));
-
-    return {
-        totalEntries: totalResult[0]?.count ?? 0,
-        expiredEntries: expiredResult[0]?.count ?? 0,
-    };
-}

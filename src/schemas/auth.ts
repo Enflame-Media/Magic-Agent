@@ -92,8 +92,9 @@ export const TerminalAuthRequestSchema = z
 
 /**
  * Schema for terminal auth request response when pending approval
+ * @internal Used in union type
  */
-export const TerminalAuthRequestedResponseSchema = z
+const TerminalAuthRequestedResponseSchema = z
     .object({
         state: z.literal('requested').openapi({
             description: 'Auth request created, waiting for mobile approval',
@@ -103,8 +104,9 @@ export const TerminalAuthRequestedResponseSchema = z
 
 /**
  * Schema for terminal auth request response when already authorized
+ * @internal Used in union type
  */
-export const TerminalAuthAuthorizedResponseSchema = z
+const TerminalAuthAuthorizedResponseSchema = z
     .object({
         state: z.literal('authorized').openapi({
             description: 'Auth request already approved by mobile app',
@@ -241,6 +243,56 @@ export const AccountAuthResponseSchema = z
             }),
     })
     .openapi('AccountAuthResponse');
+
+// ============================================================================
+// Token Refresh (POST /v1/auth/refresh)
+// ============================================================================
+
+/**
+ * Schema for token refresh response (success)
+ *
+ * Returns a new token when the current token is valid or within the grace period.
+ *
+ * @see HAP-451 for token expiration security improvement
+ */
+export const TokenRefreshResponseSchema = z
+    .object({
+        success: z.literal(true).openapi({
+            description: 'Token refresh succeeded',
+            example: true,
+        }),
+        token: z.string().openapi({
+            description: 'New JWT authentication token with fresh expiration',
+            example: 'eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9...',
+        }),
+        expiresIn: z.number().openapi({
+            description: 'Token validity in seconds (30 days = 2592000)',
+            example: 2592000,
+        }),
+    })
+    .openapi('TokenRefreshResponse');
+
+/**
+ * Schema for token refresh failure
+ *
+ * Returned when the token is expired beyond the grace period or is invalid.
+ */
+export const TokenRefreshFailedResponseSchema = z
+    .object({
+        success: z.literal(false).openapi({
+            description: 'Token refresh failed',
+            example: false,
+        }),
+        error: z.string().openapi({
+            description: 'Error message explaining why refresh failed',
+            example: 'Token expired beyond grace period',
+        }),
+        code: z.enum(['TOKEN_EXPIRED', 'TOKEN_INVALID', 'TOKEN_REVOKED']).openapi({
+            description: 'Error code for programmatic handling',
+            example: 'TOKEN_EXPIRED',
+        }),
+    })
+    .openapi('TokenRefreshFailedResponse');
 
 // ============================================================================
 // Error Responses

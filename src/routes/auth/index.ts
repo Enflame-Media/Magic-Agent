@@ -1,7 +1,7 @@
 import { createRoute, OpenAPIHono } from '@hono/zod-openapi';
 // Encoding utilities for base64/hex operations (Workers-compatible)
 import * as privacyKit from '@/lib/privacy-kit-shim';
-import { createToken } from '@/lib/auth';
+import { createToken, refreshToken } from '@/lib/auth';
 import { getDb } from '@/db/client';
 import { schema } from '@/db/schema';
 import { eq } from 'drizzle-orm';
@@ -19,6 +19,8 @@ import {
     ApprovalSuccessResponseSchema,
     AccountAuthRequestSchema,
     AccountAuthResponseSchema,
+    TokenRefreshResponseSchema,
+    TokenRefreshFailedResponseSchema,
     UnauthorizedErrorSchema,
     NotFoundErrorSchema,
 } from '@/schemas/auth';
@@ -559,6 +561,75 @@ authRoutes.openapi(accountAuthResponseRoute, async (c) => {
     }
 
     return c.json({ success: true }, 200);
+});
+
+// ============================================================================
+// POST /v1/auth/refresh - Refresh Authentication Token
+// ============================================================================
+
+const tokenRefreshRoute = createRoute({
+    method: 'post',
+    path: '/v1/auth/refresh',
+    responses: {
+        200: {
+            content: {
+                'application/json': {
+                    schema: TokenRefreshResponseSchema,
+                },
+            },
+            description: 'Token refreshed successfully',
+        },
+        401: {
+            content: {
+                'application/json': {
+                    schema: TokenRefreshFailedResponseSchema,
+                },
+            },
+            description: 'Token refresh failed (expired beyond grace period, invalid, or revoked)',
+        },
+    },
+    tags: ['Authentication'],
+    summary: 'Refresh authentication token',
+    description:
+        'Refresh an authentication token before or shortly after expiration. ' +
+        'Tokens can be refreshed within a 7-day grace period after expiration. ' +
+        'Requires a valid Bearer token in the Authorization header. ' +
+        'Returns a new token with a fresh 30-day expiration.',
+    security: [{ Bearer: [] }],
+});
+
+authRoutes.openapi(tokenRefreshRoute, async (c) => {
+    // Extract token from Authorization header
+    const authHeader = c.req.header('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return c.json({
+            success: false as const,
+            error: 'Missing or invalid Authorization header',
+            code: 'TOKEN_INVALID' as const,
+        }, 401);
+    }
+
+    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+
+    // Attempt to refresh the token
+    const result = await refreshToken(token, c.env.DB);
+
+    if (!result) {
+        // Refresh failed - token is expired beyond grace period, invalid, or revoked
+        return c.json({
+            success: false as const,
+            error: 'Token expired beyond grace period or is invalid',
+            code: 'TOKEN_EXPIRED' as const,
+        }, 401);
+    }
+
+    // Success - return new token
+    const THIRTY_DAYS_IN_SECONDS = 30 * 24 * 60 * 60;
+    return c.json({
+        success: true as const,
+        token: result.token,
+        expiresIn: THIRTY_DAYS_IN_SECONDS,
+    }, 200);
 });
 
 export default authRoutes;

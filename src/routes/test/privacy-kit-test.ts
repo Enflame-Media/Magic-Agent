@@ -122,7 +122,7 @@ testRoutes.get('/privacy-kit', async (c) => {
             throw new Error('TEST_AUTH_SECRET not set in environment - add to .dev.vars');
         }
 
-        await initAuth(testSecret, 5000); // 5s TTL for basic tests (expiration tested separately)
+        await initAuth(testSecret, { ephemeralTtl: 5000 }); // 5s ephemeral TTL for basic tests
 
         results.tests.initialization = {
             passed: true,
@@ -222,7 +222,7 @@ testRoutes.get('/privacy-kit', async (c) => {
         // Note: JWT exp uses seconds precision, so TTL must be at least 1500ms
         // to reliably survive the Math.floor rounding at second boundaries
         resetAuth();
-        await initAuth(testSecret, 1500); // 1.5s TTL (safe for second-boundary rounding)
+        await initAuth(testSecret, { ephemeralTtl: 1500 }); // 1.5s ephemeral TTL (safe for second-boundary rounding)
 
         const shortLivedToken = await createEphemeralToken('expired-test', 'expiration-test');
 
