@@ -365,7 +365,21 @@ export class HappyWebSocket {
     }
 
     /**
-     * Schedule a reconnection attempt with exponential backoff
+     * Schedule a reconnection attempt with exponential backoff and jitter.
+     *
+     * Jitter Algorithm (HAP-477):
+     * Uses "centered jitter" to spread reconnection times both above and below
+     * the base delay, preventing thundering herd when many clients reconnect
+     * after a server outage.
+     *
+     * With randomizationFactor=0.5:
+     * - Base delay: 1000ms * 2^attempt (capped at max)
+     * - Jitter range: ±50% of base delay
+     * - Actual delay: 500ms to 1500ms for first attempt
+     *
+     * Formula: delay = base * (1 - factor + random * factor * 2)
+     * This centers the distribution around the base delay rather than
+     * always adding extra time (which would still cause clustering).
      */
     private scheduleReconnect(): void {
         if (this.reconnectTimeout) {
@@ -378,16 +392,18 @@ export class HappyWebSocket {
             return;
         }
 
-        // Calculate delay with exponential backoff and jitter
+        // Calculate delay with exponential backoff and centered jitter (HAP-477)
         const baseDelay = Math.min(
             this.config.reconnectionDelay * Math.pow(2, this.reconnectAttempts),
             this.config.reconnectionDelayMax
         );
-        const jitter = baseDelay * this.config.randomizationFactor * Math.random();
-        const delay = baseDelay + jitter;
+        // Centered jitter: spreads delay ±factor around base, not just +factor
+        // With factor=0.5: delay ranges from base*0.5 to base*1.5
+        const jitterMultiplier = 1 - this.config.randomizationFactor + (Math.random() * this.config.randomizationFactor * 2);
+        const delay = Math.max(100, baseDelay * jitterMultiplier); // Minimum 100ms floor
 
         this.reconnectAttempts++;
-        logger.debug(`[HappyWebSocket] Scheduling reconnection in ${Math.round(delay)}ms (attempt ${this.reconnectAttempts})`);
+        logger.debug(`[HappyWebSocket] Scheduling reconnection in ${Math.round(delay)}ms (attempt ${this.reconnectAttempts}, base ${Math.round(baseDelay)}ms)`);
 
         this.reconnectTimeout = setTimeout(() => {
             this.reconnectTimeout = null;
