@@ -16,6 +16,16 @@ export function enableMonitoring(app: Fastify) {
         const route = request.routeOptions?.url || request.url.split('?')[0] || 'unknown';
         const status = reply.statusCode.toString();
 
+        // Log request completion with correlation ID
+        log({
+            module: 'http',
+            correlationId: request.correlationId,
+            method,
+            route,
+            status: reply.statusCode,
+            durationMs: Math.round(duration * 1000),
+        }, `${method} ${route} ${status} ${Math.round(duration * 1000)}ms`);
+
         // Increment request counter
         httpRequestsCounter.inc({ method, route, status });
 

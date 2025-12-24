@@ -12,6 +12,7 @@ import { sessionUpdateHandler } from "./socket/sessionUpdateHandler";
 import { machineUpdateHandler } from "./socket/machineUpdateHandler";
 import { artifactUpdateHandler } from "./socket/artifactUpdateHandler";
 import { accessKeyHandler } from "./socket/accessKeyHandler";
+import { generateCorrelationId, isValidCorrelationId } from "@/utils/correlationId";
 
 export function startSocket(app: Fastify) {
     const io = new Server(app.server, {
@@ -33,14 +34,20 @@ export function startSocket(app: Fastify) {
 
     let rpcListeners = new Map<string, Map<string, Socket>>();
     io.on("connection", async (socket) => {
-        log({ module: 'websocket' }, `New connection attempt from socket: ${socket.id}`);
+        // Extract or generate correlation ID for this WebSocket connection
+        const incomingCorrelationId = socket.handshake.auth.correlationId as string | undefined;
+        const correlationId = (incomingCorrelationId && isValidCorrelationId(incomingCorrelationId))
+            ? incomingCorrelationId
+            : generateCorrelationId();
+
+        log({ module: 'websocket', correlationId }, `New connection attempt from socket: ${socket.id}`);
         const token = socket.handshake.auth.token as string;
         const clientType = socket.handshake.auth.clientType as 'session-scoped' | 'user-scoped' | 'machine-scoped' | undefined;
         const sessionId = socket.handshake.auth.sessionId as string | undefined;
         const machineId = socket.handshake.auth.machineId as string | undefined;
 
         if (!token) {
-            log({ module: 'websocket' }, `No token provided`);
+            log({ module: 'websocket', correlationId }, `No token provided`);
             socket.emit('error', { message: 'Missing authentication token' });
             socket.disconnect();
             return;
@@ -48,7 +55,7 @@ export function startSocket(app: Fastify) {
 
         // Validate session-scoped clients have sessionId
         if (clientType === 'session-scoped' && !sessionId) {
-            log({ module: 'websocket' }, `Session-scoped client missing sessionId`);
+            log({ module: 'websocket', correlationId }, `Session-scoped client missing sessionId`);
             socket.emit('error', { message: 'Session ID required for session-scoped clients' });
             socket.disconnect();
             return;
@@ -56,7 +63,7 @@ export function startSocket(app: Fastify) {
 
         // Validate machine-scoped clients have machineId
         if (clientType === 'machine-scoped' && !machineId) {
-            log({ module: 'websocket' }, `Machine-scoped client missing machineId`);
+            log({ module: 'websocket', correlationId }, `Machine-scoped client missing machineId`);
             socket.emit('error', { message: 'Machine ID required for machine-scoped clients' });
             socket.disconnect();
             return;
@@ -64,14 +71,14 @@ export function startSocket(app: Fastify) {
 
         const verified = await auth.verifyToken(token);
         if (!verified) {
-            log({ module: 'websocket' }, `Invalid token provided`);
+            log({ module: 'websocket', correlationId }, `Invalid token provided`);
             socket.emit('error', { message: 'Invalid authentication token' });
             socket.disconnect();
             return;
         }
 
         const userId = verified.userId;
-        log({ module: 'websocket' }, `Token verified: ${userId}, clientType: ${clientType || 'user-scoped'}, sessionId: ${sessionId || 'none'}, machineId: ${machineId || 'none'}, socketId: ${socket.id}`);
+        log({ module: 'websocket', correlationId, userId, clientType: clientType || 'user-scoped', sessionId: sessionId || undefined, machineId: machineId || undefined }, `Token verified for socket ${socket.id}`);
 
         // Store connection based on type
         const metadata = { clientType: clientType || 'user-scoped', sessionId, machineId };
@@ -118,7 +125,7 @@ export function startSocket(app: Fastify) {
             eventRouter.removeConnection(userId, connection);
             decrementWebSocketConnection(connection.connectionType);
 
-            log({ module: 'websocket' }, `User disconnected: ${userId}`);
+            log({ module: 'websocket', correlationId, userId }, `User disconnected`);
 
             // Broadcast daemon offline status
             if (connection.connectionType === 'machine-scoped') {
@@ -146,7 +153,7 @@ export function startSocket(app: Fastify) {
         accessKeyHandler(userId, socket);
 
         // Ready
-        log({ module: 'websocket' }, `User connected: ${userId}`);
+        log({ module: 'websocket', correlationId, userId }, `User connected`);
     });
 
     onShutdown('api', async () => {

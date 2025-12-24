@@ -41,6 +41,7 @@ export function enableErrorHandlers(app: Fastify) {
         log({
             module: 'fastify-error',
             level: 'error',
+            correlationId: request.correlationId,
             method,
             url,
             userAgent,
@@ -72,7 +73,7 @@ export function enableErrorHandlers(app: Fastify) {
 
     // Catch-all route for debugging 404s
     app.setNotFoundHandler((request, reply) => {
-        log({ module: '404-handler' }, `404 - Method: ${request.method}, Path: ${request.url}, Headers: ${JSON.stringify(request.headers)}`);
+        log({ module: '404-handler', correlationId: request.correlationId, method: request.method, path: request.url }, `404 Not Found`);
         reply.code(404).send({ error: 'Not found', path: request.url, method: request.method });
     });
 
@@ -86,6 +87,7 @@ export function enableErrorHandlers(app: Fastify) {
         log({
             module: 'fastify-hook-error',
             level: 'error',
+            correlationId: request.correlationId,
             method,
             url,
             duration,
@@ -107,6 +109,7 @@ export function enableErrorHandlers(app: Fastify) {
                 log({
                     module: 'fastify-serialization-error',
                     level: 'error',
+                    correlationId: request.correlationId,
                     method: request.method,
                     url: request.url,
                     stack: serErrorProps.stack

@@ -18,6 +18,7 @@ import { accessKeysRoutes } from "./routes/accessKeysRoutes";
 import { enableMonitoring } from "./utils/enableMonitoring";
 import { enableErrorHandlers } from "./utils/enableErrorHandlers";
 import { enableAuthentication } from "./utils/enableAuthentication";
+import { enableCorrelationId } from "./utils/enableCorrelationId";
 import { userRoutes } from "./routes/userRoutes";
 import { feedRoutes } from "./routes/feedRoutes";
 import { kvRoutes } from "./routes/kvRoutes";
@@ -47,6 +48,7 @@ export async function startApi() {
     const typed = app.withTypeProvider<ZodTypeProvider>() as unknown as Fastify;
 
     // Enable features
+    enableCorrelationId(typed);  // Must be first to set correlationId for other hooks
     enableMonitoring(typed);
     enableErrorHandlers(typed);
     enableAuthentication(typed);

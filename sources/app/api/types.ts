@@ -54,6 +54,8 @@ declare module 'fastify' {
     interface FastifyRequest {
         userId: string;
         startTime?: number;
+        /** Unique correlation ID for request tracing across services */
+        correlationId: string;
     }
     interface FastifyInstance {
         authenticate: any;
