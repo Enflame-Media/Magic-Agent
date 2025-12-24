@@ -42,12 +42,17 @@ export function useAutocompleteSession(text: string, cursorPosition: number) {
         }
         return null;
     }, [text, cursorPosition]);
-    return useAutocomplete(query, async (q) => {
+
+    // Memoize resolver to prevent cache recreation on every render
+    // The resolver has no dependencies (uses only its parameter), so [] is correct
+    const resolver = React.useCallback(async (q: string) => {
         if (q.startsWith('/')) {
             if ('/compact'.startsWith(q.toLowerCase())) {
                 return [{ text: '/compact' }];
             }
         }
         return [];
-    });
+    }, []);
+
+    return useAutocomplete(query, resolver);
 }
