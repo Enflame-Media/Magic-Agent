@@ -191,6 +191,27 @@ const commands: Record<string, CommandDefinition> = {
       'happy auth logout',
     ],
   },
+
+  completion: {
+    name: 'completion',
+    description: 'Generate shell completion scripts',
+    detailedDescription: 'Generate shell completion scripts for bash, zsh, or fish',
+    subcommands: [
+      { name: 'bash', description: 'Generate bash completion script' },
+      { name: 'zsh', description: 'Generate zsh completion script' },
+      { name: 'fish', description: 'Generate fish completion script' },
+    ],
+    examples: [
+      'happy completion bash > /etc/bash_completion.d/happy',
+      'happy completion zsh > ~/.zfunc/_happy',
+      'happy completion fish > ~/.config/fish/completions/happy.fish',
+    ],
+    notes: [
+      'For bash, source the script or add to /etc/bash_completion.d/',
+      'For zsh, add the directory to fpath before compinit',
+      'For fish, place in ~/.config/fish/completions/',
+    ],
+  },
 }
 
 /**

@@ -44,6 +44,7 @@ This will:
 - `happy notify` – Send a push notification to your devices
 - `happy daemon` – Manage background service
 - `happy doctor` – System diagnostics & troubleshooting
+- `happy completion` – Generate shell completion scripts
 
 ## Options
 
@@ -53,6 +54,36 @@ This will:
 - `-p, --permission-mode <mode>` - Permission mode: auto, default, or plan
 - `--claude-env KEY=VALUE` - Set environment variable for Claude Code
 - `--claude-arg ARG` - Pass additional argument to Claude CLI
+
+## Shell Completion
+
+Happy CLI supports shell completion for bash, zsh, and fish.
+
+### Bash
+
+```bash
+# System-wide (requires sudo)
+happy completion bash | sudo tee /etc/bash_completion.d/happy > /dev/null
+
+# User-only
+mkdir -p ~/.local/share/bash-completion/completions
+happy completion bash > ~/.local/share/bash-completion/completions/happy
+```
+
+### Zsh
+
+```bash
+# Add to your ~/.zshrc before compinit:
+mkdir -p ~/.zfunc
+happy completion zsh > ~/.zfunc/_happy
+# Then add to ~/.zshrc: fpath=(~/.zfunc $fpath)
+```
+
+### Fish
+
+```bash
+happy completion fish > ~/.config/fish/completions/happy.fish
+```
 
 ## Environment Variables
 

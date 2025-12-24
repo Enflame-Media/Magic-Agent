@@ -30,6 +30,7 @@ import { runDoctorCommand, getDaemonStatusJson } from './ui/doctor'
 import { listDaemonSessions, stopDaemonSession, getDaemonHealth } from './daemon/controlClient'
 import { handleAuthCommand } from './commands/auth'
 import { handleConnectCommand } from './commands/connect'
+import { handleCompletionCommand } from './commands/completion'
 import { generateMainHelp, generateCommandHelp } from './commands/registry'
 import { spawnHappyCLI } from './utils/spawnHappyCLI'
 import { claudeCliPath } from './claude/claudeLocal'
@@ -127,6 +128,14 @@ import { initializeTelemetry, showTelemetryNoticeIfNeeded } from './telemetry'
       await handleAuthCommand(['logout']);
     } catch (error) {
       logger.errorAndExit('Logout command failed', error)
+    }
+    return;
+  } else if (subcommand === 'completion') {
+    // Handle completion subcommand for shell autocomplete scripts
+    try {
+      await handleCompletionCommand(args.slice(1));
+    } catch (error) {
+      logger.errorAndExit('Completion command failed', error)
     }
     return;
   } else if (subcommand === 'notify') {
