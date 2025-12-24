@@ -40,7 +40,7 @@ vi.mock('@/lib/auth', () => ({
     resetAuth: vi.fn(),
 }));
 
-import app from '@/index';
+import { app } from '@/index';
 import { authHeader, jsonBody, expectOneOfStatus } from './test-utils';
 import { createTicket } from '@/lib/ticket';
 

@@ -87,7 +87,7 @@ vi.mock('@/lib/encryption', () => ({
 }));
 
 // Import app AFTER mocks are set up
-import app from '@/index';
+import { app } from '@/index';
 
 /**
  * Create mock environment for Hono app.request()

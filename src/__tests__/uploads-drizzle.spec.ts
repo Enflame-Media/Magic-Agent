@@ -72,7 +72,7 @@ vi.mock('@/lib/image-processing', () => ({
 }));
 
 // Import app AFTER mocks are set up
-import app from '@/index';
+import { app } from '@/index';
 import { processImage, isProcessableImage } from '@/lib/image-processing';
 
 /**

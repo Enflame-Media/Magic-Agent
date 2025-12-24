@@ -43,7 +43,7 @@ vi.mock('@/lib/auth', () => ({
     resetAuth: vi.fn(),
 }));
 
-import app from '@/index';
+import { app } from '@/index';
 import { authHeader, jsonBody, expectOneOfStatus, VALID_TOKEN } from './test-utils';
 
 describe('Session Routes', () => {

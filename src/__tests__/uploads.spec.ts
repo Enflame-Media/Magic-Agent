@@ -39,7 +39,7 @@ vi.mock('@/lib/auth', () => ({
     resetAuth: vi.fn(),
 }));
 
-import app from '@/index';
+import { app } from '@/index';
 import { authHeader, VALID_TOKEN, INVALID_TOKEN } from './test-utils';
 
 describe('Upload Routes', () => {

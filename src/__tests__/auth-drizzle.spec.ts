@@ -68,7 +68,7 @@ vi.mock('@/db/client', () => ({
 }));
 
 // Import app AFTER mocks are set up
-import app from '@/index';
+import { app } from '@/index';
 
 /**
  * Generate a valid Ed25519 keypair for testing signature verification

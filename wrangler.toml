@@ -50,6 +50,10 @@ class_name = "ConnectionManager"
 tag = "v1"
 new_classes = ["ConnectionManager"]
 
+# Scheduled Triggers (development) - Token blacklist cleanup (HAP-504)
+[env.dev.triggers]
+crons = ["0 2 * * *"]  # Daily at 2 AM UTC
+
 [env.dev.observability]
 [env.dev.observability.logs]
 enabled = true
@@ -102,6 +106,10 @@ class_name = "ConnectionManager"
 [[env.prod.migrations]]
 tag = "v1"
 new_classes = ["ConnectionManager"]
+
+# Scheduled Triggers (production) - Token blacklist cleanup (HAP-504)
+[env.prod.triggers]
+crons = ["0 2 * * *"]  # Daily at 2 AM UTC
 
 [env.prod.observability]
 [env.prod.observability.logs]

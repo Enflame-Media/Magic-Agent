@@ -12,7 +12,7 @@ vi.mock('cloudflare:workers', () => ({
     },
 }));
 
-import app from '@/index';
+import { app } from '@/index';
 
 /**
  * Type helper for API responses

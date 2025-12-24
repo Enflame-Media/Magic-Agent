@@ -36,7 +36,7 @@ vi.mock('@/lib/auth', () => ({
     resetAuth: vi.fn(),
 }));
 
-import app from '@/index';
+import { app } from '@/index';
 import { authHeader, jsonBody, INVALID_TOKEN } from './test-utils';
 
 /**

@@ -61,7 +61,7 @@ vi.mock('@/db/client', () => ({
 import { initAuth as mockInitAuth, verifyToken as mockVerifyToken } from '@/lib/auth';
 
 // Import app AFTER mocks are set up
-import app from '@/index';
+import { app } from '@/index';
 
 /**
  * Create mock environment for Hono app.request()

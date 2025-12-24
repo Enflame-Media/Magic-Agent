@@ -3,7 +3,7 @@ import { logger } from '@/middleware/logger';
 import { cors } from '@/middleware/cors';
 import { timing, addServerTiming } from '@/middleware/timing';
 import { errorHandler } from '@/middleware/error';
-import { initAuth } from '@/lib/auth';
+import { initAuth, cleanupExpiredTokens } from '@/lib/auth';
 import { getMasterSecret } from '@/config/env';
 import authRoutes from '@/routes/auth';
 import testRoutes from '@/routes/test/privacy-kit-test';
@@ -324,6 +324,50 @@ app.doc('/openapi.json', {
 });
 
 /**
- * Export the Hono app as default for Cloudflare Workers
+ * Export the Hono app for testing
+ * Tests use `app.request()` which is a Hono convenience method
  */
-export default app;
+export { app };
+
+/**
+ * Scheduled event handler for cron triggers
+ * Runs daily at 2 AM UTC to clean up expired token blacklist entries
+ *
+ * @param event - Scheduled event from Cloudflare
+ * @param env - Environment bindings
+ * @param _ctx - Execution context (unused but required by Workers API)
+ *
+ * @see HAP-504 for implementation details
+ * @see HAP-452 for token blacklist architecture
+ */
+async function scheduled(event: ScheduledEvent, env: Env, _ctx: ExecutionContext): Promise<void> {
+    console.log(`[Scheduled] Token blacklist cleanup triggered at ${new Date(event.scheduledTime).toISOString()}`);
+
+    try {
+        const deleted = await cleanupExpiredTokens(env.DB);
+        console.log(`[Scheduled] Removed ${deleted} expired blacklist entries`);
+    } catch (error) {
+        console.error('[Scheduled] Token blacklist cleanup failed:', error);
+        // Don't rethrow - let the worker complete gracefully
+        // Failed cleanups will be retried on next cron run
+    }
+}
+
+/**
+ * Export the Worker with both fetch and scheduled handlers
+ *
+ * @remarks
+ * Hono apps are compatible with Cloudflare Workers via their `fetch` method.
+ * The scheduled handler runs token blacklist cleanup (HAP-504).
+ */
+export default {
+    /**
+     * HTTP request handler (Hono app)
+     */
+    fetch: app.fetch,
+
+    /**
+     * Scheduled event handler
+     */
+    scheduled,
+};
