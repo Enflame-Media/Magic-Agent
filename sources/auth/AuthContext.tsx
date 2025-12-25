@@ -7,6 +7,7 @@ import { Platform, AppState, AppStateStatus } from 'react-native';
 import { trackLogout } from '@/track';
 import { AppError, ErrorCodes } from '@/utils/errors';
 import { authRefreshToken, shouldRefreshToken, TOKEN_REFRESH_CONSTANTS } from '@/auth/authRefreshToken';
+import { resetSessionCorrelationId } from '@/utils/correlationId';
 
 interface AuthContextType {
     isAuthenticated: boolean;
@@ -129,6 +130,7 @@ export function AuthProvider({ children, initialCredentials }: { children: React
     const logout = async () => {
         trackLogout();
         clearPersistence();
+        resetSessionCorrelationId();
         await TokenStorage.removeCredentials();
 
         // Update React state to ensure UI consistency
