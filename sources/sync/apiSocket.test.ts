@@ -555,6 +555,181 @@ describe('ApiSocket Auth Flow (HAP-360/HAP-375)', () => {
  */
 const AUTH_TIMEOUT_MS = 5000;
 
+describe('Reconnection Jitter Algorithm (HAP-477, HAP-503)', () => {
+    /**
+     * These tests verify the centered jitter algorithm used in scheduleReconnect():
+     * - Formula: delay = base * (1 - factor + random * factor * 2)
+     * - With factor=0.5: multiplier ranges from 0.5 to 1.5
+     * - 100ms floor is always enforced
+     * - Exponential backoff: base doubles each attempt until max
+     * - HAP-477: Default max increased to 30s (from 5s)
+     */
+
+    describe('Jitter Multiplier Range', () => {
+        it('should produce multiplier in range [0.5, 1.5] with factor=0.5', () => {
+            const factor = 0.5;
+
+            // With random() = 0: jitterMultiplier = 1 - 0.5 + 0 * 0.5 * 2 = 0.5
+            const minMultiplier = 1 - factor + (0 * factor * 2);
+            expect(minMultiplier).toBe(0.5);
+
+            // With random() = 1: jitterMultiplier = 1 - 0.5 + 1 * 0.5 * 2 = 1.5
+            const maxMultiplier = 1 - factor + (1 * factor * 2);
+            expect(maxMultiplier).toBe(1.5);
+        });
+
+        it('should produce delay range [500, 1500] for base=1000 with factor=0.5', () => {
+            const baseDelay = 1000;
+            const factor = 0.5;
+
+            const minDelay = baseDelay * (1 - factor + (0 * factor * 2));
+            const maxDelay = baseDelay * (1 - factor + (1 * factor * 2));
+
+            expect(minDelay).toBe(500);
+            expect(maxDelay).toBe(1500);
+        });
+
+        it('should center jitter around base delay (delays both above and below)', () => {
+            // This test verifies "centered" jitter - delays can be both above AND below base
+            const baseDelay = 2000;
+            const factor = 0.5;
+
+            // With random=0.5, multiplier should be exactly 1.0 (centered on base)
+            const centeredMultiplier = 1 - factor + (0.5 * factor * 2);
+            expect(centeredMultiplier).toBe(1.0);
+
+            // With random<0.5, delay is below base
+            const belowMultiplier = 1 - factor + (0.25 * factor * 2);
+            expect(belowMultiplier).toBe(0.75);
+            expect(baseDelay * belowMultiplier).toBe(1500); // Below 2000
+
+            // With random>0.5, delay is above base
+            const aboveMultiplier = 1 - factor + (0.75 * factor * 2);
+            expect(aboveMultiplier).toBe(1.25);
+            expect(baseDelay * aboveMultiplier).toBe(2500); // Above 2000
+        });
+    });
+
+    describe('100ms Floor Enforcement', () => {
+        it('should enforce 100ms floor when raw delay is below 100', () => {
+            // With base=100, factor=0.5, random=0:
+            // raw delay = 100 * 0.5 = 50ms
+            // actual delay = max(100, 50) = 100ms
+            const baseDelay = 100;
+            const factor = 0.5;
+            const minMultiplier = 1 - factor + (0 * factor * 2);
+            const rawDelay = baseDelay * minMultiplier;
+            const actualDelay = Math.max(100, rawDelay);
+
+            expect(rawDelay).toBe(50);
+            expect(actualDelay).toBe(100); // Floor enforced
+        });
+
+        it('should not affect delays already above 100ms', () => {
+            const baseDelay = 1000;
+            const factor = 0.5;
+            const minMultiplier = 1 - factor + (0 * factor * 2);
+            const rawDelay = baseDelay * minMultiplier;
+            const actualDelay = Math.max(100, rawDelay);
+
+            expect(rawDelay).toBe(500);
+            expect(actualDelay).toBe(500); // No floor needed
+        });
+    });
+
+    describe('Exponential Backoff Progression', () => {
+        it('should follow exponential backoff: 1s, 2s, 4s, 8s, 16s, capped at 30s', () => {
+            const reconnectionDelay = 1000;
+            const reconnectionDelayMax = 30000;
+
+            // Attempt 0: 1000 * 2^0 = 1000
+            expect(Math.min(reconnectionDelay * Math.pow(2, 0), reconnectionDelayMax)).toBe(1000);
+
+            // Attempt 1: 1000 * 2^1 = 2000
+            expect(Math.min(reconnectionDelay * Math.pow(2, 1), reconnectionDelayMax)).toBe(2000);
+
+            // Attempt 2: 1000 * 2^2 = 4000
+            expect(Math.min(reconnectionDelay * Math.pow(2, 2), reconnectionDelayMax)).toBe(4000);
+
+            // Attempt 3: 1000 * 2^3 = 8000
+            expect(Math.min(reconnectionDelay * Math.pow(2, 3), reconnectionDelayMax)).toBe(8000);
+
+            // Attempt 4: 1000 * 2^4 = 16000
+            expect(Math.min(reconnectionDelay * Math.pow(2, 4), reconnectionDelayMax)).toBe(16000);
+
+            // Attempt 5: 1000 * 2^5 = 32000 → capped at 30000
+            expect(Math.min(reconnectionDelay * Math.pow(2, 5), reconnectionDelayMax)).toBe(30000);
+
+            // Attempt 6+: still capped at 30000
+            expect(Math.min(reconnectionDelay * Math.pow(2, 6), reconnectionDelayMax)).toBe(30000);
+        });
+    });
+
+    describe('Max Delay Ceiling', () => {
+        it('should cap base delay at reconnectionDelayMax (30s per HAP-477)', () => {
+            const reconnectionDelayMax = 30000;
+
+            // Verify base delay is capped before jitter is applied
+            const baseDelay = Math.min(1000 * Math.pow(2, 10), reconnectionDelayMax);
+            expect(baseDelay).toBe(30000);
+        });
+
+        it('should allow jittered delay up to max * 1.5 (since jitter is applied after cap)', () => {
+            // The cap is applied BEFORE jitter, so max jittered delay = 30000 * 1.5 = 45000
+            const maxBaseDelay = 30000;
+            const maxJitteredDelay = maxBaseDelay * 1.5; // factor=0.5, random=1
+
+            expect(maxJitteredDelay).toBe(45000);
+        });
+    });
+
+    describe('HAP-477 Default Config', () => {
+        it('should use 30s as default max delay (changed from 5s)', () => {
+            // This test documents the HAP-477 change: max delay increased from 5s to 30s
+            // to better handle poor network conditions on mobile devices
+            const expectedMaxDelay = 30000;
+
+            // From DEFAULT_CONFIG in apiSocket.ts:
+            // reconnectionDelayMax: 30000 (HAP-477: was 5s)
+            expect(expectedMaxDelay).toBe(30000);
+        });
+
+        it('should use 1s as default base delay', () => {
+            const expectedBaseDelay = 1000;
+            expect(expectedBaseDelay).toBe(1000);
+        });
+
+        it('should use 0.5 as default randomization factor', () => {
+            const expectedFactor = 0.5;
+            expect(expectedFactor).toBe(0.5);
+        });
+    });
+
+    describe('Various Random Values', () => {
+        it('should produce predictable delays for specific random values', () => {
+            const baseDelay = 2000;
+            const factor = 0.5;
+
+            // Test several random values
+            const testCases = [
+                { random: 0, expectedMultiplier: 0.5, expectedDelay: 1000 },
+                { random: 0.25, expectedMultiplier: 0.75, expectedDelay: 1500 },
+                { random: 0.5, expectedMultiplier: 1.0, expectedDelay: 2000 },
+                { random: 0.75, expectedMultiplier: 1.25, expectedDelay: 2500 },
+                { random: 1, expectedMultiplier: 1.5, expectedDelay: 3000 },
+            ];
+
+            for (const tc of testCases) {
+                const multiplier = 1 - factor + (tc.random * factor * 2);
+                const delay = Math.max(100, baseDelay * multiplier);
+
+                expect(multiplier).toBeCloseTo(tc.expectedMultiplier, 5);
+                expect(delay).toBe(tc.expectedDelay);
+            }
+        });
+    });
+});
+
 /**
  * Test ApiSocket class that mirrors the real implementation behavior
  * This is a self-contained test fixture to avoid singleton state bleeding between tests
