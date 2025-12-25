@@ -243,6 +243,12 @@ export const ru: TranslationStructure = {
         failedToRemoveFriend: 'Не удалось удалить друга',
         searchFailed: 'Поиск не удался. Пожалуйста, попробуйте снова.',
         failedToSendRequest: 'Не удалось отправить запрос в друзья',
+        // Claude API errors
+        claudeTokenExpired: 'Аутентификация Claude истекла. Пожалуйста, переподключите ваш аккаунт.',
+        claudeNotConnected: 'Аккаунт Claude не подключён. Перейдите в Настройки для подключения.',
+        claudeTokenRefreshFailed: 'Не удалось обновить токен Claude. Пожалуйста, переподключите ваш аккаунт.',
+        claudeApiError: 'Ошибка запроса к Claude API. Пожалуйста, попробуйте снова.',
+        claudeReconnect: 'Переподключить Claude',
     },
 
     sessions: {

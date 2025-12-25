@@ -260,6 +260,12 @@ export const pt: TranslationStructure = {
         failedToRemoveFriend: 'Falha ao remover amigo',
         searchFailed: 'A busca falhou. Por favor, tente novamente.',
         failedToSendRequest: 'Falha ao enviar solicitação de amizade',
+        // Claude API errors
+        claudeTokenExpired: 'Autenticação do Claude expirada. Por favor, reconecte sua conta.',
+        claudeNotConnected: 'Conta do Claude não conectada. Vá para Configurações para conectar.',
+        claudeTokenRefreshFailed: 'Falha ao atualizar o token do Claude. Por favor, reconecte sua conta.',
+        claudeApiError: 'Falha na solicitação da API do Claude. Por favor, tente novamente.',
+        claudeReconnect: 'Reconectar Claude',
     },
 
     sessions: {

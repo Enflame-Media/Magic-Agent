@@ -260,6 +260,12 @@ export const ca: TranslationStructure = {
         failedToRemoveFriend: 'No s\'ha pogut eliminar l\'amic',
         searchFailed: 'La cerca ha fallat. Si us plau, torna-ho a provar.',
         failedToSendRequest: 'No s\'ha pogut enviar la sol·licitud d\'amistat',
+        // Claude API errors
+        claudeTokenExpired: 'L\'autenticació de Claude ha caducat. Si us plau, reconnecta el teu compte.',
+        claudeNotConnected: 'Compte de Claude no connectat. Vés a Configuració per connectar.',
+        claudeTokenRefreshFailed: 'Error en actualitzar el token de Claude. Si us plau, reconnecta el teu compte.',
+        claudeApiError: 'Error en la sol·licitud de Claude API. Si us plau, torna-ho a provar.',
+        claudeReconnect: 'Reconnectar Claude',
     },
 
     sessions: {

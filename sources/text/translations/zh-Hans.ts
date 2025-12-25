@@ -262,6 +262,12 @@ export const zhHans: TranslationStructure = {
         failedToRemoveFriend: '删除好友失败',
         searchFailed: '搜索失败。请重试。',
         failedToSendRequest: '发送好友请求失败',
+        // Claude API errors
+        claudeTokenExpired: 'Claude 认证已过期。请重新连接您的账户。',
+        claudeNotConnected: 'Claude 账户未连接。请前往设置进行连接。',
+        claudeTokenRefreshFailed: '刷新 Claude 令牌失败。请重新连接您的账户。',
+        claudeApiError: 'Claude API 请求失败。请重试。',
+        claudeReconnect: '重新连接 Claude',
     },
 
     sessions: {

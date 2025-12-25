@@ -240,6 +240,8 @@ export const en = {
         sessionDeleted: 'Session has been deleted',
         sessionDeletedDescription: 'This session has been permanently removed',
         notAuthenticated: 'Not authenticated',
+        copySupportId: 'Copy ID',
+        supportIdCopied: 'Support ID copied',
 
         // Error functions with context
         fieldError: ({ field, reason }: { field: string; reason: string }) =>
@@ -260,6 +262,12 @@ export const en = {
         failedToRemoveFriend: 'Failed to remove friend',
         searchFailed: 'Search failed. Please try again.',
         failedToSendRequest: 'Failed to send friend request',
+        // Claude API errors
+        claudeTokenExpired: 'Claude authentication expired. Please reconnect your account.',
+        claudeNotConnected: 'Claude account not connected. Go to Settings to connect.',
+        claudeTokenRefreshFailed: 'Failed to refresh Claude token. Please reconnect your account.',
+        claudeApiError: 'Claude API request failed. Please try again.',
+        claudeReconnect: 'Reconnect Claude',
     },
 
     newSession: {

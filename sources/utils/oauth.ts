@@ -17,9 +17,32 @@ export interface PKCECodes {
     challenge: string;
 }
 
+/**
+ * Raw OAuth token response from Claude's OAuth server.
+ * This matches the structure returned by the token endpoint.
+ */
+export interface ClaudeOAuthTokenResponse {
+    /** The access token (sk-ant-oat01-*) */
+    access_token: string;
+    /** The refresh token (sk-ant-ort01-*), if provided */
+    refresh_token?: string;
+    /** Seconds until the access token expires */
+    expires_in: number;
+    /** Token type, always 'Bearer' */
+    token_type: 'Bearer';
+    /** OAuth scope granted */
+    scope: string;
+}
+
+/**
+ * Structured Claude auth tokens with computed expiration.
+ */
 export interface ClaudeAuthTokens {
-    raw: any;
+    /** Raw OAuth response data */
+    raw: ClaudeOAuthTokenResponse;
+    /** Shorthand for access_token */
     token: string;
+    /** Expiration timestamp in milliseconds */
     expires: number;
 }
 
@@ -143,4 +166,51 @@ export function parseCallbackUrl(url: string): { code?: string; state?: string; 
     } catch {
         return {};
     }
+}
+
+/**
+ * Refresh an expired Claude OAuth access token using the refresh token.
+ *
+ * Claude OAuth tokens have the following format:
+ * - Access tokens: `sk-ant-oat01-*` (short-lived, ~1 hour - 1 day)
+ * - Refresh tokens: `sk-ant-ort01-*` (long-lived)
+ *
+ * @param refreshToken - The refresh token (sk-ant-ort01-*)
+ * @returns Fresh access token and new expiration
+ * @throws AppError with TOKEN_EXPIRED if refresh fails
+ *
+ * @example
+ * ```typescript
+ * const newTokens = await refreshClaudeToken(tokens.raw.refresh_token);
+ * // newTokens.token contains the fresh access token
+ * ```
+ */
+export async function refreshClaudeToken(refreshToken: string): Promise<ClaudeAuthTokens> {
+    const response = await fetchWithTimeout(CLAUDE_OAUTH_CONFIG.TOKEN_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            grant_type: 'refresh_token',
+            refresh_token: refreshToken,
+            client_id: CLAUDE_OAUTH_CONFIG.CLIENT_ID,
+        }),
+        timeoutMs: 30000, // 30s - OAuth servers can be slow
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new AppError(
+            ErrorCodes.TOKEN_EXPIRED,
+            `Token refresh failed: ${response.statusText} - ${errorText}`,
+            { canTryAgain: false }
+        );
+    }
+
+    const tokenData = await response.json() as ClaudeOAuthTokenResponse;
+
+    return {
+        raw: tokenData,
+        token: tokenData.access_token,
+        expires: Date.now() + tokenData.expires_in * 1000,
+    };
 }
