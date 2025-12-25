@@ -26,13 +26,18 @@
  * ```
  */
 import axios from 'axios'
+import { AppError, type ErrorCode } from '@happy/errors'
+import { getCorrelationId } from '@/utils/correlationId'
 
 // Re-export AppError, ErrorCodes, and types from shared package
 export { AppError, ErrorCodes } from '@happy/errors'
 export type { AppErrorOptions, AppErrorJSON, ErrorCode } from '@happy/errors'
 
-// Import ErrorCode type for local use in this module
-import type { ErrorCode } from '@happy/errors'
+// =============================================================================
+// ERROR DOCUMENTATION UTILITIES
+// =============================================================================
+// These utilities provide helpful error messages with documentation links
+// for self-service debugging. TODO: Create error documentation files (HAP-TBD)
 
 /**
  * Base URL for error documentation.
@@ -87,15 +92,6 @@ export function getErrorDocUrl(code: string): string | undefined {
   return docPath ? `${ERROR_DOCS_BASE}/${docPath}` : undefined
 }
 
-// ErrorCodes and ErrorCode type are now imported from @happy/errors above.
-// This provides unified error codes across all Happy projects (CLI, App, Server).
-
-/**
- * Extended AppError utilities for CLI-specific features.
- * These functions work with the shared AppError class.
- */
-import { AppError } from '@happy/errors'
-
 /**
  * Get the documentation URL for an AppError, if available.
  *
@@ -107,25 +103,54 @@ export function getAppErrorDocUrl(error: AppError): string | undefined {
 }
 
 /**
- * Get a formatted error message with documentation link if available.
+ * Get a formatted error message with documentation link and correlation ID.
  * Useful for CLI output where users can follow up for more information.
  *
+ * The correlation ID is included to help with debugging and support requests,
+ * enabling end-to-end request tracing across CLI → Server → Workers.
+ *
  * @param error - The AppError instance
- * @returns Formatted message with optional documentation link
+ * @returns Formatted message with correlation ID and optional documentation link
  *
  * @example
  * ```typescript
  * const error = new AppError(ErrorCodes.AUTH_FAILED, 'Token expired');
  * console.error(getHelpfulMessage(error));
- * // Output: "Token expired\n  For more information, see: https://..."
+ * // Output: "Token expired (ref: abc123...)\n  For more information, see: https://..."
  * ```
+ *
+ * @see HAP-509 - CLI correlation ID implementation
  */
 export function getHelpfulMessage(error: AppError): string {
+  const correlationId = getCorrelationId()
+  const shortId = correlationId.substring(0, 8) // Show first 8 chars for brevity
+  const baseMessage = `${error.message} (ref: ${shortId})`
+
   const docUrl = getAppErrorDocUrl(error)
   if (docUrl) {
-    return `${error.message}\n  For more information, see: ${docUrl}`
+    return `${baseMessage}\n  For more information, see: ${docUrl}`
   }
-  return error.message
+  return baseMessage
+}
+
+/**
+ * Get a verbose error message with the full correlation ID.
+ * Useful for support requests where the full ID is needed for log correlation.
+ *
+ * @param error - The AppError instance
+ * @returns Message with full correlation ID for support reference
+ *
+ * @example
+ * ```typescript
+ * console.error(getVerboseErrorMessage(error));
+ * // Output: "Token expired\n  Correlation ID: 550e8400-e29b-41d4-a716-446655440000"
+ * ```
+ *
+ * @see HAP-509 - CLI correlation ID implementation
+ */
+export function getVerboseErrorMessage(error: AppError): string {
+  const correlationId = getCorrelationId()
+  return `${error.message}\n  Correlation ID: ${correlationId}`
 }
 
 /**

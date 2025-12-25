@@ -10,6 +10,7 @@ import chalk from 'chalk';
 import { Credentials } from '@/persistence';
 import { AppError, ErrorCodes, fromUnknownSafe } from '@/utils/errors';
 import { createDeduplicator, type Deduplicator } from '@/utils/requestDeduplication';
+import { getCorrelationId } from '@/utils/correlationId';
 
 export class ApiClient {
 
@@ -91,7 +92,8 @@ export class ApiClient {
         {
           headers: {
             'Authorization': `Bearer ${this.credential.token}`,
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'X-Correlation-ID': getCorrelationId()
           },
           timeout: 60000, // 1 minute timeout for very bad network connections
           signal: opts.signal
@@ -184,7 +186,8 @@ export class ApiClient {
           {
             headers: {
               'Authorization': `Bearer ${this.credential.token}`,
-              'Content-Type': 'application/json'
+              'Content-Type': 'application/json',
+              'X-Correlation-ID': getCorrelationId()
             },
             timeout: 60000, // 1 minute timeout for very bad network connections
             signal: opts.signal
@@ -280,7 +283,8 @@ export class ApiClient {
           {
             headers: {
               'Authorization': `Bearer ${this.credential.token}`,
-              'Content-Type': 'application/json'
+              'Content-Type': 'application/json',
+              'X-Correlation-ID': getCorrelationId()
             },
             timeout: 5000,
             signal: options?.signal

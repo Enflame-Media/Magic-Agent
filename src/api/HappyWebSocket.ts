@@ -19,6 +19,7 @@ import { logger } from '@/ui/logger';
 import WebSocket from 'ws';
 import { randomUUID } from 'node:crypto';
 import type { ServerToClientEvents, ClientToServerEvents } from './types';
+import { getCorrelationId } from '@/utils/correlationId';
 
 /**
  * Configuration for WebSocket connection behavior
@@ -273,6 +274,7 @@ export class HappyWebSocket {
         const headers: Record<string, string> = {
             'Authorization': `Bearer ${this.auth.token}`,
             'X-Client-Type': this.auth.clientType,
+            'X-Correlation-ID': getCorrelationId(),
         };
         if (this.auth.sessionId) {
             headers['X-Session-Id'] = this.auth.sessionId;

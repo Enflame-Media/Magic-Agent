@@ -14,6 +14,7 @@ import React from 'react';
 import { randomUUID } from 'node:crypto';
 import { logger } from './logger';
 import { AppError, ErrorCodes, fromUnknownSafe } from '@/utils/errors';
+import { getCorrelationId } from '@/utils/correlationId';
 
 async function doAuth(options?: { signal?: AbortSignal }): Promise<Credentials | null> {
     console.clear();
@@ -41,7 +42,10 @@ async function doAuth(options?: { signal?: AbortSignal }): Promise<Credentials |
             },
             {
                 timeout: 30000,
-                signal: options?.signal
+                signal: options?.signal,
+                headers: {
+                    'X-Correlation-ID': getCorrelationId()
+                }
             }
         );
         console.log(`[AUTH DEBUG] Auth request sent successfully`);
@@ -170,7 +174,10 @@ async function waitForAuthentication(keypair: tweetnacl.BoxKeyPair, options?: { 
                     },
                     {
                         timeout: 30000,
-                        signal: options?.signal
+                        signal: options?.signal,
+                        headers: {
+                            'X-Correlation-ID': getCorrelationId()
+                        }
                     }
                 );
                 if (response.data.state === 'authorized') {

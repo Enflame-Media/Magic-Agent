@@ -3,6 +3,7 @@ import { logger } from '@/ui/logger'
 import { Expo, ExpoPushMessage } from 'expo-server-sdk'
 import { AppError, ErrorCodes, fromUnknownSafe } from '@/utils/errors'
 import { configuration } from '@/configuration'
+import { getCorrelationId } from '@/utils/correlationId'
 
 export interface PushToken {
     id: string
@@ -33,7 +34,8 @@ export class PushNotificationClient {
                 {
                     headers: {
                         'Authorization': `Bearer ${this.token}`,
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'X-Correlation-ID': getCorrelationId()
                     }
                 }
             )
