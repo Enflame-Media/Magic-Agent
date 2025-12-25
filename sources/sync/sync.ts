@@ -3,6 +3,7 @@ import { apiSocket } from '@/sync/apiSocket';
 import { AuthCredentials } from '@/auth/tokenStorage';
 import { AppError, ErrorCodes } from '@/utils/errors';
 import { fetchWithTimeout } from '@/utils/fetchWithTimeout';
+import { authenticatedFetch } from '@/sync/apiHelper';
 import { Encryption, EncryptionCache } from '@/sync/encryption/encryption';
 import { decodeBase64, encodeBase64 } from '@/encryption/base64';
 import { storage } from './storage';
@@ -690,12 +691,12 @@ class Sync {
         if (!this.credentials) return;
 
         const API_ENDPOINT = getServerUrl();
-        const response = await fetchWithTimeout(`${API_ENDPOINT}/v1/sessions`, {
-            headers: {
-                'Authorization': `Bearer ${this.credentials.token}`,
-                'Content-Type': 'application/json'
-            }
-        });
+        const response = await authenticatedFetch(
+            `${API_ENDPOINT}/v1/sessions`,
+            this.credentials,
+            { headers: { 'Content-Type': 'application/json' } },
+            'fetching sessions'
+        );
 
         if (!response.ok) {
             throw new AppError(ErrorCodes.FETCH_FAILED, `Failed to fetch sessions: ${response.status}`, { canTryAgain: true });
@@ -1087,12 +1088,12 @@ class Sync {
 
         console.log('📊 Sync: Fetching machines...');
         const API_ENDPOINT = getServerUrl();
-        const response = await fetchWithTimeout(`${API_ENDPOINT}/v1/machines`, {
-            headers: {
-                'Authorization': `Bearer ${this.credentials.token}`,
-                'Content-Type': 'application/json'
-            }
-        });
+        const response = await authenticatedFetch(
+            `${API_ENDPOINT}/v1/machines`,
+            this.credentials,
+            { headers: { 'Content-Type': 'application/json' } },
+            'fetching machines'
+        );
 
         if (!response.ok) {
             console.error(`Failed to fetch machines: ${response.status}`);
@@ -1403,17 +1404,19 @@ class Sync {
             while (true) {
                 let version = storage.getState().settingsVersion;
                 let settings = applySettings(storage.getState().settings, this.pendingSettings);
-                const response = await fetchWithTimeout(`${API_ENDPOINT}/v1/account/settings`, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        settings: await this.encryption.encryptRaw(settings),
-                        expectedVersion: version ?? 0
-                    }),
-                    headers: {
-                        'Authorization': `Bearer ${this.credentials.token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
+                const response = await authenticatedFetch(
+                    `${API_ENDPOINT}/v1/account/settings`,
+                    this.credentials,
+                    {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            settings: await this.encryption.encryptRaw(settings),
+                            expectedVersion: version ?? 0
+                        }),
+                        headers: { 'Content-Type': 'application/json' }
+                    },
+                    'updating settings'
+                );
                 const data = await response.json() as {
                     success: false,
                     error: string,
@@ -1465,12 +1468,12 @@ class Sync {
         }
 
         // Run request
-        const response = await fetchWithTimeout(`${API_ENDPOINT}/v1/account/settings`, {
-            headers: {
-                'Authorization': `Bearer ${this.credentials.token}`,
-                'Content-Type': 'application/json'
-            }
-        });
+        const response = await authenticatedFetch(
+            `${API_ENDPOINT}/v1/account/settings`,
+            this.credentials,
+            { headers: { 'Content-Type': 'application/json' } },
+            'fetching settings'
+        );
         if (!response.ok) {
             throw new AppError(ErrorCodes.FETCH_FAILED, `Failed to fetch settings: ${response.status}`, { canTryAgain: true });
         }
@@ -1512,8 +1515,7 @@ class Sync {
         const API_ENDPOINT = getServerUrl();
 
         // HAP-491: Build headers with conditional request support
-        const headers: HeadersInit = {
-            'Authorization': `Bearer ${this.credentials.token}`,
+        const headers: Record<string, string> = {
             'Content-Type': 'application/json'
         };
 
@@ -1522,9 +1524,12 @@ class Sync {
             headers['If-None-Match'] = this.profileETag;
         }
 
-        const response = await fetchWithTimeout(`${API_ENDPOINT}/v1/account/profile`, {
-            headers
-        });
+        const response = await authenticatedFetch(
+            `${API_ENDPOINT}/v1/account/profile`,
+            this.credentials,
+            { headers },
+            'fetching profile'
+        );
 
         // HAP-491: Handle 304 Not Modified - profile unchanged, skip processing
         if (response.status === 304) {
