@@ -1,4 +1,4 @@
-import { createRoute, OpenAPIHono } from '@hono/zod-openapi';
+import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi';
 // Encoding utilities for base64/hex operations (Workers-compatible)
 import * as privacyKit from '@/lib/privacy-kit-shim';
 import { createToken, refreshToken } from '@/lib/auth';
@@ -7,6 +7,7 @@ import { schema } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { createId } from '@/utils/id';
 import { authMiddleware, type AuthVariables } from '@/middleware/auth';
+import { checkRateLimit, type RateLimitConfig } from '@/lib/rate-limit';
 import type { Context } from 'hono';
 import {
     DirectAuthRequestSchema,
@@ -26,6 +27,25 @@ import {
 } from '@/schemas/auth';
 
 /**
+ * Rate limit configuration for auth endpoints (HAP-453)
+ * More restrictive than ticket endpoint (5 vs 10) since auth attempts
+ * are a primary target for brute-force attacks.
+ */
+const AUTH_RATE_LIMIT: RateLimitConfig = {
+    maxRequests: 5,
+    windowMs: 60_000, // 1 minute
+    expirationTtl: 120, // 2 minutes (covers window + cleanup margin)
+};
+
+/**
+ * OpenAPI schema for rate limit exceeded response
+ */
+const RateLimitExceededSchema = z.object({
+    error: z.literal('Rate limit exceeded'),
+    retryAfter: z.number().describe('Seconds until rate limit resets'),
+});
+
+/**
  * Environment bindings for auth routes
  */
 interface Env {
@@ -34,6 +54,8 @@ interface Env {
     HAPPY_MASTER_SECRET?: string;
     /** Master secret (deprecated) */
     HANDY_MASTER_SECRET?: string;
+    /** KV namespace for rate limiting (HAP-453) */
+    RATE_LIMIT_KV?: KVNamespace;
 }
 
 /**
@@ -81,15 +103,63 @@ const directAuthRoute = createRoute({
             },
             description: 'Invalid signature',
         },
+        429: {
+            content: {
+                'application/json': {
+                    schema: RateLimitExceededSchema,
+                },
+            },
+            headers: {
+                'Retry-After': {
+                    schema: { type: 'string' },
+                    description: 'Seconds until the rate limit resets',
+                },
+                'X-RateLimit-Limit': {
+                    schema: { type: 'string' },
+                    description: 'Maximum requests per window',
+                },
+                'X-RateLimit-Remaining': {
+                    schema: { type: 'string' },
+                    description: 'Remaining requests in current window',
+                },
+            },
+            description: 'Too Many Requests - rate limit exceeded (5 per minute)',
+        },
     },
     tags: ['Authentication'],
     summary: 'Direct public key authentication',
     description:
-        'Authenticate using Ed25519 public key signature verification. The client signs a challenge with their private key, and the server verifies the signature.',
+        'Authenticate using Ed25519 public key signature verification. The client signs a challenge with their private key, and the server verifies the signature. Rate limited to 5 requests per minute per public key.',
 });
 
 authRoutes.openapi(directAuthRoute, async (c) => {
     const { publicKey, challenge, signature } = c.req.valid('json');
+
+    // Check rate limit (HAP-453)
+    // Rate limiting is applied before crypto operations to prevent DoS via expensive signature verification
+    if (c.env.RATE_LIMIT_KV) {
+        const rateLimitResult = await checkRateLimit(
+            c.env.RATE_LIMIT_KV,
+            'auth',
+            publicKey, // Use publicKey as identifier (base64, already unique per client)
+            AUTH_RATE_LIMIT
+        );
+
+        if (!rateLimitResult.allowed) {
+            return c.json(
+                {
+                    error: 'Rate limit exceeded' as const,
+                    retryAfter: rateLimitResult.retryAfter,
+                },
+                429,
+                {
+                    'Retry-After': String(rateLimitResult.retryAfter),
+                    'X-RateLimit-Limit': String(rateLimitResult.limit),
+                    'X-RateLimit-Remaining': '0',
+                }
+            );
+        }
+    }
 
     // Import TweetNaCl for signature verification
     const tweetnacl = (await import('tweetnacl')).default;
@@ -182,15 +252,62 @@ const terminalAuthRequestRoute = createRoute({
             },
             description: 'Invalid public key',
         },
+        429: {
+            content: {
+                'application/json': {
+                    schema: RateLimitExceededSchema,
+                },
+            },
+            headers: {
+                'Retry-After': {
+                    schema: { type: 'string' },
+                    description: 'Seconds until the rate limit resets',
+                },
+                'X-RateLimit-Limit': {
+                    schema: { type: 'string' },
+                    description: 'Maximum requests per window',
+                },
+                'X-RateLimit-Remaining': {
+                    schema: { type: 'string' },
+                    description: 'Remaining requests in current window',
+                },
+            },
+            description: 'Too Many Requests - rate limit exceeded (5 per minute)',
+        },
     },
     tags: ['Authentication'],
     summary: 'Initiate terminal pairing',
     description:
-        'Used by happy-cli to start pairing flow. Creates an auth request that waits for mobile approval. CLI polls this endpoint until approved.',
+        'Used by happy-cli to start pairing flow. Creates an auth request that waits for mobile approval. CLI polls this endpoint until approved. Rate limited to 5 requests per minute per public key.',
 });
 
 authRoutes.openapi(terminalAuthRequestRoute, async (c) => {
     const { publicKey, supportsV2 } = c.req.valid('json');
+
+    // Check rate limit (HAP-453)
+    if (c.env.RATE_LIMIT_KV) {
+        const rateLimitResult = await checkRateLimit(
+            c.env.RATE_LIMIT_KV,
+            'auth-request',
+            publicKey,
+            AUTH_RATE_LIMIT
+        );
+
+        if (!rateLimitResult.allowed) {
+            return c.json(
+                {
+                    error: 'Rate limit exceeded' as const,
+                    retryAfter: rateLimitResult.retryAfter,
+                },
+                429,
+                {
+                    'Retry-After': String(rateLimitResult.retryAfter),
+                    'X-RateLimit-Limit': String(rateLimitResult.limit),
+                    'X-RateLimit-Remaining': '0',
+                }
+            );
+        }
+    }
 
     // Import TweetNaCl for key validation
     const tweetnacl = (await import('tweetnacl')).default;
@@ -419,14 +536,61 @@ const accountAuthRequestRoute = createRoute({
             },
             description: 'Invalid public key',
         },
+        429: {
+            content: {
+                'application/json': {
+                    schema: RateLimitExceededSchema,
+                },
+            },
+            headers: {
+                'Retry-After': {
+                    schema: { type: 'string' },
+                    description: 'Seconds until the rate limit resets',
+                },
+                'X-RateLimit-Limit': {
+                    schema: { type: 'string' },
+                    description: 'Maximum requests per window',
+                },
+                'X-RateLimit-Remaining': {
+                    schema: { type: 'string' },
+                    description: 'Remaining requests in current window',
+                },
+            },
+            description: 'Too Many Requests - rate limit exceeded (5 per minute)',
+        },
     },
     tags: ['Authentication'],
     summary: 'Initiate account pairing',
-    description: 'Used by happy-app to pair with another mobile device.',
+    description: 'Used by happy-app to pair with another mobile device. Rate limited to 5 requests per minute per public key.',
 });
 
 authRoutes.openapi(accountAuthRequestRoute, async (c) => {
     const { publicKey } = c.req.valid('json');
+
+    // Check rate limit (HAP-453)
+    if (c.env.RATE_LIMIT_KV) {
+        const rateLimitResult = await checkRateLimit(
+            c.env.RATE_LIMIT_KV,
+            'auth-account-request',
+            publicKey,
+            AUTH_RATE_LIMIT
+        );
+
+        if (!rateLimitResult.allowed) {
+            return c.json(
+                {
+                    error: 'Rate limit exceeded' as const,
+                    retryAfter: rateLimitResult.retryAfter,
+                },
+                429,
+                {
+                    'Retry-After': String(rateLimitResult.retryAfter),
+                    'X-RateLimit-Limit': String(rateLimitResult.limit),
+                    'X-RateLimit-Remaining': '0',
+                }
+            );
+        }
+    }
 
     // Import TweetNaCl for key validation
     const tweetnacl = (await import('tweetnacl')).default;
