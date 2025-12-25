@@ -4,16 +4,21 @@
  * This test file provides comprehensive coverage for the GitHub OAuth callback
  * handler implemented in src/routes/connect.ts (githubOAuthCallbackRoute).
  *
+ * State Token Format:
+ * - Uses Ed25519-signed JWT tokens with userId and purpose claims (HAP-436)
+ * - Tokens have 5-minute TTL built into the JWT `exp` claim
+ * - Purpose is validated as 'github-oauth-state' for CSRF protection
+ *
  * Test Scenarios:
  *
  * ## Happy Path
- * - Valid state token → successful OAuth flow → redirect with success
+ * - Valid JWT state token → successful OAuth flow → redirect with success
  * - Existing GitHubUser record → updates profile and token
  * - GitHub connected to different user → disconnects and reconnects
  *
  * ## Error Cases
- * - Invalid state token format → redirect with `invalid_state`
- * - Expired state token → redirect with `state_expired`
+ * - Invalid/malformed JWT state → redirect with `invalid_state`
+ * - Expired JWT state → redirect with `invalid_state` (JWT handles expiry)
  * - Missing GitHub credentials → redirect with `server_config`
  * - GitHub token exchange fails → redirect with error from GitHub
  * - GitHub user fetch fails → redirect with `github_user_fetch_failed`
@@ -22,6 +27,8 @@
  *
  * @see HAP-402 - Add unit tests for GitHub OAuth callback handler
  * @see HAP-280 - Implement GitHub OAuth Callback Handler
+ * @see HAP-436 - Replace predictable OAuth state with cryptographic JWTs
+ * @see HAP-537 - Update tests for cryptographic state tokens
  * @module __tests__/github-oauth-callback.spec
  */
 
@@ -126,6 +133,25 @@ vi.mock('@/lib/auth', () => ({
     }),
     createToken: vi.fn().mockResolvedValue('generated-token'),
     resetAuth: vi.fn(),
+    // Ephemeral token functions for OAuth state (HAP-436)
+    createEphemeralToken: vi.fn().mockImplementation(async (userId: string, purpose: string) => {
+        // Use | as delimiter since it won't appear in userId or purpose
+        return `mock-jwt|${userId}|${purpose}`;
+    }),
+    verifyEphemeralToken: vi.fn().mockImplementation(async (token: string) => {
+        // Handle invalid/malformed tokens
+        if (!token || token === 'malformed-state' || token === 'stateuserid12345') {
+            return null;
+        }
+        // Handle expired token format
+        if (token.startsWith('expired-mock-jwt|')) {
+            return null;
+        }
+        // Parse valid mock-jwt format: mock-jwt|{userId}|{purpose}
+        const match = token.match(/^mock-jwt\|([^|]+)\|(.+)$/);
+        if (!match) return null;
+        return { userId: match[1], purpose: match[2] };
+    }),
 }));
 
 // Mock the getDb function to return our mock Drizzle client
@@ -201,19 +227,21 @@ function createTestEnv(overrides: Partial<{
 }
 
 /**
- * Create a valid state token for testing
+ * Create a valid state token for testing.
+ * Now uses mock JWT format that matches the verifyEphemeralToken mock.
+ * The actual implementation uses Ed25519-signed JWTs (HAP-436).
+ * Uses | as delimiter to avoid conflicts with userId containing hyphens.
  */
-function createValidState(userId: string, timestamp?: number): string {
-    const ts = timestamp ?? Date.now();
-    return `state_${userId}_${ts}`;
+function createValidState(userId: string): string {
+    return `mock-jwt|${userId}|github-oauth-state`;
 }
 
 /**
- * Create an expired state token (older than 5 minutes)
+ * Create an expired/invalid state token for testing.
+ * Returns a token that the verifyEphemeralToken mock will reject.
  */
 function createExpiredState(userId: string): string {
-    const expiredTimestamp = Date.now() - (6 * 60 * 1000); // 6 minutes ago
-    return `state_${userId}_${expiredTimestamp}`;
+    return `expired-mock-jwt|${userId}`;
 }
 
 /**
@@ -487,6 +515,8 @@ describe('GitHub OAuth Callback Handler', () => {
 
     // =========================================================================
     // State Token Validation Tests
+    // Note: With JWT tokens (HAP-436), validation is handled by verifyEphemeralToken.
+    // Tests verify the mock correctly rejects invalid tokens.
     // =========================================================================
 
     describe('State Token Validation', () => {
@@ -502,7 +532,7 @@ describe('GitHub OAuth Callback Handler', () => {
             expect(location).toContain('error=invalid_state');
         });
 
-        it('should redirect with invalid_state for state without underscore separators', async () => {
+        it('should redirect with invalid_state for non-JWT state format', async () => {
             const res = await app.request(
                 '/v1/connect/github/callback?code=test-code&state=stateuserid12345',
                 { method: 'GET' },
@@ -514,43 +544,9 @@ describe('GitHub OAuth Callback Handler', () => {
             expect(location).toContain('error=invalid_state');
         });
 
-        it('should redirect with invalid_state for state with missing timestamp', async () => {
-            const res = await app.request(
-                '/v1/connect/github/callback?code=test-code&state=state_user123_',
-                { method: 'GET' },
-                testEnv
-            );
-
-            expect(res.status).toBe(302);
-            const location = res.headers.get('location');
-            expect(location).toContain('error=invalid_state');
-        });
-
-        it('should redirect with invalid_state for state with missing userId', async () => {
-            const res = await app.request(
-                '/v1/connect/github/callback?code=test-code&state=state__1234567890',
-                { method: 'GET' },
-                testEnv
-            );
-
-            expect(res.status).toBe(302);
-            const location = res.headers.get('location');
-            expect(location).toContain('error=invalid_state');
-        });
-
-        it('should redirect with invalid_state for state with non-numeric timestamp', async () => {
-            const res = await app.request(
-                '/v1/connect/github/callback?code=test-code&state=state_user123_notanumber',
-                { method: 'GET' },
-                testEnv
-            );
-
-            expect(res.status).toBe(302);
-            const location = res.headers.get('location');
-            expect(location).toContain('error=invalid_state');
-        });
-
-        it('should redirect with state_expired for expired state token', async () => {
+        it('should redirect with invalid_state for expired JWT token', async () => {
+            // With JWT tokens, expired tokens return null from verifyEphemeralToken
+            // which results in invalid_state (not state_expired)
             const expiredState = createExpiredState(TEST_USER_ID);
 
             const res = await app.request(
@@ -561,39 +557,22 @@ describe('GitHub OAuth Callback Handler', () => {
 
             expect(res.status).toBe(302);
             const location = res.headers.get('location');
-            expect(location).toContain('error=state_expired');
+            expect(location).toContain('error=invalid_state');
         });
 
-        it('should accept state token at exactly 5 minutes (boundary)', async () => {
-            const userId = TEST_USER_ID;
-            const justUnderExpiredTimestamp = Date.now() - (5 * 60 * 1000) + 1000; // 4:59 ago
-            const state = `state_${userId}_${justUnderExpiredTimestamp}`;
-            const code = 'github_auth_code_boundary';
-            const githubProfile = createMockGitHubProfile();
-
-            // Seed account
-            const account = createTestAccount({
-                id: userId,
-                seq: 1,
-            });
-            drizzleMock.seedData('accounts', [account]);
-
-            // Setup mock fetch
-            setupMockFetch({
-                tokenResponse: { access_token: 'gho_boundary_token' },
-                userResponse: githubProfile,
-            });
+        it('should reject JWT token with wrong purpose', async () => {
+            // Create a token with wrong purpose - mock will parse it but purpose check will fail
+            const wrongPurposeToken = 'mock-jwt|' + TEST_USER_ID + '|wrong-purpose';
 
             const res = await app.request(
-                `/v1/connect/github/callback?code=${code}&state=${encodeURIComponent(state)}`,
+                `/v1/connect/github/callback?code=test-code&state=${encodeURIComponent(wrongPurposeToken)}`,
                 { method: 'GET' },
                 testEnv
             );
 
             expect(res.status).toBe(302);
             const location = res.headers.get('location');
-            // Should succeed, not expire
-            expect(location).not.toContain('error=state_expired');
+            expect(location).toContain('error=invalid_state');
         });
     });
 
@@ -1173,9 +1152,8 @@ describe('GitHub OAuth Callback Handler', () => {
             expect(location).toContain('github=connected');
         });
 
-        it('should handle state token with special characters in userId (no underscores)', async () => {
-            // Note: The state format regex uses [^_]+ which means userId cannot contain underscores
-            // This is intentional as underscores are the delimiter in the state format
+        it('should handle state token with special characters in userId', async () => {
+            // JWT tokens can handle any userId - no character restrictions unlike the old format
             const userId = 'user-with.special-chars123';
             const state = createValidState(userId);
             const code = 'special_userid_code';
@@ -1205,21 +1183,37 @@ describe('GitHub OAuth Callback Handler', () => {
             expect(location).toContain('github=connected');
         });
 
-        it('should reject state token with underscore in userId', async () => {
-            // The state format regex [^_]+ means userId cannot contain underscores
+        it('should handle userId with underscores (now supported with JWT tokens)', async () => {
+            // With JWT tokens, any userId format is supported since the userId is embedded
+            // in a signed token rather than parsed from a delimited string
             const userId = 'user_with_underscores';
             const state = createValidState(userId);
+            const code = 'underscore_userid_code';
+            const githubProfile = createMockGitHubProfile();
+
+            // Seed account
+            const account = createTestAccount({
+                id: userId,
+                seq: 1,
+            });
+            drizzleMock.seedData('accounts', [account]);
+
+            // Setup mock fetch
+            setupMockFetch({
+                tokenResponse: { access_token: 'gho_underscore_token' },
+                userResponse: githubProfile,
+            });
 
             const res = await app.request(
-                `/v1/connect/github/callback?code=test-code&state=${encodeURIComponent(state)}`,
+                `/v1/connect/github/callback?code=${code}&state=${encodeURIComponent(state)}`,
                 { method: 'GET' },
                 testEnv
             );
 
             expect(res.status).toBe(302);
             const location = res.headers.get('location');
-            // Should fail validation because the underscore splits the state incorrectly
-            expect(location).toContain('error=invalid_state');
+            // JWT tokens handle underscores in userId correctly
+            expect(location).toContain('github=connected');
         });
     });
 });
