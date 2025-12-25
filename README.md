@@ -93,6 +93,125 @@ happy completion fish > ~/.config/fish/completions/happy.fish
 - `HAPPY_DISABLE_CAFFEINATE` - Disable macOS sleep prevention (set to `true`, `1`, or `yes`)
 - `HAPPY_EXPERIMENTAL` - Enable experimental features (set to `true`, `1`, or `yes`)
 
+## Exit Codes
+
+Happy CLI uses standard exit codes to indicate command status:
+
+| Code | Meaning | When |
+|------|---------|------|
+| 0 | Success | Command completed without errors |
+| 1 | Error | Command failed, daemon not running, or invalid input |
+| 2 | Unhealthy | Daemon is degraded or stale (daemon health/status only) |
+
+### Command-Specific Exit Codes
+
+**`happy daemon status --json`**
+- `0` - Daemon is running
+- `1` - Daemon is not running
+- `2` - Daemon state is stale (process not found)
+
+**`happy daemon health`**
+- `0` - Daemon is healthy
+- `1` - Daemon is degraded
+- `2` - Daemon is unhealthy
+
+## Error Handling
+
+Happy CLI provides structured error handling with:
+
+### Error Categories
+
+| Category | Codes | Description |
+|----------|-------|-------------|
+| Authentication | `AUTH_FAILED`, `TOKEN_EXPIRED` | Login/session issues |
+| Connection | `CONNECT_FAILED`, `NO_RESPONSE` | Network problems |
+| Daemon | `DAEMON_START_FAILED`, `PROCESS_TIMEOUT` | Background service issues |
+| Session | `SESSION_NOT_FOUND` | Session management errors |
+
+### Automatic Retry Behavior
+
+- **Network errors**: Auto-retry with exponential backoff (3 attempts)
+- **Server 5xx errors**: Auto-retry with 1-second delay
+- **Authentication errors**: No retry - requires user action
+- **Rate limiting (429)**: Respects `Retry-After` header
+
+### Error Messages
+
+All errors include:
+- A correlation ID for support (e.g., `ref: abc12345`)
+- Link to relevant documentation when available
+- Suggested next steps
+
+Example:
+```
+Error: Failed to connect to server (ref: abc12345)
+  For more information, see: https://github.com/Enflame-Media/happy-shared/blob/main/docs/errors/CONNECTION.md#connect-failed
+```
+
+For detailed error documentation, see the [Error Reference](https://github.com/Enflame-Media/happy-shared/blob/main/docs/errors/).
+
+## Troubleshooting
+
+### Quick Diagnostics
+
+```bash
+# Run full system diagnostics
+happy doctor
+
+# Check daemon health
+happy daemon health
+
+# View daemon logs
+cat "$(happy daemon logs)"
+
+# Enable verbose output for debugging
+happy --verbose
+```
+
+### Common Issues
+
+#### Daemon Won't Start
+
+```bash
+# Kill stuck processes and restart
+happy doctor clean
+happy daemon start
+```
+
+#### Authentication Issues
+
+```bash
+# Force re-authentication (clears credentials)
+happy auth login --force
+```
+
+#### Connection Problems
+
+1. Check your internet connection
+2. Verify the server is reachable: `curl -I https://happy-api.enflamemedia.com/health`
+3. Check for proxy/firewall issues
+4. Enable verbose mode for detailed logs: `happy --verbose`
+
+#### Session Not Syncing
+
+```bash
+# Check daemon status
+happy daemon status
+
+# List active sessions
+happy daemon list
+
+# Restart the daemon
+happy daemon stop && happy daemon start
+```
+
+### Getting Help
+
+- Run `happy --help` for command documentation
+- Run `happy <command> --help` for command-specific help
+- Check the [Error Reference](https://github.com/Enflame-Media/happy-shared/blob/main/docs/errors/) for detailed error solutions
+- Report issues at [GitHub Issues](https://github.com/Enflame-Media/happy-shared/issues)
+
 ## Requirements
 
 See [Prerequisites](#prerequisites) for the full requirements. In summary:

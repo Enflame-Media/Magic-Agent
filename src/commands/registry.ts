@@ -240,6 +240,38 @@ const defaultCommand: CommandDefinition = {
 }
 
 /**
+ * Exit code definitions for CLI commands.
+ * These are used in the help text to document program exit behavior.
+ */
+export const EXIT_CODES = {
+  SUCCESS: { code: 0, description: 'Command completed successfully' },
+  GENERAL_ERROR: { code: 1, description: 'General error or command failed' },
+  UNHEALTHY: { code: 2, description: 'Daemon is unhealthy or state is stale' },
+} as const
+
+/**
+ * Error behavior documentation for help output
+ */
+const errorBehavior: string[] = [
+  'Exit Codes:',
+  '  0    Success - command completed without errors',
+  '  1    Error - command failed or daemon not running',
+  '  2    Unhealthy - daemon is degraded/stale (daemon health/status only)',
+  '',
+  'Error Handling:',
+  '  • Network errors auto-retry with exponential backoff (3 attempts)',
+  '  • Authentication errors require re-running "happy auth login"',
+  '  • Daemon errors can be diagnosed with "happy doctor"',
+  '',
+  'Troubleshooting:',
+  '  • Run "happy doctor" for system diagnostics',
+  '  • Run "happy doctor clean" to kill stuck processes',
+  '  • Check daemon logs: happy daemon logs',
+  '  • Enable verbose mode: happy --verbose',
+  '  • See docs: https://github.com/Enflame-Media/happy-shared/blob/main/docs/errors/',
+]
+
+/**
  * Generate the main help text from command definitions
  *
  * Creates formatted help output showing all available commands, options, and examples.
@@ -300,6 +332,15 @@ export function generateMainHelp(): string {
     lines.push('  happy --resume')
     lines.push('')
   }
+
+  // Error behavior section
+  lines.push(chalk.gray('─'.repeat(60)))
+  lines.push(`${chalk.bold.cyan('Error Behavior:')}`)
+  lines.push('')
+  for (const line of errorBehavior) {
+    lines.push(`  ${line}`)
+  }
+  lines.push('')
 
   // Separator for Claude help
   lines.push(chalk.gray('─'.repeat(60)))
