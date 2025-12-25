@@ -159,6 +159,12 @@ class ApiSocket {
         wsUrl.searchParams.set('correlationId', sessionCorrelationId);
 
         // HAP-375: Try to fetch a ticket for secure authentication
+        // HAP-533: Intentionally uses fetchWithTimeout instead of authenticatedFetch.
+        // This preserves graceful degradation: if the ticket request fails for ANY reason
+        // (including 401), we silently fall through to HAP-360 message-based auth.
+        // authenticatedFetch would throw TOKEN_EXPIRED on refresh failure, breaking this pattern.
+        // With HAP-512 proactive refresh handling 99%+ of token expiry cases, the trade-off
+        // favors resilience over consistency with other API calls.
         try {
             const ticketResponse = await fetchWithTimeout(`${this.config.endpoint}/v1/websocket/ticket`, {
                 method: 'POST',
