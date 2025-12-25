@@ -6,10 +6,10 @@ import { decodeBase64 } from '@/encryption/base64';
 import { encryptBox } from '@/encryption/libsodium';
 import { authApprove } from '@/auth/authApprove';
 import { useCheckScannerPermissions } from '@/hooks/useCheckCameraPermissions';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { Modal } from '@/modal';
 import { t } from '@/text';
 import { sync } from '@/sync/sync';
-import { AppError, getSmartErrorMessage } from '@/utils/errors';
 
 interface UseConnectTerminalOptions {
     onSuccess?: () => void;
@@ -18,6 +18,7 @@ interface UseConnectTerminalOptions {
 
 export function useConnectTerminal(options?: UseConnectTerminalOptions) {
     const auth = useAuth();
+    const { showError } = useErrorHandler();
     const [isLoading, setIsLoading] = React.useState(false);
     const checkScannerPermissions = useCheckScannerPermissions();
 
@@ -47,17 +48,14 @@ export function useConnectTerminal(options?: UseConnectTerminalOptions) {
             return true;
         } catch (e) {
             console.error(e);
-            // HAP-530: Use getSmartErrorMessage for AppErrors (includes Support ID for server errors)
-            const errorMessage = AppError.isAppError(e)
-                ? getSmartErrorMessage(e)
-                : t('modals.failedToConnectTerminal');
-            Modal.alert(t('common.error'), errorMessage, [{ text: t('common.ok') }]);
+            // HAP-544: Use showError for "Copy ID" button on server errors
+            showError(e, { fallbackMessage: t('modals.failedToConnectTerminal') });
             options?.onError?.(e);
             return false;
         } finally {
             setIsLoading(false);
         }
-    }, [auth.credentials, options]);
+    }, [auth.credentials, options, showError]);
 
     const connectTerminal = React.useCallback(async () => {
         if (await checkScannerPermissions()) {

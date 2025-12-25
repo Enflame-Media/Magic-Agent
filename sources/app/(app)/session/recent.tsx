@@ -17,7 +17,7 @@ import { machineSpawnNewSession, isTemporaryPidSessionId, pollForRealSession } f
 import { Modal } from '@/modal';
 import { sync } from '@/sync/sync';
 import { useRouter } from 'expo-router';
-import { AppError, getSmartErrorMessage } from '@/utils/errors';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
 
 interface SessionHistoryItem {
     type: 'session' | 'date-header';
@@ -222,6 +222,7 @@ function SessionHistory() {
     const allMachines = useAllMachines();
     const navigateToSession = useNavigateToSession();
     const router = useRouter();
+    const { showError } = useErrorHandler();
     const [resumingSessionId, setResumingSessionId] = React.useState<string | null>(null);
 
     const groupedItems = React.useMemo(() => {
@@ -298,15 +299,12 @@ function SessionHistory() {
             }
         } catch (error) {
             console.error('Failed to resume session:', error);
-            // HAP-530: Use getSmartErrorMessage for AppErrors (includes Support ID for server errors)
-            const errorMessage = AppError.isAppError(error)
-                ? getSmartErrorMessage(error)
-                : t('sessionHistory.resumeFailed');
-            Modal.alert(t('common.error'), errorMessage);
+            // HAP-544: Use showError for "Copy ID" button on server errors
+            showError(error, { fallbackMessage: t('sessionHistory.resumeFailed') });
         } finally {
             setResumingSessionId(null);
         }
-    }, [router]);
+    }, [router, showError]);
     
     const renderItem = React.useCallback(({ item, index }: { item: SessionHistoryItem, index: number }) => {
         if (item.type === 'date-header') {

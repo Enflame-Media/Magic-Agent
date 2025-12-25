@@ -1,9 +1,11 @@
 import * as React from 'react';
 import { Modal } from '@/modal';
 import { t } from '@/text';
-import { AppError, getSmartErrorMessage } from '@/utils/errors';
+import { AppError } from '@/utils/errors';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
 
 export function useHappyAction(action: () => Promise<void>) {
+    const { showError, getErrorMessage } = useErrorHandler();
     const [loading, setLoading] = React.useState(false);
     const loadingRef = React.useRef(false);
     const doAction = React.useCallback(() => {
@@ -19,25 +21,21 @@ export function useHappyAction(action: () => Promise<void>) {
                         await action();
                         break;
                     } catch (e) {
-                        if (AppError.isAppError(e)) {
-                            // HAP-530: Use getSmartErrorMessage for AppErrors (includes Support ID for server errors)
-                            const errorMessage = getSmartErrorMessage(e);
-                            if (e.canTryAgain) {
-                                // Ask user if they want to retry - if yes, continue loop; if no, break
-                                const shouldRetry = await Modal.confirm(t('common.error'), errorMessage, {
-                                    cancelText: t('common.cancel'),
-                                    confirmText: t('common.retry'),
-                                });
-                                if (!shouldRetry) {
-                                    break;
-                                }
-                                // User chose to retry - continue the while loop
-                            } else {
-                                Modal.alert(t('common.error'), errorMessage, [{ text: t('common.ok'), style: 'cancel' }]);
+                        if (AppError.isAppError(e) && e.canTryAgain) {
+                            // Retryable errors: Ask user if they want to retry
+                            // Use getErrorMessage for the confirm dialog (keeps retry UX)
+                            const errorMessage = getErrorMessage(e);
+                            const shouldRetry = await Modal.confirm(t('common.error'), errorMessage, {
+                                cancelText: t('common.cancel'),
+                                confirmText: t('common.retry'),
+                            });
+                            if (!shouldRetry) {
                                 break;
                             }
+                            // User chose to retry - continue the while loop
                         } else {
-                            Modal.alert(t('common.error'), t('errors.unknownError'), [{ text: t('common.ok'), style: 'cancel' }]);
+                            // HAP-544: Non-retryable errors use showError for "Copy ID" button
+                            showError(e);
                             break;
                         }
                     }
@@ -47,6 +45,6 @@ export function useHappyAction(action: () => Promise<void>) {
                 setLoading(false);
             }
         })();
-    }, [action]);
+    }, [action, showError, getErrorMessage]);
     return [loading, doAction] as const;
 }

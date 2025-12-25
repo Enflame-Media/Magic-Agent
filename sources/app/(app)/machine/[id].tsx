@@ -18,7 +18,8 @@ import { useUnistyles, StyleSheet } from 'react-native-unistyles';
 import { t } from '@/text';
 import { useNavigateToSession } from '@/hooks/useNavigateToSession';
 import { machineSpawnNewSession, isTemporaryPidSessionId, pollForRealSession } from '@/sync/ops';
-import { AppError, getSmartErrorMessage } from '@/utils/errors';
+import { AppError } from '@/utils/errors';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { resolveAbsolutePath } from '@/utils/pathUtils';
 import { MultiTextInput, type MultiTextInputHandle } from '@/components/MultiTextInput';
 
@@ -71,6 +72,7 @@ function MachineDetailScreen() {
     const sessions = useSessions();
     const machine = useMachine(machineId!);
     const navigateToSession = useNavigateToSession();
+    const { showError } = useErrorHandler();
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [isStoppingDaemon, setIsStoppingDaemon] = useState(false);
     const [isRenamingMachine, setIsRenamingMachine] = useState(false);
@@ -146,11 +148,8 @@ function MachineDetailScreen() {
                             // Refresh to get updated metadata
                             await sync.refreshMachines();
                         } catch (error) {
-                            // HAP-530: Use getSmartErrorMessage for AppErrors (includes Support ID for server errors)
-                            const errorMessage = AppError.isAppError(error)
-                                ? getSmartErrorMessage(error)
-                                : 'Failed to stop daemon. It may not be running.';
-                            Modal.alert(t('common.error'), errorMessage);
+                            // HAP-544: Use showError for "Copy ID" button on server errors
+                            showError(error, { fallbackMessage: 'Failed to stop daemon. It may not be running.' });
                         } finally {
                             setIsStoppingDaemon(false);
                         }
@@ -198,13 +197,8 @@ function MachineDetailScreen() {
                 
                 Modal.alert(t('common.success'), 'Machine renamed successfully');
             } catch (error) {
-                // HAP-530: Use getSmartErrorMessage for AppErrors (includes Support ID for server errors)
-                const errorMessage = AppError.isAppError(error)
-                    ? getSmartErrorMessage(error)
-                    : error instanceof Error
-                        ? error.message
-                        : 'Failed to rename machine';
-                Modal.alert(t('common.error'), errorMessage);
+                // HAP-544: Use showError for "Copy ID" button on server errors
+                showError(error, { fallbackMessage: 'Failed to rename machine' });
                 // Refresh to get latest state
                 await sync.refreshMachines();
             } finally {
@@ -264,16 +258,8 @@ function MachineDetailScreen() {
                     break;
             }
         } catch (error) {
-            // HAP-530: Use getSmartErrorMessage for AppErrors (includes Support ID for server errors)
-            let errorMessage: string;
-            if (AppError.isAppError(error)) {
-                errorMessage = getSmartErrorMessage(error);
-            } else if (error instanceof Error && !error.message.includes('Failed to spawn session')) {
-                errorMessage = error.message;
-            } else {
-                errorMessage = 'Failed to start session. Make sure the daemon is running on the target machine.';
-            }
-            Modal.alert(t('common.error'), errorMessage);
+            // HAP-544: Use showError for "Copy ID" button on server errors
+            showError(error, { fallbackMessage: 'Failed to start session. Make sure the daemon is running on the target machine.' });
         } finally {
             setIsSpawning(false);
         }

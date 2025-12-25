@@ -6,9 +6,9 @@ import { decodeBase64 } from '@/encryption/base64';
 import { encryptBox } from '@/encryption/libsodium';
 import { authAccountApprove } from '@/auth/authAccountApprove';
 import { useCheckScannerPermissions } from '@/hooks/useCheckCameraPermissions';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { Modal } from '@/modal';
 import { t } from '@/text';
-import { AppError, getSmartErrorMessage } from '@/utils/errors';
 
 interface UseConnectAccountOptions {
     onSuccess?: () => void;
@@ -17,6 +17,7 @@ interface UseConnectAccountOptions {
 
 export function useConnectAccount(options?: UseConnectAccountOptions) {
     const auth = useAuth();
+    const { showError } = useErrorHandler();
     const [isLoading, setIsLoading] = React.useState(false);
     const checkScannerPermissions = useCheckScannerPermissions();
 
@@ -42,17 +43,14 @@ export function useConnectAccount(options?: UseConnectAccountOptions) {
             return true;
         } catch (e) {
             console.error(e);
-            // HAP-530: Use getSmartErrorMessage for AppErrors (includes Support ID for server errors)
-            const errorMessage = AppError.isAppError(e)
-                ? getSmartErrorMessage(e)
-                : t('modals.failedToLinkDevice');
-            Modal.alert(t('common.error'), errorMessage, [{ text: t('common.ok') }]);
+            // HAP-544: Use showError for "Copy ID" button on server errors
+            showError(e, { fallbackMessage: t('modals.failedToLinkDevice') });
             options?.onError?.(e);
             return false;
         } finally {
             setIsLoading(false);
         }
-    }, [auth.credentials, options]);
+    }, [auth.credentials, options, showError]);
 
     const connectAccount = React.useCallback(async () => {
         if (await checkScannerPermissions()) {

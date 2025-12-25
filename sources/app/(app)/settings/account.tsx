@@ -23,12 +23,13 @@ import { Image } from 'expo-image';
 import { useHappyAction } from '@/hooks/useHappyAction';
 import { disconnectGitHub } from '@/sync/apiGithub';
 import { disconnectService } from '@/sync/apiServices';
-import { AppError, getSmartErrorMessage } from '@/utils/errors';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
 
 export default React.memo(() => {
     const { theme } = useUnistyles();
     const auth = useAuth();
     const _router = useRouter();
+    const { showError } = useErrorHandler();
     const [showSecret, setShowSecret] = useState(false);
     const [copiedRecently, setCopiedRecently] = useState(false);
     const [analyticsOptOut, setAnalyticsOptOut] = useSettingMutable('analyticsOptOut');
@@ -73,11 +74,8 @@ export default React.memo(() => {
                 await sync.refreshProfile();
                 // The profile will be updated via sync
             } catch (error) {
-                // HAP-530: Use getSmartErrorMessage for AppErrors (includes Support ID for server errors)
-                const errorMessage = AppError.isAppError(error)
-                    ? getSmartErrorMessage(error)
-                    : t('errors.disconnectServiceFailed', { service: displayName });
-                Modal.alert(t('common.error'), errorMessage);
+                // HAP-544: Use showError for "Copy ID" button on server errors
+                showError(error, { fallbackMessage: t('errors.disconnectServiceFailed', { service: displayName }) });
             } finally {
                 setDisconnectingService(null);
             }

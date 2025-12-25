@@ -10,10 +10,11 @@ import { t } from '@/text';
 import { ItemList } from '@/components/ItemList';
 import { ItemGroup } from '@/components/ItemGroup';
 import { useSearch } from '@/hooks/useSearch';
-import { AppError, getSmartErrorMessage } from '@/utils/errors';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
 
 function SearchFriendsScreen() {
     const { credentials } = useAuth();
+    const { showError } = useErrorHandler();
     const [searchQuery, setSearchQuery] = useState('');
     const [processingUserId, setProcessingUserId] = useState<string | null>(null);
     
@@ -42,18 +43,17 @@ function SearchFriendsScreen() {
             }
         } catch (error: unknown) {
             console.error('Failed to send friend request:', error);
-            // HAP-530: Use getSmartErrorMessage for AppErrors (includes Support ID for server errors)
+            // Special case: "yourself" error is a validation message, not server error
             if (error instanceof Error && error.message?.includes('yourself')) {
                 await Modal.alert(t('friends.cannotAddYourself'));
-            } else if (AppError.isAppError(error)) {
-                await Modal.alert(t('common.error'), getSmartErrorMessage(error));
             } else {
-                await Modal.alert(t('errors.failedToSendRequest'));
+                // HAP-544: Use showError for "Copy ID" button on server errors
+                showError(error, { fallbackMessage: t('errors.failedToSendRequest') });
             }
         } finally {
             setProcessingUserId(null);
         }
-    }, [credentials]);
+    }, [credentials, showError]);
 
     const renderUserItem = ({ item }: { item: UserProfile }) => (
         <UserSearchResult

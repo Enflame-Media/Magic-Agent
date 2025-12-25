@@ -21,7 +21,8 @@ import { createWorktree } from '@/utils/createWorktree';
 import { getTempData, type NewSessionData } from '@/utils/tempDataStore';
 import { linkTaskToSession } from '@/-zen/model/taskSessionLink';
 import { PermissionMode, ModelMode } from '@/components/PermissionModeSelector';
-import { AppError, ErrorCodes, getSmartErrorMessage } from '@/utils/errors';
+import { AppError, ErrorCodes } from '@/utils/errors';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { RecentPathsDropdown } from '@/components/RecentPathsDropdown';
 
 
@@ -123,6 +124,7 @@ const updateRecentMachinePaths = (
 function NewSessionScreen() {
     const { theme } = useUnistyles();
     const router = useRouter();
+    const { showError } = useErrorHandler();
     const { prompt, dataId, selectedPath: pathFromParam, selectedMachineId: machineIdFromParam } = useLocalSearchParams<{ prompt?: string; dataId?: string; selectedPath?: string; selectedMachineId?: string }>();
 
     // Try to get data from temporary store first, fallback to direct prompt parameter
@@ -528,11 +530,12 @@ function NewSessionScreen() {
         } catch (error) {
             console.error('Failed to start session', error);
 
-            // HAP-530: Use getSmartErrorMessage for AppErrors (includes Support ID for server errors)
-            let errorMessage: string;
+            // HAP-544: Use showError for AppErrors to get "Copy ID" button
             if (AppError.isAppError(error)) {
-                errorMessage = getSmartErrorMessage(error);
+                showError(error);
             } else if (error instanceof Error) {
+                // Custom fallback messages for specific error types
+                let errorMessage: string;
                 if (error.message.includes('timeout')) {
                     errorMessage = 'Session startup timed out. The machine may be slow or the daemon may not be responding.';
                 } else if (error.message.includes('Socket not connected')) {
@@ -540,15 +543,14 @@ function NewSessionScreen() {
                 } else {
                     errorMessage = 'Failed to start session. Make sure the daemon is running on the target machine.';
                 }
+                Modal.alert(t('common.error'), errorMessage);
             } else {
-                errorMessage = 'Failed to start session. Make sure the daemon is running on the target machine.';
+                showError(error, { fallbackMessage: 'Failed to start session. Make sure the daemon is running on the target machine.' });
             }
-
-            Modal.alert(t('common.error'), errorMessage);
         } finally {
             setIsSending(false);
         }
-    }, [agentType, selectedMachineId, selectedPath, input, recentMachinePaths, sessionType, experimentsEnabled, permissionMode, modelMode, router, tempSessionData?.taskId, tempSessionData?.taskTitle, tempSessionData?.prompt]);
+    }, [agentType, selectedMachineId, selectedPath, input, recentMachinePaths, sessionType, experimentsEnabled, permissionMode, modelMode, router, tempSessionData?.taskId, tempSessionData?.taskTitle, tempSessionData?.prompt, showError]);
 
     return (
         <KeyboardAvoidingView

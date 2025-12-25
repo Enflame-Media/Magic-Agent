@@ -15,13 +15,14 @@ import { useHappyAction } from '@/hooks/useHappyAction';
 import { Modal } from '@/modal';
 import { t } from '@/text';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { AppError, getSmartErrorMessage } from '@/utils/errors';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
 
 function UserProfileScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const { credentials } = useAuth();
     const router = useRouter();
     const { theme } = useUnistyles();
+    const { showError } = useErrorHandler();
     const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -36,23 +37,23 @@ function UserProfileScreen() {
                 setUserProfile(profile);
             } catch (error) {
                 console.error('Failed to load user profile:', error);
-                // HAP-530: Use getSmartErrorMessage for AppErrors (includes Support ID for server errors)
-                const errorMessage = AppError.isAppError(error)
-                    ? getSmartErrorMessage(error)
-                    : t('errors.failedToLoadProfile');
-                await Modal.alert(t('common.error'), errorMessage, [
-                    {
-                        text: t('common.ok'),
-                        onPress: () => router.back()
-                    }
-                ]);
+                // HAP-544: Use showError with custom button to navigate back
+                showError(error, {
+                    fallbackMessage: t('errors.failedToLoadProfile'),
+                    buttons: [
+                        {
+                            text: t('common.ok'),
+                            onPress: () => router.back()
+                        }
+                    ]
+                });
             } finally {
                 setIsLoading(false);
             }
         };
 
         loadUserProfile();
-    }, [credentials, id, router]);
+    }, [credentials, id, router, showError]);
 
     // Add friend / Accept request action
     const [addingFriend, addFriend] = useHappyAction(async () => {
