@@ -450,6 +450,28 @@ const githubWebhookRoute = createRoute({
 });
 
 /**
+ * Constant-time string comparison to prevent timing attacks.
+ *
+ * This function compares two strings in a way that takes the same amount of time
+ * regardless of how many characters match. This prevents attackers from using
+ * timing information to gradually learn the correct value.
+ *
+ * @param a - First string to compare
+ * @param b - Second string to compare
+ * @returns true if strings are equal, false otherwise
+ */
+function constantTimeEqual(a: string, b: string): boolean {
+    if (a.length !== b.length) {
+        return false;
+    }
+    let result = 0;
+    for (let i = 0; i < a.length; i++) {
+        result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+    }
+    return result === 0;
+}
+
+/**
  * Verify GitHub webhook signature using HMAC-SHA256
  *
  * Uses the Web Crypto API (required for Cloudflare Workers).
@@ -485,8 +507,8 @@ async function verifyWebhookSignature(
         .map((b) => b.toString(16).padStart(2, '0'))
         .join('');
 
-    // Constant-time comparison (both strings are computed before comparison)
-    return computedSignature === expectedSignature;
+    // Constant-time comparison to prevent timing attacks
+    return constantTimeEqual(computedSignature, expectedSignature);
 }
 
 /**
