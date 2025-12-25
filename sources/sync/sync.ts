@@ -67,6 +67,28 @@ interface DeltaSyncResponse {
 }
 
 /**
+ * HAP-497: Sync metrics for measuring optimization effectiveness.
+ * Tracks payload sizes, sync modes, and timing to validate HAP-489 optimizations.
+ */
+interface SyncMetrics {
+    type: 'messages' | 'profile' | 'artifacts';
+    mode: 'full' | 'incremental' | 'cached';
+    bytesReceived: number;
+    itemsReceived: number;
+    itemsSkipped: number;
+    durationMs: number;
+    sessionId?: string;
+}
+
+/**
+ * HAP-497: Log sync metrics in a structured format for analysis.
+ * Uses 📊 emoji prefix for easy filtering in logs.
+ */
+function logSyncMetrics(metrics: SyncMetrics): void {
+    log.log(`📊 Sync metrics: ${JSON.stringify(metrics)}`);
+}
+
+/**
  * Compares two arrays for shallow equality.
  * More efficient than JSON.stringify comparison as it:
  * - Returns true immediately for reference equality
@@ -788,6 +810,9 @@ class Sync {
      */
     public fetchArtifactsList = async (): Promise<void> => {
         log.log('📦 fetchArtifactsList: Starting artifact sync');
+        // HAP-497: Track sync timing for metrics
+        const syncStartTime = Date.now();
+
         if (!this.credentials) {
             log.log('📦 fetchArtifactsList: No credentials, skipping');
             return;
@@ -801,6 +826,8 @@ class Sync {
             log.log(`📦 fetchArtifactsList: Fetching artifacts from server (sinceSeq=${sinceSeq}, incremental=${isIncremental})`);
             const response = await fetchArtifacts(this.credentials, sinceSeq);
             const { artifacts, maxSeq } = response;
+            // HAP-497: Estimate bytes received from response
+            const bytesReceived = JSON.stringify(response).length;
             log.log(`📦 fetchArtifactsList: Received ${artifacts.length} artifacts from server (maxSeq=${maxSeq})`);
 
             // HAP-492: Update the lastKnownSeq for artifacts from response
@@ -811,6 +838,15 @@ class Sync {
             // If no new artifacts, nothing to process
             if (artifacts.length === 0) {
                 log.log('📦 fetchArtifactsList: No new artifacts to process');
+                // HAP-497: Log metrics for empty response (still useful for optimization tracking)
+                logSyncMetrics({
+                    type: 'artifacts',
+                    mode: isIncremental ? 'incremental' : 'full',
+                    bytesReceived,
+                    itemsReceived: 0,
+                    itemsSkipped: 0,
+                    durationMs: Date.now() - syncStartTime
+                });
                 return;
             }
 
@@ -867,6 +903,16 @@ class Sync {
             // HAP-492: applyArtifacts already merges (doesn't replace), so both full and incremental work correctly
             storage.getState().applyArtifacts(decryptedArtifacts);
             log.log('📦 fetchArtifactsList: Artifacts applied to storage');
+
+            // HAP-497: Log sync metrics for optimization tracking
+            logSyncMetrics({
+                type: 'artifacts',
+                mode: isIncremental ? 'incremental' : 'full',
+                bytesReceived,
+                itemsReceived: decryptedArtifacts.length,
+                itemsSkipped: 0, // Artifacts don't have duplicate filtering like messages
+                durationMs: Date.now() - syncStartTime
+            });
         } catch (error) {
             log.log(`📦 fetchArtifactsList: Error fetching artifacts: ${error}`);
             console.error('Failed to fetch artifacts:', error);
@@ -1512,6 +1558,11 @@ class Sync {
     private fetchProfile = async () => {
         if (!this.credentials) return;
 
+        // HAP-497: Track sync timing for metrics
+        const syncStartTime = Date.now();
+        // HAP-497: Track if we're using conditional request (ETag)
+        const hasETag = !!this.profileETag;
+
         const API_ENDPOINT = getServerUrl();
 
         // HAP-491: Build headers with conditional request support
@@ -1534,6 +1585,15 @@ class Sync {
         // HAP-491: Handle 304 Not Modified - profile unchanged, skip processing
         if (response.status === 304) {
             log.log('[sync] Profile unchanged (304)');
+            // HAP-497: Log cached response as a cache hit (0 bytes transferred)
+            logSyncMetrics({
+                type: 'profile',
+                mode: 'cached',
+                bytesReceived: 0,
+                itemsReceived: 0,
+                itemsSkipped: 1, // Profile was cached, so 1 item "skipped"
+                durationMs: Date.now() - syncStartTime
+            });
             return;
         }
 
@@ -1550,6 +1610,8 @@ class Sync {
         }
 
         const data = await response.json();
+        // HAP-497: Estimate bytes received
+        const bytesReceived = JSON.stringify(data).length;
         const parsedProfile = profileParse(data);
 
         // Log profile data for debugging
@@ -1564,6 +1626,16 @@ class Sync {
 
         // Apply profile to storage
         storage.getState().applyProfile(parsedProfile);
+
+        // HAP-497: Log sync metrics - 'incremental' if we sent ETag (conditional), 'full' otherwise
+        logSyncMetrics({
+            type: 'profile',
+            mode: hasETag ? 'incremental' : 'full',
+            bytesReceived,
+            itemsReceived: 1,
+            itemsSkipped: 0,
+            durationMs: Date.now() - syncStartTime
+        });
     }
 
     private fetchNativeUpdate = async () => {
@@ -1678,6 +1750,8 @@ class Sync {
 
     private fetchMessages = async (sessionId: string) => {
         log.log(`💬 fetchMessages starting for session ${sessionId} - acquiring lock`);
+        // HAP-497: Track sync timing for metrics
+        const syncStartTime = Date.now();
 
         // Get encryption - may not be ready yet if session was just created
         // Throwing an error triggers backoff retry in InvalidateSync
@@ -1689,6 +1763,8 @@ class Sync {
 
         // Get the last received sequence number for cursor-based fetching
         const lastSeq = this.sessionLastSeq.get(sessionId);
+        // HAP-497: Track sync mode for metrics
+        const isIncremental = lastSeq !== undefined;
 
         // Request with cursor if we have previous messages
         const url = lastSeq !== undefined
@@ -1699,10 +1775,22 @@ class Sync {
         const response = await apiSocket.request(url);
         const data = await response.json();
         const messages = data.messages as ApiMessage[];
+        // HAP-497: Estimate bytes received (JSON serialization approximation)
+        const bytesReceived = JSON.stringify(data).length;
 
         // No new messages - nothing to process
         if (messages.length === 0) {
             log.log(`💬 fetchMessages: No new messages for session ${sessionId}`);
+            // HAP-497: Log metrics for empty response (still useful for optimization tracking)
+            logSyncMetrics({
+                type: 'messages',
+                mode: isIncremental ? 'incremental' : 'full',
+                bytesReceived,
+                itemsReceived: 0,
+                itemsSkipped: 0,
+                durationMs: Date.now() - syncStartTime,
+                sessionId
+            });
             return;
         }
 
@@ -1714,9 +1802,21 @@ class Sync {
         const messagesToDecrypt = lastSeq !== undefined
             ? messages.filter(msg => msg.seq > lastSeq)
             : messages;
+        // HAP-497: Track messages skipped due to duplicate filtering
+        const itemsSkipped = messages.length - messagesToDecrypt.length;
 
         if (messagesToDecrypt.length === 0) {
             log.log(`💬 fetchMessages: All messages already processed for session ${sessionId}`);
+            // HAP-497: Log metrics when all messages were duplicates
+            logSyncMetrics({
+                type: 'messages',
+                mode: isIncremental ? 'incremental' : 'full',
+                bytesReceived,
+                itemsReceived: 0,
+                itemsSkipped: messages.length,
+                durationMs: Date.now() - syncStartTime,
+                sessionId
+            });
             return;
         }
 
@@ -1753,6 +1853,17 @@ class Sync {
         // Apply to storage
         this.applyMessages(sessionId, normalizedMessages);
         log.log(`💬 fetchMessages completed for session ${sessionId} - processed ${normalizedMessages.length} messages (maxSeq=${maxSeq})`);
+
+        // HAP-497: Log sync metrics for optimization tracking
+        logSyncMetrics({
+            type: 'messages',
+            mode: isIncremental ? 'incremental' : 'full',
+            bytesReceived,
+            itemsReceived: normalizedMessages.length,
+            itemsSkipped,
+            durationMs: Date.now() - syncStartTime,
+            sessionId
+        });
     }
 
     private registerPushToken = async () => {
