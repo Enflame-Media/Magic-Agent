@@ -246,17 +246,13 @@ export async function initAuth(
     const ephemeralTtl = options.ephemeralTtl ?? DEFAULT_EPHEMERAL_TTL;
     const persistentTtl = options.persistentTtl ?? DEFAULT_PERSISTENT_TTL;
     if (authState) {
-        console.log('[Auth] Already initialized, public key:', authState.persistentPublicKey.substring(0, 10) + '...');
-        return; // Already initialized
+        // Already initialized - no sensitive data logged
+        return;
     }
-
-    console.log('[Auth] Initializing with secret length:', masterSecret.length);
 
     // Derive persistent key pair for main authentication tokens
     const persistentKeyPair = await deriveKeyPair(masterSecret, SERVICE_NAME);
     const persistentPublicKey = await exportPublicKey(persistentKeyPair.publicKey);
-
-    console.log('[Auth] Derived persistent public key:', persistentPublicKey.substring(0, 10) + '...');
 
     // Derive ephemeral key pair for short-lived tokens (GitHub OAuth, etc.)
     const ephemeralKeyPair = await deriveKeyPair(masterSecret, EPHEMERAL_SERVICE_NAME);
@@ -347,8 +343,6 @@ export async function createToken(userId: string, extras?: TokenExtras): Promise
         );
     }
 
-    console.log('[Auth] Creating token for user:', userId, 'with public key:', authState.persistentPublicKey.substring(0, 10) + '...');
-
     // Calculate expiration time (30 days by default)
     const expirationTime = Math.floor((Date.now() + authState.persistentTtl) / 1000);
 
@@ -363,7 +357,8 @@ export async function createToken(userId: string, extras?: TokenExtras): Promise
 
     const token = await builder.sign(authState.persistentKey);
 
-    console.log('[Auth] Token created, first 20 chars:', token.substring(0, 20) + '...');
+    // Log only non-sensitive metadata for debugging
+    console.log('[Auth] Token created', { userId, tokenLength: token.length });
 
     // Cache the token immediately for fast verification
     tokenCache.set(token, {
@@ -409,32 +404,26 @@ export async function verifyToken(
     token: string,
     db?: D1Database
 ): Promise<{ userId: string; extras?: TokenExtras } | null> {
-    console.log('[Auth] Verifying token, first 20 chars:', token.substring(0, 20) + '...');
-
     // Check cache first for fast path
     const cached = tokenCache.get(token);
     if (cached) {
-        console.log('[Auth] Token found in cache for user:', cached.userId);
         return {
             userId: cached.userId,
             extras: cached.extras,
         };
     }
 
-    console.log('[Auth] Token not in cache, checking blacklist and verifying...');
-
     // Check distributed blacklist if database is provided
     if (db) {
         const isRevoked = await isTokenRevoked(db, token);
         if (isRevoked) {
-            console.log('[Auth] Token is revoked (found in distributed blacklist)');
+            console.log('[Auth] Token verification failed: revoked');
             return null;
         }
     }
 
     // Cache miss - verify token cryptographically
     if (!authState) {
-        console.error('[Auth] ERROR: Auth module not initialized!');
         throw new Error(
             'Auth module not initialized. ' +
             'In Cloudflare Workers, initAuth must be called before accessing auth functions. ' +
@@ -443,8 +432,6 @@ export async function verifyToken(
             'See docs/SECRETS.md for HAPPY_MASTER_SECRET configuration.'
         );
     }
-
-    console.log('[Auth] Using public key:', authState.persistentPublicKey.substring(0, 10) + '...');
 
     try {
         // Derive public key from private key for verification
@@ -470,8 +457,6 @@ export async function verifyToken(
         const userId = payload.user as string;
         const extras = payload.extras as TokenExtras | undefined;
 
-        console.log('[Auth] Token verified successfully for user:', userId);
-
         // Cache the result for future fast verification
         tokenCache.set(token, {
             userId,
@@ -481,17 +466,17 @@ export async function verifyToken(
 
         return { userId, extras };
     } catch (error) {
-        // Handle jose-specific errors gracefully
+        // Handle jose-specific errors gracefully - log failure reason without token content
         if (
             error instanceof joseErrors.JWTExpired ||
             error instanceof joseErrors.JWTInvalid ||
             error instanceof joseErrors.JWSSignatureVerificationFailed ||
             error instanceof joseErrors.JWTClaimValidationFailed
         ) {
-            console.log('[Auth] Token verification failed:', error instanceof Error ? error.message : String(error));
+            console.log('[Auth] Token verification failed:', error instanceof Error ? error.name : 'unknown');
             return null;
         }
-        console.error('[Auth] Token verification error:', error);
+        console.error('[Auth] Token verification error:', error instanceof Error ? error.name : 'unknown');
         return null;
     }
 }
@@ -540,13 +525,11 @@ export async function refreshToken(
         );
     }
 
-    console.log('[Auth] Attempting to refresh token, first 20 chars:', token.substring(0, 20) + '...');
-
     // Check distributed blacklist if database is provided
     if (db) {
         const isRevoked = await isTokenRevoked(db, token);
         if (isRevoked) {
-            console.log('[Auth] Token is revoked, cannot refresh');
+            console.log('[Auth] Token refresh denied: revoked');
             return null;
         }
     }
@@ -580,8 +563,6 @@ export async function refreshToken(
         const userId = payload.user as string;
         const extras = payload.extras as TokenExtras | undefined;
 
-        console.log('[Auth] Token valid for refresh, issuing new token for user:', userId);
-
         // Issue new token with fresh expiration
         const newToken = await createToken(userId, extras);
 
@@ -594,17 +575,17 @@ export async function refreshToken(
             extras,
         };
     } catch (error) {
-        // Token is invalid or expired beyond grace period
+        // Token is invalid or expired beyond grace period - log failure reason without token content
         if (error instanceof joseErrors.JWTExpired) {
-            console.log('[Auth] Token expired beyond grace period, refresh denied');
+            console.log('[Auth] Token refresh denied: expired beyond grace period');
         } else if (
             error instanceof joseErrors.JWTInvalid ||
             error instanceof joseErrors.JWSSignatureVerificationFailed ||
             error instanceof joseErrors.JWTClaimValidationFailed
         ) {
-            console.log('[Auth] Token invalid, refresh denied:', error.message);
+            console.log('[Auth] Token refresh denied:', error.name);
         } else {
-            console.error('[Auth] Token refresh error:', error);
+            console.error('[Auth] Token refresh error:', error instanceof Error ? error.name : 'unknown');
         }
         return null;
     }
@@ -702,7 +683,7 @@ export async function verifyEphemeralToken(
             purpose: payload.purpose as string | undefined,
         };
     } catch (error) {
-        // Expired or invalid tokens return null
+        // Expired or invalid tokens return null - no logging needed for expected failures
         if (
             error instanceof joseErrors.JWTExpired ||
             error instanceof joseErrors.JWTInvalid ||
@@ -711,7 +692,7 @@ export async function verifyEphemeralToken(
         ) {
             return null;
         }
-        console.error('Ephemeral token verification failed:', error);
+        console.error('[Auth] Ephemeral token verification error:', error instanceof Error ? error.name : 'unknown');
         return null;
     }
 }
