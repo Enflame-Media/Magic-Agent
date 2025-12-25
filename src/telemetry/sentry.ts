@@ -264,6 +264,7 @@ export function captureException(
 
 /**
  * Captures a message with Sentry for non-error events.
+ * Integrated in CLI operations (HAP-522).
  *
  * @param message - The message to capture
  * @param level - The severity level (default: 'info')
@@ -291,6 +292,7 @@ export function captureMessage(
 /**
  * Adds a breadcrumb to the current Sentry scope.
  * Breadcrumbs are used to track user actions leading up to an error.
+ * Integrated in CLI operations for debugging context (HAP-522).
  *
  * @param breadcrumb - The breadcrumb to add
  */
@@ -305,6 +307,7 @@ export function addBreadcrumb(breadcrumb: Sentry.Breadcrumb): void {
 /**
  * Sets a tag on the current Sentry scope.
  * Tags are searchable and can be used to filter events.
+ * Integrated for session/daemon tagging (HAP-522).
  *
  * @param key - The tag key
  * @param value - The tag value
@@ -334,6 +337,7 @@ export async function flush(timeout: number = 2000): Promise<boolean> {
 
 /**
  * Checks if Sentry has been initialized.
+ * Used for conditional telemetry operations.
  *
  * @returns true if Sentry is initialized and ready to capture events
  */

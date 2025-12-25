@@ -9,6 +9,10 @@
 import chalk from 'chalk'
 import packageJson from '../package.json'
 
+// Capture startup time as early as possible (before any imports)
+// This measures total CLI initialization time for performance monitoring
+const startupStart = Date.now()
+
 // Export version to avoid "empty chunk" bundler warnings
 // This export is not used by the CLI itself but makes the package usable as a library
 export const VERSION = packageJson.version
@@ -36,7 +40,7 @@ import { spawnHappyCLI } from './utils/spawnHappyCLI'
 import { claudeCliPath } from './claude/claudeLocal'
 import { execFileSync } from 'node:child_process'
 import { checkForUpdatesAndNotify } from './utils/checkForUpdates'
-import { initializeTelemetry, showTelemetryNoticeIfNeeded } from './telemetry'
+import { initializeTelemetry, showTelemetryNoticeIfNeeded, trackMetric, setTag, addBreadcrumb, shutdownTelemetry } from './telemetry'
 
 
 (async () => {
@@ -52,15 +56,23 @@ import { initializeTelemetry, showTelemetryNoticeIfNeeded } from './telemetry'
   void checkForUpdatesAndNotify()
 
   const args = process.argv.slice(2)
+  const subcommand = args[0]
+
+  // Track startup timing and set initial tags for observability (HAP-522)
+  // This runs after telemetry init to ensure sender is ready
+  trackMetric('startup_time', Date.now() - startupStart, {
+    command: subcommand || 'default',
+    platform: process.platform
+  })
+  setTag('cli.command', subcommand || 'default')
+  addBreadcrumb({ category: 'cli', message: `CLI started: ${subcommand || 'default'}`, level: 'info' })
 
   // If --version is passed - do not log, its likely daemon inquiring about our version
   if (!args.includes('--version')) {
     logger.debug('Starting happy CLI with args: ', process.argv)
   }
 
-  // Check if first argument is a subcommand
-  const subcommand = args[0]
-
+  // Process subcommands
   if (subcommand === 'doctor') {
     // Check for clean subcommand
     if (args[1] === 'clean') {
@@ -84,18 +96,26 @@ import { initializeTelemetry, showTelemetryNoticeIfNeeded } from './telemetry'
     await runDoctorCommand();
     return;
   } else if (subcommand === 'auth') {
-    // Handle auth subcommands
+    // Handle auth subcommands with timing (HAP-522)
+    const commandStart = Date.now()
+    addBreadcrumb({ category: 'command', message: 'Starting auth command', level: 'info' })
     try {
       await handleAuthCommand(args.slice(1));
+      trackMetric('command_duration', Date.now() - commandStart, { command: 'auth', success: true })
     } catch (error) {
+      trackMetric('command_duration', Date.now() - commandStart, { command: 'auth', success: false })
       logger.errorAndExit('Authentication command failed', error)
     }
     return;
   } else if (subcommand === 'connect') {
-    // Handle connect subcommands
+    // Handle connect subcommands with timing (HAP-522)
+    const commandStart = Date.now()
+    addBreadcrumb({ category: 'command', message: 'Starting connect command', level: 'info' })
     try {
       await handleConnectCommand(args.slice(1));
+      trackMetric('command_duration', Date.now() - commandStart, { command: 'connect', success: true })
     } catch (error) {
+      trackMetric('command_duration', Date.now() - commandStart, { command: 'connect', success: false })
       logger.errorAndExit('Connect command failed', error)
     }
     return;
@@ -420,10 +440,15 @@ ${chalk.gray(`Last checked: ${new Date(health.timestamp).toLocaleString()}`)}
       await new Promise(resolve => setTimeout(resolve, 200));
     }
 
-    // Start the CLI
+    // Start the CLI with session tracking (HAP-522)
+    setTag('cli.mode', 'interactive')
+    addBreadcrumb({ category: 'session', message: 'Starting Claude session', level: 'info' })
     try {
       await runClaude(credentials, options);
+      // Ensure telemetry is flushed before exit
+      await shutdownTelemetry()
     } catch (error) {
+      await shutdownTelemetry()
       logger.errorAndExit('Claude session failed', error)
     }
   }

@@ -5,6 +5,7 @@ import { Session } from "./session"
 import { claudeLocalLauncher } from "./claudeLocalLauncher"
 import { claudeRemoteLauncher } from "./claudeRemoteLauncher"
 import { ApiClient } from "@/lib"
+import { addBreadcrumb, setTag } from "@/telemetry"
 
 export type PermissionMode = 'default' | 'acceptEdits' | 'bypassPermissions' | 'plan';
 
@@ -60,7 +61,11 @@ export async function loop(opts: LoopOptions) {
             opts.onSessionReady(session);
         }
 
+        // Track session creation for debugging context (HAP-522)
+        addBreadcrumb({ category: 'session', message: 'Session created', level: 'info' })
+
         let mode: 'local' | 'remote' = opts.startingMode ?? 'local';
+        setTag('session.mode', mode)
         while (true) {
             logger.debug(`[loop] Iteration with mode: ${mode}`);
 
@@ -73,6 +78,10 @@ export async function loop(opts: LoopOptions) {
 
                 // Non "exit" reason means we need to switch to remote mode
                 mode = 'remote';
+
+                // Track mode switch for debugging context (HAP-522)
+                addBreadcrumb({ category: 'session', message: 'Mode switch: local → remote', level: 'info' })
+                setTag('session.mode', mode)
 
                 // Wait for cleanup to complete before notifying mode change
                 await new Promise(resolve => setTimeout(resolve, 50));
@@ -92,6 +101,10 @@ export async function loop(opts: LoopOptions) {
 
                 // Non "exit" reason means we need to switch to local mode
                 mode = 'local';
+
+                // Track mode switch for debugging context (HAP-522)
+                addBreadcrumb({ category: 'session', message: 'Mode switch: remote → local', level: 'info' })
+                setTag('session.mode', mode)
 
                 // Wait for cleanup to complete before notifying mode change
                 await new Promise(resolve => setTimeout(resolve, 50));

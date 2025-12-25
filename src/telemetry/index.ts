@@ -39,39 +39,41 @@
  * ```
  */
 
-export { loadTelemetryConfig, isTelemetryDisabledByEnv } from './config'
+// Types exported for external use
 export {
-  DEFAULT_TELEMETRY_CONFIG,
   type TelemetryCategories,
   type TelemetryConfig,
 } from './types'
 
 // Sentry error reporting
+// Integrated in CLI operations (HAP-522):
+// - captureMessage: Used for non-error events with severity level
+// - addBreadcrumb: Tracks user actions for debugging context
+// - setTag: Adds searchable tags (cli.mode, cli.command, session.mode)
 export {
-  initializeSentry,
   captureException,
   captureMessage,
   addBreadcrumb,
   setTag,
-  flush as flushSentry,
   isSentryInitialized,
 } from './sentry'
 
 // Usage and performance telemetry
+// Integrated in CLI operations (HAP-522):
+// - trackMetric: Tracks startup_time, command_duration metrics
+// - trackEvent: Session lifecycle events
 export {
-  TelemetrySender,
-  getTelemetrySender,
   trackEvent,
   trackMetric,
   flushTelemetry,
   type TelemetryEvent,
   type TelemetryEventType,
-  type PerformanceMetric,
   type MetricType,
+  type PerformanceMetric,
 } from './sender'
 
 // Re-export initialization helper
 export { initializeTelemetry, shutdownTelemetry } from './init'
 
 // Opt-in notice
-export { showTelemetryNoticeIfNeeded, resetTelemetryNotice } from './notice'
+export { showTelemetryNoticeIfNeeded } from './notice'

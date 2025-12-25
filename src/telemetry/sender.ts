@@ -362,6 +362,7 @@ export function trackEvent(type: TelemetryEventType, data?: Record<string, unkno
 
 /**
  * Convenience function to track a metric using the singleton sender.
+ * Integrated for CLI performance monitoring (HAP-522).
  *
  * @param type - The metric type
  * @param value - The metric value

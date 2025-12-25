@@ -28,6 +28,7 @@ import { projectPath } from '@/projectPath';
 import { validateHeartbeatInterval } from '@/utils/validators';
 import { createDefaultMemoryMonitor, MemoryMonitorHandle } from './memoryMonitor';
 import { clearGlobalDeduplicator } from '@/utils/requestDeduplication';
+import { addBreadcrumb, setTag, trackMetric, shutdownTelemetry } from '@/telemetry';
 
 // Version cache for package.json (HAP-354)
 // Eliminates repetitive disk I/O during heartbeat checks
@@ -161,6 +162,10 @@ export async function startDaemon(): Promise<void> {
   });
 
   logger.debug('[DAEMON RUN] Starting daemon process...');
+
+  // Tag telemetry for daemon mode (HAP-522)
+  setTag('cli.mode', 'daemon')
+  addBreadcrumb({ category: 'daemon', message: 'Daemon starting', level: 'info' })
 
   // Ensure configuration directories exist before any file operations
   configuration.ensureSetup();
@@ -789,6 +794,17 @@ export async function startDaemon(): Promise<void> {
     const cleanupAndShutdown = async (source: 'happy-app' | 'happy-cli' | 'os-signal' | 'exception', errorMessage?: string) => {
       logger.debug(`[DAEMON RUN] Starting proper cleanup (source: ${source}, errorMessage: ${errorMessage})...`);
 
+      // Track daemon uptime and session count before shutdown (HAP-522)
+      const daemonUptime = Date.now() - daemonStartTime
+      const sessionsHandled = pidToTrackedSession.size
+      trackMetric('command_duration', daemonUptime, {
+        command: 'daemon',
+        success: source !== 'exception',
+        shutdownSource: source,
+        sessionsHandled
+      })
+      addBreadcrumb({ category: 'daemon', message: `Daemon shutting down: ${source}`, level: 'info' })
+
       // Clear heartbeat timeout (HAP-70: using setTimeout instead of setInterval)
       if (heartbeatTimeoutHandle) {
         clearTimeout(heartbeatTimeoutHandle);
@@ -825,6 +841,9 @@ export async function startDaemon(): Promise<void> {
       } catch {
         // Ignore if file doesn't exist
       }
+
+      // Flush telemetry before exit (HAP-522)
+      await shutdownTelemetry()
 
       // Don't release lock manually - let OS clean it up on process.exit()
       // This prevents a race window where another daemon could acquire the lock
