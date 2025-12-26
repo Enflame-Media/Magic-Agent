@@ -112,7 +112,7 @@ describe('githubDisconnect', () => {
                     type: 'update-account',
                     data: { github: null, username: null },
                 }),
-                recipientFilter: { type: 'all-user-authenticated-connections' },
+                recipientFilter: { type: 'user-scoped-only' },
             });
         });
 
