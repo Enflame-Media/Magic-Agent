@@ -78,7 +78,7 @@ export const TerminalAuthRequestSchema = z
             .min(1)
             .openapi({
                 description: 'Base64-encoded X25519 public key for encryption',
-                example: 'MCowBQYDK2VuAyEA7q2+7wQbKq9u3rXhOCvH5wPqVZ6ZkA4kZJ6gBRH5mO0=',
+                example: '3q2+7wQbKq9u3rXhOCvH5wPqVZ6ZkA4kZJ6gBRH5mO0=',
             }),
         supportsV2: z
             .boolean()
