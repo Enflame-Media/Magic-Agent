@@ -1,0 +1,234 @@
+# Bundle Size Tracking Workflow for Happy App
+# Measures web bundle size on PRs and posts comparison comments
+# Part of HAP-555 implementation
+#
+# Features:
+# - Builds web bundle for PR and base branch
+# - Compares sizes and posts PR comment with diff
+# - Alerts on significant size regressions (>5% threshold)
+# - Caches baseline stats for main branch
+#
+# Security Note: This workflow does not use untrusted input in shell commands.
+# All GitHub context variables are used safely in actions/github-script or cache keys.
+
+name: Bundle Size
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      # Only run when app code changes
+      - 'happy-app/**'
+      - 'packages/@happy/**'
+      - '!happy-app/**/*.md'
+      - '!happy-app/**/*.test.ts'
+      - '!happy-app/**/*.test.tsx'
+  push:
+    branches: [main]
+    paths:
+      - 'happy-app/**'
+      - 'packages/@happy/**'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: bundle-size-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  bundle-size:
+    name: Analyze Bundle Size
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Run on PRs only (push to main handled by update-baseline job)
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Enable Corepack (for Yarn 4)
+        run: corepack enable
+
+      - name: Get yarn cache directory
+        id: yarn-cache-dir
+        run: echo "dir=$(yarn config get cacheFolder)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache yarn dependencies
+        uses: actions/cache@v5
+        with:
+          path: |
+            ${{ steps.yarn-cache-dir.outputs.dir }}
+            .yarn/install-state.gz
+          key: ${{ runner.os }}-yarn-${{ hashFiles('yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+
+      # Try to restore baseline from cache (from main branch)
+      - name: Restore baseline bundle stats
+        id: baseline-cache
+        uses: actions/cache/restore@v5
+        with:
+          path: .bundle-baseline.json
+          key: bundle-stats-main-${{ hashFiles('yarn.lock') }}
+          restore-keys: |
+            bundle-stats-main-
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Build @happy/protocol
+        run: yarn workspace @happy/protocol build
+
+      # Build the web bundle
+      - name: Build web bundle
+        working-directory: happy-app
+        run: yarn build:web:dev
+        env:
+          NODE_ENV: production
+          APP_ENV: development
+
+      # Analyze current bundle
+      - name: Analyze bundle size
+        id: analyze
+        working-directory: happy-app
+        run: |
+          # Run analysis with baseline if available
+          if [ -f "../.bundle-baseline.json" ]; then
+            yarn analyze:bundle --baseline ../.bundle-baseline.json --output ./bundle-report.json --format json
+            yarn analyze:bundle --baseline ../.bundle-baseline.json --output ./bundle-report.md --format github
+          else
+            yarn analyze:bundle --output ./bundle-report.json --format json
+            yarn analyze:bundle --output ./bundle-report.md --format github
+          fi
+
+          # Extract stats for GitHub output
+          TOTAL_SIZE=$(jq -r '.totalFormatted' bundle-report.json)
+          JS_SIZE=$(jq -r '.jsBundle.totalFormatted' bundle-report.json)
+          echo "total_size=$TOTAL_SIZE" >> "$GITHUB_OUTPUT"
+          echo "js_size=$JS_SIZE" >> "$GITHUB_OUTPUT"
+
+      # Post comment on PR using github-script (safe - no shell injection)
+      - name: Post bundle size comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const reportPath = 'happy-app/bundle-report.md';
+
+            if (!fs.existsSync(reportPath)) {
+              console.log('No bundle report found, skipping comment');
+              return;
+            }
+
+            const report = fs.readFileSync(reportPath, 'utf8');
+
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('Bundle Size Report')
+            );
+
+            const workflowUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const commentBody = report + '\n\n' +
+              `> [View workflow run](${workflowUrl})`;
+
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: commentBody,
+              });
+              console.log('Updated existing bundle size comment');
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: commentBody,
+              });
+              console.log('Created new bundle size comment');
+            }
+
+      # Upload artifact for debugging
+      - name: Upload bundle stats
+        uses: actions/upload-artifact@v6
+        with:
+          name: bundle-stats
+          path: |
+            happy-app/bundle-report.json
+            happy-app/bundle-report.md
+          retention-days: 7
+
+  # Job to update baseline on main branch merges
+  update-baseline:
+    name: Update Baseline
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Get yarn cache directory
+        id: yarn-cache-dir
+        run: echo "dir=$(yarn config get cacheFolder)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache yarn dependencies
+        uses: actions/cache@v5
+        with:
+          path: |
+            ${{ steps.yarn-cache-dir.outputs.dir }}
+            .yarn/install-state.gz
+          key: ${{ runner.os }}-yarn-${{ hashFiles('yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Build @happy/protocol
+        run: yarn workspace @happy/protocol build
+
+      - name: Build web bundle
+        working-directory: happy-app
+        run: yarn build:web:dev
+        env:
+          NODE_ENV: production
+          APP_ENV: development
+
+      - name: Generate baseline stats
+        working-directory: happy-app
+        run: yarn analyze:bundle --output ../.bundle-baseline.json
+
+      # Save baseline to cache for future PR comparisons
+      - name: Cache baseline stats
+        uses: actions/cache/save@v5
+        with:
+          path: .bundle-baseline.json
+          key: bundle-stats-main-${{ hashFiles('yarn.lock') }}-${{ github.sha }}
