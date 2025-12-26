@@ -160,3 +160,67 @@ export function formatPercent(value: number): string {
 export function formatNumber(value: number): string {
     return value.toLocaleString();
 }
+
+/**
+ * Format bytes for display (e.g., 1.5 MB)
+ */
+export function formatBytes(bytes: number): string {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(Math.abs(bytes)) / Math.log(k));
+    const value = bytes / Math.pow(k, i);
+    return `${value.toFixed(2)} ${sizes[i]}`;
+}
+
+/*
+ * Bundle Size Types (HAP-564)
+ */
+
+export interface BundleSizePoint {
+    date: string;
+    platform: string;
+    avgTotalSize: number;
+    avgJsSize: number;
+    avgAssetsSize: number;
+    buildCount: number;
+}
+
+export interface BundleSizeLatest {
+    platform: string;
+    branch: string;
+    commitHash: string;
+    totalSize: number;
+    jsSize: number;
+    assetsSize: number;
+    timestamp: string;
+}
+
+/*
+ * Bundle Size API Functions (HAP-564)
+ */
+
+/**
+ * Fetch bundle size trends for charting
+ */
+export async function fetchBundleTrends(
+    days: number = 30,
+    platform?: 'ios' | 'android' | 'web',
+    branch: string = 'main'
+): Promise<ApiResponse<BundleSizePoint[]>> {
+    const params = new URLSearchParams({
+        days: String(days),
+        branch,
+    });
+    if (platform) {
+        params.set('platform', platform);
+    }
+    return apiFetch<ApiResponse<BundleSizePoint[]>>(`/api/metrics/bundle-trends?${params}`);
+}
+
+/**
+ * Fetch latest bundle sizes per platform
+ */
+export async function fetchBundleLatest(): Promise<ApiResponse<BundleSizeLatest[]>> {
+    return apiFetch<ApiResponse<BundleSizeLatest[]>>('/api/metrics/bundle-latest');
+}
