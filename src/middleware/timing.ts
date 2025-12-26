@@ -75,8 +75,9 @@ function formatTimingEntry(entry: ServerTimingEntry): string {
     let result = entry.name;
     result += `;dur=${entry.dur.toFixed(1)}`;
     if (entry.desc) {
-        // Quote description if it contains special characters
-        result += `;desc="${entry.desc.replace(/"/g, '\\"')}"`;
+        // Quote and escape description for use in a HTTP quoted-string value
+        const escapedDesc = entry.desc.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+        result += `;desc="${escapedDesc}"`;
     }
     return result;
 }
