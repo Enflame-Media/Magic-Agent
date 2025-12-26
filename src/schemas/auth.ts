@@ -25,7 +25,7 @@ export const DirectAuthRequestSchema = z
             .min(1)
             .openapi({
                 description: 'Base64-encoded Ed25519 public key',
-                example: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+                example: '3q2+7wQbKq9u3rXhOCvH5wPqVZ6ZkA4kZJ6gBRH5mO0=', // 32-byte raw key
             }),
         challenge: z
             .string()
@@ -197,7 +197,8 @@ export const TerminalAuthStatusResponseSchema = z
             example: 'pending',
         }),
         supportsV2: z.boolean().openapi({
-            description: 'Whether the request supports V2 protocol',
+            description:
+                'Indicates whether this auth request can be completed using the V2 authentication protocol (for example, clients that implement the newer V2 pairing/handshake flow). If true, the client SHOULD use the V2 flow for this request; if false, the client MUST fall back to the legacy/V1 protocol.',
             example: true,
         }),
     })
