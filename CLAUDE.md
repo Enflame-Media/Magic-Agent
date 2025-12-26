@@ -205,6 +205,23 @@ yarn start:local-server
 - **Database**: Server uses Prisma with PostgreSQL (never modify schema without migrations)
 - **Environment variables**: Each project has its own `.env` file structure (see Environment & Secrets section below)
 
+## Code Style Conventions
+
+### GitHub Naming Convention
+
+When referencing GitHub in code:
+
+| Context | Convention | Example |
+|---------|------------|---------|
+| Type/Class/Schema names | `GitHub` (PascalCase with capital H) | `GitHubProfileSchema`, `GitHubUser` |
+| Variable names | `github` (camelCase) | `githubToken`, `existingGithubConnection` |
+| Function names | `GitHub` in name | `createGitHubToken`, `verifyGitHubToken` |
+| URL paths | `github` (lowercase) | `/v1/connect/github/callback` |
+| Translation keys | `github` (lowercase) | `t('modals.disconnectGithub')` |
+| File names | `github` (lowercase) | `apiGithub.ts`, `githubConnect.ts` |
+
+This follows the official GitHub branding (capital H) while respecting language-specific conventions.
+
 ## Environment & Secrets Management
 
 ### Environment File Structure
@@ -231,7 +248,7 @@ Each project follows a consistent pattern for environment files:
 #### happy-server
 - `DATABASE_URL` - PostgreSQL connection string (required)
 - `REDIS_URL` - Redis connection for pub/sub (required)
-- `HANDY_MASTER_SECRET` - Master encryption key (required)
+- `HAPPY_MASTER_SECRET` - Master encryption key (required, replaces deprecated `HANDY_MASTER_SECRET`)
 - `S3_*` - S3/MinIO storage configuration (required)
 - `ELEVENLABS_API_KEY` - Voice synthesis (optional)
 - `GITHUB_*` - GitHub OAuth integration (optional)
@@ -255,7 +272,7 @@ cd happy-server
 ```
 
 This generates:
-- `HANDY_MASTER_SECRET` - 32-byte hex for JWT signing
+- `HAPPY_MASTER_SECRET` - 32-byte hex for JWT signing (replaces deprecated `HANDY_MASTER_SECRET`)
 - `GITHUB_WEBHOOK_SECRET` - Webhook signature verification
 - TweetNaCl keypairs for client encryption
 
@@ -267,7 +284,7 @@ For `happy-server-workers`, production secrets are managed via Wrangler:
 cd happy-server-workers
 
 # Set a secret
-wrangler secret put HANDY_MASTER_SECRET --env prod
+wrangler secret put HAPPY_MASTER_SECRET --env prod
 
 # List all secrets
 wrangler secret list --env prod
@@ -277,7 +294,7 @@ wrangler secret delete SECRET_NAME --env prod
 ```
 
 Required production secrets:
-- `HANDY_MASTER_SECRET` - Authentication and encryption
+- `HAPPY_MASTER_SECRET` - Authentication and encryption (replaces deprecated `HANDY_MASTER_SECRET`)
 
 Optional:
 - `ELEVENLABS_API_KEY` - Voice features
