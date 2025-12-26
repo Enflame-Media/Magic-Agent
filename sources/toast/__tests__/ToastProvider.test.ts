@@ -1,13 +1,19 @@
 /**
  * Unit tests for ToastProvider queue system.
  *
- * HAP-518: Tests for the toast queue behavior implemented in HAP-462.
+ * HAP-553: Comprehensive unit tests for toast queue system.
+ * - HAP-462: Basic queue behavior (FIFO ordering, queue limits)
+ * - HAP-517: Priority toast support (high-priority interruption, queue behavior)
+ * - HAP-542: High-priority queue depth limit (overflow strategies)
  *
  * Test categories:
  * - Queue Behavior: FIFO ordering, queue limits, overflow handling
  * - Duplicate Prevention: Message deduplication logic
  * - Dismissal: Manual dismiss, timer clearing, queue advancement
  * - Edge Cases: Rapid calls, invalid IDs, unmount cleanup
+ * - High-Priority Interruption: Interrupt current toast, remaining duration
+ * - High-Priority Queue: Queue ordering among high-priority toasts
+ * - Overflow Handling: drop-newest, drop-oldest, downgrade strategies
  *
  * @module toast/__tests__/ToastProvider.test
  */
@@ -119,31 +125,54 @@ function createToastConfig(overrides: Partial<ToastConfig> = {}): ToastConfig {
 }
 
 /**
+ * Default configuration values (must match ToastProvider.tsx)
+ */
+const DEFAULT_DURATION = 5000;
+const DEFAULT_MAX_QUEUE_SIZE = 5;
+const DEFAULT_MAX_HIGH_PRIORITY_QUEUE_SIZE = 3;
+const DEFAULT_HIGH_PRIORITY_OVERFLOW: 'drop-oldest' | 'drop-newest' | 'downgrade' = 'drop-newest';
+
+/**
+ * Test helper: Full showToast options including high-priority handling
+ */
+interface ShowToastOptions {
+    preventDuplicates?: boolean;
+    maxQueueSize?: number;
+    maxHighPriorityQueueSize?: number;
+    highPriorityOverflow?: 'drop-oldest' | 'drop-newest' | 'downgrade';
+    generateId?: () => string;
+    /** Elapsed time in ms since current toast started (for remaining duration calculation) */
+    elapsedTime?: number;
+}
+
+/**
  * Test helper: Simulates the showToast logic from ToastProvider
  *
  * This replicates the core setState logic to test queue behavior
  * without needing to render the full React component.
+ *
+ * Includes full high-priority interruption and overflow handling logic.
  */
 function simulateShowToast(
     prevState: ToastState,
     config: Omit<ToastConfig, 'id'>,
-    options: {
-        preventDuplicates?: boolean;
-        maxQueueSize?: number;
-        generateId?: () => string;
-    } = {}
-): { newState: ToastState; id: string } {
+    options: ShowToastOptions = {}
+): { newState: ToastState; id: string; wasDropped?: boolean; wasDowngraded?: boolean } {
     const {
         preventDuplicates = true,
-        maxQueueSize = 5,
+        maxQueueSize = DEFAULT_MAX_QUEUE_SIZE,
+        maxHighPriorityQueueSize = DEFAULT_MAX_HIGH_PRIORITY_QUEUE_SIZE,
+        highPriorityOverflow = DEFAULT_HIGH_PRIORITY_OVERFLOW,
         generateId = () => `toast-${Date.now()}-${Math.random()}`,
+        elapsedTime = 0,
     } = options;
 
     const id = generateId();
+    const isHighPriority = config.priority === 'high';
     const toastConfig: ToastConfig = {
         ...config,
         id,
-        duration: config.duration ?? 5000,
+        duration: config.duration ?? DEFAULT_DURATION,
     };
 
     // Check for duplicate messages if prevention is enabled
@@ -165,7 +194,52 @@ function simulateShowToast(
         };
     }
 
-    // Add to queue (respecting max size)
+    // HIGH PRIORITY: Interrupt current toast and show immediately
+    if (isHighPriority) {
+        // Count current high-priority toasts (current + queue)
+        const highPriorityInQueue = prevState.queue.filter(t => t.priority === 'high').length;
+        const currentIsHighPriority = prevState.current?.priority === 'high';
+        const totalHighPriority = highPriorityInQueue + (currentIsHighPriority ? 1 : 0);
+
+        // Check if high-priority queue is at capacity
+        if (totalHighPriority >= maxHighPriorityQueueSize) {
+            switch (highPriorityOverflow) {
+                case 'drop-newest':
+                    // Reject the new high-priority toast
+                    return { newState: prevState, id, wasDropped: true };
+
+                case 'drop-oldest': {
+                    // Remove oldest high-priority from queue to make room
+                    const firstHighPriorityIndex = prevState.queue.findIndex(t => t.priority === 'high');
+                    if (firstHighPriorityIndex >= 0) {
+                        const adjustedQueue = [...prevState.queue];
+                        adjustedQueue.splice(firstHighPriorityIndex, 1);
+                        // Process with adjusted queue
+                        return processHighPriorityInterrupt(prevState, toastConfig, adjustedQueue, elapsedTime);
+                    }
+                    // If no high-priority in queue but current is high-priority,
+                    // we still need to proceed (current will be re-queued)
+                    break;
+                }
+
+                case 'downgrade': {
+                    // Convert to normal priority and add to normal queue
+                    const downgradedConfig = { ...toastConfig, priority: 'normal' as const };
+                    // Apply normal queue logic
+                    if (prevState.queue.length >= maxQueueSize) {
+                        const newQueue = [...prevState.queue.slice(1), downgradedConfig];
+                        return { newState: { ...prevState, queue: newQueue }, id, wasDowngraded: true };
+                    }
+                    return { newState: { ...prevState, queue: [...prevState.queue, downgradedConfig] }, id, wasDowngraded: true };
+                }
+            }
+        }
+
+        // Normal high-priority processing (no overflow or drop-oldest with no queued high-priority)
+        return processHighPriorityInterrupt(prevState, toastConfig, prevState.queue, elapsedTime);
+    }
+
+    // NORMAL PRIORITY: Add to queue (respecting max size)
     if (prevState.queue.length >= maxQueueSize) {
         // Queue is full, drop the oldest queued toast to make room
         const newQueue = [...prevState.queue.slice(1), toastConfig];
@@ -175,6 +249,40 @@ function simulateShowToast(
     return {
         newState: { ...prevState, queue: [...prevState.queue, toastConfig] },
         id,
+    };
+}
+
+/**
+ * Helper function to process high-priority toast interruption
+ */
+function processHighPriorityInterrupt(
+    prevState: ToastState,
+    toastConfig: ToastConfig,
+    baseQueue: ToastConfig[],
+    elapsedTime: number
+): { newState: ToastState; id: string } {
+    // Calculate remaining duration for current toast
+    const currentDuration = prevState.current!.duration ?? DEFAULT_DURATION;
+    const remainingDuration = Math.max(1000, currentDuration - elapsedTime);
+
+    // Store interrupted toast (only if it was a normal priority toast)
+    const interruptedToast = prevState.current!.priority !== 'high' ? {
+        ...prevState.current!,
+        remainingDuration,
+    } : null;
+
+    // If current was high priority, add it back to front of queue
+    const newQueue = prevState.current!.priority === 'high'
+        ? [{ ...prevState.current!, duration: remainingDuration }, ...baseQueue]
+        : baseQueue;
+
+    return {
+        newState: {
+            current: toastConfig,
+            queue: newQueue,
+            interrupted: interruptedToast ?? prevState.interrupted,
+        },
+        id: toastConfig.id,
     };
 }
 
@@ -653,6 +761,651 @@ describe('ToastProvider Queue System', () => {
             });
 
             expect(newState.current?.duration).toBe(3000);
+        });
+    });
+
+    // =========================================================================
+    // HIGH-PRIORITY INTERRUPTION TESTS (HAP-517)
+    // =========================================================================
+
+    describe('High-Priority Interruption', () => {
+        it('high-priority toast interrupts current normal toast', () => {
+            const normalToast = createToastConfig({ id: 'normal-1', message: 'Normal toast', priority: 'normal' });
+            const state = createMockState({ current: normalToast });
+
+            const { newState } = simulateShowToast(
+                state,
+                { message: 'Urgent!', priority: 'high' },
+                { generateId: () => 'high-1', elapsedTime: 1000 }
+            );
+
+            // High-priority should become current
+            expect(newState.current?.id).toBe('high-1');
+            expect(newState.current?.priority).toBe('high');
+            expect(newState.current?.message).toBe('Urgent!');
+        });
+
+        it('interrupted normal toast is stored with remaining duration', () => {
+            const normalToast = createToastConfig({
+                id: 'normal-1',
+                message: 'Normal toast',
+                priority: 'normal',
+                duration: 5000,
+            });
+            const state = createMockState({ current: normalToast });
+
+            // Simulate 2 seconds elapsed
+            const { newState } = simulateShowToast(
+                state,
+                { message: 'Urgent!', priority: 'high' },
+                { generateId: () => 'high-1', elapsedTime: 2000 }
+            );
+
+            // Interrupted toast should be stored with remaining duration
+            expect(newState.interrupted).not.toBeNull();
+            expect(newState.interrupted?.id).toBe('normal-1');
+            expect(newState.interrupted?.remainingDuration).toBe(3000); // 5000 - 2000
+        });
+
+        it('remaining duration has minimum of 1 second', () => {
+            const normalToast = createToastConfig({
+                id: 'normal-1',
+                message: 'Normal toast',
+                priority: 'normal',
+                duration: 3000,
+            });
+            const state = createMockState({ current: normalToast });
+
+            // Simulate elapsed time exceeds duration
+            const { newState } = simulateShowToast(
+                state,
+                { message: 'Urgent!', priority: 'high' },
+                { generateId: () => 'high-1', elapsedTime: 5000 }
+            );
+
+            // Remaining duration should be clamped to 1000ms minimum
+            expect(newState.interrupted?.remainingDuration).toBe(1000);
+        });
+
+        it('interrupted toast resumes after high-priority dismisses', () => {
+            const interruptedToast = {
+                id: 'interrupted',
+                message: 'I was interrupted',
+                duration: 5000,
+                remainingDuration: 2500,
+                priority: 'normal' as const,
+            };
+            const queuedToast = createToastConfig({ id: 'queued', message: 'Queued' });
+            const state = createMockState({
+                current: null,
+                queue: [queuedToast],
+                interrupted: interruptedToast,
+            });
+
+            const newState = simulateShowNextFromQueue(state);
+
+            // Interrupted toast should resume with remaining duration
+            expect(newState.current?.id).toBe('interrupted');
+            expect(newState.current?.duration).toBe(2500);
+            expect(newState.interrupted).toBeNull();
+            // Queue should remain untouched
+            expect(newState.queue).toHaveLength(1);
+        });
+
+        it('high-priority shows immediately when no current toast', () => {
+            const state = createMockState();
+
+            const { newState } = simulateShowToast(
+                state,
+                { message: 'Urgent with no current', priority: 'high' },
+                { generateId: () => 'high-1' }
+            );
+
+            expect(newState.current?.priority).toBe('high');
+            expect(newState.interrupted).toBeNull();
+            expect(newState.queue).toHaveLength(0);
+        });
+
+        it('preserves all toast properties in interrupted state', () => {
+            const normalToast = createToastConfig({
+                id: 'normal-1',
+                message: 'Normal with action',
+                priority: 'normal',
+                duration: 5000,
+                type: 'success',
+                action: { label: 'Undo', onPress: () => {} },
+            });
+            const state = createMockState({ current: normalToast });
+
+            const { newState } = simulateShowToast(
+                state,
+                { message: 'Urgent!', priority: 'high' },
+                { generateId: () => 'high-1', elapsedTime: 1000 }
+            );
+
+            expect(newState.interrupted?.message).toBe('Normal with action');
+            expect(newState.interrupted?.type).toBe('success');
+            expect(newState.interrupted?.action?.label).toBe('Undo');
+        });
+    });
+
+    // =========================================================================
+    // HIGH-PRIORITY QUEUE BEHAVIOR TESTS (HAP-517)
+    // =========================================================================
+
+    describe('High-Priority Queue Behavior', () => {
+        it('high-priority toasts queue among themselves', () => {
+            // First high-priority is current
+            const highToast1 = createToastConfig({
+                id: 'high-1',
+                message: 'High 1',
+                priority: 'high',
+                duration: 5000,
+            });
+            const state = createMockState({ current: highToast1 });
+
+            // Second high-priority interrupts
+            const { newState } = simulateShowToast(
+                state,
+                { message: 'High 2', priority: 'high' },
+                { generateId: () => 'high-2', elapsedTime: 1000 }
+            );
+
+            // High 2 should be current, High 1 should be in queue
+            expect(newState.current?.id).toBe('high-2');
+            expect(newState.queue).toHaveLength(1);
+            expect(newState.queue[0].id).toBe('high-1');
+            expect(newState.queue[0].priority).toBe('high');
+        });
+
+        it('current high-priority re-queued with remaining duration when new high-priority arrives', () => {
+            const highToast1 = createToastConfig({
+                id: 'high-1',
+                message: 'High 1',
+                priority: 'high',
+                duration: 5000,
+            });
+            const state = createMockState({ current: highToast1 });
+
+            // 2 seconds elapsed before interruption
+            const { newState } = simulateShowToast(
+                state,
+                { message: 'High 2', priority: 'high' },
+                { generateId: () => 'high-2', elapsedTime: 2000 }
+            );
+
+            // Re-queued high-priority should have remaining duration
+            expect(newState.queue[0].duration).toBe(3000); // 5000 - 2000
+        });
+
+        it('high-priority does NOT store normal toast when interrupting another high-priority', () => {
+            const highToast1 = createToastConfig({
+                id: 'high-1',
+                message: 'High 1',
+                priority: 'high',
+                duration: 5000,
+            });
+            const state = createMockState({ current: highToast1 });
+
+            const { newState } = simulateShowToast(
+                state,
+                { message: 'High 2', priority: 'high' },
+                { generateId: () => 'high-2', elapsedTime: 1000 }
+            );
+
+            // Should not set interrupted (only normal priority toasts are stored there)
+            expect(newState.interrupted).toBeNull();
+        });
+
+        it('preserves existing interrupted toast when high-priority interrupts high-priority', () => {
+            const interruptedNormal = {
+                id: 'interrupted-normal',
+                message: 'Original interrupted',
+                duration: 5000,
+                remainingDuration: 3000,
+                priority: 'normal' as const,
+            };
+            const highToast1 = createToastConfig({
+                id: 'high-1',
+                message: 'High 1',
+                priority: 'high',
+                duration: 5000,
+            });
+            const state = createMockState({
+                current: highToast1,
+                interrupted: interruptedNormal,
+            });
+
+            const { newState } = simulateShowToast(
+                state,
+                { message: 'High 2', priority: 'high' },
+                { generateId: () => 'high-2', elapsedTime: 1000 }
+            );
+
+            // Original interrupted should be preserved
+            expect(newState.interrupted?.id).toBe('interrupted-normal');
+            expect(newState.interrupted?.remainingDuration).toBe(3000);
+        });
+
+        it('multiple high-priority toasts queue in LIFO order (most recent first)', () => {
+            let state = createMockState({
+                current: createToastConfig({ id: 'high-1', message: 'High 1', priority: 'high', duration: 5000 }),
+            });
+
+            // Add High 2
+            state = simulateShowToast(
+                state,
+                { message: 'High 2', priority: 'high' },
+                { generateId: () => 'high-2', elapsedTime: 1000 }
+            ).newState;
+
+            // Add High 3
+            state = simulateShowToast(
+                state,
+                { message: 'High 3', priority: 'high' },
+                { generateId: () => 'high-3', elapsedTime: 500 }
+            ).newState;
+
+            // High 3 should be current, queue should be [High 2, High 1]
+            expect(state.current?.id).toBe('high-3');
+            expect(state.queue[0].id).toBe('high-2');
+            expect(state.queue[1].id).toBe('high-1');
+        });
+    });
+
+    // =========================================================================
+    // HIGH-PRIORITY OVERFLOW HANDLING TESTS (HAP-542)
+    // =========================================================================
+
+    describe('High-Priority Overflow Handling', () => {
+        describe('maxHighPriorityQueueSize limit', () => {
+            it('counts current high-priority toast toward limit', () => {
+                const highToast = createToastConfig({
+                    id: 'high-1',
+                    message: 'High 1',
+                    priority: 'high',
+                });
+                const state = createMockState({ current: highToast });
+
+                // With maxHighPriorityQueueSize=1, this should trigger overflow
+                const { wasDropped } = simulateShowToast(
+                    state,
+                    { message: 'High 2', priority: 'high' },
+                    { generateId: () => 'high-2', maxHighPriorityQueueSize: 1 }
+                );
+
+                expect(wasDropped).toBe(true);
+            });
+
+            it('counts queued high-priority toasts toward limit', () => {
+                const normalToast = createToastConfig({
+                    id: 'normal-1',
+                    message: 'Normal',
+                    priority: 'normal',
+                });
+                const queuedHigh = createToastConfig({
+                    id: 'high-queued',
+                    message: 'Queued High',
+                    priority: 'high',
+                });
+                const state = createMockState({
+                    current: normalToast,
+                    queue: [queuedHigh],
+                });
+
+                // With maxHighPriorityQueueSize=1, this should trigger overflow
+                const { wasDropped } = simulateShowToast(
+                    state,
+                    { message: 'New High', priority: 'high' },
+                    { generateId: () => 'new-high', maxHighPriorityQueueSize: 1 }
+                );
+
+                expect(wasDropped).toBe(true);
+            });
+
+            it('does not trigger overflow when under limit', () => {
+                const normalToast = createToastConfig({
+                    id: 'normal-1',
+                    message: 'Normal',
+                    priority: 'normal',
+                });
+                const state = createMockState({ current: normalToast });
+
+                // With maxHighPriorityQueueSize=3, first high-priority should work
+                const { newState, wasDropped } = simulateShowToast(
+                    state,
+                    { message: 'High 1', priority: 'high' },
+                    { generateId: () => 'high-1', maxHighPriorityQueueSize: 3 }
+                );
+
+                expect(wasDropped).toBeUndefined();
+                expect(newState.current?.id).toBe('high-1');
+            });
+
+            it('triggers overflow at exactly maxHighPriorityQueueSize', () => {
+                // Setup: 2 high-priority toasts (1 current, 1 queued) with limit of 2
+                const highCurrent = createToastConfig({
+                    id: 'high-1',
+                    message: 'High 1',
+                    priority: 'high',
+                });
+                const highQueued = createToastConfig({
+                    id: 'high-2',
+                    message: 'High 2',
+                    priority: 'high',
+                });
+                const state = createMockState({
+                    current: highCurrent,
+                    queue: [highQueued],
+                });
+
+                // Third high-priority should trigger overflow
+                const { wasDropped } = simulateShowToast(
+                    state,
+                    { message: 'High 3', priority: 'high' },
+                    { generateId: () => 'high-3', maxHighPriorityQueueSize: 2 }
+                );
+
+                expect(wasDropped).toBe(true);
+            });
+        });
+
+        describe('drop-newest strategy', () => {
+            it('rejects new high-priority toast when at capacity', () => {
+                const highToast = createToastConfig({
+                    id: 'high-1',
+                    message: 'High 1',
+                    priority: 'high',
+                });
+                const state = createMockState({ current: highToast });
+
+                const { newState, wasDropped } = simulateShowToast(
+                    state,
+                    { message: 'High 2', priority: 'high' },
+                    {
+                        generateId: () => 'high-2',
+                        maxHighPriorityQueueSize: 1,
+                        highPriorityOverflow: 'drop-newest',
+                    }
+                );
+
+                expect(wasDropped).toBe(true);
+                // State should be unchanged
+                expect(newState.current?.id).toBe('high-1');
+                expect(newState.queue).toHaveLength(0);
+            });
+
+            it('is the default overflow strategy', () => {
+                const highToast = createToastConfig({
+                    id: 'high-1',
+                    message: 'High 1',
+                    priority: 'high',
+                });
+                const state = createMockState({ current: highToast });
+
+                // Don't specify highPriorityOverflow - should default to drop-newest
+                const { wasDropped } = simulateShowToast(
+                    state,
+                    { message: 'High 2', priority: 'high' },
+                    { generateId: () => 'high-2', maxHighPriorityQueueSize: 1 }
+                );
+
+                expect(wasDropped).toBe(true);
+            });
+        });
+
+        describe('drop-oldest strategy', () => {
+            it('removes oldest queued high-priority toast to make room', () => {
+                const highCurrent = createToastConfig({
+                    id: 'high-current',
+                    message: 'Current High',
+                    priority: 'high',
+                });
+                const highQueued1 = createToastConfig({
+                    id: 'high-queued-1',
+                    message: 'Queued High 1',
+                    priority: 'high',
+                });
+                const highQueued2 = createToastConfig({
+                    id: 'high-queued-2',
+                    message: 'Queued High 2',
+                    priority: 'high',
+                });
+                const state = createMockState({
+                    current: highCurrent,
+                    queue: [highQueued1, highQueued2],
+                });
+
+                // maxHighPriorityQueueSize=3, so we're at capacity
+                const { newState } = simulateShowToast(
+                    state,
+                    { message: 'New High', priority: 'high' },
+                    {
+                        generateId: () => 'high-new',
+                        maxHighPriorityQueueSize: 3,
+                        highPriorityOverflow: 'drop-oldest',
+                        elapsedTime: 1000,
+                    }
+                );
+
+                // New high should be current
+                expect(newState.current?.id).toBe('high-new');
+                // Queue should have current re-queued, but oldest (high-queued-1) dropped
+                // Result: [high-current, high-queued-2]
+                expect(newState.queue).toHaveLength(2);
+                expect(newState.queue.some(t => t.id === 'high-queued-1')).toBe(false);
+            });
+
+            it('still processes interruption after dropping oldest', () => {
+                const highCurrent = createToastConfig({
+                    id: 'high-current',
+                    message: 'Current High',
+                    priority: 'high',
+                    duration: 5000,
+                });
+                const highQueued = createToastConfig({
+                    id: 'high-queued',
+                    message: 'Queued High',
+                    priority: 'high',
+                });
+                const state = createMockState({
+                    current: highCurrent,
+                    queue: [highQueued],
+                });
+
+                const { newState } = simulateShowToast(
+                    state,
+                    { message: 'New High', priority: 'high' },
+                    {
+                        generateId: () => 'high-new',
+                        maxHighPriorityQueueSize: 2,
+                        highPriorityOverflow: 'drop-oldest',
+                        elapsedTime: 2000,
+                    }
+                );
+
+                // New high should be current
+                expect(newState.current?.id).toBe('high-new');
+                // Original current should be re-queued with remaining duration
+                expect(newState.queue.some(t => t.id === 'high-current')).toBe(true);
+                const requeued = newState.queue.find(t => t.id === 'high-current');
+                expect(requeued?.duration).toBe(3000); // 5000 - 2000
+            });
+        });
+
+        describe('downgrade strategy', () => {
+            it('converts high-priority to normal priority', () => {
+                const highToast = createToastConfig({
+                    id: 'high-1',
+                    message: 'High 1',
+                    priority: 'high',
+                });
+                const state = createMockState({ current: highToast });
+
+                const { newState, wasDowngraded } = simulateShowToast(
+                    state,
+                    { message: 'High 2', priority: 'high' },
+                    {
+                        generateId: () => 'high-2',
+                        maxHighPriorityQueueSize: 1,
+                        highPriorityOverflow: 'downgrade',
+                    }
+                );
+
+                expect(wasDowngraded).toBe(true);
+                // Original high-priority should remain current
+                expect(newState.current?.id).toBe('high-1');
+                // Downgraded toast should be in queue as normal priority
+                expect(newState.queue).toHaveLength(1);
+                expect(newState.queue[0].id).toBe('high-2');
+                expect(newState.queue[0].priority).toBe('normal');
+            });
+
+            it('applies normal queue rules after downgrade', () => {
+                const highToast = createToastConfig({
+                    id: 'high-1',
+                    message: 'High 1',
+                    priority: 'high',
+                });
+                // Fill normal queue to max
+                const normalQueue = Array.from({ length: 5 }, (_, i) =>
+                    createToastConfig({ id: `normal-${i}`, message: `Normal ${i}`, priority: 'normal' })
+                );
+                const state = createMockState({
+                    current: highToast,
+                    queue: normalQueue,
+                });
+
+                const { newState, wasDowngraded } = simulateShowToast(
+                    state,
+                    { message: 'High 2', priority: 'high' },
+                    {
+                        generateId: () => 'high-2',
+                        maxHighPriorityQueueSize: 1,
+                        highPriorityOverflow: 'downgrade',
+                        maxQueueSize: 5,
+                    }
+                );
+
+                expect(wasDowngraded).toBe(true);
+                // Queue should still be 5 (oldest dropped)
+                expect(newState.queue).toHaveLength(5);
+                // First normal should be dropped
+                expect(newState.queue[0].id).toBe('normal-1');
+                // Downgraded should be last
+                expect(newState.queue[4].id).toBe('high-2');
+                expect(newState.queue[4].priority).toBe('normal');
+            });
+
+            it('downgraded toast does not interrupt current', () => {
+                const normalToast = createToastConfig({
+                    id: 'normal-1',
+                    message: 'Normal',
+                    priority: 'normal',
+                });
+                const highQueued = createToastConfig({
+                    id: 'high-queued',
+                    message: 'Queued High',
+                    priority: 'high',
+                });
+                const state = createMockState({
+                    current: normalToast,
+                    queue: [highQueued],
+                });
+
+                const { newState, wasDowngraded } = simulateShowToast(
+                    state,
+                    { message: 'New High', priority: 'high' },
+                    {
+                        generateId: () => 'high-new',
+                        maxHighPriorityQueueSize: 1,
+                        highPriorityOverflow: 'downgrade',
+                    }
+                );
+
+                expect(wasDowngraded).toBe(true);
+                // Current should remain unchanged
+                expect(newState.current?.id).toBe('normal-1');
+                // No interruption occurred
+                expect(newState.interrupted).toBeNull();
+            });
+        });
+
+        describe('mixed priority scenarios', () => {
+            it('normal priority toasts not affected by high-priority limit', () => {
+                // Fill up high-priority capacity
+                const highCurrent = createToastConfig({
+                    id: 'high-1',
+                    message: 'High 1',
+                    priority: 'high',
+                });
+                const highQueued = createToastConfig({
+                    id: 'high-2',
+                    message: 'High 2',
+                    priority: 'high',
+                });
+                const state = createMockState({
+                    current: highCurrent,
+                    queue: [highQueued],
+                });
+
+                // Normal priority should still queue normally
+                const { newState, wasDropped } = simulateShowToast(
+                    state,
+                    { message: 'Normal', priority: 'normal' },
+                    {
+                        generateId: () => 'normal-1',
+                        maxHighPriorityQueueSize: 2,
+                        highPriorityOverflow: 'drop-newest',
+                    }
+                );
+
+                expect(wasDropped).toBeUndefined();
+                expect(newState.queue).toHaveLength(2);
+                expect(newState.queue[1].id).toBe('normal-1');
+                expect(newState.queue[1].priority).toBe('normal');
+            });
+
+            it('handles transition from normal to high-priority queue', () => {
+                const normalToast = createToastConfig({
+                    id: 'normal-1',
+                    message: 'Normal 1',
+                    priority: 'normal',
+                });
+                const state = createMockState({ current: normalToast });
+
+                // Add first high-priority
+                let result = simulateShowToast(
+                    state,
+                    { message: 'High 1', priority: 'high' },
+                    { generateId: () => 'high-1', elapsedTime: 1000, maxHighPriorityQueueSize: 2 }
+                );
+
+                // High should be current, normal should be interrupted
+                expect(result.newState.current?.id).toBe('high-1');
+                expect(result.newState.interrupted?.id).toBe('normal-1');
+
+                // Add second high-priority
+                result = simulateShowToast(
+                    result.newState,
+                    { message: 'High 2', priority: 'high' },
+                    { generateId: () => 'high-2', elapsedTime: 500, maxHighPriorityQueueSize: 2 }
+                );
+
+                // High 2 current, High 1 queued, normal still interrupted
+                expect(result.newState.current?.id).toBe('high-2');
+                expect(result.newState.queue[0].id).toBe('high-1');
+                expect(result.newState.interrupted?.id).toBe('normal-1');
+
+                // Third high-priority should trigger overflow
+                result = simulateShowToast(
+                    result.newState,
+                    { message: 'High 3', priority: 'high' },
+                    { generateId: () => 'high-3', maxHighPriorityQueueSize: 2 }
+                );
+
+                expect(result.wasDropped).toBe(true);
+            });
         });
     });
 });
