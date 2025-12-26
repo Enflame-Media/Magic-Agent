@@ -1,6 +1,6 @@
 import fastify from "fastify";
 import { log, logger } from "@/utils/log";
-import { serializerCompiler, validatorCompiler, ZodTypeProvider } from "fastify-type-provider-zod";
+import { serializerCompiler, validatorCompiler, ZodTypeProvider, jsonSchemaTransform } from "fastify-type-provider-zod";
 import { onShutdown } from "@/utils/shutdown";
 import { Fastify } from "./types";
 import { authRoutes } from "./routes/authRoutes";
@@ -23,6 +23,7 @@ import { userRoutes } from "./routes/userRoutes";
 import { feedRoutes } from "./routes/feedRoutes";
 import { kvRoutes } from "./routes/kvRoutes";
 import { healthRoutes } from "./routes/healthRoutes";
+import { openApiConfig } from "./openapi";
 
 export async function startApi() {
 
@@ -39,6 +40,14 @@ export async function startApi() {
         allowedHeaders: '*',
         methods: ['GET', 'POST', 'DELETE']
     });
+
+    // Register OpenAPI/Swagger documentation
+    // Must be registered before routes for proper discovery
+    app.register(import('@fastify/swagger'), {
+        ...openApiConfig,
+        transform: jsonSchemaTransform,
+    });
+
     app.get('/', function (request, reply) {
         reply.send('Welcome to Happy Server!');
     });

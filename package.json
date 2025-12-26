@@ -21,10 +21,15 @@
     "s3:down": "docker rm -f minio || true",
     "s3:init": "dotenv -e .env.dev -- docker run --rm --network container:minio --entrypoint /bin/sh minio/mc -c \"mc alias set local http://localhost:9000 $S3_ACCESS_KEY $S3_SECRET_KEY && mc mb -p local/$S3_BUCKET || true && mc anonymous set download local/$S3_BUCKET\"",
     "lint": "node ../scripts/lint-github-casing.mjs sources",
-    "lint:github-casing": "node ../scripts/lint-github-casing.mjs sources"
+    "lint:github-casing": "node ../scripts/lint-github-casing.mjs sources",
+    "openapi:generate": "tsx scripts/generate-openapi.ts",
+    "openapi:generate:yaml": "tsx scripts/generate-openapi.ts --yaml",
+    "openapi:validate": "tsx scripts/generate-openapi.ts && npx @redocly/cli lint openapi.json --skip-rule no-server-example.com",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@fastify/swagger": "^9.6.1",
+    "@redocly/cli": "^1.34.3",
     "@types/chalk": "^2.2.4",
     "@types/express": "^5.0.6",
     "@types/node": "^25.0.3",
