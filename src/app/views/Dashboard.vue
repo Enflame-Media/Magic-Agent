@@ -15,7 +15,10 @@ import MetricsSummary from '../components/MetricsSummary.vue';
 import SyncMetricsChart from '../components/SyncMetricsChart.vue';
 import ModeDistribution from '../components/ModeDistribution.vue';
 import PerformanceTrends from '../components/PerformanceTrends.vue';
+import BundleSizeChart from '../components/BundleSizeChart.vue';
+import BundleSizeLatest from '../components/BundleSizeLatest.vue';
 import { formatDuration, formatPercent } from '../lib/api';
+import { useBundleSize, useBundleSizeCharts } from '../composables/useBundleSize';
 
 const router = useRouter();
 
@@ -44,6 +47,16 @@ const {
     toRef(() => state.value.timeseries),
     toRef(() => state.value.summary),
     toRef(() => state.value.modeDistribution)
+);
+
+// Initialize bundle size composable (HAP-564)
+const {
+    state: bundleState,
+    fetchBundleData,
+} = useBundleSize();
+
+const { bundleSizeChartData } = useBundleSizeCharts(
+    toRef(() => bundleState.value.trends)
 );
 
 // Computed values for MetricsSummary
@@ -75,6 +88,7 @@ async function handleLogout() {
 // Fetch data on mount and start auto-refresh
 onMounted(() => {
     fetchAll();
+    fetchBundleData();
     startAutoRefresh();
 });
 </script>
@@ -201,6 +215,28 @@ onMounted(() => {
                         y-axis-label="Count"
                         :loading="loading && !state.summary.length"
                     />
+                </div>
+
+                <!-- Bundle Size Section (HAP-564) -->
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-6 md:pt-8">
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">
+                        Bundle Size Metrics
+                    </h2>
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="lg:col-span-2">
+                            <BundleSizeChart
+                                :data="bundleSizeChartData"
+                                title="Bundle Size Trends (30 days)"
+                                :loading="bundleState.loading && !bundleState.trends.length"
+                            />
+                        </div>
+                        <div>
+                            <BundleSizeLatest
+                                :data="bundleState.latest"
+                                :loading="bundleState.loading && !bundleState.latest.length"
+                            />
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Detailed Metrics Table -->
