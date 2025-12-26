@@ -17,6 +17,7 @@ import {
 interface BundleSizeState {
     trends: BundleSizePoint[];
     latest: BundleSizeLatest[];
+    previousDay: Map<string, number>;
     loading: boolean;
     error: string | null;
 }
@@ -28,31 +29,67 @@ export function useBundleSize() {
     const state = ref<BundleSizeState>({
         trends: [],
         latest: [],
+        previousDay: new Map(),
         loading: false,
         error: null,
     });
 
     /**
      * Fetch all bundle size data
+     * @param days - Number of days of trend data to fetch
+     * @param platform - Optional platform filter ('ios' | 'android' | 'web')
      */
-    async function fetchBundleData(days: number = 30) {
+    async function fetchBundleData(days: number = 30, platform?: 'ios' | 'android' | 'web') {
         state.value.loading = true;
         state.value.error = null;
 
         try {
             const [trendsRes, latestRes] = await Promise.all([
-                fetchBundleTrends(days),
+                fetchBundleTrends(days, platform),
                 fetchBundleLatest(),
             ]);
 
             state.value.trends = trendsRes.data;
             state.value.latest = latestRes.data;
+            state.value.previousDay = calculatePreviousDaySizes(trendsRes.data);
         } catch (err) {
             state.value.error = err instanceof Error ? err.message : 'Failed to fetch bundle data';
             console.error('[useBundleSize] Error:', err);
         } finally {
             state.value.loading = false;
         }
+    }
+
+    /**
+     * Calculate previous day's average size per platform from trends data.
+     * Used for showing % change indicators in BundleSizeLatest.
+     */
+    function calculatePreviousDaySizes(trends: BundleSizePoint[]): Map<string, number> {
+        const previousDay = new Map<string, number>();
+
+        if (trends.length === 0) {
+            return previousDay;
+        }
+
+        // Group by platform and sort by date descending
+        const platformDates = new Map<string, BundleSizePoint[]>();
+        for (const point of trends) {
+            const existing = platformDates.get(point.platform) || [];
+            existing.push(point);
+            platformDates.set(point.platform, existing);
+        }
+
+        // For each platform, sort by date descending and get second entry (yesterday)
+        for (const [platform, points] of platformDates) {
+            const sorted = [...points].sort((a, b) => b.date.localeCompare(a.date));
+            // Index 0 = most recent (today), Index 1 = previous (yesterday)
+            const yesterdayPoint = sorted[1];
+            if (yesterdayPoint) {
+                previousDay.set(platform, yesterdayPoint.avgTotalSize);
+            }
+        }
+
+        return previousDay;
     }
 
     return {

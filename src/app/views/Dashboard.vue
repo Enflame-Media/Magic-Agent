@@ -6,11 +6,13 @@
  * Uses composables for data fetching and chart transformations.
  * Features responsive design for desktop, tablet, and mobile.
  */
-import { onMounted, computed, toRef } from 'vue';
+import { onMounted, computed, toRef, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAnalytics } from '../composables/useAnalytics';
 import { useMetrics } from '../composables/useMetrics';
 import DateRangeSelector from '../components/DateRangeSelector.vue';
+import PlatformSelector from '../components/PlatformSelector.vue';
+import type { Platform } from '../components/PlatformSelector.vue';
 import MetricsSummary from '../components/MetricsSummary.vue';
 import SyncMetricsChart from '../components/SyncMetricsChart.vue';
 import ModeDistribution from '../components/ModeDistribution.vue';
@@ -55,9 +57,27 @@ const {
     fetchBundleData,
 } = useBundleSize();
 
+// Platform filter state (HAP-571)
+const selectedPlatform = ref<Platform>('all');
+
+// Chart data with platform filtering support (HAP-571)
 const { bundleSizeChartData } = useBundleSizeCharts(
-    toRef(() => bundleState.value.trends)
+    toRef(() => {
+        if (selectedPlatform.value === 'all') {
+            return bundleState.value.trends;
+        }
+        return bundleState.value.trends.filter(t => t.platform === selectedPlatform.value);
+    })
 );
+
+/**
+ * Handle platform filter change (HAP-571)
+ */
+async function handlePlatformChange(platform: Platform) {
+    selectedPlatform.value = platform;
+    // Refetch data - for 'all' we pass undefined to get all platforms
+    await fetchBundleData(30, platform === 'all' ? undefined : platform);
+}
 
 // Computed values for MetricsSummary
 const totalSyncs = computed(() => state.value.modeDistribution?.total ?? 0);
@@ -217,11 +237,18 @@ onMounted(() => {
                     />
                 </div>
 
-                <!-- Bundle Size Section (HAP-564) -->
+                <!-- Bundle Size Section (HAP-564, HAP-571) -->
                 <div class="border-t border-gray-200 dark:border-gray-700 pt-6 md:pt-8">
-                    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">
-                        Bundle Size Metrics
-                    </h2>
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                        <h2 class="text-xl font-bold text-gray-900 dark:text-white">
+                            Bundle Size Metrics
+                        </h2>
+                        <PlatformSelector
+                            v-model="selectedPlatform"
+                            :disabled="bundleState.loading"
+                            @update:model-value="handlePlatformChange"
+                        />
+                    </div>
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div class="lg:col-span-2">
                             <BundleSizeChart
@@ -233,6 +260,7 @@ onMounted(() => {
                         <div>
                             <BundleSizeLatest
                                 :data="bundleState.latest"
+                                :previous-day="bundleState.previousDay"
                                 :loading="bundleState.loading && !bundleState.latest.length"
                             />
                         </div>
