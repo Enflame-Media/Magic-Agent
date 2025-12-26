@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Happy** is a mobile and web client for Claude Code and Codex, enabling remote control and session sharing across devices with end-to-end encryption. This is a TypeScript monorepo containing five projects and shared packages.
+**Happy** is a mobile and web client for Claude Code and Codex, enabling remote control and session sharing across devices with end-to-end encryption. This is a TypeScript monorepo containing six projects and shared packages.
 
 ## Project Documentation
 
@@ -20,7 +20,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | **happy-app** | [`/happy-app/`](./happy-app/) | React Native mobile/web client (Expo) | [`happy-app/CLAUDE.md`](./happy-app/CLAUDE.md) |
 | **happy-server** | [`/happy-server/`](./happy-server/) | Fastify backend API server | [`happy-server/CLAUDE.md`](./happy-server/CLAUDE.md) |
 | **happy-server-workers** | [`/happy-server-workers/`](./happy-server-workers/) | Cloudflare Workers edge functions | [`happy-server-workers/CLAUDE.md`](./happy-server-workers/CLAUDE.md) |
-| **happy-admin** | [`/happy-admin/`](./happy-admin/) | Admin dashboard (Vue.js + Hono + Cloudflare Workers) | [`happy-admin/CLAUDE.md`](./happy-admin/CLAUDE.md) |
+| **happy-admin** | [`/happy-admin/`](./happy-admin/) | Admin dashboard Vue.js SPA (frontend-only) | [`happy-admin/CLAUDE.md`](./happy-admin/CLAUDE.md) |
+| **happy-admin-api** | [`/happy-admin-api/`](./happy-admin-api/) | Admin dashboard API (Hono + Cloudflare Workers) | [`happy-admin-api/CLAUDE.md`](./happy-admin-api/CLAUDE.md) |
 
 ### Shared Packages
 
@@ -68,12 +69,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 │   ├── app/                # Expo Router screens
 │   ├── package.json
 │   └── CLAUDE.md           # App-specific guidelines ★
-├── happy-admin/            # Cloudflare Workers (ESM) + Vue.js
-│   ├── src/worker/         # Hono API (TypeScript)
+├── happy-admin/            # Admin Dashboard Frontend (Vue.js SPA)
+│   ├── src/worker/         # Minimal worker (static serving)
 │   ├── src/app/            # Vue.js SPA
 │   ├── wrangler.toml       # Cloudflare config
 │   ├── package.json
-│   └── CLAUDE.md           # Admin-specific guidelines ★
+│   └── CLAUDE.md           # Frontend-specific guidelines ★
+├── happy-admin-api/        # Admin Dashboard API (Hono + Cloudflare Workers)
+│   ├── src/                # TypeScript sources
+│   ├── migrations/         # D1 migrations
+│   ├── wrangler.toml       # Cloudflare config
+│   ├── package.json
+│   └── CLAUDE.md           # API-specific guidelines ★
 ├── docs/                   # Cross-project documentation
 │   └── ENCRYPTION-ARCHITECTURE.md
 ├── package.json            # Root workspaces config
@@ -154,7 +161,8 @@ The monorepo uses **multiple git repositories**:
 | `happy-cli` | CLI wrapper code | Individual repo |
 | `happy-server` | Backend server code | Individual repo |
 | `happy-server-workers` | Cloudflare Workers | Individual repo |
-| `happy-admin` | Admin dashboard (Vue.js + Hono) | Individual repo |
+| `happy-admin` | Admin dashboard frontend (Vue.js) | Individual repo |
+| `happy-admin-api` | Admin dashboard API (Hono) | Individual repo |
 
 Each project directory has its own `.git/` - they are independent repositories.
 
@@ -325,12 +333,16 @@ Each project follows a consistent pattern for environment files:
 - Production secrets via `wrangler secret put`
 - Bindings (D1, R2, Durable Objects) in `wrangler.toml`
 
-#### happy-admin (Cloudflare)
+#### happy-admin (Cloudflare - Frontend)
+- Frontend-only worker, no secrets required
+- Serves Vue.js SPA via [site] bucket
+- API calls go to happy-admin-api
+
+#### happy-admin-api (Cloudflare - API)
 - Uses `.dev.vars` for local development (gitignored)
-- `ANALYTICS_ACCOUNT_ID` - Cloudflare account ID for Analytics Engine
-- `ANALYTICS_API_TOKEN` - API token with Analytics Read permission
 - `BETTER_AUTH_SECRET` - Session signing secret
-- D1 database binding for Better-Auth storage
+- Uses main happy D1 databases (happy-dev, happy-prod)
+- Analytics Engine via Secrets Store bindings
 
 ### Generating Secrets
 

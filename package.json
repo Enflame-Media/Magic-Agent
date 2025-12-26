@@ -9,7 +9,8 @@
     "happy-server",
     "happy-server-workers",
     "happy-app",
-    "happy-admin"
+    "happy-admin",
+    "happy-admin-api"
   ],
   "scripts": {
     "postinstall": "yarn workspace @happy/errors build && yarn workspace @happy/protocol build",
