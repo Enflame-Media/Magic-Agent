@@ -179,11 +179,54 @@ function createMockWebSocket(_id: string = 'ws-1'): WebSocket & {
 }
 
 /**
+ * Build tags from connection metadata (mirrors ConnectionManager.buildConnectionTags)
+ *
+ * HAP-567: Used by the mock to simulate Cloudflare's tag-based filtering
+ */
+function buildTagsFromMetadata(metadata: ConnectionMetadata): string[] {
+    const tags: string[] = [
+        `type:${metadata.clientType}`,
+        `conn:${metadata.connectionId.slice(0, 8)}`,
+    ];
+
+    // HAP-456: Only authenticated connections get the auth tag
+    if (metadata.authState !== 'pending-auth') {
+        tags.push('auth:yes');
+    }
+
+    if (metadata.sessionId) {
+        tags.push(`session:${metadata.sessionId.slice(0, 50)}`);
+    }
+
+    if (metadata.machineId) {
+        tags.push(`machine:${metadata.machineId.slice(0, 50)}`);
+    }
+
+    return tags;
+}
+
+/**
  * Create mock DurableObjectState for testing
+ *
+ * HAP-567: Enhanced to properly track WebSocket tags for broadcast filtering.
+ * This mirrors Cloudflare's actual behavior where:
+ * - acceptWebSocket(ws, tags) stores tags for the WebSocket
+ * - getWebSockets(tag) returns only WebSockets that have that tag
  */
 function createMockDurableObjectState(existingWebSockets: WebSocket[] = []): DurableObjectState {
     const webSockets: WebSocket[] = [...existingWebSockets];
+    const webSocketTags = new WeakMap<WebSocket, string[]>();
     let autoResponse: WebSocketRequestResponsePair | null = null;
+
+    // HAP-567: For existing WebSockets (simulating hibernation recovery),
+    // compute their tags from their metadata attachments
+    for (const ws of existingWebSockets) {
+        const mockWs = ws as unknown as { _attachment?: ConnectionMetadata; deserializeAttachment?: () => unknown };
+        const metadata = mockWs._attachment ?? (mockWs.deserializeAttachment?.() as ConnectionMetadata | undefined);
+        if (metadata) {
+            webSocketTags.set(ws, buildTagsFromMetadata(metadata));
+        }
+    }
 
     return {
         id: {
@@ -203,13 +246,20 @@ function createMockDurableObjectState(existingWebSockets: WebSocket[] = []): Dur
             deleteAll: vi.fn(),
             sync: vi.fn(),
         } as unknown as DurableObjectStorage,
-        acceptWebSocket: vi.fn((ws: WebSocket, _tags?: string[]) => {
+        acceptWebSocket: vi.fn((ws: WebSocket, tags?: string[]) => {
             webSockets.push(ws);
+            // HAP-567: Store tags for this WebSocket
+            if (tags) {
+                webSocketTags.set(ws, tags);
+            }
         }),
         getWebSockets: vi.fn((tag?: string) => {
             if (!tag) return webSockets;
-            // Filter by tag if needed - simplified for tests
-            return webSockets;
+            // HAP-567: Filter WebSockets by tag (mirrors Cloudflare behavior)
+            return webSockets.filter(ws => {
+                const tags = webSocketTags.get(ws);
+                return tags?.includes(tag) ?? false;
+            });
         }),
         setWebSocketAutoResponse: vi.fn((pair: WebSocketRequestResponsePair | null) => {
             autoResponse = pair;
@@ -218,7 +268,7 @@ function createMockDurableObjectState(existingWebSockets: WebSocket[] = []): Dur
         getWebSocketAutoResponseTimestamp: vi.fn(() => null),
         setHibernatableWebSocketEventTimeout: vi.fn(),
         getHibernatableWebSocketEventTimeout: vi.fn(() => null),
-        getTags: vi.fn(() => []),
+        getTags: vi.fn((ws: WebSocket) => webSocketTags.get(ws) ?? []),
         blockConcurrencyWhile: vi.fn(async (fn) => fn()),
         waitUntil: vi.fn(),
         abort: vi.fn(),

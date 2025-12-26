@@ -68,12 +68,47 @@ const mockEnv = {
     DB: mockD1Database,
 };
 
-// Mock DurableObjectState
+/**
+ * Build tags from connection metadata (mirrors ConnectionManager.buildConnectionTags)
+ *
+ * HAP-567: Used by the mock to simulate Cloudflare's tag-based filtering
+ */
+function buildTagsFromMetadata(metadata: ConnectionMetadata): string[] {
+    const tags: string[] = [
+        `type:${metadata.clientType}`,
+        `conn:${metadata.connectionId.slice(0, 8)}`,
+    ];
+
+    // HAP-456: Only authenticated connections get the auth tag
+    if (metadata.authState !== 'pending-auth') {
+        tags.push('auth:yes');
+    }
+
+    if (metadata.sessionId) {
+        tags.push(`session:${metadata.sessionId.slice(0, 50)}`);
+    }
+
+    if (metadata.machineId) {
+        tags.push(`machine:${metadata.machineId.slice(0, 50)}`);
+    }
+
+    return tags;
+}
+
+/**
+ * Mock DurableObjectState for testing
+ *
+ * HAP-567: Enhanced to properly track WebSocket tags for broadcast filtering.
+ * This mirrors Cloudflare's actual behavior where:
+ * - acceptWebSocket(ws, tags) stores tags for the WebSocket
+ * - getWebSockets(tag) returns only WebSockets that have that tag
+ */
 function createMockState() {
-    const webSockets = new Map<WebSocket, ConnectionMetadata>();
+    const webSockets: WebSocket[] = [];
+    const webSocketTags = new WeakMap<WebSocket, string[]>();
     let currentAlarm: number | null = null;
 
-    return {
+    const state = {
         id: { toString: () => 'test-do-id' },
         storage: {
             get: vi.fn(),
@@ -88,9 +123,20 @@ function createMockState() {
                 currentAlarm = null;
             }),
         },
-        getWebSockets: vi.fn(() => Array.from(webSockets.keys())),
-        acceptWebSocket: vi.fn((_ws: WebSocket, _tags?: string[]) => {
-            // Track accepted WebSocket
+        getWebSockets: vi.fn((tag?: string) => {
+            if (!tag) return webSockets;
+            // HAP-567: Filter WebSockets by tag (mirrors Cloudflare behavior)
+            return webSockets.filter(ws => {
+                const tags = webSocketTags.get(ws);
+                return tags?.includes(tag) ?? false;
+            });
+        }),
+        acceptWebSocket: vi.fn((ws: WebSocket, tags?: string[]) => {
+            webSockets.push(ws);
+            // HAP-567: Store tags for this WebSocket
+            if (tags) {
+                webSocketTags.set(ws, tags);
+            }
         }),
         setWebSocketAutoResponse: vi.fn(),
         blockConcurrencyWhile: vi.fn(async (fn: () => Promise<void>) => fn()),
@@ -102,7 +148,20 @@ function createMockState() {
             }
         },
         _getCurrentAlarm: () => currentAlarm,
+
+        /**
+         * HAP-567: Test helper to register a WebSocket with computed tags
+         * This simulates what happens when a WebSocket is accepted with metadata
+         */
+        _registerWebSocketWithMetadata: (ws: WebSocket, metadata: ConnectionMetadata) => {
+            if (!webSockets.includes(ws)) {
+                webSockets.push(ws);
+            }
+            webSocketTags.set(ws, buildTagsFromMetadata(metadata));
+        },
     };
+
+    return state;
 }
 
 // Mock WebSocket with message tracking
@@ -667,6 +726,11 @@ describe('WebSocket Auth Handshake (HAP-360)', () => {
             testAccess.connections.set(authWs as unknown as WebSocket, authMetadata);
             testAccess.connections.set(pendingWs as unknown as WebSocket, pendingMetadata);
 
+            // HAP-567: Register WebSockets with the mock state so ctx.getWebSockets(tag) works
+            // This simulates Cloudflare's tag-based filtering for broadcast optimization
+            state._registerWebSocketWithMetadata(authWs as unknown as WebSocket, authMetadata);
+            state._registerWebSocketWithMetadata(pendingWs as unknown as WebSocket, pendingMetadata);
+
             // Broadcast to all connections
             const delivered = testAccess.broadcastClientMessage({
                 event: 'test-broadcast',
@@ -674,6 +738,7 @@ describe('WebSocket Auth Handshake (HAP-360)', () => {
             });
 
             // Only authenticated connection should receive the message
+            // HAP-567: The authenticated connection has 'auth:yes' tag, pending-auth does not
             expect(delivered).toBe(1);
             expect(authWs._getMessages().length).toBe(1);
             expect(pendingWs._getMessages().length).toBe(0);
