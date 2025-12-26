@@ -11,7 +11,7 @@ import { SessionTabs } from '@/components/SessionTabs';
 import { useDraft } from '@/hooks/useDraft';
 import { Modal } from '@/modal';
 import { voiceHooks } from '@/realtime/hooks/voiceHooks';
-import { startRealtimeSession, stopRealtimeSession, updateCurrentSessionId } from '@/realtime/RealtimeSession';
+import { startRealtimeSession, stopRealtimeSession } from '@/realtime/RealtimeSession';
 import { gitStatusSync } from '@/sync/gitStatusSync';
 import { sessionAbort, machineSpawnNewSession, isTemporaryPidSessionId, pollForRealSession } from '@/sync/ops';
 import { storage, useIsDataReady, useLocalSetting, useRealtimeStatus, useSessionMessages, useSessionUsage, useSetting, useAllSessions, useMachine } from '@/sync/storage';
@@ -509,11 +509,6 @@ function SessionViewLoaded({ sessionId, session }: { sessionId: string, session:
 
         // Trigger session sync
         sync.onSessionVisible(sessionId);
-
-        // Update realtime session ID if voice is active to ensure messages go to current session
-        if (realtimeStatus === 'connected') {
-            updateCurrentSessionId(sessionId);
-        }
 
         // Initialize git status sync for this session
         gitStatusSync.getSync(sessionId);

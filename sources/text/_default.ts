@@ -229,6 +229,7 @@ export const en = {
         contactSupport: 'Contact support if the problem persists',
         sessionNotFound: 'Session not found',
         voiceSessionFailed: 'Failed to start voice session',
+        voiceServiceUnavailable: 'Voice service is currently unavailable',
         oauthInitializationFailed: 'Failed to initialize OAuth flow',
         tokenStorageFailed: 'Failed to store authentication tokens',
         oauthStateMismatch: 'Security validation failed. Please try again',

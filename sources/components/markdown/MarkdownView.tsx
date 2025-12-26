@@ -1,7 +1,8 @@
 import { MarkdownSpan, parseMarkdown } from './parseMarkdown';
 import { Link } from 'expo-router';
 import * as React from 'react';
-import { ScrollView, View, Platform, Pressable, InteractionManager, Animated } from 'react-native';
+import { Pressable, ScrollView, View, Platform } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { StyleSheet } from 'react-native-unistyles';
 import { Text } from '../StyledText';
 import { Typography } from '@/constants/Typography';
@@ -11,15 +12,8 @@ import { useLocalSetting } from '@/sync/storage';
 import { storeTempText } from '@/sync/persistence';
 import { useRouter } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
-import * as Haptics from 'expo-haptics';
 import { MermaidRenderer } from './MermaidRenderer';
 import { t } from '@/text';
-
-// Constants for lazy code block rendering
-const CODE_LINE_HEIGHT = 20;
-const CODE_PADDING_VERTICAL = 32; // 16px top + 16px bottom
-const CODE_LANGUAGE_HEIGHT = 20; // Approximate height of language label
-const MIN_CODE_BLOCK_HEIGHT = 56;
 
 // Option type for callback
 export type Option = {
@@ -52,7 +46,7 @@ export const MarkdownView = React.memo((props: {
     }, [props.markdown, router]);
     const renderContent = () => {
         return (
-            <View>
+            <View style={{ width: '100%' }}>
                 {blocks.map((block, index) => {
                     if (block.type === 'text') {
                         return <RenderTextBlock spans={block.content} key={index} first={index === 0} last={index === blocks.length - 1} selectable={selectable} />;
@@ -71,7 +65,7 @@ export const MarkdownView = React.memo((props: {
                     } else if (block.type === 'options') {
                         return <RenderOptionsBlock items={block.items} key={index} first={index === 0} last={index === blocks.length - 1} selectable={selectable} onOptionPress={props.onOptionPress} />;
                     } else if (block.type === 'table') {
-                        return <RenderTableBlock headers={block.headers} rows={block.rows} key={index} first={index === 0} last={index === blocks.length - 1} selectable={selectable} />;
+                        return <RenderTableBlock headers={block.headers} rows={block.rows} key={index} first={index === 0} last={index === blocks.length - 1} />;
                     } else {
                         return null;
                     }
@@ -88,7 +82,22 @@ export const MarkdownView = React.memo((props: {
         return renderContent();
     }
     
-    return <Pressable onLongPress={handleLongPress} delayLongPress={500}>{renderContent()}</Pressable>;
+    // Use GestureDetector with LongPress gesture - it doesn't block pan gestures
+    // so horizontal scrolling in code blocks and tables still works
+    const longPressGesture = Gesture.LongPress()
+        .minDuration(500)
+        .onStart(() => {
+            handleLongPress();
+        })
+        .runOnJS(true);
+
+    return (
+        <GestureDetector gesture={longPressGesture}>
+            <View style={{ width: '100%' }}>
+                {renderContent()}
+            </View>
+        </GestureDetector>
+    );
 });
 
 function RenderTextBlock(props: { spans: MarkdownSpan[], first: boolean, last: boolean, selectable: boolean }) {
@@ -123,33 +132,11 @@ function RenderNumberedListBlock(props: { items: { number: number, spans: Markdo
     );
 }
 
-/**
- * Lazy-loaded code block component that defers expensive syntax highlighting
- * until after the initial render pass completes.
- *
- * This improves performance when rendering messages with multiple code blocks
- * by showing a placeholder first, then fading in the highlighted code.
- * The estimated height prevents layout shift during the transition.
- */
 function RenderCodeBlock(props: { content: string, language: string | null, first: boolean, last: boolean, selectable: boolean }) {
-    const [isReady, setIsReady] = React.useState(false);
     const [isHovered, setIsHovered] = React.useState(false);
-    const opacity = React.useRef(new Animated.Value(0)).current;
-
-    // Calculate estimated height to prevent layout shift
-    // Line count * line height + padding + language label (if present)
-    const lineCount = props.content.split('\n').length;
-    const estimatedHeight = Math.max(
-        lineCount * CODE_LINE_HEIGHT + CODE_PADDING_VERTICAL + (props.language ? CODE_LANGUAGE_HEIGHT : 0),
-        MIN_CODE_BLOCK_HEIGHT
-    );
 
     const copyCode = React.useCallback(async () => {
         try {
-            // Haptic feedback on native platforms for tactile confirmation
-            if (Platform.OS !== 'web') {
-                await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            }
             await Clipboard.setStringAsync(props.content);
             Modal.alert(t('common.success'), t('markdown.codeCopied'), [{ text: t('common.ok'), style: 'cancel' }]);
         } catch (error) {
@@ -158,79 +145,35 @@ function RenderCodeBlock(props: { content: string, language: string | null, firs
         }
     }, [props.content]);
 
-    React.useEffect(() => {
-        // Defer syntax highlighting until after interactions complete
-        // This allows the FlatList to finish scrolling/rendering first
-        const task = InteractionManager.runAfterInteractions(() => {
-            setIsReady(true);
-            Animated.timing(opacity, {
-                toValue: 1,
-                duration: 150,
-                useNativeDriver: Platform.OS !== 'web',
-            }).start();
-        });
-        return () => task.cancel();
-    }, [opacity]);
-
-    // Code block content shared between web and native
-    const codeBlockContent = (
-        <>
-            {props.language && <Text selectable={props.selectable} style={style.codeLanguage}>{props.language}</Text>}
-            {!isReady ? (
-                // Placeholder: Same background, just empty space
-                // The minHeight on parent maintains layout stability
-                <View style={style.codeBlockPlaceholder} />
-            ) : (
-                <Animated.View style={{ opacity }}>
-                    <ScrollView
-                        style={{ flexGrow: 0, flexShrink: 0 }}
-                        horizontal={true}
-                        contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 16 }}
-                        showsHorizontalScrollIndicator={false}
-                    >
-                        <SimpleSyntaxHighlighter
-                            code={props.content}
-                            language={props.language}
-                            selectable={props.selectable}
-                        />
-                    </ScrollView>
-                </Animated.View>
-            )}
-            {/* Copy button - always visible on mobile, hover-visible on web */}
-            <View style={[
-                style.copyButtonWrapper,
-                (Platform.OS === 'web' ? isHovered : true) && style.copyButtonWrapperVisible
-            ]}>
-                <Pressable style={style.copyButton} onPress={copyCode}>
-                    <Text style={style.copyButtonText}>{t('common.copy')}</Text>
-                </Pressable>
-            </View>
-        </>
-    );
-
-    // Native platforms: Long-press to copy with haptic feedback
-    // Web: Hover-based copy button (unchanged)
-    if (Platform.OS !== 'web') {
-        return (
-            <Pressable
-                onLongPress={copyCode}
-                delayLongPress={400}
-                style={[style.codeBlock, props.first && style.first, props.last && style.last, { minHeight: estimatedHeight }]}
-            >
-                {codeBlockContent}
-            </Pressable>
-        );
-    }
-
     return (
         <View
-            style={[style.codeBlock, props.first && style.first, props.last && style.last, { minHeight: estimatedHeight }]}
-            // @ts-ignore - Web only events for hover copy button
+            style={[style.codeBlock, props.first && style.first, props.last && style.last]}
+            // @ts-ignore - Web only events
             onMouseEnter={() => setIsHovered(true)}
             // @ts-ignore - Web only events
             onMouseLeave={() => setIsHovered(false)}
         >
-            {codeBlockContent}
+            {props.language && <Text selectable={props.selectable} style={style.codeLanguage}>{props.language}</Text>}
+            <ScrollView
+                style={{ flexGrow: 0, flexShrink: 0 }}
+                horizontal={true}
+                contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 16 }}
+                showsHorizontalScrollIndicator={false}
+            >
+                <SimpleSyntaxHighlighter
+                    code={props.content}
+                    language={props.language}
+                    selectable={props.selectable}
+                />
+            </ScrollView>
+            <View style={[style.copyButtonWrapper, isHovered && style.copyButtonWrapperVisible]} className='copy-button-wrapper'>
+                <Pressable
+                    style={style.copyButton}
+                    onPress={copyCode}
+                >
+                    <Text style={style.copyButtonText}>{t('common.copy')}</Text>
+                </Pressable>
+            </View>
         </View>
     );
 }
@@ -282,34 +225,43 @@ function RenderSpans(props: { spans: MarkdownSpan[], baseStyle?: any }) {
     </>)
 }
 
+// TODO: Table rendering has layout issues on mobile - cells don't resize together when content varies.
+// See https://github.com/slopus/happy/issues/294 for details and potential fixes.
+// To repro: Navigate to dev/messages-demo and observe tables with long cell content.
 function RenderTableBlock(props: {
     headers: string[],
     rows: string[][],
     first: boolean,
-    last: boolean,
-    selectable: boolean
+    last: boolean
 }) {
+    const columnCount = props.headers.length;
+    // Calculate cell width: minimum 100px per cell, but expand to fill if fewer columns
+    const cellMinWidth = Math.max(100, Math.floor(300 / columnCount));
+    const isLastRow = (rowIndex: number) => rowIndex === props.rows.length - 1;
+
     return (
         <View style={[style.tableContainer, props.first && style.first, props.last && style.last]}>
             <ScrollView
                 horizontal
-                showsHorizontalScrollIndicator={true}
-                style={{ flex: 1 }}
-                contentContainerStyle={{ minWidth: '100%' }}
+                showsHorizontalScrollIndicator={Platform.OS !== 'web'}
+                nestedScrollEnabled={true}
+                style={style.tableScrollView}
             >
-                <View style={{ flexDirection: 'column', minWidth: '100%' }}>
+                <View style={style.tableContent}>
+                    {/* Header row */}
                     <View style={style.tableRow}>
                         {props.headers.map((header, index) => (
-                            <View key={`header-${index}`} style={[style.tableCell, style.tableHeaderCell]}>
-                                <Text selectable={props.selectable} style={style.tableHeaderText}>{header}</Text>
+                            <View key={`header-${index}`} style={[style.tableCell, style.tableHeaderCell, { minWidth: cellMinWidth }]}>
+                                <Text style={style.tableHeaderText}>{header}</Text>
                             </View>
                         ))}
                     </View>
+                    {/* Data rows */}
                     {props.rows.map((row, rowIndex) => (
-                        <View key={`row-${rowIndex}`} style={[style.tableRow, rowIndex === props.rows.length - 1 && style.tableRowLast]}>
+                        <View key={`row-${rowIndex}`} style={[style.tableRow, isLastRow(rowIndex) && style.tableRowLast]}>
                             {props.headers.map((_, cellIndex) => (
-                                <View key={`cell-${rowIndex}-${cellIndex}`} style={style.tableCell}>
-                                    <Text selectable={props.selectable} style={style.tableCellText}>{row[cellIndex] ?? ''}</Text>
+                                <View key={`cell-${rowIndex}-${cellIndex}`} style={[style.tableCell, { minWidth: cellMinWidth }]}>
+                                    <Text style={style.tableCellText}>{row[cellIndex] ?? ''}</Text>
                                 </View>
                             ))}
                         </View>
@@ -432,11 +384,21 @@ const style = StyleSheet.create((theme) => ({
         backgroundColor: theme.colors.surfaceHighest,
         borderRadius: 8,
         marginVertical: 8,
+        position: 'relative',
+        zIndex: 1,
     },
-    codeBlockPlaceholder: {
-        // Empty placeholder that maintains the space while code loads
-        // Parent container's minHeight ensures consistent sizing
-        flex: 1,
+    copyButtonWrapper: {
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        opacity: 0,
+        zIndex: 10,
+        elevation: 10,
+        pointerEvents: 'none',
+    },
+    copyButtonWrapperVisible: {
+        opacity: 1,
+        pointerEvents: 'auto',
     },
     codeLanguage: {
         ...Typography.mono(),
@@ -457,6 +419,40 @@ const style = StyleSheet.create((theme) => ({
         backgroundColor: theme.colors.divider,
         marginTop: 8,
         marginBottom: 8,
+    },
+    copyButtonContainer: {
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        zIndex: 10,
+        elevation: 10,
+        opacity: 1,
+    },
+    copyButtonContainerHidden: {
+        opacity: 0,
+    },
+    copyButton: {
+        backgroundColor: theme.colors.surfaceHighest,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 4,
+        borderWidth: 1,
+        borderColor: theme.colors.divider,
+        cursor: 'pointer',
+    },
+    copyButtonHidden: {
+        display: 'none',
+    },
+    copyButtonCopied: {
+        backgroundColor: theme.colors.success,
+        borderColor: theme.colors.success,
+        opacity: 1,
+    },
+    copyButtonText: {
+        ...Typography.default(),
+        color: theme.colors.text,
+        fontSize: 12,
+        lineHeight: 16,
     },
 
     //
@@ -488,44 +484,22 @@ const style = StyleSheet.create((theme) => ({
     },
 
     //
-    // Copy Button (Web only)
-    //
-
-    copyButtonWrapper: {
-        position: 'absolute',
-        top: 8,
-        right: 8,
-        opacity: 0,
-        transitionDuration: '150ms',
-        transitionProperty: 'opacity',
-    },
-    copyButtonWrapperVisible: {
-        opacity: 1,
-    },
-    copyButton: {
-        backgroundColor: theme.colors.surfaceHigh,
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 4,
-        borderWidth: 1,
-        borderColor: theme.colors.divider,
-    },
-    copyButtonText: {
-        ...Typography.default('semiBold'),
-        fontSize: 12,
-        color: theme.colors.textSecondary,
-    },
-
-    //
     // Table
     //
 
     tableContainer: {
         marginVertical: 8,
-        borderRadius: 8,
-        overflow: 'hidden',
         borderWidth: 1,
         borderColor: theme.colors.divider,
+        borderRadius: 8,
+        overflow: 'hidden',
+        alignSelf: 'flex-start',
+    },
+    tableScrollView: {
+        flexGrow: 0,
+    },
+    tableContent: {
+        flexDirection: 'column',
     },
     tableRow: {
         flexDirection: 'row',
@@ -536,24 +510,28 @@ const style = StyleSheet.create((theme) => ({
         borderBottomWidth: 0,
     },
     tableCell: {
-        flex: 1,
-        minWidth: 100,
         paddingHorizontal: 12,
         paddingVertical: 8,
-        borderRightWidth: 1,
-        borderRightColor: theme.colors.divider,
     },
     tableHeaderCell: {
-        backgroundColor: theme.colors.surfaceHighest,
+        backgroundColor: theme.colors.surfaceHigh,
     },
     tableHeaderText: {
         ...Typography.default('semiBold'),
-        fontSize: 14,
         color: theme.colors.text,
+        fontSize: 16,
+        lineHeight: 24,
     },
     tableCellText: {
         ...Typography.default(),
-        fontSize: 14,
         color: theme.colors.text,
+        fontSize: 16,
+        lineHeight: 24,
     },
+
+    // Add global style for Web platform (Unistyles supports this via compiler plugin)
+    ...(Platform.OS === 'web' ? {
+        // Web-only CSS styles
+        _____web_global_styles: {}
+    } : {}),
 }));

@@ -229,6 +229,7 @@ export const es: TranslationStructure = {
         contactSupport: 'Contacta soporte si el problema persiste',
         sessionNotFound: 'Sesión no encontrada',
         voiceSessionFailed: 'Falló al iniciar sesión de voz',
+        voiceServiceUnavailable: 'El servicio de voz no está disponible',
         oauthInitializationFailed: 'Falló al inicializar el flujo OAuth',
         tokenStorageFailed: 'Falló al almacenar los tokens de autenticación',
         oauthStateMismatch: 'Falló la validación de seguridad. Inténtalo de nuevo',

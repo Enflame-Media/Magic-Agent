@@ -231,6 +231,7 @@ export const zhHans: TranslationStructure = {
         contactSupport: '如果问题持续存在，请联系支持',
         sessionNotFound: '会话未找到',
         voiceSessionFailed: '启动语音会话失败',
+        voiceServiceUnavailable: '语音服务不可用',
         oauthInitializationFailed: '初始化 OAuth 流程失败',
         tokenStorageFailed: '存储认证令牌失败',
         oauthStateMismatch: '安全验证失败。请重试',

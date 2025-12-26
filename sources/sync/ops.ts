@@ -208,7 +208,7 @@ export interface SpawnSessionOptions {
     directory: string;
     approvedNewDirectoryCreation?: boolean;
     token?: string;
-    agent?: 'codex' | 'claude';
+    agent?: 'codex' | 'claude' | 'gemini';
     /**
      * Optional session ID to resume from. When provided with agent: 'claude',
      * the daemon passes --resume <sessionId> to Claude, which creates a NEW
@@ -240,7 +240,7 @@ export async function machineSpawnNewSession(options: SpawnSessionOptions): Prom
             directory: string
             approvedNewDirectoryCreation?: boolean,
             token?: string,
-            agent?: 'codex' | 'claude',
+            agent?: 'codex' | 'claude' | 'gemini',
             sessionId?: string
         }>(
             machineId,

@@ -240,6 +240,7 @@ export const pl: TranslationStructure = {
         contactSupport: 'Skontaktuj się z pomocą techniczną, jeśli problem będzie się powtarzał',
         sessionNotFound: 'Sesja nie została znaleziona',
         voiceSessionFailed: 'Nie udało się uruchomić sesji głosowej',
+        voiceServiceUnavailable: 'Usługa głosowa jest niedostępna',
         oauthInitializationFailed: 'Nie udało się zainicjować przepływu OAuth',
         tokenStorageFailed: 'Nie udało się zapisać tokenów uwierzytelniania',
         oauthStateMismatch: 'Weryfikacja bezpieczeństwa nie powiodła się. Spróbuj ponownie',

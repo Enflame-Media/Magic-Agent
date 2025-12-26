@@ -40,12 +40,10 @@ export default React.memo(() => {
     const currentSecret = auth.credentials?.secret || '';
     const formattedSecret = currentSecret ? formatSecretKeyForBackup(currentSecret) : '';
 
-    // Get server info
-    const serverInfo = getServerInfo();
-
     // Profile display values
     const displayName = getDisplayName(profile);
     const githubUsername = profile.github?.login;
+    const serverInfo = getServerInfo();
 
     // GitHub disconnection
     const [disconnecting, handleDisconnectGitHub] = useHappyAction(async () => {

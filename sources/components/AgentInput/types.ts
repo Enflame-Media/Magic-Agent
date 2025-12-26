@@ -38,7 +38,7 @@ export interface AgentInputProps {
     };
     alwaysShowContextSize?: boolean;
     onFileViewerPress?: () => void;
-    agentType?: 'claude' | 'codex';
+    agentType?: 'claude' | 'codex' | 'gemini';
     onAgentClick?: () => void;
     machineName?: string | null;
     onMachineClick?: () => void;
@@ -88,7 +88,7 @@ export interface ActionButtonsProps {
     onSettingsPress?: () => void;
 
     // Agent selector
-    agentType?: 'claude' | 'codex';
+    agentType?: 'claude' | 'codex' | 'gemini';
     onAgentClick?: () => void;
 
     // Machine selector

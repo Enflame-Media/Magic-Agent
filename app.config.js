@@ -1,18 +1,20 @@
 const variant = process.env.APP_ENV || 'development';
 const name = {
     development: "Happy (dev)",
+    preview: "Happy (preview)",
     production: "Happy"
 }[variant];
 const bundleId = {
-    development: "com.enflame.happy.dev",
-    production: "com.enflame.happy"
+    development: "com.slopus.happy.dev",
+    preview: "com.slopus.happy.preview",
+    production: "com.ex3ndr.happy"
 }[variant];
 
 export default {
     expo: {
         name,
         slug: "happy",
-        version: "1.0.0",
+        version: "1.6.2",
         runtimeVersion: "18",
         orientation: "default",
         icon: "./sources/assets/images/icon.png",
@@ -34,7 +36,7 @@ export default {
                 NSLocalNetworkUsageDescription: "Allow $(PRODUCT_NAME) to find and connect to local devices on your network.",
                 NSBonjourServices: ["_http._tcp", "_https._tcp"]
             },
-            associatedDomains: variant === 'production' ? ["applinks:app.enflame.happy"] : []
+            associatedDomains: variant === 'production' ? ["applinks:app.happy.engineering"] : []
         },
         android: {
             adaptiveIcon: {
@@ -61,7 +63,7 @@ export default {
                     "data": [
                         {
                             "scheme": "https",
-                            "host": "happy.enflamemedia.com",
+                            "host": "app.happy.engineering",
                             "pathPrefix": "/"
                         }
                     ],
@@ -75,7 +77,7 @@ export default {
             favicon: "./sources/assets/images/favicon.png"
         },
         plugins: [
-            "./plugins/withEinkCompatibility.js",
+            require("./plugins/withEinkCompatibility.js"),
             [
                 "expo-router",
                 {
@@ -148,7 +150,7 @@ export default {
             ]
         ],
         updates: {
-            url: "https://u.expo.dev/4702965f-0053-4c71-b2df-bdce94e03dc4",
+            url: "https://u.expo.dev/4558dd3d-cd5a-47cd-bad9-e591a241cc06",
             requestHeaders: {
                 "expo-channel-name": "production"
             }
@@ -161,7 +163,7 @@ export default {
                 root: "./sources/app"
             },
             eas: {
-                projectId: "4702965f-0053-4c71-b2df-bdce94e03dc4"
+                projectId: "4558dd3d-cd5a-47cd-bad9-e591a241cc06"
             },
             app: {
                 postHogKey: process.env.EXPO_PUBLIC_POSTHOG_API_KEY,
@@ -170,6 +172,6 @@ export default {
                 revenueCatStripeKey: process.env.EXPO_PUBLIC_REVENUE_CAT_STRIPE
             }
         },
-        owner: "enflame-media"
+        owner: "bulkacorp"
     }
 };

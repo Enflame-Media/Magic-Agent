@@ -212,6 +212,7 @@ export const ru: TranslationStructure = {
         contactSupport: 'Если проблема сохранится, обратитесь в поддержку',
         sessionNotFound: 'Сессия не найдена',
         voiceSessionFailed: 'Не удалось запустить голосовую сессию',
+        voiceServiceUnavailable: 'Голосовой сервис недоступен',
         oauthInitializationFailed: 'Не удалось инициализировать процесс OAuth',
         tokenStorageFailed: 'Не удалось сохранить токены аутентификации',
         oauthStateMismatch: 'Ошибка проверки безопасности. Попробуйте снова',

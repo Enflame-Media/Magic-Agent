@@ -14,7 +14,7 @@ import { openExternalUrl } from './ExternalLink';
 export const UpdateBanner = React.memo(() => {
     const { theme } = useUnistyles();
     const { updateAvailable, reloadApp } = useUpdates();
-    const { hasUnread, isInitialized, markAsRead } = useChangelog();
+    const { hasUnread, markAsRead } = useChangelog();
     const updateUrl = useNativeUpdate();
     const router = useRouter();
 
@@ -56,8 +56,8 @@ export const UpdateBanner = React.memo(() => {
         );
     }
 
-    // Show changelog banner if there are unread changelog entries and changelog is initialized (lowest priority)
-    if (isInitialized && hasUnread) {
+    // Show changelog banner if there are unread changelog entries (lowest priority)
+    if (hasUnread) {
         return (
             <ItemGroup>
                 <Item
