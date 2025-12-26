@@ -140,8 +140,9 @@ describe('macOS LaunchDaemon plist generation', () => {
       const plistContent = plist.build(plistData)
 
       // Verify DOCTYPE is present for macOS compatibility
+      // Note: Apple's official DTD URL uses http://, not https://
       expect(plistContent).toContain('<!DOCTYPE plist PUBLIC')
-      expect(plistContent).toContain('https://www.apple.com/DTDs/PropertyList-1.0.dtd')
+      expect(plistContent).toContain('http://www.apple.com/DTDs/PropertyList-1.0.dtd')
     })
   })
 })
