@@ -20,10 +20,15 @@ bucket = "./dist"
 [env.dev]
 name = "happy-admin-dev"
 vars = { ENVIRONMENT = "development" }
-
-# Custom domain routing
 routes = [
     { pattern = "happy-admin-dev.enflamemedia.com", custom_domain = true }
+]
+
+# Analytics Engine SQL API configuration via Secrets Store
+# Dataset: sync_metrics_dev (from happy-server-workers)
+secrets_store_secrets = [
+    { binding = "ANALYTICS_ACCOUNT_ID", store_id = "acdad5c326b0456aa453d78b7133983a", secret_name = "ANALYTICS_ACCOUNT_ID" },
+    { binding = "ANALYTICS_API_TOKEN", store_id = "acdad5c326b0456aa453d78b7133983a", secret_name = "ANALYTICS_API_TOKEN" }
 ]
 
 # D1 Database binding (development) - for Better-Auth storage
@@ -31,11 +36,6 @@ routes = [
 binding = "DB"
 database_name = "happy-admin-dev"
 database_id = "95b9be0f-46ab-4791-96ca-c1ef815db21c"
-
-# Analytics Engine SQL API configuration
-# Note: Analytics Engine is queried via REST API, not direct binding
-# The ANALYTICS_ACCOUNT_ID and ANALYTICS_API_TOKEN secrets are used for API access
-# Dataset: sync_metrics_dev (from happy-server-workers)
 
 [env.dev.observability]
 [env.dev.observability.logs]
@@ -50,10 +50,15 @@ persist = true
 [env.prod]
 name = "happy-admin-prod"
 vars = { ENVIRONMENT = "production" }
-
-# Custom domain routing
 routes = [
     { pattern = "happy-admin.enflamemedia.com", custom_domain = true }
+]
+
+# Analytics Engine SQL API configuration via Secrets Store
+# Dataset: sync_metrics_prod (from happy-server-workers)
+secrets_store_secrets = [
+    { binding = "ANALYTICS_ACCOUNT_ID", store_id = "acdad5c326b0456aa453d78b7133983a", secret_name = "ANALYTICS_ACCOUNT_ID" },
+    { binding = "ANALYTICS_API_TOKEN", store_id = "acdad5c326b0456aa453d78b7133983a", secret_name = "ANALYTICS_API_TOKEN" }
 ]
 
 # D1 Database binding (production) - for Better-Auth storage
@@ -61,11 +66,6 @@ routes = [
 binding = "DB"
 database_name = "happy-admin-prod"
 database_id = "6cbed445-0f30-4af8-a932-447f7ec52f7a"
-
-# Analytics Engine SQL API configuration
-# Note: Analytics Engine is queried via REST API, not direct binding
-# The ANALYTICS_ACCOUNT_ID and ANALYTICS_API_TOKEN secrets are used for API access
-# Dataset: sync_metrics_prod (from happy-server-workers)
 
 [env.prod.observability]
 [env.prod.observability.logs]

@@ -251,6 +251,7 @@ const bundleLatestRoute = createRoute({
 
 /**
  * Helper to query Analytics Engine SQL API
+ * Uses Secrets Store bindings which require async .get() calls
  */
 async function queryAnalyticsEngine(
     env: Env,
@@ -261,12 +262,16 @@ async function queryAnalyticsEngine(
         return null;
     }
 
+    // Retrieve secrets from Secrets Store
+    const accountId = await env.ANALYTICS_ACCOUNT_ID.get();
+    const apiToken = await env.ANALYTICS_API_TOKEN.get();
+
     const response = await fetch(
-        `https://api.cloudflare.com/client/v4/accounts/${env.ANALYTICS_ACCOUNT_ID}/analytics_engine/sql`,
+        `https://api.cloudflare.com/client/v4/accounts/${accountId}/analytics_engine/sql`,
         {
             method: 'POST',
             headers: {
-                Authorization: `Bearer ${env.ANALYTICS_API_TOKEN}`,
+                Authorization: `Bearer ${apiToken}`,
                 'Content-Type': 'text/plain',
             },
             body: sql,

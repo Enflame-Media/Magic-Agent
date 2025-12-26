@@ -1,4 +1,16 @@
 /**
+ * Cloudflare Secrets Store secret binding type
+ * @see https://developers.cloudflare.com/secrets-store/integrations/workers/
+ */
+export interface SecretsStoreSecret {
+    /**
+     * Retrieves the secret value asynchronously
+     * @returns The secret value as a string
+     */
+    get(): Promise<string>;
+}
+
+/**
  * Environment bindings interface for Cloudflare Workers
  *
  * @remarks
@@ -19,16 +31,16 @@ export interface Env {
     DB: D1Database;
 
     /**
-     * Analytics Engine Account ID (for SQL API queries)
-     * @required Set via wrangler secret
+     * Analytics Engine Account ID (via Secrets Store)
+     * @required Use `.get()` to retrieve the value
      */
-    ANALYTICS_ACCOUNT_ID?: string;
+    ANALYTICS_ACCOUNT_ID?: SecretsStoreSecret;
 
     /**
-     * Analytics Engine API Token (for SQL API queries)
-     * @required Set via wrangler secret
+     * Analytics Engine API Token (via Secrets Store)
+     * @required Use `.get()` to retrieve the value
      */
-    ANALYTICS_API_TOKEN?: string;
+    ANALYTICS_API_TOKEN?: SecretsStoreSecret;
 
     /**
      * Better-Auth secret for session signing
