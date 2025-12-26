@@ -1,0 +1,14 @@
+# Happy Admin API - Local Development Variables
+# Copy this file to .dev.vars and fill in the values
+
+# Environment
+ENVIRONMENT=development
+
+# Better-Auth secret (minimum 32 characters)
+BETTER_AUTH_SECRET=dev-secret-for-local-development-only
+
+# Better-Auth URL (where the API is hosted)
+BETTER_AUTH_URL=http://localhost:8788
+
+# Note: ANALYTICS_ACCOUNT_ID and ANALYTICS_API_TOKEN are loaded via Secrets Store
+# They are not needed in .dev.vars for local development with mock data
