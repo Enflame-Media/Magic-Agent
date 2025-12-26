@@ -3,7 +3,47 @@
  *
  * Provides typed fetch functions for all metrics endpoints.
  * All requests include credentials for Better-Auth session handling.
+ *
+ * IMPORTANT: This frontend calls the separate happy-admin-api worker.
+ * The API base URL is configured based on the environment.
  */
+
+/**
+ * API Base URL Configuration
+ *
+ * In development: http://localhost:8788 (local API worker)
+ * In production: https://happy-admin-api.enflamemedia.com
+ * In dev environment: https://happy-admin-api-dev.enflamemedia.com
+ */
+function getApiBaseUrl(): string {
+    // Check if running in development (Vite dev server)
+    if (typeof window !== 'undefined') {
+        const hostname = window.location.hostname;
+
+        // Local development
+        if (hostname === 'localhost' || hostname === '127.0.0.1') {
+            return 'http://localhost:8788';
+        }
+
+        // Development environment
+        if (hostname.includes('-dev.enflamemedia.com')) {
+            return 'https://happy-admin-api-dev.enflamemedia.com';
+        }
+
+        // Production environment
+        if (hostname.includes('.enflamemedia.com')) {
+            return 'https://happy-admin-api.enflamemedia.com';
+        }
+    }
+
+    // Fallback for SSR or unknown environments
+    return 'https://happy-admin-api.enflamemedia.com';
+}
+
+/**
+ * Cached API base URL (computed once on module load)
+ */
+export const API_BASE_URL = getApiBaseUrl();
 
 /*
  * Type definitions matching the API response schemas
@@ -77,7 +117,10 @@ export class ApiError extends Error {
  * Base fetch wrapper with error handling
  */
 
-async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
+async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
+    // Build full URL using API base URL
+    const url = `${API_BASE_URL}${path}`;
+
     const response = await fetch(url, {
         credentials: 'include',
         ...options,

@@ -4,9 +4,12 @@
  *
  * Admin login page with email/password authentication
  * powered by Better-Auth.
+ *
+ * Note: Auth requests go to the happy-admin-api worker.
  */
 import { ref } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import { API_BASE_URL } from '../lib/api';
 
 const router = useRouter();
 const route = useRoute();
@@ -25,7 +28,7 @@ async function handleLogin() {
     loading.value = true;
 
     try {
-        const response = await fetch('/api/auth/sign-in/email', {
+        const response = await fetch(`${API_BASE_URL}/api/auth/sign-in/email`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',

@@ -19,7 +19,7 @@ import ModeDistribution from '../components/ModeDistribution.vue';
 import PerformanceTrends from '../components/PerformanceTrends.vue';
 import BundleSizeChart from '../components/BundleSizeChart.vue';
 import BundleSizeLatest from '../components/BundleSizeLatest.vue';
-import { formatDuration, formatPercent } from '../lib/api';
+import { formatDuration, formatPercent, API_BASE_URL } from '../lib/api';
 import { useBundleSize, useBundleSizeCharts } from '../composables/useBundleSize';
 
 const router = useRouter();
@@ -95,7 +95,7 @@ async function handleTimeRangeChange(range: typeof timeRange.value) {
  */
 async function handleLogout() {
     try {
-        await fetch('/api/auth/sign-out', {
+        await fetch(`${API_BASE_URL}/api/auth/sign-out`, {
             method: 'POST',
             credentials: 'include',
         });

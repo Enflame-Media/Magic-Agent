@@ -2,6 +2,7 @@ import { createApp } from 'vue';
 import { createRouter, createWebHistory } from 'vue-router';
 import App from './App.vue';
 import './style.css';
+import { API_BASE_URL } from './lib/api';
 
 /**
  * Vue Router configuration
@@ -33,9 +34,9 @@ const router = createRouter({
  */
 router.beforeEach(async (to, _from, next) => {
     if (to.meta.requiresAuth) {
-        // Check session with Better-Auth
+        // Check session with Better-Auth on the API worker
         try {
-            const response = await fetch('/api/auth/session', {
+            const response = await fetch(`${API_BASE_URL}/api/auth/session`, {
                 credentials: 'include',
             });
             if (!response.ok) {

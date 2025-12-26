@@ -6,11 +6,13 @@ compatibility_flags = ["nodejs_compat"]
 # Cloudflare Account ID
 account_id = "81f483e6767ea3194467ecef42840f79"
 
-# Enable Node.js compatibility for AsyncLocalStorage (required by Better-Auth)
+# No build command needed for the worker itself
+# Vue.js SPA is built separately via yarn build:app
 [build]
 command = ""
 
 # Static assets (Vue.js SPA)
+# This serves the built Vue.js app from ./dist
 [site]
 bucket = "./dist"
 
@@ -24,18 +26,8 @@ routes = [
     { pattern = "happy-admin-dev.enflamemedia.com", custom_domain = true }
 ]
 
-# Analytics Engine SQL API configuration via Secrets Store
-# Dataset: sync_metrics_dev (from happy-server-workers)
-secrets_store_secrets = [
-    { binding = "ANALYTICS_ACCOUNT_ID", store_id = "acdad5c326b0456aa453d78b7133983a", secret_name = "ANALYTICS_ACCOUNT_ID" },
-    { binding = "ANALYTICS_API_TOKEN", store_id = "acdad5c326b0456aa453d78b7133983a", secret_name = "ANALYTICS_API_TOKEN" }
-]
-
-# D1 Database binding (development) - for Better-Auth storage
-[[env.dev.d1_databases]]
-binding = "DB"
-database_name = "happy-admin-dev"
-database_id = "95b9be0f-46ab-4791-96ca-c1ef815db21c"
+# No D1 or Secrets needed - happy-admin-api handles all backend functionality
+# This worker only serves static Vue.js SPA files
 
 [env.dev.observability]
 [env.dev.observability.logs]
@@ -54,18 +46,8 @@ routes = [
     { pattern = "happy-admin.enflamemedia.com", custom_domain = true }
 ]
 
-# Analytics Engine SQL API configuration via Secrets Store
-# Dataset: sync_metrics_prod (from happy-server-workers)
-secrets_store_secrets = [
-    { binding = "ANALYTICS_ACCOUNT_ID", store_id = "acdad5c326b0456aa453d78b7133983a", secret_name = "ANALYTICS_ACCOUNT_ID" },
-    { binding = "ANALYTICS_API_TOKEN", store_id = "acdad5c326b0456aa453d78b7133983a", secret_name = "ANALYTICS_API_TOKEN" }
-]
-
-# D1 Database binding (production) - for Better-Auth storage
-[[env.prod.d1_databases]]
-binding = "DB"
-database_name = "happy-admin-prod"
-database_id = "6cbed445-0f30-4af8-a932-447f7ec52f7a"
+# No D1 or Secrets needed - happy-admin-api handles all backend functionality
+# This worker only serves static Vue.js SPA files
 
 [env.prod.observability]
 [env.prod.observability.logs]
