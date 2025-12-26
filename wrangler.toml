@@ -30,7 +30,7 @@ routes = [
 [[env.dev.d1_databases]]
 binding = "DB"
 database_name = "happy-admin-dev"
-database_id = "PLACEHOLDER_DEV_DB_ID"
+database_id = "95b9be0f-46ab-4791-96ca-c1ef815db21c"
 
 # Analytics Engine SQL API configuration
 # Note: Analytics Engine is queried via REST API, not direct binding
@@ -60,7 +60,7 @@ routes = [
 [[env.prod.d1_databases]]
 binding = "DB"
 database_name = "happy-admin-prod"
-database_id = "PLACEHOLDER_PROD_DB_ID"
+database_id = "6cbed445-0f30-4af8-a932-447f7ec52f7a"
 
 # Analytics Engine SQL API configuration
 # Note: Analytics Engine is queried via REST API, not direct binding
