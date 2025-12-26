@@ -170,7 +170,8 @@ describe('WebSocket Routes with Drizzle Mocking', () => {
             }, testEnv);
 
             // Should pass auth and attempt DO connection
-            expect(mockVerifyToken).toHaveBeenCalledWith('valid-token');
+            // verifyToken is called with (token, db)
+            expect(mockVerifyToken).toHaveBeenCalledWith('valid-token', expect.anything());
         });
 
         it('should extract token from Authorization header when query param is missing', async () => {
@@ -182,7 +183,8 @@ describe('WebSocket Routes with Drizzle Mocking', () => {
                 },
             }, testEnv);
 
-            expect(mockVerifyToken).toHaveBeenCalledWith('valid-token');
+            // verifyToken is called with (token, db)
+            expect(mockVerifyToken).toHaveBeenCalledWith('valid-token', expect.anything());
         });
 
         it('should prefer query param token over Authorization header', async () => {
@@ -195,8 +197,9 @@ describe('WebSocket Routes with Drizzle Mocking', () => {
             }, testEnv);
 
             // Query param should take precedence
-            expect(mockVerifyToken).toHaveBeenCalledWith('query-token');
-            expect(mockVerifyToken).not.toHaveBeenCalledWith('header-token');
+            // verifyToken is called with (token, db)
+            expect(mockVerifyToken).toHaveBeenCalledWith('query-token', expect.anything());
+            expect(mockVerifyToken).not.toHaveBeenCalledWith('header-token', expect.anything());
         });
 
         it('should return 401 when token verification fails', async () => {
@@ -237,7 +240,8 @@ describe('WebSocket Routes with Drizzle Mocking', () => {
             }, envWithoutSecret);
 
             // verifyToken should still be called as the flow continues
-            expect(mockVerifyToken).toHaveBeenCalledWith('valid-token');
+            // verifyToken is called with (token, db)
+            expect(mockVerifyToken).toHaveBeenCalledWith('valid-token', expect.anything());
 
             // initAuth should not be called with empty string (from this route)
             // Note: Other middleware may call it, so we check it wasn't called with empty string
@@ -347,7 +351,8 @@ describe('WebSocket Routes with Drizzle Mocking', () => {
                 },
             }, testEnv);
 
-            expect(mockVerifyToken).toHaveBeenCalledWith('valid-token');
+            // verifyToken is called with (token, db)
+            expect(mockVerifyToken).toHaveBeenCalledWith('valid-token', expect.anything());
         });
     });
 
@@ -411,7 +416,8 @@ describe('WebSocket Routes with Drizzle Mocking', () => {
             }, envWithoutSecret);
 
             // verifyToken should still be called as the flow continues
-            expect(mockVerifyToken).toHaveBeenCalledWith('valid-token');
+            // verifyToken is called with (token, db)
+            expect(mockVerifyToken).toHaveBeenCalledWith('valid-token', expect.anything());
 
             // initAuth should not be called with empty string (from this route)
             expect(mockInitAuth).not.toHaveBeenCalledWith('');
@@ -568,7 +574,8 @@ describe('WebSocket Routes with Drizzle Mocking', () => {
             }, envWithoutSecret);
 
             // verifyToken should still be called as the flow continues
-            expect(mockVerifyToken).toHaveBeenCalledWith('valid-token');
+            // verifyToken is called with (token, db)
+            expect(mockVerifyToken).toHaveBeenCalledWith('valid-token', expect.anything());
 
             // initAuth should not be called with empty string (from this route)
             expect(mockInitAuth).not.toHaveBeenCalledWith('');

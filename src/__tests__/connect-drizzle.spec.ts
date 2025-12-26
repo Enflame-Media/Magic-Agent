@@ -51,6 +51,24 @@ vi.mock('@/lib/auth', () => ({
     }),
     createToken: vi.fn().mockResolvedValue('generated-token'),
     resetAuth: vi.fn(),
+    // Mock ephemeral token functions for GitHub OAuth state
+    createEphemeralToken: vi.fn().mockImplementation(async (userId: string, purpose: string) => {
+        // Return a mock JWT-like token that contains the userId and purpose
+        return `mock-jwt.${Buffer.from(JSON.stringify({ userId, purpose })).toString('base64url')}.signature`;
+    }),
+    verifyEphemeralToken: vi.fn().mockImplementation(async (token: string) => {
+        // Parse mock token and return the embedded data
+        const parts = token.split('.');
+        if (parts.length !== 3 || !parts[0]?.startsWith('mock-jwt') || !parts[1]) {
+            return null;
+        }
+        try {
+            const data = JSON.parse(Buffer.from(parts[1], 'base64url').toString()) as { userId: string; purpose: string };
+            return { userId: data.userId, purpose: data.purpose };
+        } catch {
+            return null;
+        }
+    }),
 }));
 
 // Mock the getDb function to return our mock Drizzle client
@@ -240,7 +258,14 @@ describe('Connect Routes with Drizzle Mocking', () => {
             const body = await res.json() as { url: string };
             const url = new URL(body.url);
             const state = url.searchParams.get('state');
-            expect(state).toContain(TEST_USER_ID);
+            expect(state).toBeTruthy();
+            // State is a mock JWT token, decode the payload to verify userId
+            const parts = state!.split('.');
+            expect(parts.length).toBe(3);
+            expect(parts[1]).toBeTruthy();
+            const payload = JSON.parse(Buffer.from(parts[1]!, 'base64url').toString()) as { userId: string; purpose: string };
+            expect(payload.userId).toBe(TEST_USER_ID);
+            expect(payload.purpose).toBe('github-oauth-state');
         });
 
         it('should include correct OAuth scopes', async () => {

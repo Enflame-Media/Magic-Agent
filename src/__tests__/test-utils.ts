@@ -206,6 +206,12 @@ export function createMockR2(): MockR2Bucket {
 
 /**
  * Mock Durable Object Namespace
+ *
+ * Returns endpoint-specific responses for WebSocket routes:
+ * - /stats → { totalConnections, byType, activeSessions, activeMachines, oldestConnection }
+ * - /broadcast → { success, delivered }
+ * - /connect → WebSocket upgrade response (101)
+ * - default → { success: true }
  */
 export function createMockDurableObjectNamespace() {
     return {
@@ -213,7 +219,49 @@ export function createMockDurableObjectNamespace() {
             toString: () => `do-id-${name}`,
         })),
         get: vi.fn(() => ({
-            fetch: vi.fn(async () => new Response(JSON.stringify({ success: true }))),
+            fetch: vi.fn(async (request: Request) => {
+                const url = new URL(request.url);
+                const pathname = url.pathname;
+
+                // Stats endpoint - return connection statistics shape
+                if (pathname === '/stats' || pathname.endsWith('/stats')) {
+                    return new Response(JSON.stringify({
+                        totalConnections: 0,
+                        byType: {
+                            'user-scoped': 0,
+                            'session-scoped': 0,
+                            'machine-scoped': 0,
+                        },
+                        activeSessions: 0,
+                        activeMachines: 0,
+                        oldestConnection: null,
+                    }));
+                }
+
+                // Broadcast endpoint - return broadcast result shape
+                if (pathname === '/broadcast' || pathname.endsWith('/broadcast')) {
+                    return new Response(JSON.stringify({
+                        success: true,
+                        delivered: 0,
+                    }));
+                }
+
+                // WebSocket connect endpoint - return upgrade response
+                if (pathname === '/connect' || pathname.endsWith('/connect')) {
+                    // For WebSocket upgrade tests, we need to simulate what the DO returns
+                    // The actual DO would return 101, but in tests we simulate success
+                    const upgradeHeader = request.headers.get('Upgrade');
+                    if (upgradeHeader === 'websocket') {
+                        // In tests without real WebSocket pairs, return a 101 placeholder
+                        // Real DO uses WebSocketPair which isn't available in mock env
+                        return new Response(null, { status: 101 });
+                    }
+                    return new Response(JSON.stringify({ success: true }));
+                }
+
+                // Default response for other endpoints
+                return new Response(JSON.stringify({ success: true }));
+            }),
         })),
     };
 }
