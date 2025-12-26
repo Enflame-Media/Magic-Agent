@@ -3,13 +3,15 @@ import { createTestApp } from './__test__/testUtils';
 import { devRoutes } from './devRoutes';
 import type { Fastify } from '../types';
 
-// Mock the file logger
-const mockFileConsolidatedLogger = {
-    info: vi.fn(),
-    error: vi.fn(),
-    warn: vi.fn(),
-    debug: vi.fn(),
-};
+// Use vi.hoisted to define mocks that will be available when vi.mock is hoisted
+const { mockFileConsolidatedLogger } = vi.hoisted(() => ({
+    mockFileConsolidatedLogger: {
+        info: vi.fn(),
+        error: vi.fn(),
+        warn: vi.fn(),
+        debug: vi.fn(),
+    },
+}));
 
 vi.mock('@/utils/log', () => ({
     log: vi.fn(),

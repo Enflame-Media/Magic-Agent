@@ -70,9 +70,9 @@ describe('artifactsRoutes', () => {
 
             expect(response.statusCode).toBe(200);
             const body = JSON.parse(response.payload);
-            expect(body).toHaveLength(2);
-            expect(body[0].id).toBe('artifact-1');
-            expect(body[1].id).toBe('artifact-2');
+            expect(body.artifacts).toHaveLength(2);
+            expect(body.artifacts[0].id).toBe('artifact-1');
+            expect(body.artifacts[1].id).toBe('artifact-2');
         });
 
         it('should return empty array when user has no artifacts', async () => {
@@ -86,7 +86,7 @@ describe('artifactsRoutes', () => {
 
             expect(response.statusCode).toBe(200);
             const body = JSON.parse(response.payload);
-            expect(body).toHaveLength(0);
+            expect(body.artifacts).toHaveLength(0);
         });
 
         it('should return 401 without authorization', async () => {
@@ -114,11 +114,11 @@ describe('artifactsRoutes', () => {
 
             expect(response.statusCode).toBe(200);
             const body = JSON.parse(response.payload);
-            expect(body[0].header).toBeDefined();
-            expect(body[0].dataEncryptionKey).toBeDefined();
+            expect(body.artifacts[0].header).toBeDefined();
+            expect(body.artifacts[0].dataEncryptionKey).toBeDefined();
             // These should be base64 encoded strings
-            expect(typeof body[0].header).toBe('string');
-            expect(typeof body[0].dataEncryptionKey).toBe('string');
+            expect(typeof body.artifacts[0].header).toBe('string');
+            expect(typeof body.artifacts[0].dataEncryptionKey).toBe('string');
         });
 
         it('should return 500 on database error', async () => {
