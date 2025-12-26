@@ -57,8 +57,9 @@
     "dev:integration-test-env": "yarn build && tsx --env-file .env.integration-test src/index.ts",
     "prepublishOnly": "yarn build && yarn test",
     "release": "release-it",
-    "lint": "npx oxlint src --config oxlint.json",
+    "lint": "npx oxlint src --config oxlint.json && node ../scripts/lint-github-casing.mjs src",
     "lint:fix": "npx oxlint src --config oxlint.json --fix",
+    "lint:github-casing": "node ../scripts/lint-github-casing.mjs src",
     "postinstall": "node scripts/unpack-tools.cjs"
   },
   "dependencies": {
