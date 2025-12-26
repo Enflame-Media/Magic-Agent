@@ -29,11 +29,11 @@
     "devDependencies": {
         "@cloudflare/workers-types": "^4.20251225.0",
         "@eslint/js": "^9.39.2",
+        "@tailwindcss/postcss": "^4.1.18",
         "@types/node": "^25.0.3",
         "@typescript-eslint/eslint-plugin": "^8.50.1",
         "@typescript-eslint/parser": "^8.50.1",
         "@vitejs/plugin-vue": "^6.0.3",
-        "autoprefixer": "^10.4.23",
         "eslint": "^9.39.2",
         "eslint-plugin-vue": "^10.6.2",
         "oxlint": "^1.35.0",
@@ -45,6 +45,7 @@
         "wrangler": "^4.56.0"
     },
     "dependencies": {
+        "@cloudflare/kv-asset-handler": "^0.4.1",
         "chart.js": "^4.5.1",
         "vue": "^3.5.26",
         "vue-chartjs": "^5.3.3",
