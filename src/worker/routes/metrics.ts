@@ -51,6 +51,30 @@ const ModeDistributionSchema = z
     })
     .openapi('ModeDistribution');
 
+// Bundle Size Schemas (HAP-564)
+const BundleSizePointSchema = z
+    .object({
+        date: z.string().openapi({ example: '2025-12-26' }),
+        platform: z.string().openapi({ example: 'web' }),
+        avgTotalSize: z.number().openapi({ example: 1572864 }),
+        avgJsSize: z.number().openapi({ example: 1048576 }),
+        avgAssetsSize: z.number().openapi({ example: 524288 }),
+        buildCount: z.number().openapi({ example: 5 }),
+    })
+    .openapi('BundleSizePoint');
+
+const BundleSizeLatestSchema = z
+    .object({
+        platform: z.string().openapi({ example: 'web' }),
+        branch: z.string().openapi({ example: 'main' }),
+        commitHash: z.string().openapi({ example: 'abc1234' }),
+        totalSize: z.number().openapi({ example: 1572864 }),
+        jsSize: z.number().openapi({ example: 1048576 }),
+        assetsSize: z.number().openapi({ example: 524288 }),
+        timestamp: z.string().openapi({ example: '2025-12-26T12:00:00Z' }),
+    })
+    .openapi('BundleSizeLatest');
+
 /*
  * Type definitions for API responses
  */
@@ -58,6 +82,8 @@ type MetricsSummary = z.infer<typeof MetricsSummarySchema>;
 type TimeseriesPoint = z.infer<typeof TimeseriesPointSchema>;
 type CacheHitRate = z.infer<typeof CacheHitRateSchema>;
 type ModeDistribution = z.infer<typeof ModeDistributionSchema>;
+type BundleSizePoint = z.infer<typeof BundleSizePointSchema>;
+type BundleSizeLatest = z.infer<typeof BundleSizeLatestSchema>;
 
 /*
  * Route Definitions - Simplified to only return 200
@@ -152,6 +178,65 @@ const modeDistributionRoute = createRoute({
                 'application/json': {
                     schema: z.object({
                         data: ModeDistributionSchema,
+                        timestamp: z.string(),
+                    }),
+                },
+            },
+        },
+    },
+});
+
+// Bundle Size Routes (HAP-564)
+const bundleTrendsRoute = createRoute({
+    method: 'get',
+    path: '/bundle-trends',
+    tags: ['Metrics', 'Bundle Size'],
+    summary: 'Get bundle size trends',
+    description: 'Returns daily bundle size averages for the specified time range. Used for trend visualization.',
+    request: {
+        query: z.object({
+            days: z.string().optional().openapi({
+                example: '30',
+                description: 'Number of days to look back (default: 30)',
+            }),
+            platform: z.enum(['ios', 'android', 'web']).optional().openapi({
+                example: 'web',
+                description: 'Filter by platform (default: all platforms)',
+            }),
+            branch: z.string().optional().openapi({
+                example: 'main',
+                description: 'Filter by branch (default: main)',
+            }),
+        }),
+    },
+    responses: {
+        200: {
+            description: 'Bundle trends retrieved successfully',
+            content: {
+                'application/json': {
+                    schema: z.object({
+                        data: z.array(BundleSizePointSchema),
+                        timestamp: z.string(),
+                    }),
+                },
+            },
+        },
+    },
+});
+
+const bundleLatestRoute = createRoute({
+    method: 'get',
+    path: '/bundle-latest',
+    tags: ['Metrics', 'Bundle Size'],
+    summary: 'Get latest bundle sizes',
+    description: 'Returns the most recent bundle size for each platform from the main branch.',
+    responses: {
+        200: {
+            description: 'Latest bundle sizes retrieved successfully',
+            content: {
+                'application/json': {
+                    schema: z.object({
+                        data: z.array(BundleSizeLatestSchema),
                         timestamp: z.string(),
                     }),
                 },
@@ -385,6 +470,180 @@ function generateMockTimeseries(hours: number, bucket: string): TimeseriesPoint[
             count: Math.floor(Math.random() * 50) + 10,
             avgDurationMs: Math.floor(Math.random() * 200) + 50,
         });
+    }
+
+    return data;
+}
+
+// ============================================================================
+// Bundle Size Route Handlers (HAP-564)
+// ============================================================================
+
+/**
+ * GET /api/metrics/bundle-trends
+ * Returns daily bundle size averages for trend visualization
+ */
+metricsRoutes.openapi(bundleTrendsRoute, async (c) => {
+    const { days = '30', platform, branch = 'main' } = c.req.valid('query');
+    const daysNum = parseInt(days, 10) || 30;
+
+    // Build platform filter
+    const platformFilter = platform ? `AND blob1 = '${platform}'` : '';
+
+    const result = await queryAnalyticsEngine(
+        c.env,
+        `
+        SELECT
+            toStartOfDay(timestamp) as date,
+            blob1 as platform,
+            AVG(double3) as avgTotalSize,
+            AVG(double1) as avgJsSize,
+            AVG(double2) as avgAssetsSize,
+            COUNT(*) as buildCount
+        FROM bundle_metrics_${c.env.ENVIRONMENT === 'production' ? 'prod' : 'dev'}
+        WHERE timestamp > NOW() - INTERVAL '${daysNum}' DAY
+          AND blob2 = '${branch}'
+          ${platformFilter}
+        GROUP BY date, blob1
+        ORDER BY date ASC
+        `
+    );
+
+    // Transform result or use mock data
+    let data: BundleSizePoint[];
+    if (result?.data && Array.isArray(result.data) && result.data.length > 0) {
+        data = (result.data as Array<{
+            date: string;
+            platform: string;
+            avgTotalSize: number;
+            avgJsSize: number;
+            avgAssetsSize: number;
+            buildCount: number;
+        }>).map((row) => ({
+            date: row.date,
+            platform: row.platform,
+            avgTotalSize: Math.round(row.avgTotalSize),
+            avgJsSize: Math.round(row.avgJsSize),
+            avgAssetsSize: Math.round(row.avgAssetsSize),
+            buildCount: row.buildCount,
+        }));
+    } else {
+        // Generate mock data for development
+        data = generateMockBundleTrends(daysNum, platform);
+    }
+
+    return c.json(
+        {
+            data,
+            timestamp: new Date().toISOString(),
+        },
+        200
+    );
+});
+
+/**
+ * GET /api/metrics/bundle-latest
+ * Returns the most recent bundle size for each platform
+ */
+metricsRoutes.openapi(bundleLatestRoute, async (c) => {
+    const result = await queryAnalyticsEngine(
+        c.env,
+        `
+        SELECT
+            blob1 as platform,
+            blob2 as branch,
+            blob3 as commitHash,
+            double3 as totalSize,
+            double1 as jsSize,
+            double2 as assetsSize,
+            timestamp
+        FROM bundle_metrics_${c.env.ENVIRONMENT === 'production' ? 'prod' : 'dev'}
+        WHERE timestamp > NOW() - INTERVAL '7' DAY
+          AND blob2 = 'main'
+        ORDER BY timestamp DESC
+        LIMIT 10
+        `
+    );
+
+    // Transform result or use mock data
+    let data: BundleSizeLatest[];
+    if (result?.data && Array.isArray(result.data) && result.data.length > 0) {
+        // Get the latest entry for each platform
+        const platformMap = new Map<string, BundleSizeLatest>();
+        for (const row of result.data as Array<{
+            platform: string;
+            branch: string;
+            commitHash: string;
+            totalSize: number;
+            jsSize: number;
+            assetsSize: number;
+            timestamp: string;
+        }>) {
+            if (!platformMap.has(row.platform)) {
+                platformMap.set(row.platform, {
+                    platform: row.platform,
+                    branch: row.branch,
+                    commitHash: row.commitHash,
+                    totalSize: Math.round(row.totalSize),
+                    jsSize: Math.round(row.jsSize),
+                    assetsSize: Math.round(row.assetsSize),
+                    timestamp: row.timestamp,
+                });
+            }
+        }
+        data = Array.from(platformMap.values());
+    } else {
+        // Mock data for development
+        data = [
+            {
+                platform: 'web',
+                branch: 'main',
+                commitHash: 'abc1234',
+                totalSize: 1572864,
+                jsSize: 1048576,
+                assetsSize: 524288,
+                timestamp: new Date().toISOString(),
+            },
+        ];
+    }
+
+    return c.json(
+        {
+            data,
+            timestamp: new Date().toISOString(),
+        },
+        200
+    );
+});
+
+/**
+ * Generate mock bundle trends data for development
+ */
+function generateMockBundleTrends(days: number, platform?: string): BundleSizePoint[] {
+    const data: BundleSizePoint[] = [];
+    const now = new Date();
+    const platforms = platform ? [platform] : ['web'];
+    const baseSize = 1500000; // ~1.5MB base
+
+    for (let i = days - 1; i >= 0; i--) {
+        const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+        for (const p of platforms) {
+            // Simulate gradual growth with some variance
+            const growth = (days - i) * 1000; // ~1KB per day growth
+            const variance = Math.floor(Math.random() * 20000) - 10000; // ±10KB variance
+            const totalSize = baseSize + growth + variance;
+            const jsSize = Math.floor(totalSize * 0.7); // ~70% JS
+            const assetsSize = totalSize - jsSize;
+
+            data.push({
+                date: date.toISOString().split('T')[0] ?? date.toISOString(),
+                platform: p,
+                avgTotalSize: totalSize,
+                avgJsSize: jsSize,
+                avgAssetsSize: assetsSize,
+                buildCount: Math.floor(Math.random() * 5) + 1,
+            });
+        }
     }
 
     return data;
