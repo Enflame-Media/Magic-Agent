@@ -104,6 +104,109 @@ openapi-server:
     - run: npx @redocly/cli lint openapi.json
 ```
 
+## Schema Drift Detection
+
+Schema drift occurs when the server's API schemas diverge from what clients expect. The CI pipeline includes automated drift detection to catch these issues before they reach production.
+
+### How It Works
+
+1. **Protocol Schema Extraction**: The `@happy/protocol` package's Zod schemas are converted to JSON Schema format
+2. **OpenAPI Schema Extraction**: The server's OpenAPI spec contains schemas derived from route definitions
+3. **Comparison**: A comparison script identifies mismatches between protocol and server schemas
+4. **Breaking Change Detection**: Optional `oasdiff` integration detects breaking changes vs. baseline
+
+### Running Locally
+
+```bash
+# Extract protocol schemas to JSON
+yarn schema:extract
+
+# Generate OpenAPI spec (if not already done)
+cd happy-server && yarn openapi:generate && cd ..
+
+# Compare schemas
+yarn schema:compare
+
+# For CI-style markdown output
+yarn schema:compare --ci
+
+# With verbose output
+yarn schema:compare --verbose
+
+# Compare against a baseline (breaking change detection)
+yarn schema:compare --baseline path/to/baseline-openapi.json
+```
+
+### CI Integration
+
+The `schema-drift` job runs on every PR:
+
+```yaml
+schema-drift:
+  name: Schema Drift Detection
+  needs: [build-protocol, openapi-server]
+  steps:
+    - run: yarn schema:extract
+    - run: yarn schema:compare --ci
+```
+
+**Artifacts produced:**
+- `protocol-schemas` - JSON Schema representation of `@happy/protocol`
+- `schema-drift-report` - Markdown report of any detected drift
+
+### Issue Severity
+
+| Severity | Description | Blocks PR |
+|----------|-------------|-----------|
+| 🔴 Error | Breaking type mismatch | Yes |
+| 🟡 Warning | Potential compatibility issue | No |
+| 🔵 Info | Informational difference | No |
+
+### Troubleshooting Common Issues
+
+#### Type Mismatch
+
+```
+🔴 [type_mismatch] updates.ApiMessage.id: Type mismatch: protocol has "string", OpenAPI has "integer"
+```
+
+**Cause**: Protocol schema and server route schema define different types for the same field.
+
+**Fix**: Align the Zod schemas in both locations. Usually the protocol schema is the source of truth.
+
+#### Missing Property
+
+```
+🟡 [missing] common.UserProfile.avatar: Property exists in protocol but not in OpenAPI
+```
+
+**Cause**: The protocol defines a property that the server doesn't expose in its OpenAPI spec.
+
+**Fix**: Either add the property to the server route schema, or remove it from the protocol if it's not part of the API contract.
+
+#### Enum Drift
+
+```
+🟡 [enum_diff] common.RelationshipStatus: Enum values in protocol missing from OpenAPI: rejected
+```
+
+**Cause**: The protocol defines enum values that the server doesn't document.
+
+**Fix**: Ensure both schemas define the same set of valid enum values.
+
+### Schema Matching Strategy
+
+Not all protocol schemas are expected to match OpenAPI schemas:
+
+| Schema Type | Expected in OpenAPI | Notes |
+|-------------|---------------------|-------|
+| Common types (GitHubProfile, ImageRef) | Sometimes | Depends on route usage |
+| Update events (ApiUpdate*) | No | WebSocket-only, not REST |
+| Ephemeral events | No | Real-time only |
+| Payload wrappers | No | Internal wire format |
+
+The comparison script only reports mismatches for schemas that exist in both locations.
+
 ## Schema Definition Guidelines
 
 ### Using Zod for Route Schemas
@@ -229,4 +332,5 @@ app.addHook('onRequest', (request, reply, done) => {
 
 | Date | Change | Issue |
 |------|--------|-------|
+| 2025-12-26 | Add schema drift detection CI job | HAP-565 |
 | 2025-12-26 | Initial API versioning policy | HAP-473 |

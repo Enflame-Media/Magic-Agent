@@ -55,3 +55,7 @@ yarn-error.log*
 
 # Build artifacts for shared packages
 packages/**/dist/
+
+# Generated schema files (CI artifacts)
+packages/@happy/protocol/protocol-schemas.json
+schema-diff.md

@@ -508,12 +508,86 @@ jobs:
           retention-days: 7
 
   # ============================================
+  # Schema Drift Detection
+  # ============================================
+  schema-drift:
+    name: Schema Drift Detection
+    runs-on: ubuntu-latest
+    needs: [build-protocol, openapi-server]
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Cache yarn dependencies
+        uses: actions/cache@v5
+        with:
+          path: |
+            .yarn/cache
+            .yarn/install-state.gz
+          key: ${{ runner.os }}-yarn-${{ hashFiles('yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+
+      - name: Download protocol dist
+        uses: actions/download-artifact@v6
+        with:
+          name: protocol-dist
+          path: packages/@happy/protocol/dist
+
+      - name: Download OpenAPI spec
+        uses: actions/download-artifact@v6
+        with:
+          name: openapi-spec
+          path: happy-server
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Extract protocol schemas
+        run: yarn schema:extract
+
+      - name: Upload protocol schemas artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: protocol-schemas
+          path: packages/@happy/protocol/protocol-schemas.json
+          retention-days: 7
+
+      - name: Compare schemas
+        run: yarn schema:compare --ci
+
+      - name: Upload drift report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: schema-drift-report
+          path: schema-diff.md
+          retention-days: 7
+
+      - name: Add report to step summary
+        if: always()
+        run: |
+          if [ -f schema-diff.md ]; then
+            cat schema-diff.md >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # ============================================
   # CI Summary
   # ============================================
   ci-summary:
     name: CI Summary
     runs-on: ubuntu-latest
-    needs: [build-protocol, typecheck-cli, typecheck-workers, typecheck-app, lint-cli, lint-workers, lint-app, test-workers, build-workers, build-cli, openapi-server]
+    needs: [build-protocol, typecheck-cli, typecheck-workers, typecheck-app, lint-cli, lint-workers, lint-app, test-workers, build-workers, build-cli, openapi-server, schema-drift]
     if: always()
 
     steps:
@@ -530,6 +604,7 @@ jobs:
           WORKERS_BUILD_RESULT: ${{ needs.build-workers.result }}
           CLI_BUILD_RESULT: ${{ needs.build-cli.result }}
           OPENAPI_SERVER_RESULT: ${{ needs.openapi-server.result }}
+          SCHEMA_DRIFT_RESULT: ${{ needs.schema-drift.result }}
         run: |
           echo "## CI Pipeline Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -556,6 +631,7 @@ jobs:
           echo "| Build - happy-server-workers | $(get_status "$WORKERS_BUILD_RESULT") |" >> $GITHUB_STEP_SUMMARY
           echo "| Build - happy-cli | $(get_status "$CLI_BUILD_RESULT") |" >> $GITHUB_STEP_SUMMARY
           echo "| OpenAPI - happy-server | $(get_status "$OPENAPI_SERVER_RESULT") |" >> $GITHUB_STEP_SUMMARY
+          echo "| Schema Drift Detection | $(get_status "$SCHEMA_DRIFT_RESULT") |" >> $GITHUB_STEP_SUMMARY
 
       - name: Fail if any job failed
         env:
@@ -570,6 +646,7 @@ jobs:
           WORKERS_BUILD_RESULT: ${{ needs.build-workers.result }}
           CLI_BUILD_RESULT: ${{ needs.build-cli.result }}
           OPENAPI_SERVER_RESULT: ${{ needs.openapi-server.result }}
+          SCHEMA_DRIFT_RESULT: ${{ needs.schema-drift.result }}
         run: |
           if [ "$PROTOCOL_RESULT" != "success" ] || \
              [ "$CLI_TC_RESULT" != "success" ] || \
@@ -581,7 +658,8 @@ jobs:
              [ "$WORKERS_TEST_RESULT" != "success" ] || \
              [ "$WORKERS_BUILD_RESULT" != "success" ] || \
              [ "$CLI_BUILD_RESULT" != "success" ] || \
-             [ "$OPENAPI_SERVER_RESULT" != "success" ]; then
+             [ "$OPENAPI_SERVER_RESULT" != "success" ] || \
+             [ "$SCHEMA_DRIFT_RESULT" != "success" ]; then
             echo "One or more jobs failed"
             exit 1
           fi

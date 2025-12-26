@@ -16,7 +16,9 @@
     "build:errors": "yarn workspace @happy/errors build",
     "build:protocol": "yarn workspace @happy/protocol build",
     "typecheck:errors": "yarn workspace @happy/errors typecheck",
-    "typecheck:protocol": "yarn workspace @happy/protocol typecheck"
+    "typecheck:protocol": "yarn workspace @happy/protocol typecheck",
+    "schema:extract": "yarn workspace @happy/protocol schema:extract",
+    "schema:compare": "tsx scripts/compare-schemas.ts"
   },
   "engines": {
     "node": ">=18.0.0"
