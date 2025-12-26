@@ -1,0 +1,53 @@
+{
+    "compilerOptions": {
+        /* Language and Environment */
+        "target": "ES2021",
+        "lib": ["ES2021", "DOM", "DOM.Iterable"],
+        "module": "ESNext",
+        "moduleResolution": "bundler",
+
+        /* Emit */
+        "noEmit": true,
+        "outDir": "./dist",
+
+        /* Type Checking - Strict Mode */
+        "strict": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "noFallthroughCasesInSwitch": true,
+        "noImplicitReturns": true,
+        "noImplicitOverride": true,
+        "noUncheckedIndexedAccess": true,
+        "allowUnusedLabels": false,
+        "allowUnreachableCode": false,
+
+        /* Type Checking - Quality */
+        "forceConsistentCasingInFileNames": true,
+        "useDefineForClassFields": true,
+
+        /* Interop Constraints */
+        "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true,
+        "isolatedModules": true,
+        "resolveJsonModule": true,
+        "verbatimModuleSyntax": false,
+
+        /* Completeness */
+        "skipLibCheck": true,
+
+        /* Path Mapping */
+        "paths": {
+            "@/*": ["./src/*"],
+            "@worker/*": ["./src/worker/*"],
+            "@app/*": ["./src/app/*"]
+        },
+
+        /* Cloudflare Workers + Vue */
+        "types": ["@cloudflare/workers-types", "node"],
+
+        /* Vue support */
+        "jsx": "preserve"
+    },
+    "include": ["src/**/*", "src/**/*.vue"],
+    "exclude": ["node_modules", "dist", ".wrangler"]
+}

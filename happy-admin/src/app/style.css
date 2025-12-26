@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/**
+ * Custom styles for Happy Admin Dashboard
+ */
+
+/* Base styles */
+body {
+    @apply antialiased;
+}
+
+/* Custom component utilities */
+@layer components {
+    .btn-primary {
+        @apply bg-happy-600 hover:bg-happy-700 text-white font-medium py-2 px-4 rounded-lg
+               transition-colors duration-200 focus:outline-none focus:ring-2
+               focus:ring-happy-500 focus:ring-offset-2;
+    }
+
+    .btn-secondary {
+        @apply bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg
+               transition-colors duration-200 focus:outline-none focus:ring-2
+               focus:ring-gray-500 focus:ring-offset-2;
+    }
+
+    .card {
+        @apply bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200
+               dark:border-gray-700 p-6;
+    }
+
+    .input {
+        @apply w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
+               bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+               focus:outline-none focus:ring-2 focus:ring-happy-500 focus:border-transparent;
+    }
+
+    .label {
+        @apply block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1;
+    }
+}

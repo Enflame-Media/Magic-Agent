@@ -1,0 +1,19 @@
+# Happy Admin - Local Development Environment Variables
+# Copy this file to .dev.vars and fill in actual values
+# NEVER commit .dev.vars to version control!
+
+# Environment identifier
+ENVIRONMENT=development
+
+# Analytics Engine SQL API credentials
+# Get from Cloudflare Dashboard > Account Settings > API Tokens
+# Required permission: Account Analytics Read
+ANALYTICS_ACCOUNT_ID=your-cloudflare-account-id
+ANALYTICS_API_TOKEN=your-analytics-api-token
+
+# Better-Auth session signing secret
+# Generate with: openssl rand -hex 32
+BETTER_AUTH_SECRET=your-secret-min-32-characters-long
+
+# Better-Auth URL (for callbacks)
+BETTER_AUTH_URL=http://localhost:8787

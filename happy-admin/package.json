@@ -1,0 +1,58 @@
+{
+    "name": "happy-admin",
+    "version": "0.0.0",
+    "description": "Happy Admin Dashboard - Analytics Engine visualization",
+    "type": "module",
+    "main": "src/worker/index.ts",
+    "scripts": {
+        "help": "echo '\nHappy Admin - Available Scripts\n================================\n\nDevelopment:\n  dev                Start Wrangler dev server\n\nDeployment:\n  deploy:dev         Deploy to development environment\n  deploy:prod        Deploy to production environment\n\nCode Quality:\n  typecheck          Type-check TypeScript\n  lint               Run ESLint\n  lint:fix           Run ESLint with auto-fix\n\nDatabase:\n  db:generate        Generate Better-Auth migrations\n  db:migrate         Apply migrations to remote dev D1\n  db:migrate:prod    Apply migrations to remote prod D1\n'",
+        "dev": "wrangler dev",
+        "deploy:dev": "wrangler deploy --env dev",
+        "deploy:prod": "wrangler deploy --env prod",
+        "typecheck": "tsc --noEmit",
+        "lint": "eslint . --ext .ts,.vue",
+        "lint:fix": "eslint . --ext .ts,.vue --fix",
+        "lint:oxlint": "oxlint src --config oxlint.json",
+        "build:app": "npx vite build --config vite.config.ts",
+        "db:generate": "npx @better-auth/cli generate",
+        "db:migrate": "wrangler d1 migrations apply DB --env dev --remote",
+        "db:migrate:prod": "wrangler d1 migrations apply DB --env prod --remote"
+    },
+    "keywords": [
+        "cloudflare",
+        "workers",
+        "hono",
+        "vue",
+        "admin",
+        "analytics"
+    ],
+    "author": "Enflame Media LLC (howdy@enflamemedia.com)",
+    "license": "MIT",
+    "private": true,
+    "devDependencies": {
+        "@cloudflare/workers-types": "^4.20251223.0",
+        "@types/node": "^22.10.2",
+        "@typescript-eslint/eslint-plugin": "^8.50.1",
+        "@typescript-eslint/parser": "^8.50.1",
+        "@vitejs/plugin-vue": "^5.2.1",
+        "autoprefixer": "^10.4.20",
+        "eslint": "^9.39.2",
+        "oxlint": "^1.35.0",
+        "postcss": "^8.4.49",
+        "tailwindcss": "^3.4.17",
+        "typescript": "^5.9.3",
+        "vite": "^6.0.5",
+        "wrangler": "^4.56.0"
+    },
+    "dependencies": {
+        "@hono/swagger-ui": "^0.5.0",
+        "@hono/zod-openapi": "^1.2.0",
+        "better-auth": "^1.2.9",
+        "better-auth-cloudflare": "^0.2.0",
+        "drizzle-orm": "^0.45.1",
+        "hono": "^4.11.1",
+        "vue": "^3.5.13",
+        "vue-router": "^4.5.0",
+        "zod": "^4.2.1"
+    }
+}
