@@ -45,6 +45,11 @@ id = "5d82d033678243aa8080971ecf538477"
 binding = "SYNC_METRICS"
 dataset = "sync_metrics_dev"
 
+# Analytics Engine binding (development) - for bundle size metrics (HAP-564)
+[[env.dev.analytics_engine_datasets]]
+binding = "BUNDLE_METRICS"
+dataset = "bundle_metrics_dev"
+
 # Durable Objects bindings (development)
 [[env.dev.durable_objects.bindings]]
 name = "CONNECTION_MANAGER"
@@ -106,6 +111,11 @@ id = "2e9baf9f10054559a6220e78051fb336"
 [[env.prod.analytics_engine_datasets]]
 binding = "SYNC_METRICS"
 dataset = "sync_metrics_prod"
+
+# Analytics Engine binding (production) - for bundle size metrics (HAP-564)
+[[env.prod.analytics_engine_datasets]]
+binding = "BUNDLE_METRICS"
+dataset = "bundle_metrics_prod"
 
 # Durable Objects bindings (production)
 [[env.prod.durable_objects.bindings]]
