@@ -15,7 +15,7 @@ import MetricsSummary from '../components/MetricsSummary.vue';
 import SyncMetricsChart from '../components/SyncMetricsChart.vue';
 import ModeDistribution from '../components/ModeDistribution.vue';
 import PerformanceTrends from '../components/PerformanceTrends.vue';
-import { formatDuration, formatPercent, type MetricsSummary as MetricsSummaryType } from '../lib/api';
+import { formatDuration, formatPercent } from '../lib/api';
 
 const router = useRouter();
 
