@@ -197,7 +197,8 @@ export const TerminalAuthStatusResponseSchema = z
             example: 'pending',
         }),
         supportsV2: z.boolean().openapi({
-            description: 'Whether the request supports V2 protocol',
+            description:
+                'Indicates whether this auth request can be completed using the V2 authentication protocol (for example, clients that implement the newer V2 pairing/handshake flow). If true, the client SHOULD use the V2 flow for this request; if false, the client MUST fall back to the legacy/V1 protocol.',
             example: true,
         }),
     })
