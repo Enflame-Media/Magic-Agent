@@ -178,7 +178,7 @@ import { initializeTelemetry, showTelemetryNoticeIfNeeded, trackMetric, setTag, 
         if (existsSync(configPath)) {
           try {
             config = JSON.parse(readFileSync(configPath, 'utf-8'));
-          } catch (error) {
+          } catch {
             // Ignore parse errors, start fresh
             config = {};
           }
@@ -218,7 +218,7 @@ import { initializeTelemetry, showTelemetryNoticeIfNeeded, trackMetric, setTag, 
               const config = JSON.parse(readFileSync(configPath, 'utf-8'));
               model = config.model || config.GEMINI_MODEL || null;
               if (model) break;
-            } catch (error) {
+            } catch {
               // Ignore parse errors
             }
           }

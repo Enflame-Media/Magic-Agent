@@ -1,4 +1,8 @@
-# Happy CLI Codebase Overview
+# Happy CLI - Development Guidelines
+
+> **📍 Part of the Happy monorepo** — See root [`CLAUDE.md`](../CLAUDE.md) for overall architecture and cross-project guidelines.
+
+---
 
 ## Project Overview
 

@@ -80,7 +80,7 @@ export function readGeminiLocalConfig(): GeminiLocalConfig {
         token = gcloudToken;
         logger.debug('[Gemini] Found token via gcloud Application Default Credentials');
       }
-    } catch (error) {
+    } catch {
       // gcloud not available or not authenticated - this is fine
       logger.debug('[Gemini] gcloud Application Default Credentials not available');
     }
@@ -143,7 +143,7 @@ export function saveGeminiModelToConfig(model: string): void {
     if (existsSync(configPath)) {
       try {
         config = JSON.parse(readFileSync(configPath, 'utf-8'));
-      } catch (error) {
+      } catch {
         logger.debug(`[Gemini] Failed to read existing config, creating new one`);
         config = {};
       }

@@ -12,11 +12,10 @@ import { AcpSdkBackend, type AcpSdkBackendOptions, type AcpPermissionHandler } f
 import type { AgentBackend, McpServerConfig } from '../AgentBackend';
 import { agentRegistry, type AgentFactoryOptions } from '../AgentRegistry';
 import { logger } from '@/ui/logger';
-import { 
-  GEMINI_API_KEY_ENV, 
-  GOOGLE_API_KEY_ENV, 
-  GEMINI_MODEL_ENV, 
-  DEFAULT_GEMINI_MODEL 
+import {
+  GEMINI_API_KEY_ENV,
+  GOOGLE_API_KEY_ENV,
+  GEMINI_MODEL_ENV
 } from '@/gemini/constants';
 import { 
   readGeminiLocalConfig, 

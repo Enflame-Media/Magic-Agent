@@ -575,7 +575,7 @@ export class AcpSdkBackend implements AgentBackend {
 
       // Create ClientSideConnection
       this.connection = new ClientSideConnection(
-        (agent: Agent) => client,
+        (_agent: Agent) => client,
         stream
       );
 
@@ -596,7 +596,7 @@ export class AcpSdkBackend implements AgentBackend {
 
       logger.debug(`[AcpSdkBackend] Initializing connection...`);
       let initTimeout: NodeJS.Timeout | null = null;
-      const initResponse = await Promise.race([
+      const _initResponse = await Promise.race([
         this.connection.initialize(initRequest).then((result) => {
           // Clear timeout if initialization succeeds
           if (initTimeout) {
@@ -1216,7 +1216,7 @@ export class AcpSdkBackend implements AgentBackend {
     }
   }
 
-  async cancel(sessionId: SessionId): Promise<void> {
+  async cancel(_sessionId: SessionId): Promise<void> {
     if (!this.connection || !this.acpSessionId) {
       return;
     }

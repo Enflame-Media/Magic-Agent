@@ -36,7 +36,7 @@ import { GeminiPermissionHandler } from '@/gemini/utils/permissionHandler';
 import { GeminiReasoningProcessor } from '@/gemini/utils/reasoningProcessor';
 import { GeminiDiffProcessor } from '@/gemini/utils/diffProcessor';
 import type { PermissionMode, GeminiMode, CodexMessagePayload } from '@/gemini/types';
-import { GEMINI_MODEL_ENV, DEFAULT_GEMINI_MODEL, CHANGE_TITLE_INSTRUCTION } from '@/gemini/constants';
+import { GEMINI_MODEL_ENV, CHANGE_TITLE_INSTRUCTION } from '@/gemini/constants';
 import { 
   readGeminiLocalConfig, 
   determineGeminiModel, 
@@ -453,7 +453,8 @@ export async function runGemini(opts: {
   // Accumulate Gemini response text for sending complete message to mobile
   let accumulatedResponse = '';
   let isResponseInProgress = false;
-  let currentResponseMessageId: string | null = null; // Track the message ID for current response
+  // Track the message ID for current response (for resetting state on error)
+  let _currentResponseMessageId: string | null = null;
 
   /**
    * Set up message handler for Gemini backend
@@ -584,7 +585,7 @@ export async function runGemini(opts: {
           session.keepAlive(thinking, 'remote');
           accumulatedResponse = '';
           isResponseInProgress = false;
-          currentResponseMessageId = null;
+          _currentResponseMessageId = null;
           
           // Show error in CLI UI
           const errorMessage = msg.detail || 'Unknown error';
@@ -715,7 +716,7 @@ export async function runGemini(opts: {
         // Convert to tool call for mobile app compatibility
         const execApprovalMsg = msg as any;
         const callId = execApprovalMsg.call_id || execApprovalMsg.callId || randomUUID();
-        const { call_id, type, ...inputs } = execApprovalMsg;
+        const { call_id: _call_id, type: _type, ...inputs } = execApprovalMsg;
         
         logger.debug(`[gemini] Exec approval request received: ${callId}`);
         messageBuffer.addMessage(`Exec approval requested: ${callId}`, 'tool');
@@ -733,7 +734,7 @@ export async function runGemini(opts: {
         // Handle patch operation begin (like Codex patch_apply_begin)
         const patchBeginMsg = msg as any;
         const patchCallId = patchBeginMsg.call_id || patchBeginMsg.callId || randomUUID();
-        const { call_id: patchCallIdVar, type: patchType, auto_approved, changes } = patchBeginMsg;
+        const { call_id: _patchCallIdVar, type: _patchType, auto_approved, changes } = patchBeginMsg;
         
         // Add UI feedback for patch operation
         const changeCount = changes ? Object.keys(changes).length : 0;
@@ -757,7 +758,7 @@ export async function runGemini(opts: {
         // Handle patch operation end (like Codex patch_apply_end)
         const patchEndMsg = msg as any;
         const patchEndCallId = patchEndMsg.call_id || patchEndMsg.callId || randomUUID();
-        const { call_id: patchEndCallIdVar, type: patchEndType, stdout, stderr, success } = patchEndMsg;
+        const { call_id: _patchEndCallIdVar, type: _patchEndType, stdout, stderr, success } = patchEndMsg;
         
         // Add UI feedback for completion
         if (success) {

@@ -49,7 +49,7 @@ export class GeminiPermissionHandler {
     /**
      * Check if a tool should be auto-approved based on permission mode
      */
-    private shouldAutoApprove(toolName: string, toolCallId: string, input: unknown): boolean {
+    private shouldAutoApprove(toolName: string, _toolCallId: string, _input: unknown): boolean {
         // Always auto-approve these tools regardless of permission mode:
         // - change_title: Changing chat title is safe and should be automatic
         // - GeminiReasoning: Reasoning is just display of thinking process, not an action
@@ -64,7 +64,7 @@ export class GeminiPermissionHandler {
         }
         
         // Check by toolCallId (Gemini CLI may send change_title as "other" but toolCallId contains "change_title")
-        if (alwaysAutoApproveIds.some(id => toolCallId.toLowerCase().includes(id.toLowerCase()))) {
+        if (alwaysAutoApproveIds.some(id => _toolCallId.toLowerCase().includes(id.toLowerCase()))) {
             return true;
         }
         
@@ -210,7 +210,7 @@ export class GeminiPermissionHandler {
      */
     reset(): void {
         // Reject all pending requests
-        for (const [id, pending] of this.pendingRequests.entries()) {
+        for (const [_id, pending] of this.pendingRequests.entries()) {
             pending.reject(new Error('Session reset'));
         }
         this.pendingRequests.clear();
