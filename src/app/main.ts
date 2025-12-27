@@ -36,7 +36,7 @@ router.beforeEach(async (to, _from, next) => {
     if (to.meta.requiresAuth) {
         // Check session with Better-Auth on the API worker
         try {
-            const response = await fetch(`${API_BASE_URL}/api/auth/session`, {
+            const response = await fetch(`${API_BASE_URL}/api/auth/get-session`, {
                 credentials: 'include',
             });
             if (!response.ok) {
