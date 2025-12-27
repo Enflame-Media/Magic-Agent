@@ -1,0 +1,124 @@
+import { z } from '@hono/zod-openapi';
+
+/**
+ * Zod schemas for client-side metrics ingestion (HAP-577)
+ *
+ * These schemas define the request/response contracts for client metrics:
+ * - POST /v1/analytics/client - Ingest client-side metrics (validation failures, etc.)
+ *
+ * Data is stored in Cloudflare Analytics Engine for dashboard visualization.
+ * Metrics are batched client-side and sent periodically for efficiency.
+ *
+ * @see HAP-577 Add validation failure metrics for message schema parsing
+ */
+
+// ============================================================================
+// Validation Metrics Types
+// ============================================================================
+
+/**
+ * Schema for unknown type breakdown entry
+ * Tracks which specific unknown types were encountered
+ */
+const UnknownTypeBreakdownSchema = z
+    .object({
+        typeName: z.string().openapi({
+            description: 'The unknown type name encountered',
+            example: 'thinking',
+        }),
+        count: z.number().int().min(0).openapi({
+            description: 'Number of times this type was encountered',
+            example: 5,
+        }),
+    })
+    .openapi('UnknownTypeBreakdown');
+
+/**
+ * Schema for validation metrics request body
+ *
+ * Contains aggregated validation failure statistics from the client.
+ * Stats are batched and sent periodically (not per-failure) for efficiency.
+ */
+export const ValidationMetricsRequestSchema = z
+    .object({
+        schemaFailures: z.number().int().min(0).openapi({
+            description: 'Count of messages that failed initial Zod schema validation',
+            example: 2,
+        }),
+        unknownTypes: z.number().int().min(0).openapi({
+            description: 'Count of messages with unknown output data types',
+            example: 5,
+        }),
+        strictValidationFailures: z.number().int().min(0).openapi({
+            description: 'Count of messages that passed loose but failed strict validation',
+            example: 0,
+        }),
+        unknownTypeBreakdown: z.array(UnknownTypeBreakdownSchema).openapi({
+            description: 'Breakdown of unknown type names and their counts',
+            example: [{ typeName: 'thinking', count: 3 }, { typeName: 'status', count: 2 }],
+        }),
+        sessionDurationMs: z.number().int().min(0).openapi({
+            description: 'App session duration at time of report (milliseconds)',
+            example: 300000,
+        }),
+        firstFailureAt: z.number().int().nullish().openapi({
+            description: 'Timestamp of first validation failure in session (epoch ms)',
+            example: 1703606400000,
+        }),
+        lastFailureAt: z.number().int().nullish().openapi({
+            description: 'Timestamp of most recent validation failure (epoch ms)',
+            example: 1703607500000,
+        }),
+    })
+    .openapi('ValidationMetricsRequest');
+
+/**
+ * Schema for client metrics success response
+ */
+export const ClientMetricsResponseSchema = z
+    .object({
+        success: z.boolean().openapi({
+            description: 'Whether the metrics were successfully ingested',
+            example: true,
+        }),
+        dataPointsWritten: z.number().int().min(0).openapi({
+            description: 'Number of data points written to Analytics Engine',
+            example: 4,
+        }),
+    })
+    .openapi('ClientMetricsResponse');
+
+// ============================================================================
+// Error Responses
+// ============================================================================
+
+/**
+ * Schema for 401 Unauthorized error
+ */
+export const ClientMetricsUnauthorizedErrorSchema = z
+    .object({
+        error: z.string().openapi({
+            description: 'Error message',
+            example: 'Unauthorized',
+        }),
+    })
+    .openapi('ClientMetricsUnauthorizedError');
+
+/**
+ * Schema for 500 Internal Server Error
+ */
+export const ClientMetricsInternalErrorSchema = z
+    .object({
+        error: z.string().openapi({
+            description: 'Error message',
+            example: 'Failed to ingest metrics',
+        }),
+    })
+    .openapi('ClientMetricsInternalError');
+
+// ============================================================================
+// Type Exports
+// ============================================================================
+
+export type ValidationMetricsRequest = z.infer<typeof ValidationMetricsRequestSchema>;
+export type ClientMetricsResponse = z.infer<typeof ClientMetricsResponseSchema>;

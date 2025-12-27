@@ -1,0 +1,183 @@
+import { createRoute, OpenAPIHono } from '@hono/zod-openapi';
+import type { Context } from 'hono';
+import { authMiddleware, type AuthVariables } from '@/middleware/auth';
+import {
+    ValidationMetricsRequestSchema,
+    ClientMetricsResponseSchema,
+    ClientMetricsUnauthorizedErrorSchema,
+    ClientMetricsInternalErrorSchema,
+} from '@/schemas/clientMetrics';
+
+/**
+ * Environment bindings for client metrics routes
+ */
+interface Env {
+    DB: D1Database;
+    CLIENT_METRICS?: AnalyticsEngineDataset;
+}
+
+/**
+ * Client metrics routes module (HAP-577)
+ *
+ * Implements client-side metrics ingestion endpoint:
+ * - POST /v1/analytics/client/validation - Ingest validation failure metrics
+ *
+ * Metrics are written to Cloudflare Analytics Engine for dashboard visualization.
+ * Writes are fire-and-forget for minimal latency impact on clients.
+ *
+ * Analytics Engine Schema for validation metrics:
+ * - blob1: metric category = 'validation'
+ * - blob2: failure type = 'schema' | 'unknown' | 'strict' | 'summary'
+ * - blob3: context (unknown type name for 'unknown', '_total' for aggregates)
+ * - double1: count
+ * - double2: session duration in ms
+ * - index1: account ID (for per-user grouping)
+ *
+ * @see HAP-577 Add validation failure metrics for message schema parsing
+ */
+const clientMetricsRoutes = new OpenAPIHono<{ Bindings: Env }>();
+
+// Apply auth middleware to all client metrics routes
+clientMetricsRoutes.use('/v1/analytics/client/*', authMiddleware());
+
+// ============================================================================
+// POST /v1/analytics/client/validation - Ingest Validation Metrics
+// ============================================================================
+
+const ingestValidationMetricsRoute = createRoute({
+    method: 'post',
+    path: '/v1/analytics/client/validation',
+    request: {
+        body: {
+            content: {
+                'application/json': {
+                    schema: ValidationMetricsRequestSchema,
+                },
+            },
+        },
+    },
+    responses: {
+        200: {
+            content: {
+                'application/json': {
+                    schema: ClientMetricsResponseSchema,
+                },
+            },
+            description: 'Metrics successfully ingested',
+        },
+        401: {
+            content: {
+                'application/json': {
+                    schema: ClientMetricsUnauthorizedErrorSchema,
+                },
+            },
+            description: 'Unauthorized',
+        },
+        500: {
+            content: {
+                'application/json': {
+                    schema: ClientMetricsInternalErrorSchema,
+                },
+            },
+            description: 'Internal server error',
+        },
+    },
+    tags: ['Analytics', 'Client Metrics'],
+    summary: 'Ingest validation metrics',
+    description:
+        'Ingest batched validation failure metrics from the client. ' +
+        'Metrics include schema failures, unknown types, and strict validation failures. ' +
+        'Data is stored in Cloudflare Analytics Engine for dashboard visualization.',
+});
+
+/**
+ * POST /v1/analytics/client/validation handler
+ *
+ * Writes multiple data points to Analytics Engine:
+ * 1. Summary data point with total counts
+ * 2. Individual data points for each unknown type (for breakdown analysis)
+ */
+// @ts-expect-error - OpenAPI handler type inference doesn't carry Variables from middleware
+clientMetricsRoutes.openapi(ingestValidationMetricsRoute, async (c) => {
+    const userId = (c as unknown as Context<{ Bindings: Env; Variables: AuthVariables }>).get(
+        'userId'
+    );
+    const metrics = c.req.valid('json');
+
+    try {
+        // Check if Analytics Engine is configured
+        if (!c.env.CLIENT_METRICS) {
+            // Silently accept but don't store - allows graceful degradation
+            console.warn('[ClientMetrics] CLIENT_METRICS binding not configured, metrics dropped');
+            return c.json({ success: true, dataPointsWritten: 0 });
+        }
+
+        let dataPointsWritten = 0;
+
+        // Write summary data point with aggregate counts
+        c.env.CLIENT_METRICS.writeDataPoint({
+            blobs: [
+                'validation',           // blob1: metric category
+                'summary',              // blob2: this is a summary record
+                '_total',               // blob3: aggregate marker
+            ],
+            doubles: [
+                metrics.schemaFailures + metrics.unknownTypes + metrics.strictValidationFailures, // double1: total failures
+                metrics.sessionDurationMs, // double2: session duration
+                metrics.schemaFailures,    // double3: schema failures
+                metrics.strictValidationFailures, // double4: strict failures
+            ],
+            indexes: [
+                userId, // index1: account ID for per-user grouping
+            ],
+        });
+        dataPointsWritten++;
+
+        // Write individual data points for each failure type (if non-zero)
+        if (metrics.schemaFailures > 0) {
+            c.env.CLIENT_METRICS.writeDataPoint({
+                blobs: ['validation', 'schema', '_count'],
+                doubles: [metrics.schemaFailures, metrics.sessionDurationMs, 0, 0],
+                indexes: [userId],
+            });
+            dataPointsWritten++;
+        }
+
+        if (metrics.strictValidationFailures > 0) {
+            c.env.CLIENT_METRICS.writeDataPoint({
+                blobs: ['validation', 'strict', '_count'],
+                doubles: [metrics.strictValidationFailures, metrics.sessionDurationMs, 0, 0],
+                indexes: [userId],
+            });
+            dataPointsWritten++;
+        }
+
+        // Write individual data points for each unknown type (for breakdown)
+        for (const entry of metrics.unknownTypeBreakdown) {
+            c.env.CLIENT_METRICS.writeDataPoint({
+                blobs: [
+                    'validation',       // blob1: metric category
+                    'unknown',          // blob2: failure type
+                    entry.typeName,     // blob3: the specific unknown type name
+                ],
+                doubles: [
+                    entry.count,                // double1: count for this type
+                    metrics.sessionDurationMs,  // double2: session duration
+                    0,                          // double3: reserved
+                    0,                          // double4: reserved
+                ],
+                indexes: [
+                    userId, // index1: account ID
+                ],
+            });
+            dataPointsWritten++;
+        }
+
+        return c.json({ success: true, dataPointsWritten });
+    } catch (error) {
+        console.error('[ClientMetrics] Failed to ingest validation metrics:', error);
+        return c.json({ error: 'Failed to ingest metrics' }, 500);
+    }
+});
+
+export default clientMetricsRoutes;

@@ -16,7 +16,7 @@ command = ""
 [env.dev]
 name = "happy-server-workers-dev"
 # DEBUG_RPC_ROUTING: Set to "true" to enable verbose RPC routing debug logs (HAP-297)
-vars = { ENVIRONMENT = "development", DEBUG_RPC_ROUTING = "false" }
+vars = { ENVIRONMENT = "development", DEBUG_RPC_ROUTING = "false", HAPPY_APP_URL = "https://happy-dev.enflamemedia.com" }
 # Custom domain routing
 routes = [
     { pattern = "happy-api-dev.enflamemedia.com", custom_domain = true }
@@ -49,6 +49,11 @@ dataset = "sync_metrics_dev"
 [[env.dev.analytics_engine_datasets]]
 binding = "BUNDLE_METRICS"
 dataset = "bundle_metrics_dev"
+
+# Analytics Engine binding (development) - for client-side metrics (HAP-577)
+[[env.dev.analytics_engine_datasets]]
+binding = "CLIENT_METRICS"
+dataset = "client_metrics_dev"
 
 # Durable Objects bindings (development)
 [[env.dev.durable_objects.bindings]]
@@ -83,7 +88,7 @@ persist = true
 name = "happy-server-workers-prod"
 # DEBUG_RPC_ROUTING: Set to "true" to enable verbose RPC routing debug logs (HAP-297)
 # Warning: Keep disabled in production to avoid performance impact
-vars = { ENVIRONMENT = "production", DEBUG_RPC_ROUTING = "false" }
+vars = { ENVIRONMENT = "production", DEBUG_RPC_ROUTING = "false", GITHUB_CLIENT_ID = "Ov23liIbGVFF64wNeSAN", GITHUB_REDIRECT_URL = "https://happy-api.enflamemedia.com/v1/connect/github/callback", HAPPY_APP_URL = "https://happy.enflamemedia.com" }
 # Custom domain routing
 routes = [
     { pattern = "happy-api.enflamemedia.com", custom_domain = true }
@@ -116,6 +121,11 @@ dataset = "sync_metrics_prod"
 [[env.prod.analytics_engine_datasets]]
 binding = "BUNDLE_METRICS"
 dataset = "bundle_metrics_prod"
+
+# Analytics Engine binding (production) - for client-side metrics (HAP-577)
+[[env.prod.analytics_engine_datasets]]
+binding = "CLIENT_METRICS"
+dataset = "client_metrics_prod"
 
 # Durable Objects bindings (production)
 [[env.prod.durable_objects.bindings]]

@@ -25,6 +25,7 @@ import uploadRoutes from '@/routes/uploads';
 import usageRoutes from '@/routes/usage';
 import analyticsRoutes from '@/routes/analytics';
 import ciMetricsRoutes from '@/routes/ciMetrics';
+import clientMetricsRoutes from '@/routes/clientMetrics';
 
 // Export Durable Object classes for Cloudflare Workers
 // These must be exported from the main entry point for Wrangler to detect them
@@ -99,6 +100,13 @@ interface Env {
      * @optional - metrics are silently dropped if not configured
      */
     BUNDLE_METRICS?: AnalyticsEngineDataset;
+
+    /**
+     * Analytics Engine dataset for client-side metrics (HAP-577)
+     * Used to store validation failure metrics from the mobile app
+     * @optional - metrics are silently dropped if not configured
+     */
+    CLIENT_METRICS?: AnalyticsEngineDataset;
 
     /**
      * API key for CI metrics ingestion (HAP-564)
@@ -218,6 +226,9 @@ app.route('/', analyticsRoutes);
 
 // Mount CI metrics routes (HAP-564: Bundle size metrics from GitHub Actions)
 app.route('/', ciMetricsRoutes);
+
+// Mount client metrics routes (HAP-577: Validation failure metrics from mobile app)
+app.route('/', clientMetricsRoutes);
 
 // Mount test routes
 app.route('/test', testRoutes);
