@@ -1800,6 +1800,8 @@ class Sync {
         // No new messages - nothing to process
         if (messages.length === 0) {
             log.log(`💬 fetchMessages: No new messages for session ${sessionId}`);
+            // HAP-581: Mark messages as loaded even when empty to prevent infinite spinner
+            storage.getState().applyMessagesLoaded(sessionId);
             // HAP-497: Log metrics for empty response (still useful for optimization tracking)
             logSyncMetrics({
                 type: 'messages',
@@ -1826,6 +1828,8 @@ class Sync {
 
         if (messagesToDecrypt.length === 0) {
             log.log(`💬 fetchMessages: All messages already processed for session ${sessionId}`);
+            // HAP-581: Mark messages as loaded even when all duplicates to prevent infinite spinner
+            storage.getState().applyMessagesLoaded(sessionId);
             // HAP-497: Log metrics when all messages were duplicates
             logSyncMetrics({
                 type: 'messages',

@@ -32,7 +32,7 @@ import { isVersionSupported, MINIMUM_CLI_VERSION } from '@/utils/versionUtils';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState, useCallback } from 'react';
 import { ActivityIndicator, Platform, Pressable, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -393,6 +393,33 @@ function SessionViewLoaded({ sessionId, session }: { sessionId: string, session:
     const { messages, isLoaded } = useSessionMessages(sessionId);
     const acknowledgedCliVersions = useLocalSetting('acknowledgedCliVersions');
 
+    // HAP-581: Loading timeout state for better error surfacing
+    const [loadingTimedOut, setLoadingTimedOut] = useState(false);
+    const LOADING_TIMEOUT_MS = 30000; // 30 seconds
+
+    // HAP-581: Track loading timeout
+    useEffect(() => {
+        if (isLoaded) {
+            // Reset timeout state when loaded successfully
+            setLoadingTimedOut(false);
+            return;
+        }
+
+        const timeoutId = setTimeout(() => {
+            if (!isLoaded) {
+                setLoadingTimedOut(true);
+            }
+        }, LOADING_TIMEOUT_MS);
+
+        return () => clearTimeout(timeoutId);
+    }, [isLoaded, sessionId]);
+
+    // HAP-581: Retry loading handler
+    const handleRetryLoad = useCallback(() => {
+        setLoadingTimedOut(false);
+        sync.onSessionVisible(sessionId);
+    }, [sessionId]);
+
     // HAP-327: Get active sessions count for session tabs visibility
     const allSessions = useAllSessions();
     const activeSessionsCount = React.useMemo(() => {
@@ -527,6 +554,17 @@ function SessionViewLoaded({ sessionId, session }: { sessionId: string, session:
         <>
             {isLoaded ? (
                 <EmptyMessages session={session} />
+            ) : loadingTimedOut ? (
+                // HAP-581: Show timeout error with retry option
+                <Pressable onPress={handleRetryLoad} style={styles.loadingTimeoutContainer}>
+                    <Ionicons name="refresh-circle-outline" size={32} color={theme.colors.textSecondary} />
+                    <Text style={[styles.loadingTimeoutText, { color: theme.colors.textSecondary }]}>
+                        {t('errors.messagesLoadingTimeout')}
+                    </Text>
+                    <Text style={[styles.loadingTimeoutRetry, { color: theme.colors.textLink }]}>
+                        {t('errors.messagesLoadingTimeoutRetry')}
+                    </Text>
+                </Pressable>
             ) : (
                 <ActivityIndicator size="small" color={theme.colors.textSecondary} />
             )}
@@ -763,6 +801,23 @@ const stylesheet = StyleSheet.create((theme) => ({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    // HAP-581: Loading timeout state
+    loadingTimeoutContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 24,
+    },
+    loadingTimeoutText: {
+        fontSize: 15,
+        textAlign: 'center',
+        marginTop: 12,
+    },
+    loadingTimeoutRetry: {
+        fontSize: 14,
+        fontWeight: '600',
+        marginTop: 8,
     },
     // Deleted state container
     deletedContainer: {

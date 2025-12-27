@@ -240,6 +240,8 @@ export const ca: TranslationStructure = {
         userNotFound: 'Usuari no trobat',
         sessionDeleted: 'La sessió s\'ha eliminat',
         sessionDeletedDescription: 'Aquesta sessió s\'ha eliminat permanentment',
+        messagesLoadingTimeout: 'Els missatges triguen més del normal a carregar',
+        messagesLoadingTimeoutRetry: 'Toca per tornar a provar',
         notAuthenticated: 'No autenticat',
         copySupportId: 'Copiar ID',
         supportIdCopied: 'ID de suport copiat',

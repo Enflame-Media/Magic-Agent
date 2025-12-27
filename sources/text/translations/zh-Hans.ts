@@ -242,6 +242,8 @@ export const zhHans: TranslationStructure = {
         userNotFound: '未找到用户',
         sessionDeleted: '会话已被删除',
         sessionDeletedDescription: '此会话已被永久删除',
+        messagesLoadingTimeout: '消息加载时间过长',
+        messagesLoadingTimeoutRetry: '点击重试',
         notAuthenticated: '未认证',
         copySupportId: '复制 ID',
         supportIdCopied: '已复制支持 ID',

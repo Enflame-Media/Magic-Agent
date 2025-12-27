@@ -240,6 +240,8 @@ export const es: TranslationStructure = {
         userNotFound: 'Usuario no encontrado',
         sessionDeleted: 'La sesión ha sido eliminada',
         sessionDeletedDescription: 'Esta sesión ha sido eliminada permanentemente',
+        messagesLoadingTimeout: 'Los mensajes tardan más de lo habitual en cargar',
+        messagesLoadingTimeoutRetry: 'Toca para reintentar',
         notAuthenticated: 'No autenticado',
         copySupportId: 'Copiar ID',
         supportIdCopied: 'ID de soporte copiado',

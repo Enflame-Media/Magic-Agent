@@ -223,6 +223,8 @@ export const ru: TranslationStructure = {
         userNotFound: 'Пользователь не найден',
         sessionDeleted: 'Сессия была удалена',
         sessionDeletedDescription: 'Эта сессия была окончательно удалена',
+        messagesLoadingTimeout: 'Загрузка сообщений занимает больше времени',
+        messagesLoadingTimeoutRetry: 'Нажмите для повтора',
         notAuthenticated: 'Не аутентифицирован',
         copySupportId: 'Копировать ID',
         supportIdCopied: 'ID поддержки скопирован',

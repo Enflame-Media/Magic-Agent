@@ -240,6 +240,8 @@ export const en = {
         userNotFound: 'User not found',
         sessionDeleted: 'Session has been deleted',
         sessionDeletedDescription: 'This session has been permanently removed',
+        messagesLoadingTimeout: 'Messages are taking longer than usual to load',
+        messagesLoadingTimeoutRetry: 'Tap to retry',
         notAuthenticated: 'Not authenticated',
         copySupportId: 'Copy ID',
         supportIdCopied: 'Support ID copied',
