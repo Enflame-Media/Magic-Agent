@@ -650,3 +650,327 @@ function generateMockBundleTrends(days: number, platform?: string): BundleSizePo
 
     return data;
 }
+
+// ============================================================================
+// Validation Metrics Route Handlers (HAP-577)
+// ============================================================================
+
+// Validation Metrics Schemas
+const ValidationSummarySchema = z
+    .object({
+        totalFailures: z.number().openapi({ example: 150 }),
+        schemaFailures: z.number().openapi({ example: 20 }),
+        unknownTypes: z.number().openapi({ example: 125 }),
+        strictFailures: z.number().openapi({ example: 5 }),
+        uniqueUsers: z.number().openapi({ example: 42 }),
+        avgSessionDurationMs: z.number().openapi({ example: 180000 }),
+    })
+    .openapi('ValidationSummary');
+
+const UnknownTypeBreakdownSchema = z
+    .object({
+        typeName: z.string().openapi({ example: 'thinking' }),
+        count: z.number().openapi({ example: 75 }),
+        percentage: z.number().openapi({ example: 60.0 }),
+    })
+    .openapi('UnknownTypeBreakdown');
+
+const ValidationTimeseriesPointSchema = z
+    .object({
+        timestamp: z.string().openapi({ example: '2025-12-26T00:00:00Z' }),
+        totalFailures: z.number().openapi({ example: 15 }),
+        schemaFailures: z.number().openapi({ example: 2 }),
+        unknownTypes: z.number().openapi({ example: 12 }),
+        strictFailures: z.number().openapi({ example: 1 }),
+    })
+    .openapi('ValidationTimeseriesPoint');
+
+type ValidationSummary = z.infer<typeof ValidationSummarySchema>;
+type UnknownTypeBreakdown = z.infer<typeof UnknownTypeBreakdownSchema>;
+type ValidationTimeseriesPoint = z.infer<typeof ValidationTimeseriesPointSchema>;
+
+// Validation Summary Route
+const validationSummaryRoute = createRoute({
+    method: 'get',
+    path: '/validation-summary',
+    tags: ['Metrics', 'Validation'],
+    summary: 'Get validation failure summary',
+    description: 'Returns aggregated validation failure metrics for the last 24 hours.',
+    responses: {
+        200: {
+            description: 'Validation summary retrieved successfully',
+            content: {
+                'application/json': {
+                    schema: z.object({
+                        data: ValidationSummarySchema,
+                        timestamp: z.string(),
+                    }),
+                },
+            },
+        },
+    },
+});
+
+// Unknown Type Breakdown Route
+const unknownTypeBreakdownRoute = createRoute({
+    method: 'get',
+    path: '/validation-unknown-types',
+    tags: ['Metrics', 'Validation'],
+    summary: 'Get unknown type breakdown',
+    description: 'Returns the breakdown of unknown message types encountered, sorted by frequency.',
+    request: {
+        query: z.object({
+            hours: z.string().optional().openapi({
+                example: '24',
+                description: 'Number of hours to look back (default: 24)',
+            }),
+            limit: z.string().optional().openapi({
+                example: '10',
+                description: 'Maximum number of types to return (default: 10)',
+            }),
+        }),
+    },
+    responses: {
+        200: {
+            description: 'Unknown type breakdown retrieved successfully',
+            content: {
+                'application/json': {
+                    schema: z.object({
+                        data: z.array(UnknownTypeBreakdownSchema),
+                        total: z.number(),
+                        timestamp: z.string(),
+                    }),
+                },
+            },
+        },
+    },
+});
+
+// Validation Timeseries Route
+const validationTimeseriesRoute = createRoute({
+    method: 'get',
+    path: '/validation-timeseries',
+    tags: ['Metrics', 'Validation'],
+    summary: 'Get validation failure timeseries',
+    description: 'Returns time-bucketed validation failure metrics.',
+    request: {
+        query: z.object({
+            hours: z.string().optional().openapi({
+                example: '24',
+                description: 'Number of hours to look back (default: 24)',
+            }),
+            bucket: z.enum(['hour', 'day']).optional().openapi({
+                example: 'hour',
+                description: 'Time bucket size (default: hour)',
+            }),
+        }),
+    },
+    responses: {
+        200: {
+            description: 'Validation timeseries retrieved successfully',
+            content: {
+                'application/json': {
+                    schema: z.object({
+                        data: z.array(ValidationTimeseriesPointSchema),
+                        timestamp: z.string(),
+                    }),
+                },
+            },
+        },
+    },
+});
+
+/**
+ * GET /api/metrics/validation-summary
+ * Returns 24h validation failure summary
+ */
+metricsRoutes.openapi(validationSummaryRoute, async (c) => {
+    const result = await queryAnalyticsEngine(
+        c.env,
+        `
+        SELECT
+            SUM(double1) as totalFailures,
+            SUM(double3) as schemaFailures,
+            SUM(double4) as strictFailures,
+            COUNT(DISTINCT index1) as uniqueUsers,
+            AVG(double2) as avgSessionDurationMs
+        FROM client_metrics_${c.env.ENVIRONMENT === 'production' ? 'prod' : 'dev'}
+        WHERE timestamp > NOW() - INTERVAL '24' HOUR
+          AND blob1 = 'validation'
+          AND blob2 = 'summary'
+        `
+    );
+
+    // Calculate unknown types from total - schema - strict
+    let data: ValidationSummary;
+    if (result?.data && Array.isArray(result.data) && result.data.length > 0) {
+        const row = result.data[0] as {
+            totalFailures: number;
+            schemaFailures: number;
+            strictFailures: number;
+            uniqueUsers: number;
+            avgSessionDurationMs: number;
+        };
+        data = {
+            totalFailures: row.totalFailures ?? 0,
+            schemaFailures: row.schemaFailures ?? 0,
+            unknownTypes: (row.totalFailures ?? 0) - (row.schemaFailures ?? 0) - (row.strictFailures ?? 0),
+            strictFailures: row.strictFailures ?? 0,
+            uniqueUsers: row.uniqueUsers ?? 0,
+            avgSessionDurationMs: Math.round(row.avgSessionDurationMs ?? 0),
+        };
+    } else {
+        // Mock data for development
+        data = {
+            totalFailures: 150,
+            schemaFailures: 20,
+            unknownTypes: 125,
+            strictFailures: 5,
+            uniqueUsers: 42,
+            avgSessionDurationMs: 180000,
+        };
+    }
+
+    return c.json(
+        {
+            data,
+            timestamp: new Date().toISOString(),
+        },
+        200
+    );
+});
+
+/**
+ * GET /api/metrics/validation-unknown-types
+ * Returns breakdown of unknown message types
+ */
+metricsRoutes.openapi(unknownTypeBreakdownRoute, async (c) => {
+    const { hours = '24', limit = '10' } = c.req.valid('query');
+    const hoursNum = parseInt(hours, 10) || 24;
+    const limitNum = parseInt(limit, 10) || 10;
+
+    const result = await queryAnalyticsEngine(
+        c.env,
+        `
+        SELECT
+            blob3 as typeName,
+            SUM(double1) as count
+        FROM client_metrics_${c.env.ENVIRONMENT === 'production' ? 'prod' : 'dev'}
+        WHERE timestamp > NOW() - INTERVAL '${hoursNum}' HOUR
+          AND blob1 = 'validation'
+          AND blob2 = 'unknown'
+        GROUP BY blob3
+        ORDER BY count DESC
+        LIMIT ${limitNum}
+        `
+    );
+
+    let data: UnknownTypeBreakdown[];
+    let total = 0;
+
+    if (result?.data && Array.isArray(result.data) && result.data.length > 0) {
+        const rows = result.data as Array<{ typeName: string; count: number }>;
+        total = rows.reduce((sum, row) => sum + row.count, 0);
+        data = rows.map((row) => ({
+            typeName: row.typeName,
+            count: row.count,
+            percentage: total > 0 ? Math.round((row.count / total) * 1000) / 10 : 0,
+        }));
+    } else {
+        // Mock data for development
+        data = [
+            { typeName: 'thinking', count: 75, percentage: 60.0 },
+            { typeName: 'status', count: 30, percentage: 24.0 },
+            { typeName: 'progress', count: 20, percentage: 16.0 },
+        ];
+        total = 125;
+    }
+
+    return c.json(
+        {
+            data,
+            total,
+            timestamp: new Date().toISOString(),
+        },
+        200
+    );
+});
+
+/**
+ * GET /api/metrics/validation-timeseries
+ * Returns time-bucketed validation metrics
+ */
+metricsRoutes.openapi(validationTimeseriesRoute, async (c) => {
+    const { hours = '24', bucket = 'hour' } = c.req.valid('query');
+    const hoursNum = parseInt(hours, 10) || 24;
+
+    const result = await queryAnalyticsEngine(
+        c.env,
+        `
+        SELECT
+            toStartOf${bucket === 'day' ? 'Day' : 'Hour'}(timestamp) as timestamp,
+            SUM(double1) as totalFailures,
+            SUM(double3) as schemaFailures,
+            SUM(double4) as strictFailures
+        FROM client_metrics_${c.env.ENVIRONMENT === 'production' ? 'prod' : 'dev'}
+        WHERE timestamp > NOW() - INTERVAL '${hoursNum}' HOUR
+          AND blob1 = 'validation'
+          AND blob2 = 'summary'
+        GROUP BY timestamp
+        ORDER BY timestamp ASC
+        `
+    );
+
+    let data: ValidationTimeseriesPoint[];
+    if (result?.data && Array.isArray(result.data) && result.data.length > 0) {
+        data = (result.data as Array<{
+            timestamp: string;
+            totalFailures: number;
+            schemaFailures: number;
+            strictFailures: number;
+        }>).map((row) => ({
+            timestamp: row.timestamp,
+            totalFailures: row.totalFailures ?? 0,
+            schemaFailures: row.schemaFailures ?? 0,
+            unknownTypes: (row.totalFailures ?? 0) - (row.schemaFailures ?? 0) - (row.strictFailures ?? 0),
+            strictFailures: row.strictFailures ?? 0,
+        }));
+    } else {
+        // Generate mock timeseries data
+        data = generateMockValidationTimeseries(hoursNum, bucket);
+    }
+
+    return c.json(
+        {
+            data,
+            timestamp: new Date().toISOString(),
+        },
+        200
+    );
+});
+
+/**
+ * Generate mock validation timeseries data for development
+ */
+function generateMockValidationTimeseries(hours: number, bucket: string): ValidationTimeseriesPoint[] {
+    const data: ValidationTimeseriesPoint[] = [];
+    const now = new Date();
+    const bucketSize = bucket === 'day' ? 24 : 1;
+    const numBuckets = Math.ceil(hours / bucketSize);
+
+    for (let i = numBuckets - 1; i >= 0; i--) {
+        const timestamp = new Date(now.getTime() - i * bucketSize * 60 * 60 * 1000);
+        const schemaFailures = Math.floor(Math.random() * 5);
+        const unknownTypes = Math.floor(Math.random() * 20) + 5;
+        const strictFailures = Math.floor(Math.random() * 2);
+        data.push({
+            timestamp: timestamp.toISOString(),
+            totalFailures: schemaFailures + unknownTypes + strictFailures,
+            schemaFailures,
+            unknownTypes,
+            strictFailures,
+        });
+    }
+
+    return data;
+}
