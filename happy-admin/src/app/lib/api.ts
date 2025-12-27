@@ -3,7 +3,47 @@
  *
  * Provides typed fetch functions for all metrics endpoints.
  * All requests include credentials for Better-Auth session handling.
+ *
+ * IMPORTANT: This frontend calls the separate happy-admin-api worker.
+ * The API base URL is configured based on the environment.
  */
+
+/**
+ * API Base URL Configuration
+ *
+ * In development: http://localhost:8788 (local API worker)
+ * In production: https://happy-admin-api.enflamemedia.com
+ * In dev environment: https://happy-admin-api-dev.enflamemedia.com
+ */
+function getApiBaseUrl(): string {
+    // Check if running in development (Vite dev server)
+    if (typeof window !== 'undefined') {
+        const hostname = window.location.hostname;
+
+        // Local development
+        if (hostname === 'localhost' || hostname === '127.0.0.1') {
+            return 'http://localhost:8788';
+        }
+
+        // Development environment
+        if (hostname.includes('-dev.enflamemedia.com')) {
+            return 'https://happy-admin-api-dev.enflamemedia.com';
+        }
+
+        // Production environment
+        if (hostname.includes('.enflamemedia.com')) {
+            return 'https://happy-admin-api.enflamemedia.com';
+        }
+    }
+
+    // Fallback for SSR or unknown environments
+    return 'https://happy-admin-api.enflamemedia.com';
+}
+
+/**
+ * Cached API base URL (computed once on module load)
+ */
+export const API_BASE_URL = getApiBaseUrl();
 
 /*
  * Type definitions matching the API response schemas
@@ -77,7 +117,10 @@ export class ApiError extends Error {
  * Base fetch wrapper with error handling
  */
 
-async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
+async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
+    // Build full URL using API base URL
+    const url = `${API_BASE_URL}${path}`;
+
     const response = await fetch(url, {
         credentials: 'include',
         ...options,
@@ -223,4 +266,74 @@ export async function fetchBundleTrends(
  */
 export async function fetchBundleLatest(): Promise<ApiResponse<BundleSizeLatest[]>> {
     return apiFetch<ApiResponse<BundleSizeLatest[]>>('/api/metrics/bundle-latest');
+}
+
+/*
+ * Validation Metrics Types (HAP-582)
+ */
+
+export interface ValidationSummary {
+    totalFailures: number;
+    schemaFailures: number;
+    unknownTypes: number;
+    strictFailures: number;
+    uniqueUsers: number;
+    avgSessionDurationMs: number;
+}
+
+export interface UnknownTypeBreakdown {
+    typeName: string;
+    count: number;
+    percentage: number;
+}
+
+export interface ValidationTimeseriesPoint {
+    timestamp: string;
+    totalFailures: number;
+    schemaFailures: number;
+    unknownTypes: number;
+    strictFailures: number;
+}
+
+/*
+ * Validation Metrics API Functions (HAP-582)
+ */
+
+/**
+ * Fetch 24h validation failure summary
+ */
+export async function fetchValidationSummary(): Promise<ApiResponse<ValidationSummary>> {
+    return apiFetch<ApiResponse<ValidationSummary>>('/api/metrics/validation-summary');
+}
+
+/**
+ * Fetch unknown type breakdown
+ */
+export async function fetchValidationUnknownTypes(
+    hours: number = 24,
+    limit: number = 10
+): Promise<{ data: UnknownTypeBreakdown[]; total: number; timestamp: string }> {
+    const params = new URLSearchParams({
+        hours: String(hours),
+        limit: String(limit),
+    });
+    return apiFetch<{ data: UnknownTypeBreakdown[]; total: number; timestamp: string }>(
+        `/api/metrics/validation-unknown-types?${params}`
+    );
+}
+
+/**
+ * Fetch validation timeseries data
+ */
+export async function fetchValidationTimeseries(
+    hours: number = 24,
+    bucket: 'hour' | 'day' = 'hour'
+): Promise<ApiResponse<ValidationTimeseriesPoint[]>> {
+    const params = new URLSearchParams({
+        hours: String(hours),
+        bucket,
+    });
+    return apiFetch<ApiResponse<ValidationTimeseriesPoint[]>>(
+        `/api/metrics/validation-timeseries?${params}`
+    );
 }
