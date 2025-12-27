@@ -269,3 +269,244 @@ export function saveSyncState(state: Omit<PersistedSyncState, 'version' | 'times
 export function clearSyncState(): void {
     mmkv.remove('sync-state');
 }
+
+// ============================================================================
+// HAP-588: Message Cache Persistence
+// ============================================================================
+
+/**
+ * Maximum number of messages to persist per session.
+ * Limits storage size while keeping enough context for offline viewing.
+ */
+const MAX_CACHED_MESSAGES_PER_SESSION = 100;
+
+/**
+ * Maximum age for cached messages (30 days in milliseconds).
+ * Older caches are automatically cleaned up.
+ */
+const MESSAGE_CACHE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+
+/**
+ * Key prefix for message caches.
+ */
+const MESSAGE_CACHE_PREFIX = '@happy/messages/';
+
+/**
+ * Index key for tracking all cached sessions.
+ */
+const MESSAGE_CACHE_INDEX_KEY = '@happy/messages-index';
+
+/**
+ * HAP-588: Structure of persisted message cache.
+ */
+export interface PersistedMessageCache {
+    /** Schema version for migration support */
+    version: 1;
+    /** When cache was last updated (Unix timestamp) */
+    timestamp: number;
+    /** Session ID this cache belongs to */
+    sessionId: string;
+    /** The last known message sequence number */
+    lastSeq: number | null;
+    /** Cached normalized messages (limited to MAX_CACHED_MESSAGES_PER_SESSION) */
+    messages: unknown[]; // NormalizedMessage[] - using unknown to avoid circular imports
+}
+
+/**
+ * HAP-588: Index of all cached sessions for cleanup purposes.
+ */
+interface MessageCacheIndex {
+    /** Map of session ID → last update timestamp */
+    sessions: Record<string, number>;
+}
+
+/**
+ * HAP-588: Load cached messages for a session.
+ *
+ * Returns null if:
+ * - No cache exists
+ * - Cache is corrupted/invalid
+ * - Cache is stale (> 30 days old)
+ * - Cache version is incompatible
+ */
+export function loadCachedMessages(sessionId: string): PersistedMessageCache | null {
+    const key = `${MESSAGE_CACHE_PREFIX}${sessionId}`;
+    const stored = mmkv.getString(key);
+    if (!stored) {
+        return null;
+    }
+
+    try {
+        const parsed = JSON.parse(stored);
+
+        // Validate version
+        if (parsed.version !== 1) {
+            console.warn(`[HAP-588] Message cache version mismatch for ${sessionId}, discarding`);
+            mmkv.remove(key);
+            return null;
+        }
+
+        // Check freshness (discard if > 30 days old)
+        const age = Date.now() - (parsed.timestamp ?? 0);
+        if (age > MESSAGE_CACHE_MAX_AGE_MS) {
+            console.log(`[HAP-588] Message cache expired for ${sessionId}, discarding`);
+            mmkv.remove(key);
+            removeFromMessageCacheIndex(sessionId);
+            return null;
+        }
+
+        // Validate structure
+        if (
+            typeof parsed.sessionId !== 'string' ||
+            !Array.isArray(parsed.messages)
+        ) {
+            console.warn(`[HAP-588] Message cache malformed for ${sessionId}, discarding`);
+            mmkv.remove(key);
+            removeFromMessageCacheIndex(sessionId);
+            return null;
+        }
+
+        return parsed as PersistedMessageCache;
+    } catch (e) {
+        console.error(`[HAP-588] Failed to parse message cache for ${sessionId}`, e);
+        mmkv.remove(key);
+        removeFromMessageCacheIndex(sessionId);
+        return null;
+    }
+}
+
+/**
+ * HAP-588: Save messages to cache for offline access.
+ *
+ * Only persists the most recent MAX_CACHED_MESSAGES_PER_SESSION messages.
+ * Safe to call frequently due to MMKV's efficiency.
+ *
+ * @param sessionId - The session ID
+ * @param messages - Array of normalized messages (newest first expected)
+ * @param lastSeq - The highest sequence number in the messages
+ */
+export function saveCachedMessages(
+    sessionId: string,
+    messages: unknown[],
+    lastSeq: number | null
+): void {
+    try {
+        // Limit to most recent messages
+        const limitedMessages = messages.slice(0, MAX_CACHED_MESSAGES_PER_SESSION);
+
+        const cache: PersistedMessageCache = {
+            version: 1,
+            timestamp: Date.now(),
+            sessionId,
+            lastSeq,
+            messages: limitedMessages,
+        };
+
+        const key = `${MESSAGE_CACHE_PREFIX}${sessionId}`;
+        mmkv.set(key, JSON.stringify(cache));
+
+        // Update index
+        updateMessageCacheIndex(sessionId);
+
+        console.log(`[HAP-588] Saved ${limitedMessages.length} messages to cache for ${sessionId}`);
+    } catch (e) {
+        // Storage failure should not break the app
+        console.error(`[HAP-588] Failed to save message cache for ${sessionId}`, e);
+    }
+}
+
+/**
+ * HAP-588: Clear cached messages for a specific session.
+ */
+export function clearCachedMessages(sessionId: string): void {
+    const key = `${MESSAGE_CACHE_PREFIX}${sessionId}`;
+    mmkv.remove(key);
+    removeFromMessageCacheIndex(sessionId);
+}
+
+/**
+ * HAP-588: Clear all cached messages.
+ * Called on logout.
+ */
+export function clearAllCachedMessages(): void {
+    const index = loadMessageCacheIndex();
+    for (const sessionId of Object.keys(index.sessions)) {
+        const key = `${MESSAGE_CACHE_PREFIX}${sessionId}`;
+        mmkv.remove(key);
+    }
+    mmkv.remove(MESSAGE_CACHE_INDEX_KEY);
+    console.log('[HAP-588] Cleared all message caches');
+}
+
+/**
+ * HAP-588: Clean up stale message caches.
+ * Removes caches older than 30 days.
+ * Should be called periodically (e.g., on app startup).
+ */
+export function cleanupStaleCaches(): void {
+    const index = loadMessageCacheIndex();
+    const now = Date.now();
+    let cleanedCount = 0;
+
+    for (const [sessionId, timestamp] of Object.entries(index.sessions)) {
+        const age = now - timestamp;
+        if (age > MESSAGE_CACHE_MAX_AGE_MS) {
+            const key = `${MESSAGE_CACHE_PREFIX}${sessionId}`;
+            mmkv.remove(key);
+            delete index.sessions[sessionId];
+            cleanedCount++;
+        }
+    }
+
+    if (cleanedCount > 0) {
+        saveMessageCacheIndex(index);
+        console.log(`[HAP-588] Cleaned up ${cleanedCount} stale message caches`);
+    }
+}
+
+/**
+ * HAP-588: Get all cached session IDs.
+ * Useful for debugging and cache management.
+ */
+export function getCachedSessionIds(): string[] {
+    const index = loadMessageCacheIndex();
+    return Object.keys(index.sessions);
+}
+
+// Internal helpers for message cache index
+
+function loadMessageCacheIndex(): MessageCacheIndex {
+    const stored = mmkv.getString(MESSAGE_CACHE_INDEX_KEY);
+    if (!stored) {
+        return { sessions: {} };
+    }
+    try {
+        const parsed = JSON.parse(stored);
+        if (typeof parsed.sessions !== 'object') {
+            return { sessions: {} };
+        }
+        return parsed as MessageCacheIndex;
+    } catch {
+        return { sessions: {} };
+    }
+}
+
+function saveMessageCacheIndex(index: MessageCacheIndex): void {
+    try {
+        mmkv.set(MESSAGE_CACHE_INDEX_KEY, JSON.stringify(index));
+    } catch (e) {
+        console.error('[HAP-588] Failed to save message cache index', e);
+    }
+}
+
+function updateMessageCacheIndex(sessionId: string): void {
+    const index = loadMessageCacheIndex();
+    index.sessions[sessionId] = Date.now();
+    saveMessageCacheIndex(index);
+}
+
+function removeFromMessageCacheIndex(sessionId: string): void {
+    const index = loadMessageCacheIndex();
+    delete index.sessions[sessionId];
+    saveMessageCacheIndex(index);
+}
