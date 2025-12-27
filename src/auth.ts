@@ -1,8 +1,9 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { drizzle } from 'drizzle-orm/d1';
-import { openAPI } from 'better-auth/plugins';
+import { openAPI, admin } from 'better-auth/plugins';
 import type { Env } from './env';
+import * as schema from './db/schema';
 
 /**
  * Dashboard frontend domains that are allowed to make authenticated requests
@@ -40,12 +41,16 @@ const DASHBOARD_ORIGINS = [
  */
 export function createAuth(env?: Env) {
     // For CLI schema generation, use a mock database
-    // For runtime, use the actual D1 binding
-    const db = env?.DB ? drizzle(env.DB) : ({} as ReturnType<typeof drizzle>);
+    // For runtime, use the actual D1 binding with schema
+    const db = env?.DB ? drizzle(env.DB, { schema }) : ({} as ReturnType<typeof drizzle>);
 
     return betterAuth({
+        secret: env?.BETTER_AUTH_SECRET,
+        baseURL: env?.BETTER_AUTH_URL,
+        basePath: '/api/auth', // Where Better-Auth is mounted in Hono
         database: drizzleAdapter(db, {
             provider: 'sqlite',
+            schema,
             usePlural: true,
         }),
         emailAndPassword: {
@@ -60,7 +65,13 @@ export function createAuth(env?: Env) {
                 maxAge: 60 * 5, // 5 minutes
             },
         },
-        plugins: [openAPI()],
+        plugins: [
+            openAPI(),
+            admin({
+                // Bootstrap admin - this user can manage other admins
+                adminUserIds: ['C1zmGOgcvVNskKcTUDgLuYytHmCWOKMs'],
+            }),
+        ],
         trustedOrigins: DASHBOARD_ORIGINS,
         advanced: {
             cookiePrefix: 'happy-admin',
