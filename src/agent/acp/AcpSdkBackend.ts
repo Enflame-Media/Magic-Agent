@@ -108,27 +108,35 @@ export interface AcpPermissionHandler {
 }
 
 /**
+ * Extended MCP server configuration with disabled tools tracking
+ */
+export interface AcpMcpServerConfig extends McpServerConfig {
+  /** List of tool names that should be denied if invoked */
+  disabledTools?: string[];
+}
+
+/**
  * Configuration for AcpSdkBackend
  */
 export interface AcpSdkBackendOptions {
   /** Agent name for identification */
   agentName: string;
-  
+
   /** Working directory for the agent */
   cwd: string;
-  
+
   /** Command to spawn the ACP agent */
   command: string;
-  
+
   /** Arguments for the agent command */
   args?: string[];
-  
+
   /** Environment variables to pass to the agent */
   env?: Record<string, string>;
-  
-  /** MCP servers to make available to the agent */
-  mcpServers?: Record<string, McpServerConfig>;
-  
+
+  /** MCP servers to make available to the agent (with optional disabledTools) */
+  mcpServers?: Record<string, AcpMcpServerConfig>;
+
   /** Optional permission handler for tool approval */
   permissionHandler?: AcpPermissionHandler;
 }
@@ -223,8 +231,24 @@ export class AcpSdkBackend implements AgentBackend {
   private toolCallCountSincePrompt = 0;
   /** Timeout for emitting 'idle' status after last message chunk */
   private idleTimeout: NodeJS.Timeout | null = null;
+  /** Set of tool names that should be denied (collected from all MCP server configs) */
+  private disabledTools: Set<string>;
 
   constructor(private options: AcpSdkBackendOptions) {
+    // Collect all disabled tools from MCP server configurations
+    this.disabledTools = new Set<string>();
+    if (options.mcpServers) {
+      for (const config of Object.values(options.mcpServers)) {
+        if (config.disabledTools) {
+          for (const tool of config.disabledTools) {
+            this.disabledTools.add(tool);
+          }
+        }
+      }
+    }
+    if (this.disabledTools.size > 0) {
+      logger.debug(`[AcpSdkBackend] Initialized with ${this.disabledTools.size} disabled tool(s): ${Array.from(this.disabledTools).join(', ')}`);
+    }
   }
 
   onMessage(handler: AgentMessageHandler): void {
@@ -478,10 +502,30 @@ export class AcpSdkBackend implements AgentBackend {
           if (toolName !== (toolCall?.kind || toolCall?.toolName || extendedParams.kind || 'Unknown tool')) {
             logger.debug(`[AcpSdkBackend] Detected tool name: ${toolName} from toolCallId: ${toolCallId}`);
           }
-          
+
+          // Check if tool is in the disabled list - auto-deny without prompting
+          if (this.disabledTools.has(toolName)) {
+            logger.debug(`[AcpSdkBackend] Tool '${toolName}' is disabled - auto-denying permission request`);
+
+            // Emit denied event for UI tracking
+            this.emit({
+              type: 'permission-response',
+              id: permissionId,
+              approved: false,
+            });
+
+            // Find and use the cancel option
+            const cancelOption = extendedParams.options?.find((opt) =>
+              opt.optionId === 'cancel' || opt.name?.toLowerCase().includes('cancel')
+            );
+            const cancelOptionId = cancelOption?.optionId || 'cancel';
+
+            return { outcome: { outcome: 'selected', optionId: cancelOptionId } };
+          }
+
           // Increment tool call counter for context tracking
           this.toolCallCountSincePrompt++;
-          
+
           const options = extendedParams.options || [];
           
           // Log permission request for debugging (include full params to understand structure)

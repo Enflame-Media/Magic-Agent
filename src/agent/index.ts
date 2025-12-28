@@ -22,7 +22,7 @@ export type {
 } from './AgentBackend';
 
 // Registry
-export { AgentRegistry, agentRegistry, type AgentFactory, type AgentFactoryOptions } from './AgentRegistry';
+export { AgentRegistry, agentRegistry, type AgentFactory, type AgentFactoryOptions, type AgentMcpServerConfig } from './AgentRegistry';
 
 // ACP implementations
 export * from './acp';

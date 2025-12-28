@@ -7,6 +7,6 @@
  * Uses the official @agentclientprotocol/sdk from Zed Industries.
  */
 
-export { AcpSdkBackend, type AcpSdkBackendOptions } from './AcpSdkBackend';
+export { AcpSdkBackend, type AcpSdkBackendOptions, type AcpMcpServerConfig } from './AcpSdkBackend';
 export { createGeminiBackend, registerGeminiAgent, type GeminiBackendOptions } from './gemini';
 

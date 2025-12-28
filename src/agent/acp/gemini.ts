@@ -9,19 +9,20 @@
  */
 
 import { AcpSdkBackend, type AcpSdkBackendOptions, type AcpPermissionHandler } from './AcpSdkBackend';
-import type { AgentBackend, McpServerConfig } from '../AgentBackend';
-import { agentRegistry, type AgentFactoryOptions } from '../AgentRegistry';
+import type { AgentBackend } from '../AgentBackend';
+import { agentRegistry, type AgentFactoryOptions, type AgentMcpServerConfig } from '../AgentRegistry';
 import { logger } from '@/ui/logger';
 import {
   GEMINI_API_KEY_ENV,
   GOOGLE_API_KEY_ENV,
   GEMINI_MODEL_ENV
 } from '@/gemini/constants';
-import { 
-  readGeminiLocalConfig, 
+import {
+  readGeminiLocalConfig,
   determineGeminiModel,
   getGeminiModelSource
 } from '@/gemini/utils/config';
+import { getEnabledMcpServers, hasMcpConfig } from '@/mcp/config';
 
 /**
  * Options for creating a Gemini ACP backend
@@ -29,18 +30,18 @@ import {
 export interface GeminiBackendOptions extends AgentFactoryOptions {
   /** API key for Gemini (defaults to GEMINI_API_KEY or GOOGLE_API_KEY env var) */
   apiKey?: string;
-  
+
   /** OAuth token from Happy cloud (via 'happy connect gemini') - highest priority */
   cloudToken?: string;
-  
+
   /** Model to use. If undefined, will use local config, env var, or default.
    *  If explicitly set to null, will use default (skip local config).
    *  (defaults to GEMINI_MODEL env var or 'gemini-2.5-pro') */
   model?: string | null;
-  
-  /** MCP servers to make available to the agent */
-  mcpServers?: Record<string, McpServerConfig>;
-  
+
+  /** MCP servers to make available to the agent (with optional disabledTools) */
+  mcpServers?: Record<string, AgentMcpServerConfig>;
+
   /** Optional permission handler for tool approval */
   permissionHandler?: AcpPermissionHandler;
 }
@@ -125,13 +126,57 @@ export function createGeminiBackend(options: GeminiBackendOptions): AgentBackend
 }
 
 /**
+ * Convert HappyMcpServerConfig to AgentMcpServerConfig.
+ * Strips management-only fields and keeps only what's needed for the agent.
+ */
+function convertToAgentMcpConfig(
+  servers: Record<string, import('@/mcp/types').HappyMcpServerConfig>
+): Record<string, AgentMcpServerConfig> {
+  const result: Record<string, AgentMcpServerConfig> = {};
+
+  for (const [name, config] of Object.entries(servers)) {
+    result[name] = {
+      command: config.command,
+      args: config.args,
+      env: config.env,
+      disabledTools: config.disabledTools,
+    };
+  }
+
+  return result;
+}
+
+/**
  * Register Gemini backend with the global agent registry.
- * 
+ *
  * This function should be called during application initialization
  * to make the Gemini agent available for use.
+ *
+ * The factory automatically loads and merges MCP configuration from
+ * user (~/.happy/config/mcp.json) and project (.happy/mcp.json) configs.
+ * Disabled servers are filtered out before being passed to the backend.
  */
 export function registerGeminiAgent(): void {
-  agentRegistry.register('gemini', (opts) => createGeminiBackend(opts));
+  agentRegistry.register('gemini', (opts) => {
+    // Load MCP config if not explicitly provided in options
+    let mcpServers = opts.mcpServers;
+
+    if (!mcpServers && hasMcpConfig()) {
+      // Load enabled MCP servers from config, applying agent-specific overrides
+      const enabledServers = getEnabledMcpServers('gemini');
+      const serverCount = Object.keys(enabledServers).length;
+
+      if (serverCount > 0) {
+        logger.debug(`[Gemini] Loading ${serverCount} enabled MCP server(s) from config`);
+        mcpServers = convertToAgentMcpConfig(enabledServers);
+      }
+    }
+
+    return createGeminiBackend({
+      ...opts,
+      mcpServers,
+    });
+  });
   logger.debug('[Gemini] Registered with agent registry');
 }
 

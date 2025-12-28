@@ -6,15 +6,27 @@
  * and creating instances of those backends.
  */
 
-import type { AgentBackend, AgentId } from './AgentBackend';
+import type { AgentBackend, AgentId, McpServerConfig } from './AgentBackend';
+
+/**
+ * Extended MCP server configuration for agent factories.
+ * Includes disabled tools list for permission filtering.
+ */
+export interface AgentMcpServerConfig extends McpServerConfig {
+  /** List of tool names that should be denied if invoked */
+  disabledTools?: string[];
+}
 
 /** Options passed to agent factory functions */
 export interface AgentFactoryOptions {
   /** Working directory for the agent */
   cwd: string;
-  
+
   /** Environment variables to pass to the agent */
   env?: Record<string, string>;
+
+  /** MCP servers to make available to the agent (filtered for enabled servers only) */
+  mcpServers?: Record<string, AgentMcpServerConfig>;
 }
 
 /** Factory function type for creating agent backends */
