@@ -24,9 +24,14 @@ const program = new Command('mcp')
 program
     .command('list')
     .description('List all configured MCP servers')
-    .action(async () => {
+    .option('--json', 'Output as JSON')
+    .option('--filter <filter>', 'Filter by status (enabled|disabled)')
+    .action(async (options: { json?: boolean; filter?: string }) => {
         const { listCommand } = await import('./commands/list.js');
-        await listCommand();
+        await listCommand({
+            format: options.json ? 'json' : 'table',
+            filter: options.filter as 'enabled' | 'disabled' | undefined,
+        });
     });
 
 program
