@@ -212,6 +212,32 @@ const commands: Record<string, CommandDefinition> = {
       'For fish, place in ~/.config/fish/completions/',
     ],
   },
+
+  mcp: {
+    name: 'mcp',
+    description: 'Manage MCP servers and tools',
+    detailedDescription: 'Manage Model Context Protocol (MCP) servers for AI agent tool integration',
+    subcommands: [
+      { name: 'list', description: 'List all configured MCP servers' },
+      { name: 'add <name>', description: 'Add a new MCP server', options: [{ flags: '--scope <scope>', description: 'Config scope (user|project)' }, { flags: '--env <env...>', description: 'Environment variables (KEY=VALUE)' }] },
+      { name: 'remove <name>', description: 'Remove an MCP server' },
+      { name: 'enable <name>', description: 'Enable a disabled MCP server' },
+      { name: 'disable <name>', description: 'Disable an MCP server without removing it' },
+      { name: 'validate [name]', description: 'Validate MCP server configuration and connectivity' },
+    ],
+    examples: [
+      'happy mcp list',
+      'happy mcp add github npx -y @modelcontextprotocol/server-github',
+      'happy mcp add fs npx -y @modelcontextprotocol/server-filesystem',
+      'happy mcp disable github',
+      'happy mcp validate',
+    ],
+    notes: [
+      'MCP servers extend Claude Code with additional tools and capabilities',
+      'Use --scope project to store configuration in project .claude.json',
+      'Environment variables are securely stored in the configuration',
+    ],
+  },
 }
 
 /**

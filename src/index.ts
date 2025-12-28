@@ -301,6 +301,19 @@ import { initializeTelemetry, showTelemetryNoticeIfNeeded, trackMetric, setTag, 
       logger.errorAndExit('Notification command failed', error)
     }
     return;
+  } else if (subcommand === 'mcp') {
+    // Handle MCP management subcommands
+    const commandStart = Date.now()
+    addBreadcrumb({ category: 'command', message: 'Starting mcp command', level: 'info' })
+    try {
+      const mcpMain = await import('@/mcp/index.js');
+      await mcpMain.default(args.slice(1));
+      trackMetric('command_duration', Date.now() - commandStart, { command: 'mcp', success: true })
+    } catch (error) {
+      trackMetric('command_duration', Date.now() - commandStart, { command: 'mcp', success: false })
+      logger.errorAndExit('MCP command failed', error)
+    }
+    return;
   } else if (subcommand === 'daemon') {
     // Show daemon management help
     const daemonSubcommand = args[1]
