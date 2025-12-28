@@ -2,15 +2,20 @@ import { InvalidateSync } from "@/utils/sync";
 import { RawJSONLines, RawJSONLinesSchema, parseJsonWithContext, JsonParseError } from "../types";
 import { readFile } from "node:fs/promises";
 import { logger } from "@/ui/logger";
-import { startFileWatcher, FileWatchEvent } from "@/modules/watcher/startFileWatcher";
+import { startFileWatcher, FileWatchEvent, FileWatcherOptions } from "@/modules/watcher/startFileWatcher";
 import { getProjectPath } from "./path";
 import { withRetry } from "@/utils/retry";
 import { getValidatedSessionPath, isValidSessionId, InvalidSessionIdError } from "./sessionValidation";
 
 export async function createSessionScanner(opts: {
     sessionId: string | null,
-    workingDirectory: string
-    onMessage: (message: RawJSONLines) => void
+    workingDirectory: string,
+    onMessage: (message: RawJSONLines) => void,
+    /**
+     * Optional watcher configuration. Useful for tests to reduce debounce time.
+     * Production code should use defaults (100ms debounce).
+     */
+    watcherOptions?: FileWatcherOptions
 }) {
 
     // Resolve project directory
@@ -82,7 +87,7 @@ export async function createSessionScanner(opts: {
                     // even if the file was renamed (session forking) or removed
                     logger.debug(`[SESSION_SCANNER] File event: ${event} for session ${currentSessionId}`);
                     sync.invalidate();
-                }));
+                }, opts.watcherOptions));
             } catch (error) {
                 if (error instanceof InvalidSessionIdError) {
                     logger.debug(`[SESSION_SCANNER] Invalid session ID rejected for watcher: ${error.message}`);
@@ -141,7 +146,7 @@ export async function createSessionScanner(opts: {
                     watchers.set(sessionId, startFileWatcher(watchPath, (_file: string, event: FileWatchEvent) => {
                         logger.debug(`[SESSION_SCANNER] File event: ${event} for session ${sessionId}`);
                         sync.invalidate();
-                    }));
+                    }, opts.watcherOptions));
                 } catch (error) {
                     if (error instanceof InvalidSessionIdError) {
                         logger.debug(`[SESSION_SCANNER] Invalid session ID rejected for watcher: ${error.message}`);

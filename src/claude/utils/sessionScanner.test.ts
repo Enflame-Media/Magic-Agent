@@ -6,6 +6,26 @@ import { join } from 'node:path'
 import { tmpdir, homedir } from 'node:os'
 import { existsSync } from 'node:fs'
 
+/**
+ * Polling helper to replace fixed timeouts.
+ * Waits for a condition to become true with configurable timeout and polling interval.
+ * This eliminates flakiness from race conditions with file system events and debouncing.
+ *
+ * @see HAP-609: Fix flaky sessionScanner.test.ts timing issues
+ */
+async function waitFor(
+    condition: () => boolean,
+    opts: { timeout: number; interval: number } = { timeout: 2000, interval: 20 }
+): Promise<void> {
+    const start = Date.now()
+    while (!condition()) {
+        if (Date.now() - start > opts.timeout) {
+            throw new Error(`waitFor timeout after ${opts.timeout}ms`)
+        }
+        await new Promise(r => setTimeout(r, opts.interval))
+    }
+}
+
 describe('sessionScanner', () => {
   let testDir: string
   let projectDir: string
@@ -47,10 +67,14 @@ describe('sessionScanner', () => {
     // - Summary line
     // - Complete history from previous session (with NEW session ID)
     // - New messages
+    //
+    // FIX HAP-609: Use reduced debounce (10ms vs default 100ms) and polling-based waits
+    // to eliminate flakiness from timing races with file system events.
     scanner = await createSessionScanner({
       sessionId: null,
       workingDirectory: testDir,
-      onMessage: (msg) => collectedMessages.push(msg)
+      onMessage: (msg) => collectedMessages.push(msg),
+      watcherOptions: { debounceMs: 10 }
     })
 
     // PHASE 1: Initial session (0-say-lol-session.jsonl)
@@ -63,7 +87,8 @@ describe('sessionScanner', () => {
     // Write first line
     await writeFile(sessionFile1, lines1[0] + '\n')
     scanner.onNewSession(sessionId1)
-    await new Promise(resolve => setTimeout(resolve, 100))
+    // FIX HAP-609: Use polling instead of fixed timeout to handle variable timing
+    await waitFor(() => collectedMessages.length >= 1)
 
     expect(collectedMessages).toHaveLength(1)
     const msg0 = collectedMessages[0];
@@ -73,11 +98,10 @@ describe('sessionScanner', () => {
     const text0 = typeof content0 === 'string' ? content0 : content0[0].text
     expect(text0).toBe('say lol')
     
-    // Write second line with delay
-    await new Promise(resolve => setTimeout(resolve, 50))
+    // Write second line
     await appendFile(sessionFile1, lines1[1] + '\n')
-    await new Promise(resolve => setTimeout(resolve, 200))
-
+    // FIX HAP-609: Use polling instead of fixed timeout
+    await waitFor(() => collectedMessages.length >= 2)
 
     expect(collectedMessages).toHaveLength(2)
     const msg1 = collectedMessages[1];
@@ -101,20 +125,22 @@ describe('sessionScanner', () => {
       initialContent += lines2[i] + '\n'
     }
     await writeFile(sessionFile2, initialContent)
-    
+
     scanner.onNewSession(sessionId2)
-    await new Promise(resolve => setTimeout(resolve, 100))
-    
-    // Should have added only 1 new message (summary) 
+    // FIX HAP-609: Use polling instead of fixed timeout
+    await waitFor(() => collectedMessages.length >= phase1Count + 1)
+
+    // Should have added only 1 new message (summary)
     // The historical user + assistant messages (lines 1-2) are deduplicated because they have same UUIDs
     expect(collectedMessages).toHaveLength(phase1Count + 1)
     expect(collectedMessages[phase1Count].type).toBe('summary')
     
     // Write new messages (user asks for ls tool) - this is line 3
-    await new Promise(resolve => setTimeout(resolve, 50))
+    const countBeforeUserMsg = collectedMessages.length
     await appendFile(sessionFile2, lines2[3] + '\n')
-    await new Promise(resolve => setTimeout(resolve, 200))
-    
+    // FIX HAP-609: Use polling instead of fixed timeout
+    await waitFor(() => collectedMessages.length > countBeforeUserMsg)
+
     // Find the user message we just added
     const userMessages = collectedMessages.filter(m => m.type === 'user')
     const lastUserMsg = userMessages[userMessages.length - 1]
@@ -124,15 +150,16 @@ describe('sessionScanner', () => {
     expect((lastUserMsg as any).message.content).toBe('run ls tool ')
     
     // Write remaining lines (assistant tool use, tool result, final assistant message) - starting from line 4
+    // We expect 5 messages total for session 2: 1 summary + 4 new messages (user + tool_use + tool_result + assistant)
     for (let i = 4; i < lines2.length; i++) {
-      await new Promise(resolve => setTimeout(resolve, 50))
       await appendFile(sessionFile2, lines2[i] + '\n')
     }
-    await new Promise(resolve => setTimeout(resolve, 300))
-    
+    // FIX HAP-609: Use polling to wait for all remaining messages to be processed
+    await waitFor(() => collectedMessages.slice(phase1Count).length >= 5)
+
     // Final count check
     const finalMessages = collectedMessages.slice(phase1Count)
-    
+
     // Should have: 1 summary + 0 history (deduplicated) + 4 new messages = 5 total for session 2
     expect(finalMessages.length).toBeGreaterThanOrEqual(5)
     
