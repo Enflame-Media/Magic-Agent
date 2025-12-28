@@ -114,6 +114,19 @@ program
         });
     });
 
+program
+    .command('discover')
+    .description('Discover MCP servers from Claude Code and other sources')
+    .option('--import', 'Import discovered servers into Happy config')
+    .option('--scope <scope>', 'Config scope for import (user|project)', 'user')
+    .action(async (options: { import?: boolean; scope: string }) => {
+        const { discoverCommand } = await import('./commands/discover.js');
+        await discoverCommand({
+            import: options.import,
+            scope: options.scope as 'user' | 'project',
+        });
+    });
+
 /**
  * Main entry point for the mcp subcommand
  *
