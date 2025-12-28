@@ -86,6 +86,64 @@ function cleanupVersionWatcher(): void {
   }
 }
 
+// HAP-610: MCP config hash tracking for change detection during heartbeat
+// Tracks the last synced MCP config hash to avoid unnecessary network traffic
+let lastMcpConfigHash: string | null = null;
+
+/**
+ * Recursively sorts object keys for stable JSON serialization.
+ * Handles nested objects and arrays.
+ */
+function sortObjectKeys(obj: unknown): unknown {
+  if (obj === null || typeof obj !== 'object') {
+    return obj;
+  }
+
+  if (Array.isArray(obj)) {
+    return obj.map(sortObjectKeys);
+  }
+
+  const sorted: Record<string, unknown> = {};
+  for (const key of Object.keys(obj).sort()) {
+    sorted[key] = sortObjectKeys((obj as Record<string, unknown>)[key]);
+  }
+  return sorted;
+}
+
+/**
+ * Computes a stable hash of the MCP sync state for change detection.
+ * Uses a simple string hash algorithm (fast, no crypto overhead needed).
+ *
+ * @param mcpConfig - The MCP sync state to hash
+ * @returns Hash string in hex format, or null if no config exists
+ *
+ * @example
+ * ```typescript
+ * const hash = computeMcpConfigHash(buildMcpSyncState());
+ * if (hash !== lastMcpConfigHash) {
+ *     // Config changed, sync to server
+ * }
+ * ```
+ */
+export function computeMcpConfigHash(mcpConfig: ReturnType<typeof buildMcpSyncState>): string | null {
+  if (!mcpConfig) return null;
+
+  // Recursively sort all object keys for stable serialization
+  // This ensures the same config always produces the same hash regardless of key order
+  const stable = JSON.stringify(sortObjectKeys(mcpConfig));
+
+  // Simple hash using string hashCode algorithm (fast, no crypto needed)
+  // djb2 variant - good distribution, fast computation
+  let hash = 5381;
+  for (let i = 0; i < stable.length; i++) {
+    const char = stable.charCodeAt(i);
+    hash = ((hash << 5) + hash) ^ char; // hash * 33 ^ char
+  }
+
+  // Convert to unsigned 32-bit and return as hex
+  return (hash >>> 0).toString(16);
+}
+
 // Prepare initial metadata
 export const initialMachineMetadata: MachineMetadata = {
   host: os.hostname(),
@@ -636,6 +694,11 @@ export async function startDaemon(): Promise<void> {
     });
     logger.debug(`[DAEMON RUN] Machine registered: ${machine.id}`);
 
+    // HAP-610: Initialize MCP config hash after first sync
+    // This establishes the baseline for change detection during heartbeat
+    lastMcpConfigHash = computeMcpConfigHash(initialDaemonState.mcpConfig);
+    logger.debug(`[DAEMON RUN] Initial MCP config hash: ${lastMcpConfigHash ?? 'null (no config)'}`);
+
     // Create realtime machine session
     const apiMachine = api.machineSyncClient(machine);
     apiMachineRef = apiMachine; // HAP-362: Set late-binding ref for health endpoint metrics
@@ -749,6 +812,32 @@ export async function startDaemon(): Promise<void> {
           const socketMetrics = apiMachine.getSocketMetrics();
           if (socketMetrics) {
             logger.debug(`[DAEMON RUN] WebSocket metrics: handlers=${socketMetrics.totalHandlers}, events=${socketMetrics.eventTypes}, pendingAcks=${socketMetrics.pendingAcks}, memoryPressure=${socketMetrics.memoryPressureCount}, acksCleanedTotal=${socketMetrics.acksCleanedTotal}, handlersRejectedTotal=${socketMetrics.handlersRejectedTotal}`);
+          }
+
+          // HAP-610: Periodic MCP config sync
+          // Check if MCP config has changed since last sync
+          if (!process.env.HAPPY_DAEMON_MCP_SYNC_DISABLED) {
+            try {
+              const currentMcpConfig = buildMcpSyncState();
+              const currentHash = computeMcpConfigHash(currentMcpConfig);
+
+              if (currentHash !== lastMcpConfigHash) {
+                logger.debug(`[DAEMON RUN] MCP config changed (${lastMcpConfigHash ?? 'null'} -> ${currentHash ?? 'null'}), syncing to server`);
+
+                await apiMachine.updateDaemonState((state) => ({
+                  ...state,
+                  // Preserve existing status or default to 'running' if state is null
+                  status: state?.status ?? 'running',
+                  mcpConfig: currentMcpConfig
+                }));
+
+                lastMcpConfigHash = currentHash;
+                logger.debug('[DAEMON RUN] MCP config sync complete');
+              }
+            } catch (error) {
+              // Log but don't fail heartbeat for MCP sync errors
+              logger.debug('[DAEMON RUN] MCP config sync failed (non-fatal)', error);
+            }
           }
 
           const updatedState: DaemonLocallyPersistedState = {
