@@ -45,3 +45,6 @@ export * from './payloads';
 
 // MCP state schemas for CLI-to-App sync
 export * from './mcp';
+
+// Type-safe accessor helpers for session and machine IDs
+export * from './helpers';
