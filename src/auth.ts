@@ -4,20 +4,7 @@ import { drizzle } from 'drizzle-orm/d1';
 import { openAPI, admin } from 'better-auth/plugins';
 import type { Env } from './env';
 import * as schema from './db/schema';
-
-/**
- * Dashboard frontend domains that are allowed to make authenticated requests
- * These are the Vue.js SPA domains that will call this API
- */
-const DASHBOARD_ORIGINS = [
-    // Local development
-    'http://localhost:5173',
-    'http://localhost:8787',
-    // Production dashboard
-    'https://happy-admin.enflamemedia.com',
-    // Development dashboard
-    'https://happy-admin-dev.enflamemedia.com',
-];
+import { SESSION_CONFIG, ORIGINS } from './lib/constants';
 
 /**
  * Better-Auth configuration factory for Cloudflare Workers
@@ -68,11 +55,11 @@ export function createAuth(env?: Env) {
             disableSignUp: true,
         },
         session: {
-            expiresIn: 60 * 60 * 24 * 7, // 7 days
-            updateAge: 60 * 60 * 24, // Update session age every 24 hours
+            expiresIn: SESSION_CONFIG.SESSION_EXPIRY, // 7 days
+            updateAge: SESSION_CONFIG.SESSION_UPDATE_AGE, // Update session age every 24 hours
             cookieCache: {
                 enabled: true,
-                maxAge: 60 * 5, // 5 minutes
+                maxAge: SESSION_CONFIG.COOKIE_CACHE_MAX_AGE, // 5 minutes
             },
         },
         plugins: [
@@ -82,7 +69,7 @@ export function createAuth(env?: Env) {
                 adminUserIds: ['C1zmGOgcvVNskKcTUDgLuYytHmCWOKMs'],
             }),
         ],
-        trustedOrigins: DASHBOARD_ORIGINS,
+        trustedOrigins: [...ORIGINS.PRODUCTION, ...ORIGINS.DEVELOPMENT],
         advanced: {
             cookiePrefix: 'happy-admin',
             generateId: () => crypto.randomUUID(),

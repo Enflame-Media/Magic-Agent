@@ -9,25 +9,14 @@ import { adminRoutes } from './routes/admin';
 import { adminAuthMiddleware } from './middleware/auth';
 import { csrfMiddleware } from './middleware/csrf';
 import { bodySizeLimits } from './middleware/bodySize';
+import { requestIdMiddleware } from './middleware/requestId';
+import { CORS_CONFIG, getAllowedOrigins } from './lib/constants';
+import { createSafeError, getErrorStatusCode, AppError } from '@happy/errors';
 
 /**
  * Application version (should match package.json)
  */
 const APP_VERSION = '0.1.0';
-
-/**
- * Allowed origins for CORS
- * These are the dashboard domains that can make requests to this API
- */
-const ALLOWED_ORIGINS = [
-    // Local development
-    'http://localhost:5173',
-    'http://localhost:8787',
-    // Production dashboard
-    'https://happy-admin.enflamemedia.com',
-    // Development dashboard
-    'https://happy-admin-dev.enflamemedia.com',
-];
 
 /**
  * Main Hono application instance with OpenAPI support
@@ -37,8 +26,9 @@ const app = new OpenAPIHono<{ Bindings: Env; Variables: Variables }>();
 
 /*
  * Global Middleware
- * Applied in order: logging → CORS → body size → CSRF → routes → error handling
+ * Applied in order: requestId → logging → CORS → body size → CSRF → routes → error handling
  */
+app.use('*', requestIdMiddleware());
 app.use('*', logger());
 
 /*
@@ -57,18 +47,22 @@ app.use('*', bodySizeLimits.default()); // 1MB limit for admin API
  * Critical settings for cross-origin authentication:
  * - credentials: true - Allows cookies to be sent cross-origin
  * - exposeHeaders: ['Set-Cookie'] - Allows browser to read Set-Cookie header
+ *
+ * Environment-aware origin handling (HAP-632):
+ * - Production: Only production origins allowed
+ * - Development/Staging: Both production and localhost origins allowed
  */
-app.use(
-    '*',
-    cors({
-        origin: ALLOWED_ORIGINS,
+app.use('*', async (c, next) => {
+    const allowedOrigins = getAllowedOrigins(c.env?.ENVIRONMENT);
+    return cors({
+        origin: allowedOrigins,
         allowHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-CSRF-Token'],
         allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
         credentials: true,
         exposeHeaders: ['Set-Cookie'],
-        maxAge: 86400, // 24 hours preflight cache
-    })
-);
+        maxAge: CORS_CONFIG.PREFLIGHT_MAX_AGE, // 24 hours preflight cache
+    })(c, next);
+});
 
 /**
  * CSRF Protection Middleware
@@ -204,80 +198,6 @@ app.get('/ready', async (c) => {
     );
 });
 
-/**
- * Debug endpoint for Analytics Engine query testing
- * @route GET /debug/analytics
- * @returns Raw Analytics Engine query results for debugging
- *
- * @remarks
- * HAP-638: Temporary debug endpoint to diagnose why sync_metrics returns empty.
- * Should be removed or secured after debugging is complete.
- */
-app.get('/debug/analytics', async (c) => {
-    if (!c.env.ANALYTICS_ACCOUNT_ID || !c.env.ANALYTICS_API_TOKEN) {
-        return c.json({ error: 'Analytics Engine not configured' }, 500);
-    }
-
-    const accountId = await c.env.ANALYTICS_ACCOUNT_ID.get();
-    const apiToken = await c.env.ANALYTICS_API_TOKEN.get();
-
-    if (!accountId || !apiToken) {
-        return c.json({ error: 'Secrets Store returned empty values' }, 500);
-    }
-
-    const dataset = c.env.ENVIRONMENT === 'production' ? 'sync_metrics_prod' : 'sync_metrics_dev';
-
-    // Run multiple diagnostic queries
-    // NOTE: Analytics Engine uses COUNT() not COUNT(*) - different from standard SQL!
-    const queries = {
-        // Check if dataset has ANY data (no time filter)
-        totalCount: `SELECT COUNT() as count FROM ${dataset}`,
-        // Check data in last 24 hours
-        last24h: `SELECT COUNT() as count FROM ${dataset} WHERE timestamp > NOW() - INTERVAL '24' HOUR`,
-        // Check data in last 7 days
-        last7d: `SELECT COUNT() as count FROM ${dataset} WHERE timestamp > NOW() - INTERVAL '7' DAY`,
-        // Get most recent data point
-        mostRecent: `SELECT timestamp, blob1, blob2 FROM ${dataset} ORDER BY timestamp DESC LIMIT 1`,
-        // Check oldest and newest timestamps
-        timeRange: `SELECT MIN(timestamp) as oldest, MAX(timestamp) as newest FROM ${dataset}`,
-    };
-
-    const results: Record<string, unknown> = {};
-
-    for (const [name, sql] of Object.entries(queries)) {
-        try {
-            const response = await fetch(
-                `https://api.cloudflare.com/client/v4/accounts/${accountId}/analytics_engine/sql`,
-                {
-                    method: 'POST',
-                    headers: {
-                        Authorization: `Bearer ${apiToken}`,
-                        'Content-Type': 'text/plain',
-                    },
-                    body: sql,
-                }
-            );
-
-            if (!response.ok) {
-                const text = await response.text();
-                results[name] = { error: `HTTP ${response.status}`, body: text };
-            } else {
-                const data = await response.json();
-                results[name] = data;
-            }
-        } catch (error) {
-            results[name] = { error: error instanceof Error ? error.message : 'Unknown error' };
-        }
-    }
-
-    return c.json({
-        environment: c.env.ENVIRONMENT,
-        dataset,
-        timestamp: new Date().toISOString(),
-        queries: results,
-    });
-});
-
 /*
  * OpenAPI 3.1 Documentation
  */
@@ -312,25 +232,38 @@ app.doc('/api/openapi.json', {
 app.get('/api/docs', swaggerUI({ url: '/api/openapi.json' }));
 
 /*
- * Error Handling
+ * Error Handling (HAP-630)
+ *
+ * Security: Uses createSafeError to prevent information leakage.
+ * - Stack traces are logged internally, never sent to clients
+ * - Request ID included for support correlation
+ * - AppError messages are user-safe by design
+ * - Unknown errors get generic messages in production
  */
 app.onError((err, c) => {
-    console.error('[Error]', err.message, err.stack);
-    return c.json(
-        {
-            error: 'Internal Server Error',
-            message: c.env?.ENVIRONMENT === 'development' ? err.message : 'An unexpected error occurred',
-            timestamp: new Date().toISOString(),
-        },
-        500
-    );
+    const requestId = c.get('requestId');
+    const isDevelopment = c.env?.ENVIRONMENT === 'development';
+
+    // createSafeError logs full error internally and returns sanitized response
+    const safeError = createSafeError(err, { requestId, isDevelopment });
+
+    // Determine appropriate status code
+    const statusCode = getErrorStatusCode(err);
+
+    return c.json(safeError, statusCode);
 });
 
 /*
  * 404 Handler
+ * Includes request ID for correlation (HAP-630)
  */
 app.notFound((c) => {
-    return c.json({ error: `Not found: ${c.req.path}` }, 404);
+    const requestId = c.get('requestId');
+    return c.json({
+        error: 'Not found',
+        requestId,
+        timestamp: new Date().toISOString(),
+    }, 404);
 });
 
 /**
