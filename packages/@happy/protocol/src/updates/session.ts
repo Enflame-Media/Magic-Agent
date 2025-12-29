@@ -20,7 +20,7 @@ import { STRING_LIMITS } from '../constraints';
  * ```typescript
  * const newSession = ApiUpdateNewSessionSchema.parse({
  *     t: 'new-session',
- *     id: 'session_abc123',
+ *     sid: 'session_abc123',
  *     seq: 1,
  *     metadata: 'encryptedMetadataString',
  *     metadataVersion: 1,
@@ -40,16 +40,15 @@ export const ApiUpdateNewSessionSchema = z.object({
      * Session ID
      *
      * @remarks
-     * Field name: `id`
+     * Field name: `sid` (short for session ID)
      *
-     * Note: Other session-related schemas use different field names:
-     * - `new-session`, `update-session`, `activity`, `usage`: use `id`
-     * - `new-message`, `delete-session`: use `sid`
+     * All session-related schemas now use `sid` for consistency:
+     * - `new-session`, `update-session`, `new-message`, `delete-session`: use `sid`
+     * - Ephemeral events (`activity`, `usage`): use `sid`
      *
-     * @see ApiUpdateNewMessageSchema - uses `sid` for session ID
-     * @see ApiDeleteSessionSchema - uses `sid` for session ID
+     * @see HAP-654 - Standardization of session ID field names
      */
-    id: z.string().min(1).max(STRING_LIMITS.ID_MAX),
+    sid: z.string().min(1).max(STRING_LIMITS.ID_MAX),
     seq: z.number(),
     metadata: z.string().max(STRING_LIMITS.ENCRYPTED_STATE_MAX), // Encrypted metadata
     metadataVersion: z.number(),
@@ -74,7 +73,7 @@ export type ApiUpdateNewSession = z.infer<typeof ApiUpdateNewSessionSchema>;
  * ```typescript
  * const sessionUpdate = ApiUpdateSessionStateSchema.parse({
  *     t: 'update-session',
- *     id: 'session_abc123',
+ *     sid: 'session_abc123',
  *     agentState: { version: 2, value: 'encryptedState' },
  *     metadata: { version: 3, value: null }  // Cleared metadata
  * });
@@ -86,16 +85,15 @@ export const ApiUpdateSessionStateSchema = z.object({
      * Session ID
      *
      * @remarks
-     * Field name: `id`
+     * Field name: `sid` (short for session ID)
      *
-     * Note: Other session-related schemas use different field names:
-     * - `new-session`, `update-session`, `activity`, `usage`: use `id`
-     * - `new-message`, `delete-session`: use `sid`
+     * All session-related schemas now use `sid` for consistency:
+     * - `new-session`, `update-session`, `new-message`, `delete-session`: use `sid`
+     * - Ephemeral events (`activity`, `usage`): use `sid`
      *
-     * @see ApiUpdateNewMessageSchema - uses `sid` for session ID
-     * @see ApiDeleteSessionSchema - uses `sid` for session ID
+     * @see HAP-654 - Standardization of session ID field names
      */
-    id: z.string().min(1).max(STRING_LIMITS.ID_MAX),
+    sid: z.string().min(1).max(STRING_LIMITS.ID_MAX),
     agentState: NullableVersionedValueSchema.nullish(),
     metadata: NullableVersionedValueSchema.nullish(),
 });

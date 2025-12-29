@@ -39,8 +39,7 @@ export type ApiMessage = z.infer<typeof ApiMessageSchema>;
 /**
  * New message update
  *
- * CRITICAL: Uses 'sid' (not 'sessionId') per client expectation.
- * This was the source of the bug that motivated HAP-383.
+ * Contains the message payload and session reference.
  *
  * @example
  * ```typescript
@@ -64,15 +63,11 @@ export const ApiUpdateNewMessageSchema = z.object({
      * @remarks
      * Field name: `sid` (short for session ID)
      *
-     * CRITICAL: Uses 'sid' (not 'sessionId') per client expectation.
-     * This was the source of the bug that motivated HAP-383.
+     * All session-related schemas now use `sid` for consistency:
+     * - `new-session`, `update-session`, `new-message`, `delete-session`: use `sid`
+     * - Ephemeral events (`activity`, `usage`): use `sid`
      *
-     * Note: Other session-related schemas use different field names:
-     * - `new-session`, `update-session`, `activity`, `usage`: use `id`
-     * - `new-message`, `delete-session`: use `sid`
-     *
-     * @see ApiUpdateNewSessionSchema - uses `id` for session ID
-     * @see ApiUpdateSessionStateSchema - uses `id` for session ID
+     * @see HAP-654 - Standardization of session ID field names
      */
     sid: z.string().min(1).max(STRING_LIMITS.ID_MAX),
     message: ApiMessageSchema,
@@ -101,12 +96,11 @@ export const ApiDeleteSessionSchema = z.object({
      * @remarks
      * Field name: `sid` (short for session ID)
      *
-     * Note: Other session-related schemas use different field names:
-     * - `new-session`, `update-session`, `activity`, `usage`: use `id`
-     * - `new-message`, `delete-session`: use `sid`
+     * All session-related schemas now use `sid` for consistency:
+     * - `new-session`, `update-session`, `new-message`, `delete-session`: use `sid`
+     * - Ephemeral events (`activity`, `usage`): use `sid`
      *
-     * @see ApiUpdateNewSessionSchema - uses `id` for session ID
-     * @see ApiUpdateSessionStateSchema - uses `id` for session ID
+     * @see HAP-654 - Standardization of session ID field names
      */
     sid: z.string().min(1).max(STRING_LIMITS.ID_MAX),
 });

@@ -41,11 +41,14 @@ export const ApiNewMachineSchema = z.object({
      * @remarks
      * Field name: `machineId`
      *
-     * Note: Other machine-related schemas use different field names:
-     * - `new-machine`, `update-machine`, `machine-status`: use `machineId`
-     * - `machine-activity`: uses `id`
+     * All machine-related schemas consistently use `machineId` (HAP-655):
+     * - `new-machine`: uses `machineId`
+     * - `update-machine`: uses `machineId`
+     * - `machine-status`: uses `machineId`
+     * - `machine-activity`: uses `machineId`
      *
-     * @see ApiEphemeralMachineActivityUpdateSchema - uses `id` for machine ID
+     * @see ApiEphemeralMachineActivityUpdateSchema
+     * @see ApiEphemeralMachineStatusUpdateSchema
      */
     machineId: z.string().min(1).max(STRING_LIMITS.ID_MAX),
     seq: z.number(),
@@ -86,11 +89,14 @@ export const ApiUpdateMachineStateSchema = z.object({
      * @remarks
      * Field name: `machineId`
      *
-     * Note: Other machine-related schemas use different field names:
-     * - `new-machine`, `update-machine`, `machine-status`: use `machineId`
-     * - `machine-activity`: uses `id`
+     * All machine-related schemas consistently use `machineId` (HAP-655):
+     * - `new-machine`: uses `machineId`
+     * - `update-machine`: uses `machineId`
+     * - `machine-status`: uses `machineId`
+     * - `machine-activity`: uses `machineId`
      *
-     * @see ApiEphemeralMachineActivityUpdateSchema - uses `id` for machine ID
+     * @see ApiEphemeralMachineActivityUpdateSchema
+     * @see ApiEphemeralMachineStatusUpdateSchema
      */
     machineId: z.string().min(1).max(STRING_LIMITS.ID_MAX),
     metadata: VersionedValueSchema.optional(),

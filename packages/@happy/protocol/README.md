@@ -139,11 +139,10 @@ The machine ID is represented with different field names:
 | `ApiNewMachineSchema` | `new-machine` | `machineId` | `t` | Persistent update |
 | `ApiUpdateMachineStateSchema` | `update-machine` | `machineId` | `t` | Persistent update |
 | `ApiEphemeralMachineStatusUpdateSchema` | `machine-status` | `machineId` | `type` | Ephemeral event |
-| `ApiEphemeralMachineActivityUpdateSchema` | `machine-activity` | `id` | `type` | Ephemeral event |
+| `ApiEphemeralMachineActivityUpdateSchema` | `machine-activity` | `machineId` | `type` | Ephemeral event |
 
 **Pattern Summary:**
-- **`machineId`**: Used in `new-machine`, `update-machine`, `machine-status`
-- **`id`**: Used in `machine-activity`
+- **`machineId`**: All machine schemas now consistently use `machineId` (standardized in HAP-655)
 
 ### Discriminator Fields
 
@@ -156,7 +155,7 @@ The machine ID is represented with different field names:
 
 ### Historical Context
 
-This naming inconsistency was the root cause of HAP-383. The field names are preserved for backward compatibility with existing clients.
+The original naming inconsistency (HAP-383) where `machine-activity` used `id` while other machine schemas used `machineId` has been resolved. All machine schemas now consistently use `machineId` (HAP-655).
 
 ### Consumer Code Example
 
