@@ -17,7 +17,7 @@
 import * as React from 'react';
 import { machineSpawnNewSession, SpawnSessionResult, isTemporaryPidSessionId, pollForRealSession } from '@/sync/ops';
 import { Session } from '@/sync/storageTypes';
-import { useAllMachines } from '@/sync/storage';
+import { useAllMachines, storage } from '@/sync/storage';
 import { isMachineOnline } from '@/utils/machineUtils';
 import { t } from '@/text';
 
@@ -236,6 +236,9 @@ export function useBulkSessionRestore(): UseBulkSessionRestoreReturn {
 
                             newSessionId = polledSessionId;
                         }
+
+                        // HAP-649: Mark the old session as superseded by the new session
+                        storage.getState().markSessionAsSuperseded(session.id, newSessionId);
 
                         return {
                             sessionId: session.id,

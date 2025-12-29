@@ -130,8 +130,9 @@ interface SessionKillResponse {
 }
 
 // Response types for spawn session
+// HAP-649: Added resumedFrom to track session forks when using --resume
 export type SpawnSessionResult =
-    | { type: 'success'; sessionId: string; message?: string }
+    | { type: 'success'; sessionId: string; resumedFrom?: string; message?: string }
     | { type: 'requestToApproveDirectoryCreation'; directory: string }
     | { type: 'error'; errorMessage: string };
 

@@ -670,6 +670,11 @@ function SessionViewLoaded({ sessionId, session }: { sessionId: string, session:
             sessionId = polledSessionId;
         }
 
+        // HAP-649: Mark the old session as superseded by the new session
+        if (result.resumedFrom) {
+            storage.getState().markSessionAsSuperseded(result.resumedFrom, sessionId);
+        }
+
         Toast.show({ message: t('sessionInfo.restoreSessionSuccess') });
         router.replace(`/session/${sessionId}`);
     });

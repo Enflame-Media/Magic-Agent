@@ -18,6 +18,7 @@ import { sync } from "./sync";
 import { getCurrentRealtimeSessionId, getVoiceSession } from '@/realtime/RealtimeSession';
 import { isMutableTool } from "@/components/tools/knownTools";
 import { projectManager } from "./projectManager";
+import { logger } from '@/utils/logger';
 import { DecryptedArtifact } from "./artifactTypes";
 import { FeedItem } from "./feedTypes";
 import { parseCursorCounter } from "./cursorUtils";
@@ -49,6 +50,10 @@ interface SessionMessages {
     messagesMap: Record<string, Message>;
     reducerState: ReducerState;
     isLoaded: boolean;
+    // HAP-648: Pagination state for lazy loading older messages
+    olderMessagesCursor: string | null;  // Cursor for loading older messages (null = no more)
+    hasOlderMessages: boolean;           // True if there are more older messages to load
+    isLoadingOlder: boolean;             // True while loading older messages
 }
 
 // Machine type is now imported from storageTypes - represents persisted machine data
@@ -113,6 +118,8 @@ interface StorageState {
     updateSessionDraft: (sessionId: string, draft: string | null) => void;
     updateSessionPermissionMode: (sessionId: string, mode: 'default' | 'acceptEdits' | 'bypassPermissions' | 'plan' | 'read-only' | 'safe-yolo' | 'yolo') => void;
     updateSessionModelMode: (sessionId: string, mode: 'opus' | 'sonnet' | 'haiku' | 'gpt-5-minimal' | 'gpt-5-low' | 'gpt-5-medium' | 'gpt-5-high' | 'gpt-5-codex-low' | 'gpt-5-codex-medium' | 'gpt-5-codex-high') => void;
+    // HAP-649: Mark a session as superseded by another session (used when resuming/forking)
+    markSessionAsSuperseded: (sessionId: string, supersededBy: string) => void;
     // Artifact methods
     applyArtifacts: (artifacts: DecryptedArtifact[]) => void;
     addArtifact: (artifact: DecryptedArtifact) => void;
@@ -140,6 +147,9 @@ interface StorageState {
     // Feed methods
     applyFeedItems: (items: FeedItem[]) => void;
     clearFeed: () => void;
+    // HAP-648: Message pagination methods
+    setOlderMessagesPagination: (sessionId: string, cursor: string | null, hasMore: boolean) => void;
+    setLoadingOlderMessages: (sessionId: string, isLoading: boolean) => void;
 }
 
 // Cache for date boundary calculations - invalidates when day changes
@@ -618,7 +628,11 @@ export const storage = create<StorageState>()((set, get) => {
                     messages: [],
                     messagesMap: {},
                     reducerState: createReducer(),
-                    isLoaded: false
+                    isLoaded: false,
+                    // HAP-648: Initialize pagination state
+                    olderMessagesCursor: null,
+                    hasOlderMessages: true,  // Assume true until first load determines otherwise
+                    isLoadingOlder: false
                 };
 
                 // Get the session's agentState if available
@@ -743,7 +757,11 @@ export const storage = create<StorageState>()((set, get) => {
                             reducerState,
                             messages,
                             messagesMap,
-                            isLoaded: true
+                            isLoaded: true,
+                            // HAP-648: Initialize pagination state
+                            olderMessagesCursor: null,
+                            hasOlderMessages: true,
+                            isLoadingOlder: false
                         } satisfies SessionMessages
                     }
                 };
@@ -977,6 +995,33 @@ export const storage = create<StorageState>()((set, get) => {
                 sessions: updatedSessions
             };
         }),
+        // HAP-649: Mark a session as superseded when it's been resumed/forked into a new session
+        markSessionAsSuperseded: (sessionId: string, supersededBy: string) => set((state) => {
+            const session = state.sessions[sessionId];
+            if (!session) return state;
+
+            // Update the session with the supersededBy reference
+            const updatedSessions = {
+                ...state.sessions,
+                [sessionId]: {
+                    ...session,
+                    supersededBy
+                }
+            };
+
+            // Rebuild sessionListViewData to update the UI
+            const sessionListViewData = buildSessionListViewData(
+                updatedSessions,
+                state.machines,
+                state.settings.groupSessionsByProject
+            );
+
+            return {
+                ...state,
+                sessions: updatedSessions,
+                sessionListViewData
+            };
+        }),
         // Project management methods
         getProjects: () => projectManager.getProjects(),
         getProject: (projectId: string) => projectManager.getProject(projectId),
@@ -1023,12 +1068,12 @@ export const storage = create<StorageState>()((set, get) => {
         }),
         // Artifact methods
         applyArtifacts: (artifacts: DecryptedArtifact[]) => set((state) => {
-            console.log(`🗂️ Storage.applyArtifacts: Applying ${artifacts.length} artifacts`);
+            logger.debug(`🗂️ Storage.applyArtifacts: Applying ${artifacts.length} artifacts`);
             const mergedArtifacts = { ...state.artifacts };
             artifacts.forEach(artifact => {
                 mergedArtifacts[artifact.id] = artifact;
             });
-            console.log(`🗂️ Storage.applyArtifacts: Total artifacts after merge: ${Object.keys(mergedArtifacts).length}`);
+            logger.debug(`🗂️ Storage.applyArtifacts: Total artifacts after merge: ${Object.keys(mergedArtifacts).length}`);
             
             return {
                 ...state,
@@ -1228,6 +1273,40 @@ export const storage = create<StorageState>()((set, get) => {
             feedLoaded: false,  // Reset loading flag
             friendsLoaded: false  // Reset loading flag
         })),
+
+        // HAP-648: Message pagination methods
+        setOlderMessagesPagination: (sessionId: string, cursor: string | null, hasMore: boolean) => set((state) => {
+            const existingSession = state.sessionMessages[sessionId];
+            if (!existingSession) return state;
+
+            return {
+                ...state,
+                sessionMessages: {
+                    ...state.sessionMessages,
+                    [sessionId]: {
+                        ...existingSession,
+                        olderMessagesCursor: cursor,
+                        hasOlderMessages: hasMore
+                    }
+                }
+            };
+        }),
+
+        setLoadingOlderMessages: (sessionId: string, isLoading: boolean) => set((state) => {
+            const existingSession = state.sessionMessages[sessionId];
+            if (!existingSession) return state;
+
+            return {
+                ...state,
+                sessionMessages: {
+                    ...state.sessionMessages,
+                    [sessionId]: {
+                        ...existingSession,
+                        isLoadingOlder: isLoading
+                    }
+                }
+            };
+        }),
     }
 });
 
@@ -1241,12 +1320,20 @@ export function useSession(id: string): Session | null {
 
 const emptyArray: unknown[] = [];
 
-export function useSessionMessages(sessionId: string): { messages: Message[], isLoaded: boolean } {
+export function useSessionMessages(sessionId: string): {
+    messages: Message[],
+    isLoaded: boolean,
+    // HAP-648: Pagination state for lazy loading older messages
+    hasOlderMessages: boolean,
+    isLoadingOlder: boolean
+} {
     return storage(useShallow((state) => {
         const session = state.sessionMessages[sessionId];
         return {
             messages: session?.messages ?? emptyArray,
-            isLoaded: session?.isLoaded ?? false
+            isLoaded: session?.isLoaded ?? false,
+            hasOlderMessages: session?.hasOlderMessages ?? false,
+            isLoadingOlder: session?.isLoadingOlder ?? false
         };
     }));
 }

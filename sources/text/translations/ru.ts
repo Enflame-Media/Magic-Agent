@@ -470,6 +470,10 @@ export const ru: TranslationStructure = {
         restoreSessionSuccess: 'Сессия успешно восстановлена',
         failedToRestoreSession: 'Не удалось восстановить сессию',
         restoreRequiresMachine: 'Машина должна быть онлайн для восстановления',
+        // Superseded session (HAP-649)
+        sessionSuperseded: 'Сессия заменена',
+        sessionSupersededMessage: 'Эта сессия была продолжена в новой сессии.',
+        viewNewSession: 'Перейти к новой сессии',
     },
 
     components: {

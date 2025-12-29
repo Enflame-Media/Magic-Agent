@@ -492,6 +492,10 @@ export const en = {
         restoreSessionSuccess: 'Session restored successfully',
         failedToRestoreSession: 'Failed to restore session',
         restoreRequiresMachine: 'Machine must be online to restore',
+        // Superseded session (HAP-649)
+        sessionSuperseded: 'Session Superseded',
+        sessionSupersededMessage: 'This session has been continued in a new session.',
+        viewNewSession: 'View New Session',
 
     },
 

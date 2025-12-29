@@ -526,6 +526,10 @@ export const pl: TranslationStructure = {
         restoreSessionSuccess: 'Sesja przywrócona pomyślnie',
         failedToRestoreSession: 'Nie udało się przywrócić sesji',
         restoreRequiresMachine: 'Maszyna musi być online, aby przywrócić',
+        // Superseded session (HAP-649)
+        sessionSuperseded: 'Sesja zastąpiona',
+        sessionSupersededMessage: 'Ta sesja została kontynuowana w nowej sesji.',
+        viewNewSession: 'Zobacz nową sesję',
     },
 
     components: {

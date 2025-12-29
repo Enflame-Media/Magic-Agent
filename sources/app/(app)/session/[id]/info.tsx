@@ -7,7 +7,7 @@ import { Item } from '@/components/Item';
 import { ItemGroup } from '@/components/ItemGroup';
 import { ItemList } from '@/components/ItemList';
 import { Avatar } from '@/components/Avatar';
-import { useSession, useIsDataReady } from '@/sync/storage';
+import { useSession, useIsDataReady, storage } from '@/sync/storage';
 import { getSessionName, useSessionStatus, formatOSPlatform, formatPathRelativeToHome, getSessionAvatarId } from '@/utils/sessionUtils';
 import * as Clipboard from 'expo-clipboard';
 import { Modal } from '@/modal';
@@ -286,6 +286,13 @@ function SessionInfoContent({ session }: { session: Session }) {
             sessionId = polledSessionId;
         }
 
+        // HAP-649: Mark the old session as superseded by the new session
+        // This allows the UI to show a message directing users to the new session
+        // and prevents RPC calls to the old session ID
+        if (result.resumedFrom) {
+            storage.getState().markSessionAsSuperseded(result.resumedFrom, sessionId);
+        }
+
         // Success - navigate to the new session
         Toast.show({ message: t('sessionInfo.restoreSessionSuccess') });
         router.replace(`/session/${sessionId}`);
@@ -344,6 +351,23 @@ function SessionInfoContent({ session }: { session: Session }) {
                         </View>
                     </View>
                 </View>
+
+                {/* HAP-649: Superseded Session Warning */}
+                {session.supersededBy && (
+                    <ItemGroup>
+                        <Item
+                            title={t('sessionInfo.sessionSuperseded')}
+                            subtitle={t('sessionInfo.sessionSupersededMessage')}
+                            icon={<Ionicons name="swap-horizontal-outline" size={29} color="#FF9500" />}
+                            onPress={() => router.push(`/session/${session.supersededBy}`)}
+                            rightElement={
+                                <Text style={{ color: theme.colors.textLink, fontWeight: '600', ...Typography.default() }}>
+                                    {t('sessionInfo.viewNewSession')}
+                                </Text>
+                            }
+                        />
+                    </ItemGroup>
+                )}
 
                 {/* CLI Version Warning */}
                 {isCliOutdated && (

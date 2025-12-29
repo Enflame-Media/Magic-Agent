@@ -515,6 +515,10 @@ export const pt: TranslationStructure = {
         restoreSessionSuccess: 'Sessão restaurada com sucesso',
         failedToRestoreSession: 'Falha ao restaurar a sessão',
         restoreRequiresMachine: 'A máquina precisa estar online para restaurar',
+        // Superseded session (HAP-649)
+        sessionSuperseded: 'Sessão substituída',
+        sessionSupersededMessage: 'Esta sessão foi continuada em uma nova sessão.',
+        viewNewSession: 'Ver nova sessão',
 
     },
 

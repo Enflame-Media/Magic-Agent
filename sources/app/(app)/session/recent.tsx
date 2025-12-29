@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, FlatList } from 'react-native';
 import { Text } from '@/components/StyledText';
-import { useAllSessions, useAllMachines } from '@/sync/storage';
+import { useAllSessions, useAllMachines, storage } from '@/sync/storage';
 import { Session, Machine } from '@/sync/storageTypes';
 import { Avatar } from '@/components/Avatar';
 import { getSessionName, getSessionSubtitle, getSessionAvatarId } from '@/utils/sessionUtils';
@@ -305,6 +305,11 @@ function SessionHistory() {
                     return;
                 }
             }
+
+            // HAP-649: Mark the old session as superseded by the new session
+            // Note: We use session.id directly since result.resumedFrom contains
+            // the claudeSessionId, not the Happy session ID
+            storage.getState().markSessionAsSuperseded(session.id, sessionId);
 
             // Refresh sessions to get the new one
             await sync.refreshSessions();

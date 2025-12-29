@@ -517,6 +517,10 @@ export const zhHans: TranslationStructure = {
         restoreSessionSuccess: '会话恢复成功',
         failedToRestoreSession: '恢复会话失败',
         restoreRequiresMachine: '机器必须在线才能恢复',
+        // Superseded session (HAP-649)
+        sessionSuperseded: '会话已替换',
+        sessionSupersededMessage: '此会话已在新会话中继续。',
+        viewNewSession: '查看新会话',
 
     },
 

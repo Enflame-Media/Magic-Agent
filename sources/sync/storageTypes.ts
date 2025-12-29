@@ -132,6 +132,9 @@ export interface Session {
     // Historical context usage snapshots for trend visualization (HAP-344)
     // Limited to MAX_USAGE_HISTORY_SIZE entries, sampled when context changes significantly
     usageHistory?: UsageHistoryEntry[] | null;
+    // HAP-649: When a session is resumed/forked, this points to the new session that replaced it
+    // This allows the UI to redirect users to the new session and explain the fork
+    supersededBy?: string | null;
 }
 
 export interface DecryptedMessage {
