@@ -9,7 +9,7 @@
  */
 import { ref } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { API_BASE_URL } from '../lib/api';
+import { API_BASE_URL, apiRequest } from '../lib/api';
 
 const router = useRouter();
 const route = useRoute();
@@ -28,10 +28,9 @@ async function handleLogin() {
     loading.value = true;
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/auth/sign-in/email`, {
+        // HAP-616: Use apiRequest for CSRF protection
+        const response = await apiRequest(`${API_BASE_URL}/api/auth/sign-in/email`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
             body: JSON.stringify({
                 email: email.value,
                 password: password.value,

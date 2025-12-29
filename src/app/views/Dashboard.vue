@@ -6,7 +6,7 @@
  * Uses composables for data fetching and chart transformations.
  * Features responsive design for desktop, tablet, and mobile.
  */
-import { onMounted, computed, toRef, ref } from 'vue';
+import { onMounted, computed, toRef, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAnalytics } from '../composables/useAnalytics';
 import { useMetrics } from '../composables/useMetrics';
@@ -19,8 +19,12 @@ import ModeDistribution from '../components/ModeDistribution.vue';
 import PerformanceTrends from '../components/PerformanceTrends.vue';
 import BundleSizeChart from '../components/BundleSizeChart.vue';
 import BundleSizeLatest from '../components/BundleSizeLatest.vue';
-import { formatDuration, formatPercent, API_BASE_URL } from '../lib/api';
+import ValidationSummary from '../components/ValidationSummary.vue';
+import ValidationTrendsChart from '../components/ValidationTrendsChart.vue';
+import UnknownTypeBreakdown from '../components/UnknownTypeBreakdown.vue';
+import { formatDuration, formatPercent, API_BASE_URL, apiRequest } from '../lib/api';
 import { useBundleSize, useBundleSizeCharts } from '../composables/useBundleSize';
+import { useValidation, useValidationCharts } from '../composables/useValidation';
 
 const router = useRouter();
 
@@ -70,6 +74,17 @@ const { bundleSizeChartData } = useBundleSizeCharts(
     })
 );
 
+// Initialize validation metrics composable (HAP-582)
+const {
+    state: validationState,
+    fetchValidationData,
+} = useValidation();
+
+// Chart data for validation trends (HAP-582)
+const { validationTimeseriesChartData } = useValidationCharts(
+    toRef(() => validationState.value.timeseries)
+);
+
 /**
  * Handle platform filter change (HAP-571)
  */
@@ -77,6 +92,18 @@ async function handlePlatformChange(platform: Platform) {
     selectedPlatform.value = platform;
     // Refetch data - for 'all' we pass undefined to get all platforms
     await fetchBundleData(30, platform === 'all' ? undefined : platform);
+}
+
+/**
+ * Refresh all dashboard data (HAP-582)
+ * Called by manual Refresh button and auto-refresh cycle
+ */
+async function refreshAllData() {
+    await Promise.all([
+        fetchAll(),
+        fetchBundleData(),
+        fetchValidationData(),
+    ]);
 }
 
 // Computed values for MetricsSummary
@@ -92,12 +119,12 @@ async function handleTimeRangeChange(range: typeof timeRange.value) {
 
 /**
  * Handle logout
+ * HAP-616: Use apiRequest for CSRF protection
  */
 async function handleLogout() {
     try {
-        await fetch(`${API_BASE_URL}/api/auth/sign-out`, {
+        await apiRequest(`${API_BASE_URL}/api/auth/sign-out`, {
             method: 'POST',
-            credentials: 'include',
         });
         await router.push('/login');
     } catch (err) {
@@ -109,8 +136,28 @@ async function handleLogout() {
 onMounted(() => {
     fetchAll();
     fetchBundleData();
+    fetchValidationData();
     startAutoRefresh();
 });
+
+// Auto-refresh bundle and validation data when analytics auto-refreshes (HAP-582)
+// Watch for lastUpdated changes triggered by the analytics auto-refresh interval
+let isInitialLoad = true;
+watch(
+    () => state.value.lastUpdated,
+    () => {
+        // Skip the initial load since we already fetch in onMounted
+        if (isInitialLoad) {
+            isInitialLoad = false;
+            return;
+        }
+        // When analytics auto-refreshes, also refresh bundle and validation data
+        if (autoRefreshEnabled.value) {
+            fetchBundleData();
+            fetchValidationData();
+        }
+    }
+);
 </script>
 
 <template>
@@ -155,7 +202,7 @@ onMounted(() => {
                         <button
                             class="btn-secondary text-sm"
                             :disabled="loading"
-                            @click="fetchAll"
+                            @click="refreshAllData"
                         >
                             <span v-if="loading" class="inline-flex items-center gap-1">
                                 <span class="animate-spin h-4 w-4 border-2 border-gray-400 border-t-transparent rounded-full" />
@@ -262,6 +309,36 @@ onMounted(() => {
                                 :data="bundleState.latest"
                                 :previous-day="bundleState.previousDay"
                                 :loading="bundleState.loading && !bundleState.latest.length"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Validation Metrics Section (HAP-582) -->
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-6 md:pt-8">
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">
+                        Validation Metrics
+                    </h2>
+
+                    <!-- Validation Summary Cards -->
+                    <ValidationSummary
+                        :data="validationState.summary"
+                        :loading="validationState.loading && !validationState.summary"
+                    />
+
+                    <!-- Validation Charts Row -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+                        <div class="lg:col-span-2">
+                            <ValidationTrendsChart
+                                :data="validationTimeseriesChartData"
+                                title="Validation Failures Over Time (24h)"
+                                :loading="validationState.loading && !validationState.timeseries.length"
+                            />
+                        </div>
+                        <div>
+                            <UnknownTypeBreakdown
+                                :data="validationState.unknownTypes"
+                                :loading="validationState.loading && !validationState.unknownTypes.length"
                             />
                         </div>
                     </div>

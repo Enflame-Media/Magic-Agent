@@ -114,6 +114,27 @@ export class ApiError extends Error {
 }
 
 /*
+ * CSRF Token Handling (HAP-616)
+ */
+
+/**
+ * Get CSRF token from cookie
+ *
+ * The API sets a csrf-token cookie that must be included in the
+ * X-CSRF-Token header for all state-changing requests (POST, PUT, DELETE, PATCH).
+ *
+ * @returns The CSRF token or undefined if not set
+ */
+function getCsrfToken(): string | undefined {
+    if (typeof document === 'undefined') return undefined;
+
+    return document.cookie
+        .split('; ')
+        .find((row) => row.startsWith('csrf-token='))
+        ?.split('=')[1];
+}
+
+/*
  * Base fetch wrapper with error handling
  */
 
@@ -135,6 +156,48 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
     }
 
     return response.json();
+}
+
+/**
+ * Make a state-changing API request with CSRF protection
+ *
+ * SECURITY FIX (HAP-616): This function includes the X-CSRF-Token header
+ * for all requests, protecting against Cross-Site Request Forgery attacks.
+ *
+ * Use this function for:
+ * - POST requests (login, logout, create operations)
+ * - PUT requests (update operations)
+ * - DELETE requests (delete operations)
+ * - PATCH requests (partial updates)
+ *
+ * @param url - Full URL to send the request to
+ * @param options - Fetch options (method, body, etc.)
+ * @returns The fetch Response object
+ *
+ * @example
+ * ```typescript
+ * // Login request
+ * const response = await apiRequest(`${API_BASE_URL}/api/auth/sign-in/email`, {
+ *     method: 'POST',
+ *     body: JSON.stringify({ email, password }),
+ * });
+ * ```
+ */
+export async function apiRequest(url: string, options: RequestInit = {}): Promise<Response> {
+    const csrfToken = getCsrfToken();
+
+    const headers = new Headers(options.headers);
+    headers.set('Content-Type', 'application/json');
+
+    if (csrfToken) {
+        headers.set('X-CSRF-Token', csrfToken);
+    }
+
+    return fetch(url, {
+        ...options,
+        headers,
+        credentials: 'include',
+    });
 }
 
 /*
@@ -266,4 +329,74 @@ export async function fetchBundleTrends(
  */
 export async function fetchBundleLatest(): Promise<ApiResponse<BundleSizeLatest[]>> {
     return apiFetch<ApiResponse<BundleSizeLatest[]>>('/api/metrics/bundle-latest');
+}
+
+/*
+ * Validation Metrics Types (HAP-582)
+ */
+
+export interface ValidationSummary {
+    totalFailures: number;
+    schemaFailures: number;
+    unknownTypes: number;
+    strictFailures: number;
+    uniqueUsers: number;
+    avgSessionDurationMs: number;
+}
+
+export interface UnknownTypeBreakdown {
+    typeName: string;
+    count: number;
+    percentage: number;
+}
+
+export interface ValidationTimeseriesPoint {
+    timestamp: string;
+    totalFailures: number;
+    schemaFailures: number;
+    unknownTypes: number;
+    strictFailures: number;
+}
+
+/*
+ * Validation Metrics API Functions (HAP-582)
+ */
+
+/**
+ * Fetch 24h validation failure summary
+ */
+export async function fetchValidationSummary(): Promise<ApiResponse<ValidationSummary>> {
+    return apiFetch<ApiResponse<ValidationSummary>>('/api/metrics/validation-summary');
+}
+
+/**
+ * Fetch unknown type breakdown
+ */
+export async function fetchValidationUnknownTypes(
+    hours: number = 24,
+    limit: number = 10
+): Promise<{ data: UnknownTypeBreakdown[]; total: number; timestamp: string }> {
+    const params = new URLSearchParams({
+        hours: String(hours),
+        limit: String(limit),
+    });
+    return apiFetch<{ data: UnknownTypeBreakdown[]; total: number; timestamp: string }>(
+        `/api/metrics/validation-unknown-types?${params}`
+    );
+}
+
+/**
+ * Fetch validation timeseries data
+ */
+export async function fetchValidationTimeseries(
+    hours: number = 24,
+    bucket: 'hour' | 'day' = 'hour'
+): Promise<ApiResponse<ValidationTimeseriesPoint[]>> {
+    const params = new URLSearchParams({
+        hours: String(hours),
+        bucket,
+    });
+    return apiFetch<ApiResponse<ValidationTimeseriesPoint[]>>(
+        `/api/metrics/validation-timeseries?${params}`
+    );
 }
