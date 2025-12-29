@@ -14,7 +14,9 @@
         "lint": "eslint . --ext .ts,.vue",
         "lint:fix": "eslint . --ext .ts,.vue --fix",
         "lint:oxlint": "oxlint src --config oxlint.json",
-        "build:app": "npx vite build --config vite.config.ts"
+        "build:app": "npx vite build --config vite.config.ts",
+        "test": "vitest run",
+        "test:watch": "vitest"
     },
     "keywords": [
         "cloudflare",
@@ -41,6 +43,7 @@
         "tailwindcss": "^4.1.18",
         "typescript": "^5.9.3",
         "vite": "^7.3.0",
+        "vitest": "^4.0.16",
         "vue-eslint-parser": "^10.2.0",
         "wrangler": "^4.56.0"
     },

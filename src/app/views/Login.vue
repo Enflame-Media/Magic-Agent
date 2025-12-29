@@ -10,6 +10,7 @@
 import { ref } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { API_BASE_URL, apiRequest } from '../lib/api';
+import { getSafeRedirect } from '../lib/security';
 
 const router = useRouter();
 const route = useRoute();
@@ -43,9 +44,10 @@ async function handleLogin() {
             return;
         }
 
-        // Redirect to original destination or dashboard
+        // SECURITY FIX (HAP-625): Validate redirect to prevent open redirect attacks
         const redirect = route.query.redirect as string | undefined;
-        await router.push(redirect || '/');
+        const safeRedirect = getSafeRedirect(redirect);
+        await router.push(safeRedirect);
     } catch (err) {
         error.value = 'An error occurred. Please try again.';
         console.error('Login error:', err);

@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import App from './App.vue';
 import './style.css';
 import { API_BASE_URL } from './lib/api';
+import { isValidRedirect } from './lib/security';
 
 /**
  * Vue Router configuration
@@ -40,11 +41,17 @@ router.beforeEach(async (to, _from, next) => {
                 credentials: 'include',
             });
             if (!response.ok) {
-                next({ name: 'login', query: { redirect: to.fullPath } });
+                // SECURITY FIX (HAP-625): Validate redirect path before setting
+                const redirectPath = to.fullPath;
+                const query = isValidRedirect(redirectPath) ? { redirect: redirectPath } : undefined;
+                next({ name: 'login', query });
                 return;
             }
         } catch {
-            next({ name: 'login', query: { redirect: to.fullPath } });
+            // SECURITY FIX (HAP-625): Validate redirect path before setting
+            const redirectPath = to.fullPath;
+            const query = isValidRedirect(redirectPath) ? { redirect: redirectPath } : undefined;
+            next({ name: 'login', query });
             return;
         }
     }
