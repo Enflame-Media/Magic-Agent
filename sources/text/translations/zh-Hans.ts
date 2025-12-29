@@ -1113,6 +1113,17 @@ export const zhHans: TranslationStructure = {
         cancelledByUser: '用户已取消',
     },
 
+    allowedCommands: {
+        // Allowed bash commands display (HAP-635)
+        sectionTitle: '允许的命令',
+        summary: ({ count }: { count: number }) => `${count} 个命令可用于远程执行`,
+        restricted: '受限',
+        allArgs: '所有参数',
+        fetchError: '无法加载允许的命令',
+        noCommands: '没有可用的命令',
+        securityNote: '未列出的命令因安全原因被阻止',
+    },
+
     voiceStatus: {
         // Voice assistant status bar (HAP-400)
         connecting: '连接中...',

@@ -26,6 +26,7 @@ import { AppError, ErrorCodes } from '@/utils/errors';
 import { SessionCostDisplay } from '@/components/usage/SessionCostDisplay';
 import { ContextBreakdown } from '@/components/usage/ContextBreakdown';
 import { ContextHistoryChart } from '@/components/usage/ContextHistoryChart';
+import { AllowedCommandsInfo } from '@/components/usage/AllowedCommandsInfo';
 import { hapticsLight } from '@/components/haptics';
 
 const ARCHIVE_UNDO_DURATION = 5000; // 5 seconds to undo
@@ -428,6 +429,15 @@ function SessionInfoContent({ session }: { session: Session }) {
                                 history={session.usageHistory}
                                 currentContextSize={session.latestUsage?.contextSize}
                             />
+                        </View>
+                    </ItemGroup>
+                )}
+
+                {/* Allowed Commands (HAP-635) - only for connected sessions */}
+                {sessionStatus.isConnected && (
+                    <ItemGroup title={t('allowedCommands.sectionTitle')}>
+                        <View style={{ marginHorizontal: 16, marginVertical: 8 }}>
+                            <AllowedCommandsInfo sessionId={session.id} />
                         </View>
                     </ItemGroup>
                 )}

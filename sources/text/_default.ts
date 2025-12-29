@@ -1113,6 +1113,17 @@ export const en = {
         cancelledByUser: 'Cancelled by user',
     },
 
+    allowedCommands: {
+        // Allowed bash commands display (HAP-635)
+        sectionTitle: 'Allowed Commands',
+        summary: ({ count }: { count: number }) => `${count} commands available for remote execution`,
+        restricted: 'restricted',
+        allArgs: 'all args',
+        fetchError: 'Could not load allowed commands',
+        noCommands: 'No commands available',
+        securityNote: 'Commands not on this list are blocked for security',
+    },
+
     voiceStatus: {
         // Voice assistant status bar (HAP-400)
         connecting: 'Connecting...',

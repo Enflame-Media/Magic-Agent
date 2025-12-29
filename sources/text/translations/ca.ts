@@ -1111,6 +1111,17 @@ export const ca: TranslationStructure = {
         cancelledByUser: 'Cancel·lat per l\'usuari',
     },
 
+    allowedCommands: {
+        // Allowed bash commands display (HAP-635)
+        sectionTitle: 'Ordres Permeses',
+        summary: ({ count }: { count: number }) => `${count} ordres disponibles per a execució remota`,
+        restricted: 'restringit',
+        allArgs: 'tots args',
+        fetchError: 'No s\'han pogut carregar les ordres permeses',
+        noCommands: 'No hi ha ordres disponibles',
+        securityNote: 'Les ordres no llistades estan bloquejades per seguretat',
+    },
+
     voiceStatus: {
         // Voice assistant status bar (HAP-400)
         connecting: 'Connectant...',

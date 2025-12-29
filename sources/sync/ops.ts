@@ -8,6 +8,7 @@ import { sync } from './sync';
 import { storage } from './storage';
 import type { MachineMetadata } from './storageTypes';
 import { AppError, ErrorCodes } from '@/utils/errors';
+import { logger } from '@/utils/logger';
 
 // Strict type definitions for all operations
 
@@ -546,6 +547,42 @@ export async function sessionRipgrep(
     }
 }
 
+// Allowed commands types - HAP-635
+export interface AllowedCommands {
+    /**
+     * Map of command name to allowed subcommands.
+     * Empty array means all subcommands are allowed.
+     * Non-empty array means only those specific subcommands are allowed.
+     */
+    [command: string]: readonly string[];
+}
+
+interface SessionGetAllowedCommandsResponse {
+    success: boolean;
+    commands?: AllowedCommands;
+    error?: string;
+}
+
+/**
+ * Get the list of allowed bash commands from the CLI
+ * HAP-635: Returns the command allowlist for display in the UI
+ */
+export async function sessionGetAllowedCommands(sessionId: string): Promise<SessionGetAllowedCommandsResponse> {
+    try {
+        const response = await apiSocket.sessionRPC<SessionGetAllowedCommandsResponse, Record<string, never>>(
+            sessionId,
+            'getAllowedCommands',
+            {}
+        );
+        return response;
+    } catch (error) {
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error'
+        };
+    }
+}
+
 /**
  * Helper to wait for a session to go offline.
  * Resolves when session presence changes from "online" to a timestamp.
@@ -695,7 +732,7 @@ export async function sessionDelete(sessionId: string): Promise<{ success: boole
 
         if (response.ok) {
             const _result = await response.json();
-            console.log(`🗑️ sessionDelete [${shortId}]: Successfully deleted session ${sessionId}`);
+            logger.info(`🗑️ sessionDelete [${shortId}]: Successfully deleted session ${sessionId}`);
 
             // Optimistic update: immediately remove from local storage
             // This ensures the UI updates even if the socket delete-session event is delayed/dropped
@@ -715,7 +752,7 @@ export async function sessionDelete(sessionId: string): Promise<{ success: boole
             return { success: true };
         } else {
             const error = await response.text();
-            console.log(`🗑️ sessionDelete [${shortId}]: Failed to delete session ${sessionId}: ${error || 'Unknown error'}`);
+            logger.debug(`🗑️ sessionDelete [${shortId}]: Failed to delete session ${sessionId}: ${error || 'Unknown error'}`);
             return {
                 success: false,
                 message: error || 'Failed to delete session'
@@ -724,7 +761,7 @@ export async function sessionDelete(sessionId: string): Promise<{ success: boole
     } catch (error) {
         // Note: shortId not available here since requestWithCorrelation threw
         // The correlation ID is still stored via setLastFailedCorrelationId for error UI
-        console.log(`🗑️ sessionDelete: Failed to delete session ${sessionId}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        logger.debug(`🗑️ sessionDelete: Failed to delete session ${sessionId}: ${error instanceof Error ? error.message : 'Unknown error'}`);
         return {
             success: false,
             message: error instanceof Error ? error.message : 'Unknown error'

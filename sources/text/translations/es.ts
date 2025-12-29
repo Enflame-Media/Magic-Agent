@@ -1112,6 +1112,17 @@ export const es: TranslationStructure = {
         cancelledByUser: 'Cancelado por el usuario',
     },
 
+    allowedCommands: {
+        // Allowed bash commands display (HAP-635)
+        sectionTitle: 'Comandos Permitidos',
+        summary: ({ count }: { count: number }) => `${count} comandos disponibles para ejecución remota`,
+        restricted: 'restringido',
+        allArgs: 'todos args',
+        fetchError: 'No se pudieron cargar los comandos permitidos',
+        noCommands: 'No hay comandos disponibles',
+        securityNote: 'Los comandos no listados están bloqueados por seguridad',
+    },
+
     voiceStatus: {
         // Voice assistant status bar (HAP-400)
         connecting: 'Conectando...',
