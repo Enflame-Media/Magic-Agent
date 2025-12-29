@@ -9,7 +9,7 @@ import { run as runDifftastic } from '@/modules/difftastic/index';
 import { startHTTPDirectProxy, HTTPProxy } from '@/modules/proxy/index';
 import { RpcHandlerManager } from '../../api/rpc/RpcHandlerManager';
 import { withRetry } from '@/utils/retry';
-import { validatePath } from './pathSecurity';
+import { validatePath, validateCommand } from './pathSecurity';
 
 const execAsync = promisify(exec);
 
@@ -187,8 +187,29 @@ export type SpawnSessionResult =
 export function registerCommonHandlers(rpcHandlerManager: RpcHandlerManager, workingDirectory: string) {
 
     // Shell command handler - executes commands in the default shell
+    // SECURITY: Command validation prevents OS command injection (CWE-78)
+    // See HAP-614 for the security audit that identified this vulnerability
     rpcHandlerManager.registerHandler<BashRequest, BashResponse>('bash', async (data, _signal) => {
-        logger.debug('Shell command request:', data.command);
+        logger.debug('[RPC:bash] Command request received');
+
+        // SECURITY: Validate command against allowlist BEFORE any execution
+        // This is the primary defense against command injection attacks
+        const commandValidation = validateCommand(data.command);
+        if (!commandValidation.valid) {
+            // Audit log: blocked command attempt
+            logger.warn('[RPC:bash] BLOCKED command:', {
+                command: data.command.substring(0, 100), // Truncate for log safety
+                reason: commandValidation.reason,
+                error: commandValidation.error
+            });
+            return {
+                success: false,
+                error: commandValidation.error || 'Command not allowed'
+            };
+        }
+
+        // Audit log: allowed command
+        logger.info('[RPC:bash] Executing allowed command:', data.command);
 
         try {
             // Validate and resolve cwd

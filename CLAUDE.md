@@ -179,6 +179,33 @@ User interface components.
 - Challenge-response authentication prevents replay attacks
 - Session isolation through unique session IDs
 
+### Command Security (HAP-614)
+
+The CLI includes defense-in-depth protections against OS command injection (CWE-78, OWASP A03:2021).
+
+**Location**: `src/modules/common/pathSecurity.ts`
+
+**Protections**:
+1. **Command Allowlist**: Only pre-approved commands can be executed via the bash RPC handler
+2. **Shell Metacharacter Blocking**: Characters like `;`, `|`, `&`, `` ` ``, `$`, `()`, `<>` are blocked to prevent command chaining
+3. **Subcommand Restrictions**: Some commands (git, npm, docker) only allow specific subcommands
+4. **Audit Logging**: All command attempts are logged (allowed and blocked) for security monitoring
+
+**Allowed Commands** (see `ALLOWED_COMMANDS` in `pathSecurity.ts`):
+- **Git**: status, diff, log, branch, show, rev-parse, remote, fetch, config, ls-files, stash
+- **File ops**: ls, cat, head, tail, pwd, which, wc, file, find, tree
+- **Build tools**: npm (run, test, build), yarn, pnpm, node, tsc, etc.
+- **Search**: grep, rg, ag, jq, yq
+- **Docker**: ps, images, logs, inspect, stats (read-only operations)
+
+**Why not just rely on E2E encryption?**
+Defense in depth - if encryption is ever compromised (key theft, mobile device compromise), the allowlist still prevents arbitrary code execution.
+
+**Adding new commands**: Edit `ALLOWED_COMMANDS` in `pathSecurity.ts`. Consider:
+- Is the command read-only or has limited side effects?
+- Can it be exploited with malicious arguments?
+- Should subcommands be restricted?
+
 ## Encryption Architecture
 
 The CLI uses **AES-256-GCM** for end-to-end encryption with key versioning support. This is intentionally different from the server-side encryption (which uses TweetNaCl secretbox).
