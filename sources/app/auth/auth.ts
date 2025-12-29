@@ -1,11 +1,18 @@
 import * as privacyKit from "privacy-kit";
 import { log } from "@/utils/log";
 import { AppError, ErrorCodes } from "@/utils/errors";
+import { LRUCache, type CacheStats } from "@/utils/lruCache";
+
+/**
+ * Token cache configuration constants.
+ * These values prevent memory exhaustion from unbounded cache growth.
+ */
+const TOKEN_CACHE_MAX_SIZE = 10000; // Maximum cached tokens (10k * ~500 bytes = ~5MB max)
+const TOKEN_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours - tokens expire for security
 
 interface TokenCacheEntry {
     userId: string;
     extras?: any;
-    cachedAt: number;
 }
 
 interface AuthTokens {
@@ -16,7 +23,10 @@ interface AuthTokens {
 }
 
 class AuthModule {
-    private tokenCache = new Map<string, TokenCacheEntry>();
+    private tokenCache = new LRUCache<string, TokenCacheEntry>(
+        TOKEN_CACHE_MAX_SIZE,
+        TOKEN_CACHE_TTL_MS
+    );
     private tokens: AuthTokens | null = null;
     
     async init(): Promise<void> {
@@ -66,11 +76,10 @@ class AuthModule {
         
         const token = await this.tokens.generator.new(payload);
         
-        // Cache the token immediately
+        // Cache the token (LRU cache handles TTL and eviction automatically)
         this.tokenCache.set(token, {
             userId,
             extras,
-            cachedAt: Date.now()
         });
         
         return token;
@@ -100,11 +109,10 @@ class AuthModule {
             const userId = verified.user as string;
             const extras = verified.extras;
             
-            // Cache the result permanently
+            // Cache the result (LRU cache handles TTL and eviction automatically)
             this.tokenCache.set(token, {
                 userId,
                 extras,
-                cachedAt: Date.now()
             });
             
             return { userId, extras };
@@ -131,22 +139,33 @@ class AuthModule {
         this.tokenCache.delete(token);
     }
     
-    getCacheStats(): { size: number; oldestEntry: number | null } {
-        if (this.tokenCache.size === 0) {
-            return { size: 0, oldestEntry: null };
+    /**
+     * Returns comprehensive cache statistics for monitoring.
+     *
+     * Use this to track cache health, hit rates, and memory pressure.
+     * Consider logging these stats periodically for observability.
+     *
+     * @returns CacheStats object with size, hits, misses, evictions, etc.
+     */
+    getCacheStats(): CacheStats {
+        return this.tokenCache.getStats();
+    }
+
+    /**
+     * Proactively evicts expired tokens from the cache.
+     *
+     * While expired tokens are automatically removed on access,
+     * calling this method periodically ensures memory is reclaimed
+     * even for tokens that are never accessed again.
+     *
+     * @returns Number of expired tokens removed
+     */
+    evictExpiredTokens(): number {
+        const removed = this.tokenCache.evictExpired();
+        if (removed > 0) {
+            log({ module: 'auth' }, `Evicted ${removed} expired tokens from cache`);
         }
-        
-        let oldest = Date.now();
-        for (const entry of this.tokenCache.values()) {
-            if (entry.cachedAt < oldest) {
-                oldest = entry.cachedAt;
-            }
-        }
-        
-        return {
-            size: this.tokenCache.size,
-            oldestEntry: oldest
-        };
+        return removed;
     }
     
     async createGitHubToken(userId: string): Promise<string> {
@@ -178,12 +197,21 @@ class AuthModule {
         }
     }
 
-    // Cleanup old entries (optional - can be called periodically)
+    /**
+     * Performs cache maintenance: evicts expired tokens and logs statistics.
+     *
+     * Call this periodically (e.g., every hour) for optimal cache health.
+     * The LRU cache automatically evicts based on size, but this ensures
+     * expired tokens are proactively cleaned up for better memory usage.
+     */
     cleanup(): void {
-        // Note: Since tokens are cached "forever" as requested,
-        // we don't do automatic cleanup. This method exists if needed later.
+        const expired = this.evictExpiredTokens();
         const stats = this.getCacheStats();
-        log({ module: 'auth' }, `Token cache size: ${stats.size} entries`);
+        log(
+            { module: 'auth' },
+            `Token cache cleanup: ${expired} expired, ${stats.size}/${stats.maxSize} entries, ` +
+            `${stats.hitRate}% hit rate, ${stats.evictions} evictions`
+        );
     }
 }
 
