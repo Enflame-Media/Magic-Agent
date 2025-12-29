@@ -65,7 +65,8 @@ This is the **API-only** component of the admin dashboard system:
 │   ├── env.ts             # Environment type definitions
 │   ├── auth.ts            # Better-Auth configuration
 │   ├── middleware/
-│   │   └── auth.ts        # Auth middleware
+│   │   ├── auth.ts        # Auth middleware (session + admin role check)
+│   │   └── csrf.ts        # CSRF protection middleware (HAP-616)
 │   └── routes/
 │       ├── auth.ts        # Better-Auth mount
 │       └── metrics.ts     # Analytics Engine queries
@@ -190,6 +191,8 @@ yarn db:migrate:prod
 | `/api/auth/admin/*` | * | Admin user management (admin only) |
 
 **Security Note (HAP-612)**: Public registration is DISABLED. New admin users must be created via the Better-Auth admin API or direct database insertion.
+
+**Security Note (HAP-616)**: All state-changing requests (POST, PUT, DELETE, PATCH) require CSRF protection. The API uses the double-submit cookie pattern - requests must include an `X-CSRF-Token` header matching the `csrf-token` cookie.
 
 ### Metrics API (Protected - Admin Only)
 
