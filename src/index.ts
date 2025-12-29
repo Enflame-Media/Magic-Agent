@@ -132,30 +132,64 @@ app.get('/health', (c) => {
  * Readiness check endpoint
  * @route GET /ready
  * @returns Service readiness status with dependency checks
+ *
+ * @remarks
+ * HAP-638: Enhanced to test actual Secrets Store retrieval for Analytics Engine
  */
 app.get('/ready', async (c) => {
     const checks: Record<string, boolean> = {
         database: false,
-        analyticsConfig: false,
+        analyticsBindings: false,
+        analyticsSecrets: false,
     };
+    const details: Record<string, string> = {};
 
     // Check D1 database connectivity
     try {
         await c.env.DB.prepare('SELECT 1').first();
         checks.database = true;
-    } catch {
+    } catch (error) {
         checks.database = false;
+        details.database = error instanceof Error ? error.message : 'Unknown error';
     }
 
-    // Check Analytics Engine configuration
-    checks.analyticsConfig = !!(c.env.ANALYTICS_ACCOUNT_ID && c.env.ANALYTICS_API_TOKEN);
+    // Check Analytics Engine bindings exist
+    checks.analyticsBindings = !!(c.env.ANALYTICS_ACCOUNT_ID && c.env.ANALYTICS_API_TOKEN);
+    if (!checks.analyticsBindings) {
+        details.analyticsBindings = 'Missing ANALYTICS_ACCOUNT_ID or ANALYTICS_API_TOKEN binding';
+    }
 
-    const isReady = Object.values(checks).every(Boolean);
+    // Check Analytics Engine secrets can be retrieved (HAP-638)
+    if (checks.analyticsBindings) {
+        try {
+            const accountId = await c.env.ANALYTICS_ACCOUNT_ID!.get();
+            const apiToken = await c.env.ANALYTICS_API_TOKEN!.get();
+
+            if (accountId && apiToken) {
+                checks.analyticsSecrets = true;
+                // Log partial values for debugging (safe - only shows format, not full value)
+                details.analyticsAccountId = accountId.length > 8
+                    ? `${accountId.substring(0, 4)}...${accountId.substring(accountId.length - 4)} (${accountId.length} chars)`
+                    : `[${accountId.length} chars]`;
+                details.analyticsApiToken = apiToken.length > 8
+                    ? `${apiToken.substring(0, 4)}...${apiToken.substring(apiToken.length - 4)} (${apiToken.length} chars)`
+                    : `[${apiToken.length} chars]`;
+            } else {
+                details.analyticsSecrets = 'Secrets Store returned empty values';
+            }
+        } catch (error) {
+            checks.analyticsSecrets = false;
+            details.analyticsSecrets = error instanceof Error ? error.message : 'Failed to retrieve secrets';
+        }
+    }
+
+    const isReady = checks.database && checks.analyticsBindings && checks.analyticsSecrets;
 
     return c.json(
         {
             ready: isReady,
             checks,
+            details,
             timestamp: new Date().toISOString(),
         },
         isReady ? 200 : 503
