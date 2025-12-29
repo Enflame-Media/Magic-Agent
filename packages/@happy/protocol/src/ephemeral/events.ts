@@ -17,7 +17,20 @@ import { STRING_LIMITS } from '../constraints';
  */
 export const ApiEphemeralActivityUpdateSchema = z.object({
     type: z.literal('activity'),
-    id: z.string().min(1).max(STRING_LIMITS.ID_MAX), // Session ID
+    /**
+     * Session ID
+     *
+     * @remarks
+     * Field name: `id`
+     *
+     * Note: Other session-related schemas use different field names:
+     * - `new-session`, `update-session`, `activity`, `usage`: use `id`
+     * - `new-message`, `delete-session`: use `sid`
+     *
+     * @see ApiUpdateNewMessageSchema - uses `sid` for session ID
+     * @see ApiDeleteSessionSchema - uses `sid` for session ID
+     */
+    id: z.string().min(1).max(STRING_LIMITS.ID_MAX),
     active: z.boolean(),
     activeAt: z.number(),
     thinking: z.boolean(),
@@ -37,7 +50,20 @@ export type ApiEphemeralActivityUpdate = z.infer<typeof ApiEphemeralActivityUpda
  */
 export const ApiEphemeralUsageUpdateSchema = z.object({
     type: z.literal('usage'),
-    id: z.string().min(1).max(STRING_LIMITS.ID_MAX), // Session ID
+    /**
+     * Session ID
+     *
+     * @remarks
+     * Field name: `id`
+     *
+     * Note: Other session-related schemas use different field names:
+     * - `new-session`, `update-session`, `activity`, `usage`: use `id`
+     * - `new-message`, `delete-session`: use `sid`
+     *
+     * @see ApiUpdateNewMessageSchema - uses `sid` for session ID
+     * @see ApiDeleteSessionSchema - uses `sid` for session ID
+     */
+    id: z.string().min(1).max(STRING_LIMITS.ID_MAX),
     key: z.string().min(1).max(STRING_LIMITS.LABEL_MAX), // Usage key/identifier
     timestamp: z.number(),
     tokens: z.record(z.string().max(STRING_LIMITS.LABEL_MAX), z.number()).refine(
@@ -59,7 +85,21 @@ export type ApiEphemeralUsageUpdate = z.infer<typeof ApiEphemeralUsageUpdateSche
  */
 export const ApiEphemeralMachineActivityUpdateSchema = z.object({
     type: z.literal('machine-activity'),
-    id: z.string().min(1).max(STRING_LIMITS.ID_MAX), // Machine ID
+    /**
+     * Machine ID
+     *
+     * @remarks
+     * Field name: `id`
+     *
+     * Note: Other machine-related schemas use different field names:
+     * - `new-machine`, `update-machine`, `machine-status`: use `machineId`
+     * - `machine-activity`: uses `id`
+     *
+     * @see ApiNewMachineSchema - uses `machineId` for machine ID
+     * @see ApiUpdateMachineStateSchema - uses `machineId` for machine ID
+     * @see ApiEphemeralMachineStatusUpdateSchema - uses `machineId` for machine ID
+     */
+    id: z.string().min(1).max(STRING_LIMITS.ID_MAX),
     active: z.boolean(),
     activeAt: z.number(),
 });
@@ -73,6 +113,18 @@ export type ApiEphemeralMachineActivityUpdate = z.infer<typeof ApiEphemeralMachi
  */
 export const ApiEphemeralMachineStatusUpdateSchema = z.object({
     type: z.literal('machine-status'),
+    /**
+     * Machine ID
+     *
+     * @remarks
+     * Field name: `machineId`
+     *
+     * Note: Other machine-related schemas use different field names:
+     * - `new-machine`, `update-machine`, `machine-status`: use `machineId`
+     * - `machine-activity`: uses `id`
+     *
+     * @see ApiEphemeralMachineActivityUpdateSchema - uses `id` for machine ID
+     */
     machineId: z.string().min(1).max(STRING_LIMITS.ID_MAX),
     online: z.boolean(),
     timestamp: z.number(),

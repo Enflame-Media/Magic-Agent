@@ -58,7 +58,23 @@ export type ApiMessage = z.infer<typeof ApiMessageSchema>;
  */
 export const ApiUpdateNewMessageSchema = z.object({
     t: z.literal('new-message'),
-    sid: z.string().min(1).max(STRING_LIMITS.ID_MAX), // Session ID - MUST be 'sid', not 'sessionId'
+    /**
+     * Session ID
+     *
+     * @remarks
+     * Field name: `sid` (short for session ID)
+     *
+     * CRITICAL: Uses 'sid' (not 'sessionId') per client expectation.
+     * This was the source of the bug that motivated HAP-383.
+     *
+     * Note: Other session-related schemas use different field names:
+     * - `new-session`, `update-session`, `activity`, `usage`: use `id`
+     * - `new-message`, `delete-session`: use `sid`
+     *
+     * @see ApiUpdateNewSessionSchema - uses `id` for session ID
+     * @see ApiUpdateSessionStateSchema - uses `id` for session ID
+     */
+    sid: z.string().min(1).max(STRING_LIMITS.ID_MAX),
     message: ApiMessageSchema,
 });
 
@@ -79,7 +95,20 @@ export type ApiUpdateNewMessage = z.infer<typeof ApiUpdateNewMessageSchema>;
  */
 export const ApiDeleteSessionSchema = z.object({
     t: z.literal('delete-session'),
-    sid: z.string().min(1).max(STRING_LIMITS.ID_MAX), // Session ID
+    /**
+     * Session ID
+     *
+     * @remarks
+     * Field name: `sid` (short for session ID)
+     *
+     * Note: Other session-related schemas use different field names:
+     * - `new-session`, `update-session`, `activity`, `usage`: use `id`
+     * - `new-message`, `delete-session`: use `sid`
+     *
+     * @see ApiUpdateNewSessionSchema - uses `id` for session ID
+     * @see ApiUpdateSessionStateSchema - uses `id` for session ID
+     */
+    sid: z.string().min(1).max(STRING_LIMITS.ID_MAX),
 });
 
 export type ApiDeleteSession = z.infer<typeof ApiDeleteSessionSchema>;

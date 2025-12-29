@@ -35,6 +35,18 @@ import { STRING_LIMITS } from '../constraints';
  */
 export const ApiNewMachineSchema = z.object({
     t: z.literal('new-machine'),
+    /**
+     * Machine ID
+     *
+     * @remarks
+     * Field name: `machineId`
+     *
+     * Note: Other machine-related schemas use different field names:
+     * - `new-machine`, `update-machine`, `machine-status`: use `machineId`
+     * - `machine-activity`: uses `id`
+     *
+     * @see ApiEphemeralMachineActivityUpdateSchema - uses `id` for machine ID
+     */
     machineId: z.string().min(1).max(STRING_LIMITS.ID_MAX),
     seq: z.number(),
     metadata: z.string().max(STRING_LIMITS.ENCRYPTED_STATE_MAX), // Encrypted metadata
@@ -68,6 +80,18 @@ export type ApiNewMachine = z.infer<typeof ApiNewMachineSchema>;
  */
 export const ApiUpdateMachineStateSchema = z.object({
     t: z.literal('update-machine'),
+    /**
+     * Machine ID
+     *
+     * @remarks
+     * Field name: `machineId`
+     *
+     * Note: Other machine-related schemas use different field names:
+     * - `new-machine`, `update-machine`, `machine-status`: use `machineId`
+     * - `machine-activity`: uses `id`
+     *
+     * @see ApiEphemeralMachineActivityUpdateSchema - uses `id` for machine ID
+     */
     machineId: z.string().min(1).max(STRING_LIMITS.ID_MAX),
     metadata: VersionedValueSchema.optional(),
     daemonState: VersionedValueSchema.optional(),

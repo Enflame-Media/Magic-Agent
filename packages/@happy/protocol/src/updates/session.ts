@@ -36,7 +36,20 @@ import { STRING_LIMITS } from '../constraints';
  */
 export const ApiUpdateNewSessionSchema = z.object({
     t: z.literal('new-session'),
-    id: z.string().min(1).max(STRING_LIMITS.ID_MAX), // Session ID
+    /**
+     * Session ID
+     *
+     * @remarks
+     * Field name: `id`
+     *
+     * Note: Other session-related schemas use different field names:
+     * - `new-session`, `update-session`, `activity`, `usage`: use `id`
+     * - `new-message`, `delete-session`: use `sid`
+     *
+     * @see ApiUpdateNewMessageSchema - uses `sid` for session ID
+     * @see ApiDeleteSessionSchema - uses `sid` for session ID
+     */
+    id: z.string().min(1).max(STRING_LIMITS.ID_MAX),
     seq: z.number(),
     metadata: z.string().max(STRING_LIMITS.ENCRYPTED_STATE_MAX), // Encrypted metadata
     metadataVersion: z.number(),
@@ -69,6 +82,19 @@ export type ApiUpdateNewSession = z.infer<typeof ApiUpdateNewSessionSchema>;
  */
 export const ApiUpdateSessionStateSchema = z.object({
     t: z.literal('update-session'),
+    /**
+     * Session ID
+     *
+     * @remarks
+     * Field name: `id`
+     *
+     * Note: Other session-related schemas use different field names:
+     * - `new-session`, `update-session`, `activity`, `usage`: use `id`
+     * - `new-message`, `delete-session`: use `sid`
+     *
+     * @see ApiUpdateNewMessageSchema - uses `sid` for session ID
+     * @see ApiDeleteSessionSchema - uses `sid` for session ID
+     */
     id: z.string().min(1).max(STRING_LIMITS.ID_MAX),
     agentState: NullableVersionedValueSchema.nullish(),
     metadata: NullableVersionedValueSchema.nullish(),
