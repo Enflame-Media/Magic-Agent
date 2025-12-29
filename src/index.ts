@@ -3,6 +3,7 @@ import { logger } from '@/middleware/logger';
 import { cors } from '@/middleware/cors';
 import { timing, addServerTiming } from '@/middleware/timing';
 import { errorHandler } from '@/middleware/error';
+import { bodySizeLimits } from '@/middleware/bodySize';
 import { initAuth, cleanupExpiredTokens } from '@/lib/auth';
 import { getMasterSecret, validateEnv } from '@/config/env';
 import authRoutes from '@/routes/auth';
@@ -130,11 +131,18 @@ const app = new OpenAPIHono<{ Bindings: Env }>();
 
 /*
  * Global Middleware
- * Applied in order: timing → logging → CORS → env validation → auth initialization → routes → error handling
+ * Applied in order: timing → logging → CORS → body size → env validation → auth initialization → routes → error handling
  */
 app.use('*', timing());
 app.use('*', logger());
 app.use('*', cors());
+
+/*
+ * Body size limiting (HAP-629)
+ * Prevents DoS attacks via oversized request payloads.
+ * Applied early to reject large payloads before authentication overhead.
+ */
+app.use('*', bodySizeLimits.sync()); // 10MB default for sync payloads
 
 /*
  * Environment validation middleware (HAP-523)
