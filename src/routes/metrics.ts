@@ -117,6 +117,10 @@ const summaryRoute = createRoute({
                 'application/json': {
                     schema: z.object({
                         data: z.array(MetricsSummarySchema),
+                        isMockData: z.boolean().openapi({
+                            description: 'True if using fallback mock data (Analytics Engine unavailable or empty)',
+                            example: false,
+                        }),
                         timestamp: z.string(),
                     }),
                 },
@@ -154,6 +158,10 @@ const timeseriesRoute = createRoute({
                 'application/json': {
                     schema: z.object({
                         data: z.array(TimeseriesPointSchema),
+                        isMockData: z.boolean().openapi({
+                            description: 'True if using fallback mock data',
+                            example: false,
+                        }),
                         timestamp: z.string(),
                     }),
                 },
@@ -175,7 +183,7 @@ const cacheHitsRoute = createRoute({
     path: '/cache-hits',
     tags: ['Metrics'],
     summary: 'Get profile cache hit rate',
-    description: 'Returns the cache hit/miss ratio for profile lookups in the last 24 hours.',
+    description: 'Returns the cache hit/miss ratio for profile lookups in the last 24 hours. Note: Currently estimates cache usage from sync mode distribution.',
     responses: {
         200: {
             description: 'Cache hit rate retrieved successfully',
@@ -183,6 +191,10 @@ const cacheHitsRoute = createRoute({
                 'application/json': {
                     schema: z.object({
                         data: CacheHitRateSchema,
+                        isMockData: z.boolean().openapi({
+                            description: 'True if using fallback mock data',
+                            example: false,
+                        }),
                         timestamp: z.string(),
                     }),
                 },
@@ -204,6 +216,10 @@ const modeDistributionRoute = createRoute({
                 'application/json': {
                     schema: z.object({
                         data: ModeDistributionSchema,
+                        isMockData: z.boolean().openapi({
+                            description: 'True if using fallback mock data',
+                            example: false,
+                        }),
                         timestamp: z.string(),
                     }),
                 },
@@ -250,6 +266,10 @@ const bundleTrendsRoute = createRoute({
                 'application/json': {
                     schema: z.object({
                         data: z.array(BundleSizePointSchema),
+                        isMockData: z.boolean().openapi({
+                            description: 'True if using fallback mock data',
+                            example: false,
+                        }),
                         timestamp: z.string(),
                     }),
                 },
@@ -279,6 +299,10 @@ const bundleLatestRoute = createRoute({
                 'application/json': {
                     schema: z.object({
                         data: z.array(BundleSizeLatestSchema),
+                        isMockData: z.boolean().openapi({
+                            description: 'True if using fallback mock data',
+                            example: false,
+                        }),
                         timestamp: z.string(),
                     }),
                 },
@@ -294,19 +318,44 @@ const bundleLatestRoute = createRoute({
 /**
  * Helper to query Analytics Engine SQL API
  * Uses Secrets Store bindings which require async .get() calls
+ *
+ * @remarks
+ * Field mappings for sync_metrics dataset (from happy-server-workers):
+ * - blob1: sync type ('messages' | 'profile' | 'artifacts')
+ * - blob2: sync mode ('full' | 'incremental' | 'cached')
+ * - blob3: sessionId (optional)
+ * - double1: bytesReceived
+ * - double2: itemsReceived
+ * - double3: itemsSkipped
+ * - double4: durationMs
+ * - index1: userId/accountId
+ *
+ * @see HAP-638 Fixed field mappings to match actual ingestion schema
  */
 async function queryAnalyticsEngine(
     env: Env,
     sql: string
 ): Promise<{ data: unknown[]; meta: unknown } | null> {
     if (!env.ANALYTICS_ACCOUNT_ID || !env.ANALYTICS_API_TOKEN) {
-        console.warn('[Metrics] Analytics Engine not configured');
+        console.warn('[Metrics] Analytics Engine not configured - ANALYTICS_ACCOUNT_ID or ANALYTICS_API_TOKEN binding missing');
         return null;
     }
 
     // Retrieve secrets from Secrets Store
-    const accountId = await env.ANALYTICS_ACCOUNT_ID.get();
-    const apiToken = await env.ANALYTICS_API_TOKEN.get();
+    let accountId: string;
+    let apiToken: string;
+    try {
+        accountId = await env.ANALYTICS_ACCOUNT_ID.get();
+        apiToken = await env.ANALYTICS_API_TOKEN.get();
+    } catch (error) {
+        console.error('[Metrics] Failed to retrieve secrets from Secrets Store:', error);
+        return null;
+    }
+
+    if (!accountId || !apiToken) {
+        console.warn('[Metrics] Secrets Store returned empty values for ANALYTICS_ACCOUNT_ID or ANALYTICS_API_TOKEN');
+        return null;
+    }
 
     const response = await fetch(
         `https://api.cloudflare.com/client/v4/accounts/${accountId}/analytics_engine/sql`,
@@ -322,7 +371,12 @@ async function queryAnalyticsEngine(
 
     if (!response.ok) {
         const text = await response.text();
-        console.error('[Metrics] Analytics Engine query failed:', response.status, text);
+        console.error('[Metrics] Analytics Engine query failed:', {
+            status: response.status,
+            statusText: response.statusText,
+            body: text,
+            query: sql.substring(0, 200) + (sql.length > 200 ? '...' : ''),
+        });
         return null;
     }
 
@@ -332,6 +386,12 @@ async function queryAnalyticsEngine(
 /**
  * GET /api/metrics/summary
  * Returns last 24h summary by type/mode
+ *
+ * @remarks
+ * Field mappings (HAP-638):
+ * - blob1 = syncType, blob2 = syncMode
+ * - double4 = durationMs (NOT double1 which is bytesReceived)
+ * - successRate is estimated as (itemsReceived > 0) since explicit success flag isn't tracked
  */
 metricsRoutes.openapi(summaryRoute, async (c) => {
     const result = await queryAnalyticsEngine(
@@ -341,9 +401,9 @@ metricsRoutes.openapi(summaryRoute, async (c) => {
             blob1 as syncType,
             blob2 as syncMode,
             COUNT(*) as count,
-            AVG(double1) as avgDurationMs,
-            quantile(0.95)(double1) as p95DurationMs,
-            SUM(CASE WHEN double2 = 1 THEN 1 ELSE 0 END) / COUNT(*) as successRate
+            AVG(double4) as avgDurationMs,
+            quantile(0.95)(double4) as p95DurationMs,
+            SUM(CASE WHEN double2 > 0 THEN 1 ELSE 0 END) * 1.0 / COUNT(*) as successRate
         FROM sync_metrics_${c.env.ENVIRONMENT === 'production' ? 'prod' : 'dev'}
         WHERE timestamp > NOW() - INTERVAL '24' HOUR
         GROUP BY blob1, blob2
@@ -351,29 +411,39 @@ metricsRoutes.openapi(summaryRoute, async (c) => {
         `
     );
 
-    // Return mock data if Analytics Engine not configured or query failed
-    const data: MetricsSummary[] = (result?.data as MetricsSummary[]) ?? [
-        {
-            syncType: 'session',
-            syncMode: 'full',
-            count: 150,
-            avgDurationMs: 245.5,
-            p95DurationMs: 890,
-            successRate: 0.98,
-        },
-        {
-            syncType: 'session',
-            syncMode: 'incremental',
-            count: 450,
-            avgDurationMs: 85.2,
-            p95DurationMs: 210,
-            successRate: 0.99,
-        },
-    ];
+    // Determine if we're using mock data
+    const isMockData = !result?.data || (Array.isArray(result.data) && result.data.length === 0);
+
+    if (isMockData) {
+        console.warn('[Metrics] /summary returning mock data - Analytics Engine query returned no results');
+    }
+
+    // Return real data or mock fallback
+    const data: MetricsSummary[] = isMockData
+        ? [
+              {
+                  syncType: 'session',
+                  syncMode: 'full',
+                  count: 150,
+                  avgDurationMs: 245.5,
+                  p95DurationMs: 890,
+                  successRate: 0.98,
+              },
+              {
+                  syncType: 'session',
+                  syncMode: 'incremental',
+                  count: 450,
+                  avgDurationMs: 85.2,
+                  p95DurationMs: 210,
+                  successRate: 0.99,
+              },
+          ]
+        : (result.data as MetricsSummary[]);
 
     return c.json(
         {
             data,
+            isMockData,
             timestamp: new Date().toISOString(),
         },
         200
@@ -383,6 +453,10 @@ metricsRoutes.openapi(summaryRoute, async (c) => {
 /**
  * GET /api/metrics/timeseries
  * Returns time-bucketed metrics
+ *
+ * @remarks
+ * Field mappings (HAP-638):
+ * - double4 = durationMs (NOT double1 which is bytesReceived)
  */
 metricsRoutes.openapi(timeseriesRoute, async (c) => {
     const { hours = '24', bucket = 'hour' } = c.req.valid('query');
@@ -395,13 +469,14 @@ metricsRoutes.openapi(timeseriesRoute, async (c) => {
     const hoursNum = hoursResult.value;
 
     // Build safe query using query builder
+    // HAP-638: Use double4 for durationMs (not double1 which is bytesReceived)
     const bucketFunc = bucket === 'day' ? 'Day' : 'Hour';
     const query = createQueryBuilder('sync_metrics', c.env.ENVIRONMENT);
     query
         .select([
             `toStartOf${bucketFunc}(timestamp) as timestamp`,
             'COUNT(*) as count',
-            'AVG(double1) as avgDurationMs',
+            'AVG(double4) as avgDurationMs',
         ])
         .whereTimestampInterval(hoursNum, 'HOUR')
         .groupBy(['timestamp'])
@@ -409,13 +484,22 @@ metricsRoutes.openapi(timeseriesRoute, async (c) => {
 
     const result = await queryAnalyticsEngine(c.env, query.build());
 
-    // Return mock data if not configured
-    const data: TimeseriesPoint[] =
-        (result?.data as TimeseriesPoint[]) ?? generateMockTimeseries(hoursNum, bucket);
+    // Determine if we're using mock data
+    const isMockData = !result?.data || (Array.isArray(result.data) && result.data.length === 0);
+
+    if (isMockData) {
+        console.warn('[Metrics] /timeseries returning mock data - Analytics Engine query returned no results');
+    }
+
+    // Return real data or mock fallback
+    const data: TimeseriesPoint[] = isMockData
+        ? generateMockTimeseries(hoursNum, bucket)
+        : (result.data as TimeseriesPoint[]);
 
     return c.json(
         {
             data,
+            isMockData,
             timestamp: new Date().toISOString(),
         },
         200
@@ -425,14 +509,27 @@ metricsRoutes.openapi(timeseriesRoute, async (c) => {
 /**
  * GET /api/metrics/cache-hits
  * Returns profile cache hit rate
+ *
+ * @remarks
+ * HAP-638: Cache hit/miss tracking is NOT currently implemented in the ingestion layer.
+ * The blob3 field contains sessionId, not cache status.
+ *
+ * This endpoint currently returns mock data until cache tracking is added to:
+ * - happy-server-workers/src/routes/analytics.ts (ingestion)
+ * - Or a separate cache metrics endpoint is created
+ *
+ * TODO: Implement cache hit tracking in happy-app sync logic and ingest to Analytics Engine
  */
 metricsRoutes.openapi(cacheHitsRoute, async (c) => {
+    // HAP-638: Cache hit tracking is not implemented in ingestion
+    // blob3 contains sessionId, not 'hit'/'miss' values
+    // For now, we can estimate cache usage from sync mode = 'cached'
     const result = await queryAnalyticsEngine(
         c.env,
         `
         SELECT
-            SUM(CASE WHEN blob3 = 'hit' THEN 1 ELSE 0 END) as hits,
-            SUM(CASE WHEN blob3 = 'miss' THEN 1 ELSE 0 END) as misses
+            SUM(CASE WHEN blob2 = 'cached' THEN 1 ELSE 0 END) as hits,
+            SUM(CASE WHEN blob2 != 'cached' THEN 1 ELSE 0 END) as misses
         FROM sync_metrics_${c.env.ENVIRONMENT === 'production' ? 'prod' : 'dev'}
         WHERE timestamp > NOW() - INTERVAL '24' HOUR
           AND blob1 = 'profile'
@@ -441,21 +538,32 @@ metricsRoutes.openapi(cacheHitsRoute, async (c) => {
 
     // Calculate from result or use mock
     let data: CacheHitRate;
+    let isMockData = false;
+
     if (result?.data && Array.isArray(result.data) && result.data.length > 0) {
         const row = result.data[0] as { hits: number; misses: number };
-        const total = row.hits + row.misses;
-        data = {
-            hits: row.hits,
-            misses: row.misses,
-            hitRate: total > 0 ? row.hits / total : 0,
-        };
+        const total = (row.hits ?? 0) + (row.misses ?? 0);
+        if (total > 0) {
+            data = {
+                hits: row.hits ?? 0,
+                misses: row.misses ?? 0,
+                hitRate: row.hits / total,
+            };
+        } else {
+            // No profile syncs in timeframe, use mock
+            isMockData = true;
+            data = { hits: 850, misses: 150, hitRate: 0.85 };
+        }
     } else {
+        isMockData = true;
+        console.warn('[Metrics] /cache-hits returning mock data - Analytics Engine query returned no results');
         data = { hits: 850, misses: 150, hitRate: 0.85 };
     }
 
     return c.json(
         {
             data,
+            isMockData,
             timestamp: new Date().toISOString(),
         },
         200
@@ -465,6 +573,9 @@ metricsRoutes.openapi(cacheHitsRoute, async (c) => {
 /**
  * GET /api/metrics/mode-distribution
  * Returns full/incremental/cached distribution
+ *
+ * @remarks
+ * Field mappings (HAP-638): blob2 = syncMode - this query is correct
  */
 metricsRoutes.openapi(modeDistributionRoute, async (c) => {
     const result = await queryAnalyticsEngine(
@@ -481,24 +592,35 @@ metricsRoutes.openapi(modeDistributionRoute, async (c) => {
 
     // Transform result or use mock
     let data: ModeDistribution;
-    if (result?.data && Array.isArray(result.data)) {
+    let isMockData = false;
+
+    if (result?.data && Array.isArray(result.data) && result.data.length > 0) {
         const modeMap: Record<string, number> = {};
         for (const row of result.data as { mode: string; count: number }[]) {
             modeMap[row.mode] = row.count;
         }
-        data = {
-            full: modeMap['full'] ?? 0,
-            incremental: modeMap['incremental'] ?? 0,
-            cached: modeMap['cached'] ?? 0,
-            total: Object.values(modeMap).reduce((a, b) => a + b, 0),
-        };
+        const total = Object.values(modeMap).reduce((a, b) => a + b, 0);
+        if (total > 0) {
+            data = {
+                full: modeMap['full'] ?? 0,
+                incremental: modeMap['incremental'] ?? 0,
+                cached: modeMap['cached'] ?? 0,
+                total,
+            };
+        } else {
+            isMockData = true;
+            data = { full: 200, incremental: 450, cached: 350, total: 1000 };
+        }
     } else {
+        isMockData = true;
+        console.warn('[Metrics] /mode-distribution returning mock data - Analytics Engine query returned no results');
         data = { full: 200, incremental: 450, cached: 350, total: 1000 };
     }
 
     return c.json(
         {
             data,
+            isMockData,
             timestamp: new Date().toISOString(),
         },
         200
@@ -575,7 +697,9 @@ metricsRoutes.openapi(bundleTrendsRoute, async (c) => {
 
     // Transform result or use mock data
     let data: BundleSizePoint[];
-    if (result?.data && Array.isArray(result.data) && result.data.length > 0) {
+    const isMockData = !result?.data || (Array.isArray(result.data) && result.data.length === 0);
+
+    if (!isMockData) {
         data = (result.data as Array<{
             date: string;
             platform: string;
@@ -593,12 +717,14 @@ metricsRoutes.openapi(bundleTrendsRoute, async (c) => {
         }));
     } else {
         // Generate mock data for development
+        console.warn('[Metrics] /bundle-trends returning mock data - Analytics Engine query returned no results');
         data = generateMockBundleTrends(daysNum, platform);
     }
 
     return c.json(
         {
             data,
+            isMockData,
             timestamp: new Date().toISOString(),
         },
         200
@@ -631,7 +757,9 @@ metricsRoutes.openapi(bundleLatestRoute, async (c) => {
 
     // Transform result or use mock data
     let data: BundleSizeLatest[];
-    if (result?.data && Array.isArray(result.data) && result.data.length > 0) {
+    const isMockData = !result?.data || (Array.isArray(result.data) && result.data.length === 0);
+
+    if (!isMockData) {
         // Get the latest entry for each platform
         const platformMap = new Map<string, BundleSizeLatest>();
         for (const row of result.data as Array<{
@@ -658,6 +786,7 @@ metricsRoutes.openapi(bundleLatestRoute, async (c) => {
         data = Array.from(platformMap.values());
     } else {
         // Mock data for development
+        console.warn('[Metrics] /bundle-latest returning mock data - Analytics Engine query returned no results');
         data = [
             {
                 platform: 'web',
@@ -674,6 +803,7 @@ metricsRoutes.openapi(bundleLatestRoute, async (c) => {
     return c.json(
         {
             data,
+            isMockData,
             timestamp: new Date().toISOString(),
         },
         200
@@ -765,6 +895,10 @@ const validationSummaryRoute = createRoute({
                 'application/json': {
                     schema: z.object({
                         data: ValidationSummarySchema,
+                        isMockData: z.boolean().openapi({
+                            description: 'True if using fallback mock data',
+                            example: false,
+                        }),
                         timestamp: z.string(),
                     }),
                 },
@@ -808,6 +942,10 @@ const unknownTypeBreakdownRoute = createRoute({
                     schema: z.object({
                         data: z.array(UnknownTypeBreakdownSchema),
                         total: z.number(),
+                        isMockData: z.boolean().openapi({
+                            description: 'True if using fallback mock data',
+                            example: false,
+                        }),
                         timestamp: z.string(),
                     }),
                 },
@@ -854,6 +992,10 @@ const validationTimeseriesRoute = createRoute({
                 'application/json': {
                     schema: z.object({
                         data: z.array(ValidationTimeseriesPointSchema),
+                        isMockData: z.boolean().openapi({
+                            description: 'True if using fallback mock data',
+                            example: false,
+                        }),
                         timestamp: z.string(),
                     }),
                 },
@@ -893,7 +1035,9 @@ metricsRoutes.openapi(validationSummaryRoute, async (c) => {
 
     // Calculate unknown types from total - schema - strict
     let data: ValidationSummary;
-    if (result?.data && Array.isArray(result.data) && result.data.length > 0) {
+    const isMockData = !result?.data || (Array.isArray(result.data) && result.data.length === 0);
+
+    if (!isMockData) {
         const row = result.data[0] as {
             totalFailures: number;
             schemaFailures: number;
@@ -911,6 +1055,7 @@ metricsRoutes.openapi(validationSummaryRoute, async (c) => {
         };
     } else {
         // Mock data for development
+        console.warn('[Metrics] /validation-summary returning mock data - Analytics Engine query returned no results');
         data = {
             totalFailures: 150,
             schemaFailures: 20,
@@ -924,6 +1069,7 @@ metricsRoutes.openapi(validationSummaryRoute, async (c) => {
     return c.json(
         {
             data,
+            isMockData,
             timestamp: new Date().toISOString(),
         },
         200
@@ -965,8 +1111,9 @@ metricsRoutes.openapi(unknownTypeBreakdownRoute, async (c) => {
 
     let data: UnknownTypeBreakdown[];
     let total = 0;
+    const isMockData = !result?.data || (Array.isArray(result.data) && result.data.length === 0);
 
-    if (result?.data && Array.isArray(result.data) && result.data.length > 0) {
+    if (!isMockData) {
         const rows = result.data as Array<{ typeName: string; count: number }>;
         total = rows.reduce((sum, row) => sum + row.count, 0);
         data = rows.map((row) => ({
@@ -976,6 +1123,7 @@ metricsRoutes.openapi(unknownTypeBreakdownRoute, async (c) => {
         }));
     } else {
         // Mock data for development
+        console.warn('[Metrics] /validation-unknown-types returning mock data - Analytics Engine query returned no results');
         data = [
             { typeName: 'thinking', count: 75, percentage: 60.0 },
             { typeName: 'status', count: 30, percentage: 24.0 },
@@ -988,6 +1136,7 @@ metricsRoutes.openapi(unknownTypeBreakdownRoute, async (c) => {
         {
             data,
             total,
+            isMockData,
             timestamp: new Date().toISOString(),
         },
         200
@@ -1027,7 +1176,9 @@ metricsRoutes.openapi(validationTimeseriesRoute, async (c) => {
     const result = await queryAnalyticsEngine(c.env, query.build());
 
     let data: ValidationTimeseriesPoint[];
-    if (result?.data && Array.isArray(result.data) && result.data.length > 0) {
+    const isMockData = !result?.data || (Array.isArray(result.data) && result.data.length === 0);
+
+    if (!isMockData) {
         data = (result.data as Array<{
             timestamp: string;
             totalFailures: number;
@@ -1042,12 +1193,14 @@ metricsRoutes.openapi(validationTimeseriesRoute, async (c) => {
         }));
     } else {
         // Generate mock timeseries data
+        console.warn('[Metrics] /validation-timeseries returning mock data - Analytics Engine query returned no results');
         data = generateMockValidationTimeseries(hoursNum, bucket);
     }
 
     return c.json(
         {
             data,
+            isMockData,
             timestamp: new Date().toISOString(),
         },
         200
