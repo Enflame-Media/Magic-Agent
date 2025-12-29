@@ -8,6 +8,7 @@ import { authRoutes } from './routes/auth';
 import { adminRoutes } from './routes/admin';
 import { adminAuthMiddleware } from './middleware/auth';
 import { csrfMiddleware } from './middleware/csrf';
+import { bodySizeLimits } from './middleware/bodySize';
 
 /**
  * Application version (should match package.json)
@@ -36,9 +37,16 @@ const app = new OpenAPIHono<{ Bindings: Env; Variables: Variables }>();
 
 /*
  * Global Middleware
- * Applied in order: logging → CORS → routes → error handling
+ * Applied in order: logging → CORS → body size → CSRF → routes → error handling
  */
 app.use('*', logger());
+
+/*
+ * Body size limiting (HAP-629)
+ * Prevents DoS attacks via oversized request payloads.
+ * Applied early before authentication overhead.
+ */
+app.use('*', bodySizeLimits.default()); // 1MB limit for admin API
 
 /**
  * CORS Configuration for Cross-Origin Dashboard Requests
