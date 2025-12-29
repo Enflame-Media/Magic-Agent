@@ -5,6 +5,7 @@ import { logger } from 'hono/logger';
 import type { Env, Variables } from './env';
 import { metricsRoutes } from './routes/metrics';
 import { authRoutes } from './routes/auth';
+import { adminRoutes } from './routes/admin';
 import { adminAuthMiddleware } from './middleware/auth';
 import { csrfMiddleware } from './middleware/csrf';
 
@@ -89,6 +90,15 @@ app.route('/api/auth', authRoutes);
  */
 app.use('/api/metrics/*', adminAuthMiddleware());
 app.route('/api/metrics', metricsRoutes);
+
+/**
+ * Protected admin routes - require ADMIN authorization
+ *
+ * HAP-639: Custom admin endpoints for user management
+ * Provides role updates with self-protection and audit logging.
+ */
+app.use('/api/admin/*', adminAuthMiddleware());
+app.route('/api/admin', adminRoutes);
 
 /**
  * Root endpoint - API information
