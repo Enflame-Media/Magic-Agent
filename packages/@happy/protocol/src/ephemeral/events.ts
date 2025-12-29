@@ -21,16 +21,15 @@ export const ApiEphemeralActivityUpdateSchema = z.object({
      * Session ID
      *
      * @remarks
-     * Field name: `id`
+     * Field name: `sid` (short for session ID)
      *
-     * Note: Other session-related schemas use different field names:
-     * - `new-session`, `update-session`, `activity`, `usage`: use `id`
-     * - `new-message`, `delete-session`: use `sid`
+     * All session-related schemas now use `sid` for consistency:
+     * - `new-session`, `update-session`, `new-message`, `delete-session`: use `sid`
+     * - Ephemeral events (`activity`, `usage`): use `sid`
      *
-     * @see ApiUpdateNewMessageSchema - uses `sid` for session ID
-     * @see ApiDeleteSessionSchema - uses `sid` for session ID
+     * @see HAP-654 - Standardization of session ID field names
      */
-    id: z.string().min(1).max(STRING_LIMITS.ID_MAX),
+    sid: z.string().min(1).max(STRING_LIMITS.ID_MAX),
     active: z.boolean(),
     activeAt: z.number(),
     thinking: z.boolean(),
@@ -54,16 +53,15 @@ export const ApiEphemeralUsageUpdateSchema = z.object({
      * Session ID
      *
      * @remarks
-     * Field name: `id`
+     * Field name: `sid` (short for session ID)
      *
-     * Note: Other session-related schemas use different field names:
-     * - `new-session`, `update-session`, `activity`, `usage`: use `id`
-     * - `new-message`, `delete-session`: use `sid`
+     * All session-related schemas now use `sid` for consistency:
+     * - `new-session`, `update-session`, `new-message`, `delete-session`: use `sid`
+     * - Ephemeral events (`activity`, `usage`): use `sid`
      *
-     * @see ApiUpdateNewMessageSchema - uses `sid` for session ID
-     * @see ApiDeleteSessionSchema - uses `sid` for session ID
+     * @see HAP-654 - Standardization of session ID field names
      */
-    id: z.string().min(1).max(STRING_LIMITS.ID_MAX),
+    sid: z.string().min(1).max(STRING_LIMITS.ID_MAX),
     key: z.string().min(1).max(STRING_LIMITS.LABEL_MAX), // Usage key/identifier
     timestamp: z.number(),
     tokens: z.record(z.string().max(STRING_LIMITS.LABEL_MAX), z.number()).refine(
@@ -86,20 +84,22 @@ export type ApiEphemeralUsageUpdate = z.infer<typeof ApiEphemeralUsageUpdateSche
 export const ApiEphemeralMachineActivityUpdateSchema = z.object({
     type: z.literal('machine-activity'),
     /**
-     * Machine ID
+     * Machine ID - uniquely identifies the machine/daemon
      *
      * @remarks
-     * Field name: `id`
+     * Field name: `machineId` (standardized in HAP-655)
      *
-     * Note: Other machine-related schemas use different field names:
-     * - `new-machine`, `update-machine`, `machine-status`: use `machineId`
-     * - `machine-activity`: uses `id`
+     * All machine-related schemas now consistently use `machineId`:
+     * - `new-machine`: uses `machineId`
+     * - `update-machine`: uses `machineId`
+     * - `machine-status`: uses `machineId`
+     * - `machine-activity`: uses `machineId`
      *
-     * @see ApiNewMachineSchema - uses `machineId` for machine ID
-     * @see ApiUpdateMachineStateSchema - uses `machineId` for machine ID
-     * @see ApiEphemeralMachineStatusUpdateSchema - uses `machineId` for machine ID
+     * @see ApiNewMachineSchema
+     * @see ApiUpdateMachineStateSchema
+     * @see ApiEphemeralMachineStatusUpdateSchema
      */
-    id: z.string().min(1).max(STRING_LIMITS.ID_MAX),
+    machineId: z.string().min(1).max(STRING_LIMITS.ID_MAX),
     active: z.boolean(),
     activeAt: z.number(),
 });
@@ -114,16 +114,20 @@ export type ApiEphemeralMachineActivityUpdate = z.infer<typeof ApiEphemeralMachi
 export const ApiEphemeralMachineStatusUpdateSchema = z.object({
     type: z.literal('machine-status'),
     /**
-     * Machine ID
+     * Machine ID - uniquely identifies the machine/daemon
      *
      * @remarks
      * Field name: `machineId`
      *
-     * Note: Other machine-related schemas use different field names:
-     * - `new-machine`, `update-machine`, `machine-status`: use `machineId`
-     * - `machine-activity`: uses `id`
+     * All machine-related schemas consistently use `machineId`:
+     * - `new-machine`: uses `machineId`
+     * - `update-machine`: uses `machineId`
+     * - `machine-status`: uses `machineId`
+     * - `machine-activity`: uses `machineId`
      *
-     * @see ApiEphemeralMachineActivityUpdateSchema - uses `id` for machine ID
+     * @see ApiNewMachineSchema
+     * @see ApiUpdateMachineStateSchema
+     * @see ApiEphemeralMachineActivityUpdateSchema
      */
     machineId: z.string().min(1).max(STRING_LIMITS.ID_MAX),
     online: z.boolean(),
