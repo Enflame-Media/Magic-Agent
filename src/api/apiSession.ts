@@ -1,5 +1,6 @@
 import { logger } from '@/ui/logger'
 import { AppError, ErrorCodes } from '@/utils/errors'
+import { getSessionId, getSessionIdFromEphemeral, getMachineIdFromEphemeral, type SessionIdUpdate, type SessionIdEphemeral, type MachineIdEphemeral } from '@happy/protocol'
 import { EventEmitter } from 'node:events'
 import { HappyWebSocket } from './HappyWebSocket'
 import { AgentState, EphemeralUpdate, MessageContent, Metadata, Session, Update, UserMessage, UserMessageSchema, Usage } from './types'
@@ -265,8 +266,9 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
                     logger.debug(`[SOCKET] WARNING: Session client received unexpected machine update - ignoring`);
                 } else if (data.body.t === 'delete-session') {
                     // Session deleted remotely (e.g., archived from mobile app)
-                    logger.debug(`[SOCKET] Session ${data.body.sid} deleted remotely`);
-                    this.emit('sessionDeleted', data.body.sid);
+                    const sessionId = getSessionId(data.body as SessionIdUpdate);
+                    logger.debug(`[SOCKET] Session ${sessionId} deleted remotely`);
+                    this.emit('sessionDeleted', sessionId);
                 } else if (data.body.t === 'new-artifact' || data.body.t === 'update-artifact' || data.body.t === 'delete-artifact') {
                     // Artifact events - CLI doesn't manage artifacts, log and ignore
                     logger.debug(`[SOCKET] Received artifact event ${data.body.t} - ignoring (CLI doesn't manage artifacts)`);
@@ -291,18 +293,24 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
         // Ephemeral events - real-time status updates from server (HAP-357)
         this.onSocketEphemeral = (data: EphemeralUpdate) => {
             switch (data.type) {
-                case 'activity':
+                case 'activity': {
                     // Session activity update - currently handled elsewhere via keep-alive
-                    logger.debug(`[EPHEMERAL] Activity: session ${data.sid} active=${data.active} thinking=${data.thinking}`);
+                    const sessionId = getSessionIdFromEphemeral(data as SessionIdEphemeral);
+                    logger.debug(`[EPHEMERAL] Activity: session ${sessionId} active=${data.active} thinking=${data.thinking}`);
                     break;
-                case 'usage':
+                }
+                case 'usage': {
                     // Real-time usage/cost update from server
-                    logger.debug(`[EPHEMERAL] Usage: session ${data.sid} cost=$${data.cost.total.toFixed(4)} tokens=${data.tokens.total}`);
+                    const sessionId = getSessionIdFromEphemeral(data as SessionIdEphemeral);
+                    logger.debug(`[EPHEMERAL] Usage: session ${sessionId} cost=$${data.cost.total.toFixed(4)} tokens=${data.tokens.total}`);
                     break;
-                case 'machine-activity':
+                }
+                case 'machine-activity': {
                     // Machine/daemon activity update - track other daemons coming online/offline
-                    logger.debug(`[EPHEMERAL] Machine activity: ${data.machineId} active=${data.active}`);
+                    const machineId = getMachineIdFromEphemeral(data as MachineIdEphemeral);
+                    logger.debug(`[EPHEMERAL] Machine activity: ${machineId} active=${data.active}`);
                     break;
+                }
                 default:
                     // Unknown ephemeral type - log but don't crash (forward compatibility)
                     logger.debug(`[EPHEMERAL] Unknown type: ${(data as { type: string }).type}`);

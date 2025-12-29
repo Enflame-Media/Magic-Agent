@@ -6,6 +6,7 @@
  */
 
 import { AppError, ErrorCodes } from '@/utils/errors';
+import { getSessionIdFromEphemeral, getMachineIdFromEphemeral, type SessionIdEphemeral, type MachineIdEphemeral } from '@happy/protocol';
 import { logger } from '@/ui/logger';
 import { configuration } from '@/configuration';
 import { EphemeralUpdate, MachineMetadata, DaemonState, Machine, Update, UpdateMachineBody } from './types';
@@ -377,16 +378,20 @@ export class ApiMachineClient {
                     // Session activity - machine daemon doesn't track individual sessions
                     // Silently ignore (session clients handle this)
                     break;
-                case 'usage':
+                case 'usage': {
                     // Real-time usage/cost update - informational for daemon
-                    logger.debug(`[API MACHINE] [EPHEMERAL] Usage: session ${data.sid} cost=$${data.cost.total.toFixed(4)}`);
+                    const sessionId = getSessionIdFromEphemeral(data as SessionIdEphemeral);
+                    logger.debug(`[API MACHINE] [EPHEMERAL] Usage: session ${sessionId} cost=$${data.cost.total.toFixed(4)}`);
                     break;
-                case 'machine-activity':
+                }
+                case 'machine-activity': {
                     // Other machine/daemon activity - track peers for awareness
-                    if (data.machineId !== this.machine.id) {
-                        logger.debug(`[API MACHINE] [EPHEMERAL] Peer daemon ${data.machineId} active=${data.active}`);
+                    const machineId = getMachineIdFromEphemeral(data as MachineIdEphemeral);
+                    if (machineId !== this.machine.id) {
+                        logger.debug(`[API MACHINE] [EPHEMERAL] Peer daemon ${machineId} active=${data.active}`);
                     }
                     break;
+                }
                 default:
                     // Unknown ephemeral type - log but don't crash (forward compatibility)
                     logger.debug(`[API MACHINE] [EPHEMERAL] Unknown type: ${(data as { type: string }).type}`);
