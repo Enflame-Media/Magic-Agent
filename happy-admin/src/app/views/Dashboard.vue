@@ -22,7 +22,7 @@ import BundleSizeLatest from '../components/BundleSizeLatest.vue';
 import ValidationSummary from '../components/ValidationSummary.vue';
 import ValidationTrendsChart from '../components/ValidationTrendsChart.vue';
 import UnknownTypeBreakdown from '../components/UnknownTypeBreakdown.vue';
-import { formatDuration, formatPercent, API_BASE_URL } from '../lib/api';
+import { formatDuration, formatPercent, API_BASE_URL, apiRequest } from '../lib/api';
 import { useBundleSize, useBundleSizeCharts } from '../composables/useBundleSize';
 import { useValidation, useValidationCharts } from '../composables/useValidation';
 
@@ -119,12 +119,12 @@ async function handleTimeRangeChange(range: typeof timeRange.value) {
 
 /**
  * Handle logout
+ * HAP-616: Use apiRequest for CSRF protection
  */
 async function handleLogout() {
     try {
-        await fetch(`${API_BASE_URL}/api/auth/sign-out`, {
+        await apiRequest(`${API_BASE_URL}/api/auth/sign-out`, {
             method: 'POST',
-            credentials: 'include',
         });
         await router.push('/login');
     } catch (err) {
@@ -210,6 +210,22 @@ watch(
                             </span>
                             <span v-else>Refresh</span>
                         </button>
+
+                        <!-- User Management (HAP-639) -->
+                        <router-link
+                            to="/admin/users"
+                            class="btn-secondary text-sm inline-flex items-center gap-1"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                                />
+                            </svg>
+                            Users
+                        </router-link>
 
                         <!-- Sign Out -->
                         <button class="btn-secondary text-sm" @click="handleLogout">

@@ -110,43 +110,105 @@ describe('GitHubProfileSchema', () => {
         });
     });
 
-    describe('passthrough behavior', () => {
-        it('allows additional GitHub fields', () => {
+    describe('strip behavior (HAP-626)', () => {
+        it('strips unknown fields from GitHub API response', () => {
             const profile = {
                 id: 12345,
                 login: 'octocat',
                 name: 'The Octocat',
                 avatar_url: 'https://avatars.githubusercontent.com/u/12345',
-                // Additional fields from GitHub API
+                // Additional fields from GitHub API - should be stripped
                 node_id: 'MDQ6VXNlcjE=',
                 gravatar_id: '',
                 url: 'https://api.github.com/users/octocat',
                 html_url: 'https://github.com/octocat',
                 followers_url: 'https://api.github.com/users/octocat/followers',
-                following_url: 'https://api.github.com/users/octocat/following{/other_user}',
-                gists_url: 'https://api.github.com/users/octocat/gists{/gist_id}',
-                repos_url: 'https://api.github.com/users/octocat/repos',
                 type: 'User',
                 site_admin: false,
                 company: '@github',
-                blog: 'https://github.blog',
-                location: 'San Francisco',
-                hireable: null,
-                twitter_username: null,
-                public_repos: 8,
-                public_gists: 8,
                 followers: 12345,
-                following: 0,
-                created_at: '2011-01-25T18:44:36Z',
-                updated_at: '2024-01-01T00:00:00Z',
             };
             const result = GitHubProfileSchema.safeParse(profile);
             expect(result.success).toBe(true);
             if (result.success) {
-                // Additional fields should be preserved
-                expect(result.data.node_id).toBe('MDQ6VXNlcjE=');
-                expect(result.data.type).toBe('User');
-                expect(result.data.followers).toBe(12345);
+                // Known fields are preserved
+                expect(result.data.id).toBe(12345);
+                expect(result.data.login).toBe('octocat');
+                expect(result.data.name).toBe('The Octocat');
+                expect(result.data.avatar_url).toBe('https://avatars.githubusercontent.com/u/12345');
+
+                // Unknown fields are stripped
+                expect('node_id' in result.data).toBe(false);
+                expect('type' in result.data).toBe(false);
+                expect('followers' in result.data).toBe(false);
+                expect('company' in result.data).toBe(false);
+            }
+        });
+
+        it('validates successfully even when GitHub adds new fields', () => {
+            // Simulates GitHub API adding new fields in the future
+            const profile = {
+                id: 99999,
+                login: 'newuser',
+                some_new_field_from_github: 'value',
+                another_future_field: { nested: true },
+            };
+            const result = GitHubProfileSchema.safeParse(profile);
+            expect(result.success).toBe(true);
+        });
+    });
+
+    describe('security (HAP-626)', () => {
+        it('strips prototype pollution attempts via __proto__', () => {
+            // Note: In JavaScript, setting __proto__ in an object literal actually
+            // sets the prototype, it doesn't add an own property. We test with
+            // Object.defineProperty to simulate a malicious JSON payload.
+            const maliciousProfile = Object.defineProperty(
+                { id: 12345, login: 'attacker' },
+                '__proto__',
+                { value: { isAdmin: true }, enumerable: true, writable: true }
+            );
+            const result = GitHubProfileSchema.safeParse(maliciousProfile);
+            expect(result.success).toBe(true);
+            if (result.success) {
+                // __proto__ should not be an own property in the result
+                expect(Object.hasOwn(result.data, '__proto__')).toBe(false);
+                // Verify no prototype pollution occurred
+                expect(({} as { isAdmin?: boolean }).isAdmin).toBeUndefined();
+            }
+        });
+
+        it('strips prototype pollution attempts via constructor', () => {
+            const maliciousProfile = {
+                id: 12345,
+                login: 'attacker',
+                constructor: { prototype: { polluted: true } },
+            };
+            const result = GitHubProfileSchema.safeParse(maliciousProfile);
+            expect(result.success).toBe(true);
+            if (result.success) {
+                // constructor should not be in result (it's an unknown field)
+                const data = result.data as Record<string, unknown>;
+                expect('constructor' in data && typeof data.constructor === 'object').toBe(false);
+            }
+        });
+
+        it('strips potential storage bloat attacks', () => {
+            const bloatProfile = {
+                id: 12345,
+                login: 'bloater',
+                // Large unexpected field that could bloat storage
+                largeUnexpectedField: 'x'.repeat(10000),
+                anotherLargeField: Array(1000).fill({ nested: 'data' }),
+            };
+            const result = GitHubProfileSchema.safeParse(bloatProfile);
+            expect(result.success).toBe(true);
+            if (result.success) {
+                // Only expected fields in result
+                expect(Object.keys(result.data)).toEqual(['id', 'login']);
+                // Verify bloat fields are not present
+                expect('largeUnexpectedField' in result.data).toBe(false);
+                expect('anotherLargeField' in result.data).toBe(false);
             }
         });
     });

@@ -2,6 +2,8 @@ import { createApp } from 'vue';
 import { createRouter, createWebHistory } from 'vue-router';
 import App from './App.vue';
 import './style.css';
+import { API_BASE_URL } from './lib/api';
+import { isValidRedirect } from './lib/security';
 
 /**
  * Vue Router configuration
@@ -20,6 +22,12 @@ const router = createRouter({
             meta: { requiresAuth: true },
         },
         {
+            path: '/admin/users',
+            name: 'admin-users',
+            component: () => import('./views/AdminUsers.vue'),
+            meta: { requiresAuth: true },
+        },
+        {
             path: '/login',
             name: 'login',
             component: () => import('./views/Login.vue'),
@@ -33,17 +41,23 @@ const router = createRouter({
  */
 router.beforeEach(async (to, _from, next) => {
     if (to.meta.requiresAuth) {
-        // Check session with Better-Auth
+        // Check session with Better-Auth on the API worker
         try {
-            const response = await fetch('/api/auth/session', {
+            const response = await fetch(`${API_BASE_URL}/api/auth/get-session`, {
                 credentials: 'include',
             });
             if (!response.ok) {
-                next({ name: 'login', query: { redirect: to.fullPath } });
+                // SECURITY FIX (HAP-625): Validate redirect path before setting
+                const redirectPath = to.fullPath;
+                const query = isValidRedirect(redirectPath) ? { redirect: redirectPath } : undefined;
+                next({ name: 'login', query });
                 return;
             }
         } catch {
-            next({ name: 'login', query: { redirect: to.fullPath } });
+            // SECURITY FIX (HAP-625): Validate redirect path before setting
+            const redirectPath = to.fullPath;
+            const query = isValidRedirect(redirectPath) ? { redirect: redirectPath } : undefined;
+            next({ name: 'login', query });
             return;
         }
     }

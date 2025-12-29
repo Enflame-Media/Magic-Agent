@@ -35,7 +35,7 @@ export const UpdatePayloadSchema = z.object({
     seq: z.number(),
     body: z.object({
         t: z.string() as z.ZodType<ApiUpdateType>,
-    }).passthrough(), // Allow additional fields from the specific update type
+    }).strip(), // Strip unknown fields for security (prevents prototype pollution)
     createdAt: z.number(),
 });
 

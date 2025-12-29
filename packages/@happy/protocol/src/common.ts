@@ -2,9 +2,15 @@
  * Common types shared across Happy protocol
  *
  * These are foundational types used by multiple update and ephemeral schemas.
+ *
+ * Security: All string fields have maximum length constraints to prevent
+ * DoS attacks via oversized payloads and database bloat.
+ *
+ * @see ./constraints.ts for STRING_LIMITS constants
  */
 
 import { z } from 'zod';
+import { STRING_LIMITS } from './constraints';
 
 /**
  * GitHub profile data from OAuth
@@ -20,7 +26,8 @@ import { z } from 'zod';
  * - email: User preference, can be null or missing
  * - bio: Optional user field, can be null or missing
  *
- * We use .passthrough() to allow additional GitHub fields without breaking validation.
+ * We use .strip() to safely ignore additional GitHub fields while preventing
+ * prototype pollution and storage bloat attacks.
  *
  * @example
  * ```typescript
@@ -36,12 +43,12 @@ import { z } from 'zod';
  */
 export const GitHubProfileSchema = z.object({
     id: z.number(),
-    login: z.string(),
-    name: z.string().nullable().optional(),
-    avatar_url: z.string().optional(),
-    email: z.string().nullable().optional(),
-    bio: z.string().nullable().optional(),
-}).passthrough();
+    login: z.string().min(1).max(STRING_LIMITS.USERNAME_MAX),
+    name: z.string().max(STRING_LIMITS.NAME_MAX).nullable().optional(),
+    avatar_url: z.string().max(STRING_LIMITS.URL_MAX).optional(),
+    email: z.string().max(STRING_LIMITS.NAME_MAX).nullable().optional(),
+    bio: z.string().max(STRING_LIMITS.BIO_MAX).nullable().optional(),
+}).strip();
 
 export type GitHubProfile = z.infer<typeof GitHubProfileSchema>;
 
@@ -64,11 +71,11 @@ export type GitHubProfile = z.infer<typeof GitHubProfileSchema>;
  * ```
  */
 export const ImageRefSchema = z.object({
-    path: z.string(),
-    url: z.string(),
+    path: z.string().min(1).max(STRING_LIMITS.PATH_MAX),
+    url: z.string().min(1).max(STRING_LIMITS.URL_MAX),
     width: z.number().optional(),
     height: z.number().optional(),
-    thumbhash: z.string().optional(),
+    thumbhash: z.string().max(STRING_LIMITS.THUMBHASH_MAX).optional(),
 });
 
 export type ImageRef = z.infer<typeof ImageRefSchema>;
@@ -109,12 +116,12 @@ export type RelationshipStatus = z.infer<typeof RelationshipStatusSchema>;
  * ```
  */
 export const UserProfileSchema = z.object({
-    id: z.string(),
-    firstName: z.string(),
-    lastName: z.string().nullable(),
+    id: z.string().min(1).max(STRING_LIMITS.ID_MAX),
+    firstName: z.string().min(1).max(STRING_LIMITS.NAME_MAX),
+    lastName: z.string().max(STRING_LIMITS.NAME_MAX).nullable(),
     avatar: ImageRefSchema.nullable(),
-    username: z.string(),
-    bio: z.string().nullable(),
+    username: z.string().min(1).max(STRING_LIMITS.USERNAME_MAX),
+    bio: z.string().max(STRING_LIMITS.BIO_MAX).nullable(),
     status: RelationshipStatusSchema,
 });
 
@@ -139,9 +146,9 @@ export type UserProfile = z.infer<typeof UserProfileSchema>;
  * ```
  */
 export const FeedBodySchema = z.discriminatedUnion('kind', [
-    z.object({ kind: z.literal('friend_request'), uid: z.string() }),
-    z.object({ kind: z.literal('friend_accepted'), uid: z.string() }),
-    z.object({ kind: z.literal('text'), text: z.string() }),
+    z.object({ kind: z.literal('friend_request'), uid: z.string().min(1).max(STRING_LIMITS.ID_MAX) }),
+    z.object({ kind: z.literal('friend_accepted'), uid: z.string().min(1).max(STRING_LIMITS.ID_MAX) }),
+    z.object({ kind: z.literal('text'), text: z.string().max(STRING_LIMITS.FEED_TEXT_MAX) }),
 ]);
 
 export type FeedBody = z.infer<typeof FeedBodySchema>;
@@ -160,7 +167,7 @@ export type FeedBody = z.infer<typeof FeedBodySchema>;
  */
 export const EncryptedContentSchema = z.object({
     t: z.literal('encrypted'),
-    c: z.string(), // Base64 encoded encrypted content
+    c: z.string().max(STRING_LIMITS.CONTENT_MAX), // Base64 encoded encrypted content
 });
 
 export type EncryptedContent = z.infer<typeof EncryptedContentSchema>;
@@ -179,7 +186,7 @@ export type EncryptedContent = z.infer<typeof EncryptedContentSchema>;
  */
 export const VersionedValueSchema = z.object({
     version: z.number(),
-    value: z.string(),
+    value: z.string().max(STRING_LIMITS.VERSIONED_VALUE_MAX),
 });
 
 export type VersionedValue = z.infer<typeof VersionedValueSchema>;
@@ -204,7 +211,7 @@ export type VersionedValue = z.infer<typeof VersionedValueSchema>;
  */
 export const NullableVersionedValueSchema = z.object({
     version: z.number(),
-    value: z.string().nullable(),
+    value: z.string().max(STRING_LIMITS.VERSIONED_VALUE_MAX).nullable(),
 });
 
 export type NullableVersionedValue = z.infer<typeof NullableVersionedValueSchema>;
