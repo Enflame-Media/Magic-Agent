@@ -29,13 +29,15 @@ if (result.success) {
   const update: ApiUpdate = result.data;
   switch (update.t) {
     case 'new-message':
+      // Note: new-message uses 'sid', not 'id'
       console.log('Session:', update.sid);
       console.log('Message:', update.message);
       break;
     case 'new-session':
-      console.log('New session:', update.sid);
+      // Note: new-session uses 'id', not 'sid'
+      console.log('New session:', update.id);
       break;
-    // ... handle other types
+    // ... handle other types (see Field Name Reference below)
   }
 }
 ```
@@ -109,6 +111,96 @@ Shared types used across the protocol.
 | `VersionedValueSchema` | `VersionedValue` | Optimistic concurrency value |
 | `NullableVersionedValueSchema` | `NullableVersionedValue` | Nullable versioned value |
 
+## Field Name Reference
+
+### Session ID Field Names
+
+The session ID is represented with different field names depending on the update type:
+
+| Schema | Update Type | Field Name | Discriminator | Notes |
+|--------|-------------|------------|---------------|-------|
+| `ApiUpdateNewSessionSchema` | `new-session` | `id` | `t` | Persistent update |
+| `ApiUpdateSessionStateSchema` | `update-session` | `id` | `t` | Persistent update |
+| `ApiUpdateNewMessageSchema` | `new-message` | `sid` | `t` | Persistent update |
+| `ApiDeleteSessionSchema` | `delete-session` | `sid` | `t` | Persistent update |
+| `ApiEphemeralActivityUpdateSchema` | `activity` | `id` | `type` | Ephemeral event |
+| `ApiEphemeralUsageUpdateSchema` | `usage` | `id` | `type` | Ephemeral event |
+
+**Pattern Summary:**
+- **`id`**: Used in `new-session`, `update-session`, `activity`, `usage`
+- **`sid`**: Used in `new-message`, `delete-session`
+
+### Machine ID Field Names
+
+The machine ID is represented with different field names:
+
+| Schema | Update Type | Field Name | Discriminator | Notes |
+|--------|-------------|------------|---------------|-------|
+| `ApiNewMachineSchema` | `new-machine` | `machineId` | `t` | Persistent update |
+| `ApiUpdateMachineStateSchema` | `update-machine` | `machineId` | `t` | Persistent update |
+| `ApiEphemeralMachineStatusUpdateSchema` | `machine-status` | `machineId` | `type` | Ephemeral event |
+| `ApiEphemeralMachineActivityUpdateSchema` | `machine-activity` | `id` | `type` | Ephemeral event |
+
+**Pattern Summary:**
+- **`machineId`**: Used in `new-machine`, `update-machine`, `machine-status`
+- **`id`**: Used in `machine-activity`
+
+### Discriminator Fields
+
+**Important:** Persistent updates and ephemeral events use different discriminator field names:
+
+| Category | Discriminator Field | Example |
+|----------|---------------------|---------|
+| Persistent Updates | `t` | `update.t === 'new-session'` |
+| Ephemeral Events | `type` | `event.type === 'activity'` |
+
+### Historical Context
+
+This naming inconsistency was the root cause of HAP-383. The field names are preserved for backward compatibility with existing clients.
+
+### Consumer Code Example
+
+When handling updates, always check the discriminator (`t` or `type`) first:
+
+```typescript
+import type { ApiUpdate, ApiEphemeralUpdate } from '@happy/protocol';
+
+// Persistent updates use 't' discriminator
+function handleUpdate(update: ApiUpdate) {
+  switch (update.t) {
+    case 'new-message':
+    case 'delete-session':
+      // Use 'sid' for session ID
+      const sessionIdA = update.sid;
+      break;
+    case 'new-session':
+    case 'update-session':
+      // Use 'id' for session ID
+      const sessionIdB = update.id;
+      break;
+  }
+}
+
+// Ephemeral events use 'type' discriminator
+function handleEphemeral(event: ApiEphemeralUpdate) {
+  switch (event.type) {
+    case 'activity':
+    case 'usage':
+      // Use 'id' for session ID
+      const sessionId = event.id;
+      break;
+    case 'machine-activity':
+      // Use 'id' for machine ID
+      const machineIdA = event.id;
+      break;
+    case 'machine-status':
+      // Use 'machineId' for machine ID
+      const machineIdB = event.machineId;
+      break;
+  }
+}
+```
+
 ## Type Guard Patterns
 
 ```typescript
@@ -123,7 +215,7 @@ function handleUpdate(update: ApiUpdate) {
       break;
     case 'new-session':
       // TypeScript knows: update is ApiUpdateNewSession
-      console.log(update.sid, update.title);
+      console.log(update.id, update.metadata);
       break;
   }
 }
@@ -131,7 +223,7 @@ function handleUpdate(update: ApiUpdate) {
 // Available type discriminators
 const updateTypes: ApiUpdateType[] = [
   'new-message', 'new-session', 'delete-session',
-  'update-session-state', 'update-account', 'new-machine',
+  'update-session', 'update-account', 'new-machine',
   // ... etc
 ];
 ```
