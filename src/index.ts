@@ -5,7 +5,7 @@ import { logger } from 'hono/logger';
 import type { Env, Variables } from './env';
 import { metricsRoutes } from './routes/metrics';
 import { authRoutes } from './routes/auth';
-import { authMiddleware } from './middleware/auth';
+import { adminAuthMiddleware } from './middleware/auth';
 
 /**
  * Application version (should match package.json)
@@ -67,8 +67,15 @@ app.use(
 // Mount authentication routes (Better-Auth) - public
 app.route('/api/auth', authRoutes);
 
-// Protected metrics routes - require authentication
-app.use('/api/metrics/*', authMiddleware());
+/**
+ * Protected metrics routes - require ADMIN authorization
+ *
+ * SECURITY FIX (HAP-612): Changed from authMiddleware to adminAuthMiddleware.
+ * Now requires both:
+ * 1. Valid session (authentication)
+ * 2. Admin role (authorization)
+ */
+app.use('/api/metrics/*', adminAuthMiddleware());
 app.route('/api/metrics', metricsRoutes);
 
 /**

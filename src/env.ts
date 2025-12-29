@@ -57,6 +57,11 @@ export interface Env {
 }
 
 /**
+ * User roles for authorization
+ */
+export type UserRole = 'admin' | 'user';
+
+/**
  * Better-Auth user type (matches what getSession returns)
  */
 export interface AuthUser {
@@ -67,6 +72,7 @@ export interface AuthUser {
     image?: string | null;
     createdAt: Date;
     updatedAt: Date;
+    role?: UserRole | null;
 }
 
 /**

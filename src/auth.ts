@@ -55,7 +55,17 @@ export function createAuth(env?: Env) {
         }),
         emailAndPassword: {
             enabled: true,
-            requireEmailVerification: false, // Simplified for admin dashboard
+            requireEmailVerification: true, // Require email verification for security
+            /**
+             * SECURITY FIX (HAP-612): Disable public registration
+             *
+             * New admin users must be created by existing admins using:
+             * 1. Better-Auth admin API (POST /api/auth/admin/create-user)
+             * 2. Direct database insertion via Wrangler D1 console
+             *
+             * This prevents unauthorized account creation on the admin dashboard.
+             */
+            disableSignUp: true,
         },
         session: {
             expiresIn: 60 * 60 * 24 * 7, // 7 days

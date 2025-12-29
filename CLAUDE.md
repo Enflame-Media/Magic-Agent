@@ -184,14 +184,18 @@ yarn db:migrate:prod
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/api/auth/sign-in/email` | POST | Email/password login |
-| `/api/auth/sign-up/email` | POST | Create admin account |
 | `/api/auth/sign-out` | POST | End session |
 | `/api/auth/session` | GET | Get current session |
 | `/api/auth/reference` | GET | OpenAPI docs for auth |
+| `/api/auth/admin/*` | * | Admin user management (admin only) |
 
-### Metrics API (Protected)
+**Security Note (HAP-612)**: Public registration is DISABLED. New admin users must be created via the Better-Auth admin API or direct database insertion.
 
-All metrics endpoints require authentication.
+### Metrics API (Protected - Admin Only)
+
+All metrics endpoints require admin authorization (HAP-612). Users must:
+1. Be authenticated (valid session)
+2. Have `role = 'admin'` in the database
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
@@ -211,6 +215,62 @@ All metrics endpoints require authentication.
 | `/ready` | Readiness check with dependency status |
 | `/api/openapi.json` | OpenAPI 3.1 specification |
 | `/api/docs` | Swagger UI |
+
+## Admin User Management (HAP-612)
+
+Public registration is disabled for security. New admin users can be created via:
+
+### Option 1: Direct Database Insertion (Wrangler D1)
+
+```bash
+# Development
+wrangler d1 execute DB --env dev --remote --command "
+INSERT INTO users (id, name, email, email_verified, role, created_at, updated_at)
+VALUES (
+    lower(hex(randomblob(16))),
+    'New Admin',
+    'admin@example.com',
+    1,
+    'admin',
+    (cast(unixepoch('subsecond') * 1000 as integer)),
+    (cast(unixepoch('subsecond') * 1000 as integer))
+);
+"
+
+# Then create a password account for the user
+# First get the user ID from the insert above, then:
+wrangler d1 execute DB --env dev --remote --command "
+INSERT INTO accounts (id, account_id, provider_id, user_id, password, created_at, updated_at)
+VALUES (
+    lower(hex(randomblob(16))),
+    'admin@example.com',
+    'credential',
+    '<USER_ID_FROM_ABOVE>',
+    '<BCRYPT_HASHED_PASSWORD>',
+    (cast(unixepoch('subsecond') * 1000 as integer)),
+    (cast(unixepoch('subsecond') * 1000 as integer))
+);
+"
+```
+
+### Option 2: Better-Auth Admin API (Requires Existing Admin)
+
+The bootstrap admin (configured in `auth.ts`) can use the Better-Auth admin plugin endpoints:
+
+```bash
+# POST /api/auth/admin/create-user
+curl -X POST https://happy-admin-api.enflamemedia.com/api/auth/admin/create-user \
+  -H "Cookie: happy-admin.session_token=<ADMIN_SESSION>" \
+  -H "Content-Type: application/json" \
+  -d '{"email": "new@example.com", "password": "secure-password", "name": "New Admin", "role": "admin"}'
+```
+
+### Bootstrap Admin
+
+The initial admin is configured in `auth.ts`:
+- User ID: `C1zmGOgcvVNskKcTUDgLuYytHmCWOKMs`
+- Has Better-Auth admin privileges
+- Should have `role = 'admin'` in database (set by migration 0002)
 
 ## Environment Variables & Secrets
 
