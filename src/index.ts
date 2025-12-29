@@ -2,6 +2,7 @@ import { OpenAPIHono } from '@hono/zod-openapi';
 import { logger } from '@/middleware/logger';
 import { cors } from '@/middleware/cors';
 import { timing, addServerTiming } from '@/middleware/timing';
+import { requestIdMiddleware } from '@/middleware/requestId';
 import { errorHandler } from '@/middleware/error';
 import { bodySizeLimits } from '@/middleware/bodySize';
 import { initAuth, cleanupExpiredTokens } from '@/lib/auth';
@@ -131,9 +132,10 @@ const app = new OpenAPIHono<{ Bindings: Env }>();
 
 /*
  * Global Middleware
- * Applied in order: timing → logging → CORS → body size → env validation → auth initialization → routes → error handling
+ * Applied in order: timing → requestId → logging → CORS → body size → env validation → auth initialization → routes → error handling
  */
 app.use('*', timing());
+app.use('*', requestIdMiddleware());
 app.use('*', logger());
 app.use('*', cors());
 
