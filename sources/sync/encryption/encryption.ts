@@ -9,29 +9,23 @@ import { encodeBase64, decodeBase64 } from "@/encryption/base64";
 import sodium from '@/encryption/libsodium.lib';
 import { decryptBox, encryptBox } from "@/encryption/libsodium";
 import { randomUUID } from 'expo-crypto';
+import { logger } from '@/utils/logger';
 
 export class Encryption {
 
     static async create(masterSecret: Uint8Array) {
-        console.log('[Encryption.create] Starting...');
+        logger.debug('[Encryption.create] Starting encryption initialization...');
 
         // Derive content data key to open session and machine records
-        console.log('[Encryption.create] Deriving content data key...');
         const contentDataKey = await deriveKey(masterSecret, 'Happy EnCoder', ['content']);
-        console.log('[Encryption.create] Content data key derived');
 
         // Derive content data key keypair
-        console.log('[Encryption.create] Creating keypair from seed...');
         const contentKeyPair = sodium.crypto_box_seed_keypair(contentDataKey);
-        console.log('[Encryption.create] Keypair created');
 
-        // Derive anonymous ID
-        console.log('[Encryption.create] Deriving anonymous ID...');
+        // Derive anonymous ID (safe to log - this is already a hash)
         const anonID = encodeHex((await deriveKey(masterSecret, 'Happy Coder', ['analytics', 'id']))).slice(0, 16).toLowerCase();
-        console.log('[Encryption.create] Anonymous ID derived:', anonID);
 
-        // Create encryption
-        console.log('[Encryption.create] Creating Encryption instance...');
+        logger.debug('[Encryption.create] Encryption initialized');
         return new Encryption(anonID, masterSecret, contentKeyPair);
     }
 

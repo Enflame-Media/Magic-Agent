@@ -10,6 +10,7 @@ import { authRefreshToken, shouldRefreshToken, TOKEN_REFRESH_CONSTANTS } from '@
 import { resetSessionCorrelationId } from '@/utils/correlationId';
 import { setAnalyticsCredentials } from '@/sync/apiAnalytics';
 import { startValidationMetricsReporting, stopValidationMetricsReporting, flushValidationMetrics } from '@/sync/typesRaw';
+import { logger } from '@/utils/logger';
 
 interface AuthContextType {
     isAuthenticated: boolean;
@@ -35,19 +36,19 @@ export function AuthProvider({ children, initialCredentials }: { children: React
     const refreshToken = useCallback(async (): Promise<boolean> => {
         // Prevent concurrent refresh attempts
         if (refreshInProgressRef.current) {
-            console.log('[AuthContext.refreshToken] Refresh already in progress, skipping');
+            logger.debug('[AuthContext.refreshToken] Refresh already in progress, skipping');
             return false;
         }
 
         if (!credentials) {
-            console.log('[AuthContext.refreshToken] No credentials to refresh');
+            logger.debug('[AuthContext.refreshToken] No credentials to refresh');
             return false;
         }
 
         refreshInProgressRef.current = true;
 
         try {
-            console.log('[AuthContext.refreshToken] Attempting token refresh...');
+            logger.debug('[AuthContext.refreshToken] Attempting token refresh...');
             const result = await authRefreshToken(credentials.token);
 
             if (result) {
@@ -62,12 +63,12 @@ export function AuthProvider({ children, initialCredentials }: { children: React
                     setCredentials(newCredentials);
                     // Keep analytics credentials in sync with refreshed token (HAP-583)
                     setAnalyticsCredentials(newCredentials);
-                    console.log('[AuthContext.refreshToken] Token refreshed and stored successfully');
+                    logger.debug('[AuthContext.refreshToken] Token refreshed successfully');
                     return true;
                 }
-                console.log('[AuthContext.refreshToken] Failed to store refreshed token');
+                logger.warn('[AuthContext.refreshToken] Failed to store refreshed token');
             } else {
-                console.log('[AuthContext.refreshToken] Server rejected token refresh');
+                logger.debug('[AuthContext.refreshToken] Server rejected token refresh');
             }
 
             return false;
@@ -83,7 +84,7 @@ export function AuthProvider({ children, initialCredentials }: { children: React
         if (!credentials) return;
 
         if (shouldRefreshToken(credentials.expiresAt)) {
-            console.log('[AuthContext] Token needs refresh, attempting proactive refresh...');
+            logger.debug('[AuthContext] Token needs refresh, attempting proactive refresh...');
             await refreshToken();
         }
     }, [credentials, refreshToken]);
@@ -117,17 +118,13 @@ export function AuthProvider({ children, initialCredentials }: { children: React
     }, [isAuthenticated, credentials, refreshToken]);
 
     const login = async (token: string, secret: string, expiresAt?: number) => {
-        console.log('[AuthContext.login] Starting...');
+        logger.debug('[AuthContext.login] Starting login flow...');
         // If no expiresAt provided, calculate from default lifetime (30 days)
         const tokenExpiresAt = expiresAt ?? (Date.now() + TOKEN_REFRESH_CONSTANTS.DEFAULT_LIFETIME_MS);
         const newCredentials: AuthCredentials = { token, secret, expiresAt: tokenExpiresAt };
-        console.log('[AuthContext.login] Storing credentials...');
         const success = await TokenStorage.setCredentials(newCredentials);
-        console.log('[AuthContext.login] Credentials stored:', success);
         if (success) {
-            console.log('[AuthContext.login] Calling syncCreate...');
             await syncCreate(newCredentials);
-            console.log('[AuthContext.login] syncCreate completed, updating state...');
             setCredentials(newCredentials);
             setIsAuthenticated(true);
 
@@ -135,9 +132,9 @@ export function AuthProvider({ children, initialCredentials }: { children: React
             setAnalyticsCredentials(newCredentials);
             startValidationMetricsReporting();
 
-            console.log('[AuthContext.login] Done!');
+            logger.debug('[AuthContext.login] Login completed successfully');
         } else {
-            console.log('[AuthContext.login] Failed to save credentials');
+            logger.error('[AuthContext.login] Failed to save credentials');
             throw new AppError(ErrorCodes.AUTH_FAILED, 'Failed to save credentials');
         }
     };
@@ -164,7 +161,7 @@ export function AuthProvider({ children, initialCredentials }: { children: React
                 await Updates.reloadAsync();
             } catch (error) {
                 // In dev mode, reloadAsync will throw ERR_UPDATES_DISABLED
-                console.log('Reload failed (expected in dev mode):', error);
+                logger.debug('[AuthContext.logout] Reload failed (expected in dev mode):', error);
             }
         }
     };

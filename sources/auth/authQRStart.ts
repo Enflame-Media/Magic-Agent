@@ -3,6 +3,7 @@ import sodium from '@/encryption/libsodium.lib';
 import axios from 'axios';
 import { encodeBase64 } from '../encryption/base64';
 import { getServerUrl } from '@/sync/serverConfig';
+import { logger } from '@/utils/logger';
 
 export interface QRAuthKeyPair {
     publicKey: Uint8Array;
@@ -21,24 +22,16 @@ export function generateAuthKeyPair(): QRAuthKeyPair {
 export async function authQRStart(keypair: QRAuthKeyPair): Promise<boolean> {
     try {
         const serverUrl = getServerUrl();
-        if (__DEV__) {
-            console.log(`[AUTH DEBUG] Sending auth request to: ${serverUrl}/v1/auth/account/request`);
-            console.log(`[AUTH DEBUG] Public key: ${encodeBase64(keypair.publicKey).substring(0, 20)}...`);
-        }
+        logger.debug('[authQRStart] Sending auth request to:', serverUrl);
 
         await axios.post(`${serverUrl}/v1/auth/account/request`, {
             publicKey: encodeBase64(keypair.publicKey),
         });
 
-        if (__DEV__) {
-            console.log('[AUTH DEBUG] Auth request sent successfully');
-        }
+        logger.debug('[authQRStart] Auth request sent successfully');
         return true;
     } catch (error) {
-        if (__DEV__) {
-            console.log('[AUTH DEBUG] Failed to send auth request:', error);
-        }
-        console.log('Failed to create authentication request, please try again later.');
+        logger.error('[authQRStart] Failed to send auth request:', error);
         return false;
     }
 }

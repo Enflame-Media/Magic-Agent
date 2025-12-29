@@ -103,10 +103,8 @@ export interface AuthCredentials {
 
 export const TokenStorage = {
     async getCredentials(): Promise<AuthCredentials | null> {
-        console.log('[TokenStorage] getCredentials called, platform:', Platform.OS);
         if (Platform.OS === 'web') {
             const stored = localStorage.getItem(AUTH_KEY);
-            console.log('[TokenStorage] Raw stored value exists:', !!stored);
             if (!stored) return null;
             try {
                 // Try to decrypt (new encrypted format)
@@ -115,24 +113,20 @@ export const TokenStorage = {
                 if (!isValidCredentials(parsed)) {
                     throw new AppError(ErrorCodes.VALIDATION_FAILED, 'Invalid credentials format');
                 }
-                console.log('[TokenStorage] Retrieved token (first 30 chars):', parsed.token.substring(0, 30) + '...');
                 return parsed;
-            } catch (decryptError) {
-                console.log('[TokenStorage] Decrypt failed, trying plaintext:', decryptError);
+            } catch {
                 // Migration: try parsing as plaintext JSON (old format)
                 try {
                     const parsed: unknown = JSON.parse(stored);
                     if (!isValidCredentials(parsed)) {
                         throw new AppError(ErrorCodes.VALIDATION_FAILED, 'Invalid credentials format');
                     }
-                    console.log('[TokenStorage] Migrating plaintext token (first 30 chars):', (parsed as AuthCredentials).token.substring(0, 30) + '...');
                     // Re-encrypt and save in new format
                     const encrypted = await encryptForWeb(JSON.stringify(parsed));
                     localStorage.setItem(AUTH_KEY, encrypted);
                     return parsed;
                 } catch {
                     // Corrupted data, clear it
-                    console.log('[TokenStorage] Data corrupted, clearing');
                     localStorage.removeItem(AUTH_KEY);
                     localStorage.removeItem(ENCRYPTION_KEY);
                     return null;
@@ -145,23 +139,20 @@ export const TokenStorage = {
             _credentialsCache = stored; // Update cache
             return JSON.parse(stored) as AuthCredentials;
         } catch (error) {
-            console.error('Error getting credentials:', error);
+            console.error('[TokenStorage] Failed to retrieve credentials:', error);
             return null;
         }
     },
 
     async setCredentials(credentials: AuthCredentials): Promise<boolean> {
-        console.log('[TokenStorage] setCredentials called');
-        console.log('[TokenStorage] Storing token (first 30 chars):', credentials.token.substring(0, 30) + '...');
         if (Platform.OS === 'web') {
             try {
                 const json = JSON.stringify(credentials);
                 const encrypted = await encryptForWeb(json);
                 localStorage.setItem(AUTH_KEY, encrypted);
-                console.log('[TokenStorage] Token encrypted and stored successfully');
                 return true;
             } catch (error) {
-                console.error('[TokenStorage] Error encrypting credentials:', error);
+                console.error('[TokenStorage] Failed to encrypt credentials:', error);
                 return false;
             }
         }
@@ -171,7 +162,7 @@ export const TokenStorage = {
             _credentialsCache = json; // Update cache
             return true;
         } catch (error) {
-            console.error('Error setting credentials:', error);
+            console.error('[TokenStorage] Failed to store credentials:', error);
             return false;
         }
     },

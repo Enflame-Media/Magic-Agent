@@ -3,6 +3,7 @@ import { decodeBase64, encodeBase64 } from '../encryption/base64';
 import { getServerUrl } from '@/sync/serverConfig';
 import { QRAuthKeyPair } from './authQRStart';
 import { decryptBox } from '@/encryption/libsodium';
+import { logger } from '@/utils/logger';
 
 export interface AuthCredentials {
     secret: Uint8Array;
@@ -26,22 +27,22 @@ export async function authQRWait(keypair: QRAuthKeyPair, onProgress?: (dots: num
             if (response.data.state === 'authorized') {
                 const token = response.data.token as string;
                 const encryptedResponse = decodeBase64(response.data.response);
-                
+
                 const decrypted = decryptBox(encryptedResponse, keypair.secretKey);
                 if (decrypted) {
-                    console.log('\n\n✓ Authentication successful\n');
+                    logger.debug('[authQRWait] Authentication successful');
                     return {
                         secret: decrypted,
                         token: token
                     };
                 } else {
-                    console.log('\n\nFailed to decrypt response. Please try again.');
+                    logger.error('[authQRWait] Failed to decrypt response');
                     return null;
                 }
             }
         } catch {
             // Auth polling is expected to fail occasionally (network issues, timeout)
-            console.log('\n\nFailed to check authentication status. Please try again.');
+            logger.error('[authQRWait] Failed to check authentication status');
             return null;
         }
 

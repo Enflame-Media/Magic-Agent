@@ -10,6 +10,7 @@
 
 import axios from 'axios';
 import { getServerUrl } from '@/sync/serverConfig';
+import { logger } from '@/utils/logger';
 
 /** Response from successful token refresh */
 interface RefreshSuccessResponse {
@@ -81,7 +82,7 @@ export async function authRefreshToken(currentToken: string): Promise<TokenRefre
             // Calculate expiration timestamp from expiresIn (seconds)
             const expiresAt = Date.now() + data.expiresIn * 1000;
 
-            console.log('[authRefreshToken] Token refreshed successfully, expires at:', new Date(expiresAt).toISOString());
+            logger.debug('[authRefreshToken] Token refreshed, expires at:', new Date(expiresAt).toISOString());
 
             return {
                 token: data.token,
@@ -90,7 +91,7 @@ export async function authRefreshToken(currentToken: string): Promise<TokenRefre
         }
 
         // Server returned success: false
-        console.log('[authRefreshToken] Refresh failed:', data.code, data.error);
+        logger.debug('[authRefreshToken] Refresh failed:', data.code);
         return null;
     } catch (error) {
         // Handle HTTP errors (401 for expired tokens, network errors, etc.)
@@ -99,12 +100,12 @@ export async function authRefreshToken(currentToken: string): Promise<TokenRefre
             const errorData = error.response?.data as RefreshFailedResponse | undefined;
 
             if (status === 401) {
-                console.log('[authRefreshToken] Token refresh failed (401):', errorData?.code || 'unknown');
+                logger.debug('[authRefreshToken] Token refresh failed (401):', errorData?.code || 'unknown');
             } else {
-                console.log('[authRefreshToken] Network error during refresh:', error.message);
+                logger.debug('[authRefreshToken] Network error during refresh:', error.message);
             }
         } else {
-            console.log('[authRefreshToken] Unexpected error during refresh:', error);
+            logger.error('[authRefreshToken] Unexpected error during refresh:', error);
         }
 
         return null;

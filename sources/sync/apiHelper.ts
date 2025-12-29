@@ -12,6 +12,7 @@ import { getCurrentAuth } from '@/auth/AuthContext';
 import { AuthCredentials } from '@/auth/tokenStorage';
 import { fetchWithTimeout, FetchWithTimeoutOptions } from '@/utils/fetchWithTimeout';
 import { createApiTimer } from '@/utils/performance';
+import { logger } from '@/utils/logger';
 
 // Re-export deduplication utilities for convenient access
 export {
@@ -93,20 +94,20 @@ export async function checkAuthErrorWithRefresh(
         return undefined;
     }
 
-    console.log('[checkAuthErrorWithRefresh] Received 401, attempting token refresh...');
+    logger.debug('[checkAuthErrorWithRefresh] Received 401, attempting token refresh...');
 
     // Try to refresh the token
     const auth = getCurrentAuth();
     if (auth?.refreshToken) {
         const refreshed = await auth.refreshToken();
         if (refreshed && auth.credentials?.token) {
-            console.log('[checkAuthErrorWithRefresh] Token refreshed successfully');
+            logger.debug('[checkAuthErrorWithRefresh] Token refreshed successfully');
             return { refreshed: true, newToken: auth.credentials.token };
         }
     }
 
     // Refresh failed or not available - throw the error
-    console.log('[checkAuthErrorWithRefresh] Token refresh failed, throwing TOKEN_EXPIRED');
+    logger.debug('[checkAuthErrorWithRefresh] Token refresh failed, throwing TOKEN_EXPIRED');
     const message = context
         ? `Session expired while ${context}`
         : 'Session expired - please log in again';
@@ -232,16 +233,16 @@ export async function authenticatedFetch(
 
     // Check for 401 and attempt refresh
     if (response.status === 401) {
-        console.log('[authenticatedFetch] Received 401, attempting token refresh...');
+        logger.debug('[authenticatedFetch] Received 401, attempting token refresh...');
 
         const refreshResult = await checkAuthErrorWithRefresh(response, context);
         if (refreshResult?.refreshed) {
-            console.log('[authenticatedFetch] Token refreshed, retrying request...');
+            logger.debug('[authenticatedFetch] Token refreshed, retrying request...');
             response = await makeRequest(refreshResult.newToken);
 
             // If still 401 after refresh, throw immediately
             if (response.status === 401) {
-                console.log('[authenticatedFetch] Retry still returned 401, throwing TOKEN_EXPIRED');
+                logger.debug('[authenticatedFetch] Retry still returned 401, throwing TOKEN_EXPIRED');
                 checkAuthError(response, context);
             }
         }
