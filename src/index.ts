@@ -204,6 +204,80 @@ app.get('/ready', async (c) => {
     );
 });
 
+/**
+ * Debug endpoint for Analytics Engine query testing
+ * @route GET /debug/analytics
+ * @returns Raw Analytics Engine query results for debugging
+ *
+ * @remarks
+ * HAP-638: Temporary debug endpoint to diagnose why sync_metrics returns empty.
+ * Should be removed or secured after debugging is complete.
+ */
+app.get('/debug/analytics', async (c) => {
+    if (!c.env.ANALYTICS_ACCOUNT_ID || !c.env.ANALYTICS_API_TOKEN) {
+        return c.json({ error: 'Analytics Engine not configured' }, 500);
+    }
+
+    const accountId = await c.env.ANALYTICS_ACCOUNT_ID.get();
+    const apiToken = await c.env.ANALYTICS_API_TOKEN.get();
+
+    if (!accountId || !apiToken) {
+        return c.json({ error: 'Secrets Store returned empty values' }, 500);
+    }
+
+    const dataset = c.env.ENVIRONMENT === 'production' ? 'sync_metrics_prod' : 'sync_metrics_dev';
+
+    // Run multiple diagnostic queries
+    // NOTE: Analytics Engine uses COUNT() not COUNT(*) - different from standard SQL!
+    const queries = {
+        // Check if dataset has ANY data (no time filter)
+        totalCount: `SELECT COUNT() as count FROM ${dataset}`,
+        // Check data in last 24 hours
+        last24h: `SELECT COUNT() as count FROM ${dataset} WHERE timestamp > NOW() - INTERVAL '24' HOUR`,
+        // Check data in last 7 days
+        last7d: `SELECT COUNT() as count FROM ${dataset} WHERE timestamp > NOW() - INTERVAL '7' DAY`,
+        // Get most recent data point
+        mostRecent: `SELECT timestamp, blob1, blob2 FROM ${dataset} ORDER BY timestamp DESC LIMIT 1`,
+        // Check oldest and newest timestamps
+        timeRange: `SELECT MIN(timestamp) as oldest, MAX(timestamp) as newest FROM ${dataset}`,
+    };
+
+    const results: Record<string, unknown> = {};
+
+    for (const [name, sql] of Object.entries(queries)) {
+        try {
+            const response = await fetch(
+                `https://api.cloudflare.com/client/v4/accounts/${accountId}/analytics_engine/sql`,
+                {
+                    method: 'POST',
+                    headers: {
+                        Authorization: `Bearer ${apiToken}`,
+                        'Content-Type': 'text/plain',
+                    },
+                    body: sql,
+                }
+            );
+
+            if (!response.ok) {
+                const text = await response.text();
+                results[name] = { error: `HTTP ${response.status}`, body: text };
+            } else {
+                const data = await response.json();
+                results[name] = data;
+            }
+        } catch (error) {
+            results[name] = { error: error instanceof Error ? error.message : 'Unknown error' };
+        }
+    }
+
+    return c.json({
+        environment: c.env.ENVIRONMENT,
+        dataset,
+        timestamp: new Date().toISOString(),
+        queries: results,
+    });
+});
+
 /*
  * OpenAPI 3.1 Documentation
  */

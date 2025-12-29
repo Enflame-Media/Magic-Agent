@@ -380,7 +380,18 @@ async function queryAnalyticsEngine(
         return null;
     }
 
-    return response.json();
+    const result = await response.json() as { data: unknown[]; meta: unknown };
+
+    // HAP-638: Enhanced debug logging for query results
+    const rowCount = Array.isArray(result.data) ? result.data.length : 0;
+    console.log('[Metrics] Analytics Engine query result:', {
+        query: sql.substring(0, 100) + (sql.length > 100 ? '...' : ''),
+        rowCount,
+        hasData: rowCount > 0,
+        meta: result.meta,
+    });
+
+    return result;
 }
 
 /**
@@ -400,10 +411,10 @@ metricsRoutes.openapi(summaryRoute, async (c) => {
         SELECT
             blob1 as syncType,
             blob2 as syncMode,
-            COUNT(*) as count,
+            COUNT() as count,
             AVG(double4) as avgDurationMs,
             quantile(0.95)(double4) as p95DurationMs,
-            SUM(CASE WHEN double2 > 0 THEN 1 ELSE 0 END) * 1.0 / COUNT(*) as successRate
+            SUM(CASE WHEN double2 > 0 THEN 1 ELSE 0 END) * 1.0 / COUNT() as successRate
         FROM sync_metrics_${c.env.ENVIRONMENT === 'production' ? 'prod' : 'dev'}
         WHERE timestamp > NOW() - INTERVAL '24' HOUR
         GROUP BY blob1, blob2
@@ -475,7 +486,7 @@ metricsRoutes.openapi(timeseriesRoute, async (c) => {
     query
         .select([
             `toStartOf${bucketFunc}(timestamp) as timestamp`,
-            'COUNT(*) as count',
+            'COUNT() as count',
             'AVG(double4) as avgDurationMs',
         ])
         .whereTimestampInterval(hoursNum, 'HOUR')
@@ -583,7 +594,7 @@ metricsRoutes.openapi(modeDistributionRoute, async (c) => {
         `
         SELECT
             blob2 as mode,
-            COUNT(*) as count
+            COUNT() as count
         FROM sync_metrics_${c.env.ENVIRONMENT === 'production' ? 'prod' : 'dev'}
         WHERE timestamp > NOW() - INTERVAL '24' HOUR
         GROUP BY blob2
@@ -680,7 +691,7 @@ metricsRoutes.openapi(bundleTrendsRoute, async (c) => {
             'AVG(double3) as avgTotalSize',
             'AVG(double1) as avgJsSize',
             'AVG(double2) as avgAssetsSize',
-            'COUNT(*) as buildCount',
+            'COUNT() as buildCount',
         ])
         .whereTimestampInterval(daysNum, 'DAY')
         .whereString('blob2', '=', branch, ValidationPatterns.BRANCH, 'branch')

@@ -191,7 +191,7 @@ export function sqlNumber(value: number): string {
  * ```typescript
  * const builder = new AnalyticsQueryBuilder('sync_metrics_dev');
  * builder
- *   .select(['blob1 as syncType', 'COUNT(*) as count'])
+ *   .select(['blob1 as syncType', 'COUNT() as count'])  // NOTE: Analytics Engine uses COUNT() not COUNT(*)
  *   .whereTimestamp('>', 'NOW() - INTERVAL 24 HOUR')
  *   .whereString('blob2', '=', branch, ValidationPatterns.BRANCH)
  *   .groupBy(['blob1'])
