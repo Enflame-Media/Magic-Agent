@@ -29,13 +29,11 @@ if (result.success) {
   const update: ApiUpdate = result.data;
   switch (update.t) {
     case 'new-message':
-      // Note: new-message uses 'sid', not 'id'
-      console.log('Session:', update.sid);
-      console.log('Message:', update.message);
-      break;
     case 'new-session':
-      // Note: new-session uses 'id', not 'sid'
-      console.log('New session:', update.id);
+    case 'update-session':
+    case 'delete-session':
+      // All session updates use 'sid' (standardized in HAP-654)
+      console.log('Session:', update.sid);
       break;
     // ... handle other types (see Field Name Reference below)
   }
@@ -115,20 +113,19 @@ Shared types used across the protocol.
 
 ### Session ID Field Names
 
-The session ID is represented with different field names depending on the update type:
+All session-related schemas now consistently use `sid` (standardized in HAP-654):
 
 | Schema | Update Type | Field Name | Discriminator | Notes |
 |--------|-------------|------------|---------------|-------|
-| `ApiUpdateNewSessionSchema` | `new-session` | `id` | `t` | Persistent update |
-| `ApiUpdateSessionStateSchema` | `update-session` | `id` | `t` | Persistent update |
+| `ApiUpdateNewSessionSchema` | `new-session` | `sid` | `t` | Persistent update |
+| `ApiUpdateSessionStateSchema` | `update-session` | `sid` | `t` | Persistent update |
 | `ApiUpdateNewMessageSchema` | `new-message` | `sid` | `t` | Persistent update |
 | `ApiDeleteSessionSchema` | `delete-session` | `sid` | `t` | Persistent update |
-| `ApiEphemeralActivityUpdateSchema` | `activity` | `id` | `type` | Ephemeral event |
-| `ApiEphemeralUsageUpdateSchema` | `usage` | `id` | `type` | Ephemeral event |
+| `ApiEphemeralActivityUpdateSchema` | `activity` | `sid` | `type` | Ephemeral event |
+| `ApiEphemeralUsageUpdateSchema` | `usage` | `sid` | `type` | Ephemeral event |
 
 **Pattern Summary:**
-- **`id`**: Used in `new-session`, `update-session`, `activity`, `usage`
-- **`sid`**: Used in `new-message`, `delete-session`
+- **`sid`**: All session schemas now consistently use `sid` (standardized in HAP-654)
 
 ### Machine ID Field Names
 
@@ -155,7 +152,9 @@ The machine ID is represented with different field names:
 
 ### Historical Context
 
-The original naming inconsistency (HAP-383) where `machine-activity` used `id` while other machine schemas used `machineId` has been resolved. All machine schemas now consistently use `machineId` (HAP-655).
+The original naming inconsistencies (HAP-383) have been fully resolved:
+- **Session ID**: All session schemas now use `sid` (HAP-654) - previously some used `id`
+- **Machine ID**: All machine schemas now use `machineId` (HAP-655) - previously `machine-activity` used `id`
 
 ### Consumer Code Example
 
@@ -169,13 +168,15 @@ function handleUpdate(update: ApiUpdate) {
   switch (update.t) {
     case 'new-message':
     case 'delete-session':
-      // Use 'sid' for session ID
-      const sessionIdA = update.sid;
-      break;
     case 'new-session':
     case 'update-session':
-      // Use 'id' for session ID
-      const sessionIdB = update.id;
+      // All session updates now use 'sid' (HAP-654)
+      const sessionId = update.sid;
+      break;
+    case 'new-machine':
+    case 'update-machine':
+      // All machine updates use 'machineId'
+      const machineId = update.machineId;
       break;
   }
 }
@@ -185,16 +186,13 @@ function handleEphemeral(event: ApiEphemeralUpdate) {
   switch (event.type) {
     case 'activity':
     case 'usage':
-      // Use 'id' for session ID
-      const sessionId = event.id;
+      // All session ephemerals now use 'sid' (HAP-654)
+      const sessionId = event.sid;
       break;
     case 'machine-activity':
-      // Use 'id' for machine ID
-      const machineIdA = event.id;
-      break;
     case 'machine-status':
-      // Use 'machineId' for machine ID
-      const machineIdB = event.machineId;
+      // All machine ephemerals now use 'machineId' (HAP-655)
+      const machineId = event.machineId;
       break;
   }
 }
@@ -214,7 +212,7 @@ function handleUpdate(update: ApiUpdate) {
       break;
     case 'new-session':
       // TypeScript knows: update is ApiUpdateNewSession
-      console.log(update.id, update.metadata);
+      console.log(update.sid, update.metadata);
       break;
   }
 }
