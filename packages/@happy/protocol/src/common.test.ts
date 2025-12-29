@@ -378,7 +378,7 @@ describe('Input validation (HAP-629)', () => {
         it('rejects session ID exceeding ID_MAX', () => {
             const session = {
                 t: 'new-session' as const,
-                id: 'x'.repeat(STRING_LIMITS.ID_MAX + 1),
+                sid: 'x'.repeat(STRING_LIMITS.ID_MAX + 1), // HAP-654: standardized to `sid`
                 seq: 1,
                 metadata: 'encrypted',
                 metadataVersion: 1,
@@ -397,7 +397,7 @@ describe('Input validation (HAP-629)', () => {
         it('rejects metadata exceeding ENCRYPTED_STATE_MAX', () => {
             const session = {
                 t: 'new-session' as const,
-                id: 'session_valid',
+                sid: 'session_valid', // HAP-654: standardized to `sid`
                 seq: 1,
                 metadata: 'x'.repeat(STRING_LIMITS.ENCRYPTED_STATE_MAX + 1),
                 metadataVersion: 1,
@@ -416,7 +416,7 @@ describe('Input validation (HAP-629)', () => {
         it('rejects empty session ID', () => {
             const session = {
                 t: 'new-session' as const,
-                id: '',
+                sid: '', // HAP-654: standardized to `sid`
                 seq: 1,
                 metadata: 'encrypted',
                 metadataVersion: 1,
