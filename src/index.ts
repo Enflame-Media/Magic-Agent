@@ -6,6 +6,7 @@ import type { Env, Variables } from './env';
 import { metricsRoutes } from './routes/metrics';
 import { authRoutes } from './routes/auth';
 import { adminAuthMiddleware } from './middleware/auth';
+import { csrfMiddleware } from './middleware/csrf';
 
 /**
  * Application version (should match package.json)
@@ -52,13 +53,24 @@ app.use(
     '*',
     cors({
         origin: ALLOWED_ORIGINS,
-        allowHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+        allowHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-CSRF-Token'],
         allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
         credentials: true,
         exposeHeaders: ['Set-Cookie'],
         maxAge: 86400, // 24 hours preflight cache
     })
 );
+
+/**
+ * CSRF Protection Middleware
+ *
+ * SECURITY FIX (HAP-616): Implements double-submit cookie pattern.
+ * All state-changing requests (POST, PUT, DELETE, PATCH) require
+ * a valid X-CSRF-Token header matching the csrf-token cookie.
+ *
+ * Applied after CORS to ensure preflight requests work correctly.
+ */
+app.use('*', csrfMiddleware());
 
 /*
  * API Routes
