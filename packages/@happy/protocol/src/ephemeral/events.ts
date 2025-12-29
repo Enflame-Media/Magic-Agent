@@ -3,9 +3,12 @@
  *
  * Ephemeral events are transient status updates that don't need persistence.
  * These are real-time indicators of activity (typing, presence, etc.)
+ *
+ * Security: All string fields have maximum length constraints.
  */
 
 import { z } from 'zod';
+import { STRING_LIMITS } from '../constraints';
 
 /**
  * Session activity update
@@ -14,7 +17,7 @@ import { z } from 'zod';
  */
 export const ApiEphemeralActivityUpdateSchema = z.object({
     type: z.literal('activity'),
-    id: z.string(), // Session ID
+    id: z.string().min(1).max(STRING_LIMITS.ID_MAX), // Session ID
     active: z.boolean(),
     activeAt: z.number(),
     thinking: z.boolean(),
@@ -34,14 +37,14 @@ export type ApiEphemeralActivityUpdate = z.infer<typeof ApiEphemeralActivityUpda
  */
 export const ApiEphemeralUsageUpdateSchema = z.object({
     type: z.literal('usage'),
-    id: z.string(), // Session ID
-    key: z.string(), // Usage key/identifier
+    id: z.string().min(1).max(STRING_LIMITS.ID_MAX), // Session ID
+    key: z.string().min(1).max(STRING_LIMITS.LABEL_MAX), // Usage key/identifier
     timestamp: z.number(),
-    tokens: z.record(z.string(), z.number()).refine(
+    tokens: z.record(z.string().max(STRING_LIMITS.LABEL_MAX), z.number()).refine(
         (obj) => typeof obj.total === 'number',
         { message: 'tokens.total is required' }
     ),
-    cost: z.record(z.string(), z.number()).refine(
+    cost: z.record(z.string().max(STRING_LIMITS.LABEL_MAX), z.number()).refine(
         (obj) => typeof obj.total === 'number',
         { message: 'cost.total is required' }
     ),
@@ -56,7 +59,7 @@ export type ApiEphemeralUsageUpdate = z.infer<typeof ApiEphemeralUsageUpdateSche
  */
 export const ApiEphemeralMachineActivityUpdateSchema = z.object({
     type: z.literal('machine-activity'),
-    id: z.string(), // Machine ID
+    id: z.string().min(1).max(STRING_LIMITS.ID_MAX), // Machine ID
     active: z.boolean(),
     activeAt: z.number(),
 });
@@ -70,7 +73,7 @@ export type ApiEphemeralMachineActivityUpdate = z.infer<typeof ApiEphemeralMachi
  */
 export const ApiEphemeralMachineStatusUpdateSchema = z.object({
     type: z.literal('machine-status'),
-    machineId: z.string(),
+    machineId: z.string().min(1).max(STRING_LIMITS.ID_MAX),
     online: z.boolean(),
     timestamp: z.number(),
 });

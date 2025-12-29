@@ -2,10 +2,13 @@
  * Message-related update schemas
  *
  * Handles: new-message, delete-session (session lifecycle)
+ *
+ * Security: All string fields have maximum length constraints.
  */
 
 import { z } from 'zod';
 import { EncryptedContentSchema } from '../common';
+import { STRING_LIMITS } from '../constraints';
 
 /**
  * API Message schema - encrypted message structure
@@ -24,9 +27,9 @@ import { EncryptedContentSchema } from '../common';
  * ```
  */
 export const ApiMessageSchema = z.object({
-    id: z.string(),
+    id: z.string().min(1).max(STRING_LIMITS.ID_MAX),
     seq: z.number(),
-    localId: z.string().nullish(),
+    localId: z.string().max(STRING_LIMITS.LOCAL_ID_MAX).nullish(),
     content: EncryptedContentSchema,
     createdAt: z.number(),
 });
@@ -55,7 +58,7 @@ export type ApiMessage = z.infer<typeof ApiMessageSchema>;
  */
 export const ApiUpdateNewMessageSchema = z.object({
     t: z.literal('new-message'),
-    sid: z.string(), // Session ID - MUST be 'sid', not 'sessionId'
+    sid: z.string().min(1).max(STRING_LIMITS.ID_MAX), // Session ID - MUST be 'sid', not 'sessionId'
     message: ApiMessageSchema,
 });
 
@@ -76,7 +79,7 @@ export type ApiUpdateNewMessage = z.infer<typeof ApiUpdateNewMessageSchema>;
  */
 export const ApiDeleteSessionSchema = z.object({
     t: z.literal('delete-session'),
-    sid: z.string(), // Session ID
+    sid: z.string().min(1).max(STRING_LIMITS.ID_MAX), // Session ID
 });
 
 export type ApiDeleteSession = z.infer<typeof ApiDeleteSessionSchema>;

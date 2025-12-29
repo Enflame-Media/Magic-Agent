@@ -2,10 +2,13 @@
  * Machine-related update schemas
  *
  * Handles: new-machine, update-machine
+ *
+ * Security: All string fields have maximum length constraints.
  */
 
 import { z } from 'zod';
 import { VersionedValueSchema } from '../common';
+import { STRING_LIMITS } from '../constraints';
 
 /**
  * New machine update
@@ -32,13 +35,13 @@ import { VersionedValueSchema } from '../common';
  */
 export const ApiNewMachineSchema = z.object({
     t: z.literal('new-machine'),
-    machineId: z.string(),
+    machineId: z.string().min(1).max(STRING_LIMITS.ID_MAX),
     seq: z.number(),
-    metadata: z.string(), // Encrypted metadata
+    metadata: z.string().max(STRING_LIMITS.ENCRYPTED_STATE_MAX), // Encrypted metadata
     metadataVersion: z.number(),
-    daemonState: z.string().nullable(), // Encrypted daemon state
+    daemonState: z.string().max(STRING_LIMITS.ENCRYPTED_STATE_MAX).nullable(), // Encrypted daemon state
     daemonStateVersion: z.number(),
-    dataEncryptionKey: z.string().nullable(), // Base64 encoded
+    dataEncryptionKey: z.string().max(STRING_LIMITS.DATA_ENCRYPTION_KEY_MAX).nullable(), // Base64 encoded
     active: z.boolean(),
     activeAt: z.number(),
     createdAt: z.number(),
@@ -65,7 +68,7 @@ export type ApiNewMachine = z.infer<typeof ApiNewMachineSchema>;
  */
 export const ApiUpdateMachineStateSchema = z.object({
     t: z.literal('update-machine'),
-    machineId: z.string(),
+    machineId: z.string().min(1).max(STRING_LIMITS.ID_MAX),
     metadata: VersionedValueSchema.optional(),
     daemonState: VersionedValueSchema.optional(),
     active: z.boolean().optional(),

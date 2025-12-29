@@ -2,10 +2,13 @@
  * Miscellaneous update schemas
  *
  * Handles: relationship-updated, new-feed-post, kv-batch-update
+ *
+ * Security: All string fields have maximum length constraints.
  */
 
 import { z } from 'zod';
 import { RelationshipStatusSchema, UserProfileSchema, FeedBodySchema } from '../common';
+import { STRING_LIMITS } from '../constraints';
 
 /**
  * Relationship update
@@ -26,8 +29,8 @@ import { RelationshipStatusSchema, UserProfileSchema, FeedBodySchema } from '../
  */
 export const ApiRelationshipUpdatedSchema = z.object({
     t: z.literal('relationship-updated'),
-    fromUserId: z.string(),
-    toUserId: z.string(),
+    fromUserId: z.string().min(1).max(STRING_LIMITS.ID_MAX),
+    toUserId: z.string().min(1).max(STRING_LIMITS.ID_MAX),
     status: RelationshipStatusSchema,
     action: z.enum(['created', 'updated', 'deleted']),
     fromUser: UserProfileSchema.optional(),
@@ -57,11 +60,11 @@ export type ApiRelationshipUpdated = z.infer<typeof ApiRelationshipUpdatedSchema
  */
 export const ApiNewFeedPostSchema = z.object({
     t: z.literal('new-feed-post'),
-    id: z.string(),
+    id: z.string().min(1).max(STRING_LIMITS.ID_MAX),
     body: FeedBodySchema,
-    cursor: z.string(),
+    cursor: z.string().max(STRING_LIMITS.CURSOR_MAX),
     createdAt: z.number(),
-    repeatKey: z.string().nullable(),
+    repeatKey: z.string().max(STRING_LIMITS.REPEAT_KEY_MAX).nullable(),
     counter: z.number(),
 });
 
@@ -87,8 +90,8 @@ export type ApiNewFeedPost = z.infer<typeof ApiNewFeedPostSchema>;
 export const ApiKvBatchUpdateSchema = z.object({
     t: z.literal('kv-batch-update'),
     changes: z.array(z.object({
-        key: z.string(),
-        value: z.string().nullable(),
+        key: z.string().min(1).max(STRING_LIMITS.KV_KEY_MAX),
+        value: z.string().max(STRING_LIMITS.KV_VALUE_MAX).nullable(),
         version: z.number(),
     })),
 });

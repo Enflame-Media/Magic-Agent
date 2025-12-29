@@ -2,10 +2,13 @@
  * Account-related update schemas
  *
  * Handles: update-account
+ *
+ * Security: All string fields have maximum length constraints.
  */
 
 import { z } from 'zod';
 import { GitHubProfileSchema, ImageRefSchema, NullableVersionedValueSchema } from '../common';
+import { STRING_LIMITS } from '../constraints';
 
 /**
  * Update account
@@ -29,10 +32,10 @@ import { GitHubProfileSchema, ImageRefSchema, NullableVersionedValueSchema } fro
  */
 export const ApiUpdateAccountSchema = z.object({
     t: z.literal('update-account'),
-    id: z.string(),
+    id: z.string().min(1).max(STRING_LIMITS.ID_MAX),
     settings: NullableVersionedValueSchema.nullish(),
-    firstName: z.string().nullish(),
-    lastName: z.string().nullish(),
+    firstName: z.string().max(STRING_LIMITS.NAME_MAX).nullish(),
+    lastName: z.string().max(STRING_LIMITS.NAME_MAX).nullish(),
     avatar: ImageRefSchema.nullish(),
     github: GitHubProfileSchema.nullish(),
 });

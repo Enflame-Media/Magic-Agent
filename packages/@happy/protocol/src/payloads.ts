@@ -2,9 +2,12 @@
  * Payload wrapper schemas
  *
  * These wrap update and ephemeral events with sequencing metadata.
+ *
+ * Security: All string fields have maximum length constraints.
  */
 
 import { z } from 'zod';
+import { STRING_LIMITS } from './constraints';
 import { ApiUpdateSchema, type ApiUpdateType } from './updates';
 import { ApiEphemeralUpdateSchema } from './ephemeral';
 
@@ -16,7 +19,7 @@ import { ApiEphemeralUpdateSchema } from './ephemeral';
  * from the container structure.
  */
 export const ApiUpdateContainerSchema = z.object({
-    id: z.string(),
+    id: z.string().min(1).max(STRING_LIMITS.ID_MAX),
     seq: z.number(),
     body: ApiUpdateSchema,
     createdAt: z.number(),
@@ -31,11 +34,21 @@ export type ApiUpdateContainer = z.infer<typeof ApiUpdateContainerSchema>;
  * Matches the format used by eventRouter.ts builder functions.
  */
 export const UpdatePayloadSchema = z.object({
-    id: z.string(),
+    id: z.string().min(1).max(STRING_LIMITS.ID_MAX),
     seq: z.number(),
     body: z.object({
         t: z.string() as z.ZodType<ApiUpdateType>,
-    }).strip(), // Strip unknown fields for security (prevents prototype pollution)
+    }).passthrough().transform((data) => {
+        // HAP-626: Sanitize dangerous prototype pollution keys
+        // We use passthrough here (not strip) because this schema only validates
+        // the type discriminator - the actual payload data must pass through.
+        // Full validation happens via ApiUpdateContainerSchema with ApiUpdateSchema.
+        const sanitized = { ...data };
+        delete (sanitized as Record<string, unknown>)['__proto__'];
+        delete (sanitized as Record<string, unknown>)['constructor'];
+        delete (sanitized as Record<string, unknown>)['prototype'];
+        return sanitized;
+    }),
     createdAt: z.number(),
 });
 

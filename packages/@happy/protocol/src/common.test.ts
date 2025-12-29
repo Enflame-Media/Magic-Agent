@@ -1,5 +1,14 @@
 import { describe, it, expect } from 'vitest';
-import { GitHubProfileSchema } from './common';
+import {
+    GitHubProfileSchema,
+    UserProfileSchema,
+    ImageRefSchema,
+    EncryptedContentSchema,
+    VersionedValueSchema,
+} from './common';
+import { STRING_LIMITS } from './constraints';
+import { ApiUpdateNewSessionSchema } from './updates/session';
+import { ApiMessageSchema } from './updates/message';
 
 describe('GitHubProfileSchema', () => {
     describe('required fields', () => {
@@ -210,6 +219,253 @@ describe('GitHubProfileSchema', () => {
                 expect('largeUnexpectedField' in result.data).toBe(false);
                 expect('anotherLargeField' in result.data).toBe(false);
             }
+        });
+    });
+});
+
+/**
+ * Input Validation Tests (HAP-629)
+ *
+ * Verifies that all schemas properly reject oversized inputs
+ * to prevent DoS and storage bloat attacks.
+ */
+describe('Input validation (HAP-629)', () => {
+    describe('STRING_LIMITS constants', () => {
+        it('defines expected limits', () => {
+            // Verify key limits are defined
+            expect(STRING_LIMITS.TITLE_MAX).toBe(256);
+            expect(STRING_LIMITS.NAME_MAX).toBe(128);
+            expect(STRING_LIMITS.DESCRIPTION_MAX).toBe(4096);
+            expect(STRING_LIMITS.CONTENT_MAX).toBe(1_000_000);
+            expect(STRING_LIMITS.ID_MAX).toBe(128);
+            expect(STRING_LIMITS.URL_MAX).toBe(2048);
+        });
+    });
+
+    describe('GitHubProfileSchema length limits', () => {
+        it('rejects login exceeding USERNAME_MAX', () => {
+            const profile = {
+                id: 12345,
+                login: 'x'.repeat(STRING_LIMITS.USERNAME_MAX + 1),
+            };
+            const result = GitHubProfileSchema.safeParse(profile);
+            expect(result.success).toBe(false);
+        });
+
+        it('rejects name exceeding NAME_MAX', () => {
+            const profile = {
+                id: 12345,
+                login: 'valid',
+                name: 'x'.repeat(STRING_LIMITS.NAME_MAX + 1),
+            };
+            const result = GitHubProfileSchema.safeParse(profile);
+            expect(result.success).toBe(false);
+        });
+
+        it('rejects bio exceeding BIO_MAX', () => {
+            const profile = {
+                id: 12345,
+                login: 'valid',
+                bio: 'x'.repeat(STRING_LIMITS.BIO_MAX + 1),
+            };
+            const result = GitHubProfileSchema.safeParse(profile);
+            expect(result.success).toBe(false);
+        });
+
+        it('accepts values at exactly the limit', () => {
+            const profile = {
+                id: 12345,
+                login: 'x'.repeat(STRING_LIMITS.USERNAME_MAX),
+                name: 'y'.repeat(STRING_LIMITS.NAME_MAX),
+                bio: 'z'.repeat(STRING_LIMITS.BIO_MAX),
+            };
+            const result = GitHubProfileSchema.safeParse(profile);
+            expect(result.success).toBe(true);
+        });
+    });
+
+    describe('ImageRefSchema length limits', () => {
+        it('rejects path exceeding PATH_MAX', () => {
+            const image = {
+                path: 'x'.repeat(STRING_LIMITS.PATH_MAX + 1),
+                url: 'https://example.com/image.jpg',
+            };
+            const result = ImageRefSchema.safeParse(image);
+            expect(result.success).toBe(false);
+        });
+
+        it('rejects URL exceeding URL_MAX', () => {
+            const image = {
+                path: 'valid/path.jpg',
+                url: 'https://example.com/' + 'x'.repeat(STRING_LIMITS.URL_MAX),
+            };
+            const result = ImageRefSchema.safeParse(image);
+            expect(result.success).toBe(false);
+        });
+
+        it('rejects empty path', () => {
+            const image = {
+                path: '',
+                url: 'https://example.com/image.jpg',
+            };
+            const result = ImageRefSchema.safeParse(image);
+            expect(result.success).toBe(false);
+        });
+    });
+
+    describe('UserProfileSchema length limits', () => {
+        it('rejects id exceeding ID_MAX', () => {
+            const user = {
+                id: 'x'.repeat(STRING_LIMITS.ID_MAX + 1),
+                firstName: 'Jane',
+                lastName: 'Doe',
+                avatar: null,
+                username: 'janedoe',
+                bio: null,
+                status: 'none' as const,
+            };
+            const result = UserProfileSchema.safeParse(user);
+            expect(result.success).toBe(false);
+        });
+
+        it('rejects username exceeding USERNAME_MAX', () => {
+            const user = {
+                id: 'user_123',
+                firstName: 'Jane',
+                lastName: 'Doe',
+                avatar: null,
+                username: 'x'.repeat(STRING_LIMITS.USERNAME_MAX + 1),
+                bio: null,
+                status: 'none' as const,
+            };
+            const result = UserProfileSchema.safeParse(user);
+            expect(result.success).toBe(false);
+        });
+    });
+
+    describe('EncryptedContentSchema length limits', () => {
+        it('rejects content exceeding CONTENT_MAX', () => {
+            const content = {
+                t: 'encrypted' as const,
+                c: 'x'.repeat(STRING_LIMITS.CONTENT_MAX + 1),
+            };
+            const result = EncryptedContentSchema.safeParse(content);
+            expect(result.success).toBe(false);
+        });
+
+        it('accepts content at exactly CONTENT_MAX', () => {
+            const content = {
+                t: 'encrypted' as const,
+                c: 'x'.repeat(STRING_LIMITS.CONTENT_MAX),
+            };
+            const result = EncryptedContentSchema.safeParse(content);
+            expect(result.success).toBe(true);
+        });
+    });
+
+    describe('VersionedValueSchema length limits', () => {
+        it('rejects value exceeding VERSIONED_VALUE_MAX', () => {
+            const versioned = {
+                version: 1,
+                value: 'x'.repeat(STRING_LIMITS.VERSIONED_VALUE_MAX + 1),
+            };
+            const result = VersionedValueSchema.safeParse(versioned);
+            expect(result.success).toBe(false);
+        });
+    });
+
+    describe('ApiUpdateNewSessionSchema length limits', () => {
+        it('rejects session ID exceeding ID_MAX', () => {
+            const session = {
+                t: 'new-session' as const,
+                id: 'x'.repeat(STRING_LIMITS.ID_MAX + 1),
+                seq: 1,
+                metadata: 'encrypted',
+                metadataVersion: 1,
+                agentState: null,
+                agentStateVersion: 0,
+                dataEncryptionKey: null,
+                active: true,
+                activeAt: Date.now(),
+                createdAt: Date.now(),
+                updatedAt: Date.now(),
+            };
+            const result = ApiUpdateNewSessionSchema.safeParse(session);
+            expect(result.success).toBe(false);
+        });
+
+        it('rejects metadata exceeding ENCRYPTED_STATE_MAX', () => {
+            const session = {
+                t: 'new-session' as const,
+                id: 'session_valid',
+                seq: 1,
+                metadata: 'x'.repeat(STRING_LIMITS.ENCRYPTED_STATE_MAX + 1),
+                metadataVersion: 1,
+                agentState: null,
+                agentStateVersion: 0,
+                dataEncryptionKey: null,
+                active: true,
+                activeAt: Date.now(),
+                createdAt: Date.now(),
+                updatedAt: Date.now(),
+            };
+            const result = ApiUpdateNewSessionSchema.safeParse(session);
+            expect(result.success).toBe(false);
+        });
+
+        it('rejects empty session ID', () => {
+            const session = {
+                t: 'new-session' as const,
+                id: '',
+                seq: 1,
+                metadata: 'encrypted',
+                metadataVersion: 1,
+                agentState: null,
+                agentStateVersion: 0,
+                dataEncryptionKey: null,
+                active: true,
+                activeAt: Date.now(),
+                createdAt: Date.now(),
+                updatedAt: Date.now(),
+            };
+            const result = ApiUpdateNewSessionSchema.safeParse(session);
+            expect(result.success).toBe(false);
+        });
+    });
+
+    describe('ApiMessageSchema length limits', () => {
+        it('rejects message ID exceeding ID_MAX', () => {
+            const message = {
+                id: 'x'.repeat(STRING_LIMITS.ID_MAX + 1),
+                seq: 1,
+                content: { t: 'encrypted' as const, c: 'data' },
+                createdAt: Date.now(),
+            };
+            const result = ApiMessageSchema.safeParse(message);
+            expect(result.success).toBe(false);
+        });
+
+        it('rejects empty message ID', () => {
+            const message = {
+                id: '',
+                seq: 1,
+                content: { t: 'encrypted' as const, c: 'data' },
+                createdAt: Date.now(),
+            };
+            const result = ApiMessageSchema.safeParse(message);
+            expect(result.success).toBe(false);
+        });
+
+        it('accepts valid message with all fields within limits', () => {
+            const message = {
+                id: 'msg_' + 'x'.repeat(100),
+                seq: 42,
+                localId: 'local_123',
+                content: { t: 'encrypted' as const, c: 'valid_encrypted_content' },
+                createdAt: Date.now(),
+            };
+            const result = ApiMessageSchema.safeParse(message);
+            expect(result.success).toBe(true);
         });
     });
 });

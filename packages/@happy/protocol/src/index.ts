@@ -28,6 +28,9 @@
  * @packageDocumentation
  */
 
+// Validation constraints (security-focused limits)
+export * from './constraints';
+
 // Common types used across the protocol
 export * from './common';
 

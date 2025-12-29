@@ -2,10 +2,13 @@
  * Session-related update schemas
  *
  * Handles: new-session, update-session
+ *
+ * Security: All string fields have maximum length constraints.
  */
 
 import { z } from 'zod';
 import { NullableVersionedValueSchema } from '../common';
+import { STRING_LIMITS } from '../constraints';
 
 /**
  * New session update
@@ -33,13 +36,13 @@ import { NullableVersionedValueSchema } from '../common';
  */
 export const ApiUpdateNewSessionSchema = z.object({
     t: z.literal('new-session'),
-    id: z.string(), // Session ID
+    id: z.string().min(1).max(STRING_LIMITS.ID_MAX), // Session ID
     seq: z.number(),
-    metadata: z.string(), // Encrypted metadata
+    metadata: z.string().max(STRING_LIMITS.ENCRYPTED_STATE_MAX), // Encrypted metadata
     metadataVersion: z.number(),
-    agentState: z.string().nullable(), // Encrypted agent state
+    agentState: z.string().max(STRING_LIMITS.ENCRYPTED_STATE_MAX).nullable(), // Encrypted agent state
     agentStateVersion: z.number(),
-    dataEncryptionKey: z.string().nullable(), // Base64 encoded
+    dataEncryptionKey: z.string().max(STRING_LIMITS.DATA_ENCRYPTION_KEY_MAX).nullable(), // Base64 encoded
     active: z.boolean(),
     activeAt: z.number(),
     createdAt: z.number(),
@@ -66,7 +69,7 @@ export type ApiUpdateNewSession = z.infer<typeof ApiUpdateNewSessionSchema>;
  */
 export const ApiUpdateSessionStateSchema = z.object({
     t: z.literal('update-session'),
-    id: z.string(),
+    id: z.string().min(1).max(STRING_LIMITS.ID_MAX),
     agentState: NullableVersionedValueSchema.nullish(),
     metadata: NullableVersionedValueSchema.nullish(),
 });

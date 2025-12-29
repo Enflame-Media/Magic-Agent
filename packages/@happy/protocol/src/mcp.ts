@@ -4,9 +4,12 @@
  * These schemas define the structure for syncing MCP state from CLI to App.
  * The CLI tracks MCP server states and can send this information to connected
  * mobile apps for display.
+ *
+ * Security: All string fields have maximum length constraints.
  */
 
 import { z } from 'zod';
+import { STRING_LIMITS } from './constraints';
 
 /**
  * Schema for MCP server state sent from CLI to App
@@ -27,8 +30,8 @@ import { z } from 'zod';
 export const McpServerStateSchema = z.object({
     disabled: z.boolean(),
     toolCount: z.number().optional(),
-    lastValidated: z.string().datetime().optional(),
-    disabledTools: z.array(z.string()).optional(),
+    lastValidated: z.string().datetime().max(STRING_LIMITS.LABEL_MAX).optional(),
+    disabledTools: z.array(z.string().max(STRING_LIMITS.MCP_TOOL_NAME_MAX)).optional(),
 });
 
 export type McpServerState = z.infer<typeof McpServerStateSchema>;
@@ -47,8 +50,8 @@ export type McpServerState = z.infer<typeof McpServerStateSchema>;
  * ```
  */
 export const McpToolInfoSchema = z.object({
-    name: z.string(),
-    description: z.string().optional(),
+    name: z.string().min(1).max(STRING_LIMITS.MCP_TOOL_NAME_MAX),
+    description: z.string().max(STRING_LIMITS.MCP_TOOL_DESCRIPTION_MAX).optional(),
 });
 
 export type McpToolInfo = z.infer<typeof McpToolInfoSchema>;
@@ -79,8 +82,8 @@ export type McpToolInfo = z.infer<typeof McpToolInfoSchema>;
  * ```
  */
 export const McpSyncStateSchema = z.object({
-    servers: z.record(z.string(), McpServerStateSchema),
-    tools: z.record(z.string(), z.array(McpToolInfoSchema)).optional(),
+    servers: z.record(z.string().max(STRING_LIMITS.MCP_SERVER_NAME_MAX), McpServerStateSchema),
+    tools: z.record(z.string().max(STRING_LIMITS.MCP_SERVER_NAME_MAX), z.array(McpToolInfoSchema)).optional(),
 });
 
 export type McpSyncState = z.infer<typeof McpSyncStateSchema>;
