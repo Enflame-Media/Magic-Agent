@@ -1,5 +1,12 @@
 import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi';
 import type { Env, Variables } from '../env';
+import {
+    createQueryBuilder,
+    validateNumber,
+    NumericBounds,
+    ValidationPatterns,
+    ALLOWED_PLATFORMS,
+} from '../lib/analytics-query';
 
 /**
  * Metrics API routes for Analytics Engine data
@@ -14,6 +21,13 @@ export const metricsRoutes = new OpenAPIHono<{ Bindings: Env; Variables: Variabl
 /*
  * Zod Schemas for OpenAPI documentation
  */
+
+// Error response schema for validation errors (HAP-611)
+const ErrorResponseSchema = z
+    .object({
+        error: z.string().openapi({ example: 'Invalid hours: must be between 1 and 720' }),
+    })
+    .openapi('ErrorResponse');
 
 const MetricsSummarySchema = z
     .object({
@@ -119,10 +133,14 @@ const timeseriesRoute = createRoute({
     description: 'Returns sync metrics bucketed by hour for the specified time range.',
     request: {
         query: z.object({
-            hours: z.string().optional().openapi({
-                example: '24',
-                description: 'Number of hours to look back (default: 24)',
-            }),
+            hours: z
+                .string()
+                .regex(/^\d{1,3}$/, 'Hours must be a number between 1-720')
+                .optional()
+                .openapi({
+                    example: '24',
+                    description: 'Number of hours to look back (1-720, default: 24)',
+                }),
             bucket: z.enum(['hour', 'day']).optional().openapi({
                 example: 'hour',
                 description: 'Time bucket size (default: hour)',
@@ -138,6 +156,14 @@ const timeseriesRoute = createRoute({
                         data: z.array(TimeseriesPointSchema),
                         timestamp: z.string(),
                     }),
+                },
+            },
+        },
+        400: {
+            description: 'Validation error',
+            content: {
+                'application/json': {
+                    schema: ErrorResponseSchema,
                 },
             },
         },
@@ -195,18 +221,26 @@ const bundleTrendsRoute = createRoute({
     description: 'Returns daily bundle size averages for the specified time range. Used for trend visualization.',
     request: {
         query: z.object({
-            days: z.string().optional().openapi({
-                example: '30',
-                description: 'Number of days to look back (default: 30)',
-            }),
-            platform: z.enum(['ios', 'android', 'web']).optional().openapi({
+            days: z
+                .string()
+                .regex(/^\d{1,3}$/, 'Days must be a number between 1-365')
+                .optional()
+                .openapi({
+                    example: '30',
+                    description: 'Number of days to look back (1-365, default: 30)',
+                }),
+            platform: z.enum(ALLOWED_PLATFORMS).optional().openapi({
                 example: 'web',
                 description: 'Filter by platform (default: all platforms)',
             }),
-            branch: z.string().optional().openapi({
-                example: 'main',
-                description: 'Filter by branch (default: main)',
-            }),
+            branch: z
+                .string()
+                .regex(/^[a-zA-Z0-9_/.-]{1,64}$/, 'Invalid branch name format')
+                .optional()
+                .openapi({
+                    example: 'main',
+                    description: 'Filter by branch - alphanumeric, hyphens, underscores, slashes only (default: main)',
+                }),
         }),
     },
     responses: {
@@ -218,6 +252,14 @@ const bundleTrendsRoute = createRoute({
                         data: z.array(BundleSizePointSchema),
                         timestamp: z.string(),
                     }),
+                },
+            },
+        },
+        400: {
+            description: 'Validation error',
+            content: {
+                'application/json': {
+                    schema: ErrorResponseSchema,
                 },
             },
         },
@@ -344,21 +386,28 @@ metricsRoutes.openapi(summaryRoute, async (c) => {
  */
 metricsRoutes.openapi(timeseriesRoute, async (c) => {
     const { hours = '24', bucket = 'hour' } = c.req.valid('query');
-    const hoursNum = parseInt(hours, 10) || 24;
 
-    const result = await queryAnalyticsEngine(
-        c.env,
-        `
-        SELECT
-            toStartOf${bucket === 'day' ? 'Day' : 'Hour'}(timestamp) as timestamp,
-            COUNT(*) as count,
-            AVG(double1) as avgDurationMs
-        FROM sync_metrics_${c.env.ENVIRONMENT === 'production' ? 'prod' : 'dev'}
-        WHERE timestamp > NOW() - INTERVAL '${hoursNum}' HOUR
-        GROUP BY timestamp
-        ORDER BY timestamp ASC
-        `
-    );
+    // Validate hours with bounds checking
+    const hoursResult = validateNumber(hours, NumericBounds.HOURS, 'hours', 24);
+    if (!hoursResult.success) {
+        return c.json({ error: hoursResult.error }, 400);
+    }
+    const hoursNum = hoursResult.value;
+
+    // Build safe query using query builder
+    const bucketFunc = bucket === 'day' ? 'Day' : 'Hour';
+    const query = createQueryBuilder('sync_metrics', c.env.ENVIRONMENT);
+    query
+        .select([
+            `toStartOf${bucketFunc}(timestamp) as timestamp`,
+            'COUNT(*) as count',
+            'AVG(double1) as avgDurationMs',
+        ])
+        .whereTimestampInterval(hoursNum, 'HOUR')
+        .groupBy(['timestamp'])
+        .orderBy('timestamp', 'ASC');
+
+    const result = await queryAnalyticsEngine(c.env, query.build());
 
     // Return mock data if not configured
     const data: TimeseriesPoint[] =
@@ -484,32 +533,45 @@ function generateMockTimeseries(hours: number, bucket: string): TimeseriesPoint[
 /**
  * GET /api/metrics/bundle-trends
  * Returns daily bundle size averages for trend visualization
+ *
+ * SECURITY: This endpoint was vulnerable to SQL injection via the branch parameter.
+ * Fixed in HAP-611 by using AnalyticsQueryBuilder with strict input validation.
  */
 metricsRoutes.openapi(bundleTrendsRoute, async (c) => {
     const { days = '30', platform, branch = 'main' } = c.req.valid('query');
-    const daysNum = parseInt(days, 10) || 30;
 
-    // Build platform filter
-    const platformFilter = platform ? `AND blob1 = '${platform}'` : '';
+    // Validate days with bounds checking
+    const daysResult = validateNumber(days, NumericBounds.DAYS, 'days', 30);
+    if (!daysResult.success) {
+        return c.json({ error: daysResult.error }, 400);
+    }
+    const daysNum = daysResult.value;
 
-    const result = await queryAnalyticsEngine(
-        c.env,
-        `
-        SELECT
-            toStartOfDay(timestamp) as date,
-            blob1 as platform,
-            AVG(double3) as avgTotalSize,
-            AVG(double1) as avgJsSize,
-            AVG(double2) as avgAssetsSize,
-            COUNT(*) as buildCount
-        FROM bundle_metrics_${c.env.ENVIRONMENT === 'production' ? 'prod' : 'dev'}
-        WHERE timestamp > NOW() - INTERVAL '${daysNum}' DAY
-          AND blob2 = '${branch}'
-          ${platformFilter}
-        GROUP BY date, blob1
-        ORDER BY date ASC
-        `
-    );
+    // Build safe query using query builder
+    // CRITICAL: branch parameter is now validated against ValidationPatterns.BRANCH
+    // which only allows alphanumeric, hyphens, underscores, and slashes (max 64 chars)
+    const query = createQueryBuilder('bundle_metrics', c.env.ENVIRONMENT);
+    query
+        .select([
+            'toStartOfDay(timestamp) as date',
+            'blob1 as platform',
+            'AVG(double3) as avgTotalSize',
+            'AVG(double1) as avgJsSize',
+            'AVG(double2) as avgAssetsSize',
+            'COUNT(*) as buildCount',
+        ])
+        .whereTimestampInterval(daysNum, 'DAY')
+        .whereString('blob2', '=', branch, ValidationPatterns.BRANCH, 'branch')
+        .wherePlatform('blob1', platform)
+        .groupBy(['date', 'blob1'])
+        .orderBy('date', 'ASC');
+
+    // Check for validation errors
+    if (query.hasErrors) {
+        return c.json({ error: query.errors.join('; ') }, 400);
+    }
+
+    const result = await queryAnalyticsEngine(c.env, query.build());
 
     // Transform result or use mock data
     let data: BundleSizePoint[];
@@ -720,14 +782,22 @@ const unknownTypeBreakdownRoute = createRoute({
     description: 'Returns the breakdown of unknown message types encountered, sorted by frequency.',
     request: {
         query: z.object({
-            hours: z.string().optional().openapi({
-                example: '24',
-                description: 'Number of hours to look back (default: 24)',
-            }),
-            limit: z.string().optional().openapi({
-                example: '10',
-                description: 'Maximum number of types to return (default: 10)',
-            }),
+            hours: z
+                .string()
+                .regex(/^\d{1,3}$/, 'Hours must be a number between 1-720')
+                .optional()
+                .openapi({
+                    example: '24',
+                    description: 'Number of hours to look back (1-720, default: 24)',
+                }),
+            limit: z
+                .string()
+                .regex(/^\d{1,3}$/, 'Limit must be a number between 1-100')
+                .optional()
+                .openapi({
+                    example: '10',
+                    description: 'Maximum number of types to return (1-100, default: 10)',
+                }),
         }),
     },
     responses: {
@@ -743,6 +813,14 @@ const unknownTypeBreakdownRoute = createRoute({
                 },
             },
         },
+        400: {
+            description: 'Validation error',
+            content: {
+                'application/json': {
+                    schema: ErrorResponseSchema,
+                },
+            },
+        },
     },
 });
 
@@ -755,10 +833,14 @@ const validationTimeseriesRoute = createRoute({
     description: 'Returns time-bucketed validation failure metrics.',
     request: {
         query: z.object({
-            hours: z.string().optional().openapi({
-                example: '24',
-                description: 'Number of hours to look back (default: 24)',
-            }),
+            hours: z
+                .string()
+                .regex(/^\d{1,3}$/, 'Hours must be a number between 1-720')
+                .optional()
+                .openapi({
+                    example: '24',
+                    description: 'Number of hours to look back (1-720, default: 24)',
+                }),
             bucket: z.enum(['hour', 'day']).optional().openapi({
                 example: 'hour',
                 description: 'Time bucket size (default: hour)',
@@ -774,6 +856,14 @@ const validationTimeseriesRoute = createRoute({
                         data: z.array(ValidationTimeseriesPointSchema),
                         timestamp: z.string(),
                     }),
+                },
+            },
+        },
+        400: {
+            description: 'Validation error',
+            content: {
+                'application/json': {
+                    schema: ErrorResponseSchema,
                 },
             },
         },
@@ -846,24 +936,32 @@ metricsRoutes.openapi(validationSummaryRoute, async (c) => {
  */
 metricsRoutes.openapi(unknownTypeBreakdownRoute, async (c) => {
     const { hours = '24', limit = '10' } = c.req.valid('query');
-    const hoursNum = parseInt(hours, 10) || 24;
-    const limitNum = parseInt(limit, 10) || 10;
 
-    const result = await queryAnalyticsEngine(
-        c.env,
-        `
-        SELECT
-            blob3 as typeName,
-            SUM(double1) as count
-        FROM client_metrics_${c.env.ENVIRONMENT === 'production' ? 'prod' : 'dev'}
-        WHERE timestamp > NOW() - INTERVAL '${hoursNum}' HOUR
-          AND blob1 = 'validation'
-          AND blob2 = 'unknown'
-        GROUP BY blob3
-        ORDER BY count DESC
-        LIMIT ${limitNum}
-        `
-    );
+    // Validate hours and limit with bounds checking
+    const hoursResult = validateNumber(hours, NumericBounds.HOURS, 'hours', 24);
+    if (!hoursResult.success) {
+        return c.json({ error: hoursResult.error }, 400);
+    }
+    const hoursNum = hoursResult.value;
+
+    const limitResult = validateNumber(limit, NumericBounds.LIMIT, 'limit', 10);
+    if (!limitResult.success) {
+        return c.json({ error: limitResult.error }, 400);
+    }
+    const limitNum = limitResult.value;
+
+    // Build safe query using query builder
+    const query = createQueryBuilder('client_metrics', c.env.ENVIRONMENT);
+    query
+        .select(['blob3 as typeName', 'SUM(double1) as count'])
+        .whereTimestampInterval(hoursNum, 'HOUR')
+        .whereRaw("blob1 = 'validation'")
+        .whereRaw("blob2 = 'unknown'")
+        .groupBy(['blob3'])
+        .orderBy('count', 'DESC')
+        .limit(limitNum);
+
+    const result = await queryAnalyticsEngine(c.env, query.build());
 
     let data: UnknownTypeBreakdown[];
     let total = 0;
@@ -902,24 +1000,31 @@ metricsRoutes.openapi(unknownTypeBreakdownRoute, async (c) => {
  */
 metricsRoutes.openapi(validationTimeseriesRoute, async (c) => {
     const { hours = '24', bucket = 'hour' } = c.req.valid('query');
-    const hoursNum = parseInt(hours, 10) || 24;
 
-    const result = await queryAnalyticsEngine(
-        c.env,
-        `
-        SELECT
-            toStartOf${bucket === 'day' ? 'Day' : 'Hour'}(timestamp) as timestamp,
-            SUM(double1) as totalFailures,
-            SUM(double3) as schemaFailures,
-            SUM(double4) as strictFailures
-        FROM client_metrics_${c.env.ENVIRONMENT === 'production' ? 'prod' : 'dev'}
-        WHERE timestamp > NOW() - INTERVAL '${hoursNum}' HOUR
-          AND blob1 = 'validation'
-          AND blob2 = 'summary'
-        GROUP BY timestamp
-        ORDER BY timestamp ASC
-        `
-    );
+    // Validate hours with bounds checking
+    const hoursResult = validateNumber(hours, NumericBounds.HOURS, 'hours', 24);
+    if (!hoursResult.success) {
+        return c.json({ error: hoursResult.error }, 400);
+    }
+    const hoursNum = hoursResult.value;
+
+    // Build safe query using query builder
+    const bucketFunc = bucket === 'day' ? 'Day' : 'Hour';
+    const query = createQueryBuilder('client_metrics', c.env.ENVIRONMENT);
+    query
+        .select([
+            `toStartOf${bucketFunc}(timestamp) as timestamp`,
+            'SUM(double1) as totalFailures',
+            'SUM(double3) as schemaFailures',
+            'SUM(double4) as strictFailures',
+        ])
+        .whereTimestampInterval(hoursNum, 'HOUR')
+        .whereRaw("blob1 = 'validation'")
+        .whereRaw("blob2 = 'summary'")
+        .groupBy(['timestamp'])
+        .orderBy('timestamp', 'ASC');
+
+    const result = await queryAnalyticsEngine(c.env, query.build());
 
     let data: ValidationTimeseriesPoint[];
     if (result?.data && Array.isArray(result.data) && result.data.length > 0) {
