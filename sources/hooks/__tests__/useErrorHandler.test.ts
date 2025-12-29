@@ -324,7 +324,8 @@ describe('useErrorHandler', () => {
         it('handles AppError with unknown error code', () => {
             const { getErrorMessage } = useErrorHandler();
 
-            // Create an AppError with an unknown code
+            // Create an AppError with an unknown code (intentionally invalid for testing)
+            // @ts-expect-error - Testing behavior with invalid error code
             const error = new AppError('UNKNOWN_CODE', 'Unknown error');
             const message = getErrorMessage(error);
 
