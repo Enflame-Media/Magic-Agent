@@ -103,4 +103,10 @@ export interface Variables {
      * Session information from Better-Auth
      */
     session: AuthSession | null;
+
+    /**
+     * Request correlation ID for error tracking and debugging
+     * Set by requestId middleware (HAP-630)
+     */
+    requestId: string;
 }

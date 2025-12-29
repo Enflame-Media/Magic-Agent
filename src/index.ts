@@ -11,7 +11,7 @@ import { csrfMiddleware } from './middleware/csrf';
 import { bodySizeLimits } from './middleware/bodySize';
 import { requestIdMiddleware } from './middleware/requestId';
 import { CORS_CONFIG, getAllowedOrigins } from './lib/constants';
-import { createSafeError, getErrorStatusCode, AppError } from '@happy/errors';
+import { createSafeError, getErrorStatusCode } from '@happy/errors';
 
 /**
  * Application version (should match package.json)
