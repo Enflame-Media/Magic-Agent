@@ -532,9 +532,10 @@ export class ConnectionManager extends DurableObject<ConnectionManagerEnv> {
         // Handle acknowledgement responses from server-to-client (for emitWithAck pattern)
         // Client sends: { event, data, ackId }
         // Server responds: { event: 'ack', ackId, ack: responseData }
-        if (normalized.ack !== undefined && normalized.messageId) {
-            // This is an acknowledgement - forward it to the appropriate connection
-            // For now, just log and continue (acks are typically responses, not requests)
+        // HAP-689: Don't skip rpc-response messages - they need to be forwarded to the requesting client
+        // The CLI sends rpc-response with both ack (encrypted response) and ackId (correlation ID)
+        if (normalized.ack !== undefined && normalized.messageId && normalized.type !== 'rpc-response') {
+            // This is a simple acknowledgement - not an RPC response that needs forwarding
             return;
         }
 
