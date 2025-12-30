@@ -58,6 +58,7 @@ yarn build
 ### `@happy-vue/web`
 
 Vue.js + Vite web application. Features:
+
 - PWA support
 - Responsive design
 - Shared codebase with mobile
@@ -65,6 +66,7 @@ Vue.js + Vite web application. Features:
 ### `@happy-vue/mobile`
 
 NativeScript-Vue mobile application. Features:
+
 - Native iOS and Android
 - Shared business logic with web
 - Native UI components
@@ -72,6 +74,7 @@ NativeScript-Vue mobile application. Features:
 ### `@happy-vue/shared`
 
 Shared utilities and composables used by both apps:
+
 - Vue composables
 - Utility functions
 - Type definitions
@@ -79,6 +82,7 @@ Shared utilities and composables used by both apps:
 ### `@happy-vue/protocol`
 
 Port of `@happy/protocol` with Zod schemas for:
+
 - API updates
 - Ephemeral events
 - Shared types
@@ -87,13 +91,13 @@ Port of `@happy/protocol` with Zod schemas for:
 
 This repository is part of the Vue.js migration from React Native.
 
-| Phase | Description | Status |
-|-------|-------------|--------|
-| 0 | Monorepo setup | ✅ Complete |
-| 1 | Web app implementation | 🔜 Planned |
-| 2 | Mobile app implementation | 🔜 Planned |
-| 3 | Integration testing | 🔜 Planned |
-| 4 | Production deployment | 🔜 Planned |
+| Phase | Description               | Status      |
+| ----- | ------------------------- | ----------- |
+| 0     | Monorepo setup            | ✅ Complete |
+| 1     | Web app implementation    | 🔜 Planned  |
+| 2     | Mobile app implementation | 🔜 Planned  |
+| 3     | Integration testing       | 🔜 Planned  |
+| 4     | Production deployment     | 🔜 Planned  |
 
 See [HAP-660](https://linear.app/enflame-media/issue/HAP-660) for the migration epic.
 

@@ -15,8 +15,5 @@
   },
   "include": ["src/**/*.ts", "src/**/*.vue", "references.d.ts"],
   "exclude": ["node_modules", "dist", "platforms"],
-  "references": [
-    { "path": "../../packages/shared" },
-    { "path": "../../packages/protocol" }
-  ]
+  "references": [{ "path": "../../packages/shared" }, { "path": "../../packages/protocol" }]
 }

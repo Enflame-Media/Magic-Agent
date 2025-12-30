@@ -26,6 +26,7 @@ happy-vue/
 ### Package Naming Convention
 
 All packages use the `@happy-vue/` scope:
+
 - `@happy-vue/web` - Web application
 - `@happy-vue/mobile` - Mobile application
 - `@happy-vue/shared` - Shared utilities
@@ -63,6 +64,7 @@ yarn workspaces foreach -A run build
 ### Path Aliases
 
 Standard path alias pattern across all packages:
+
 - `@/*` → `./src/*` (local source)
 - `@happy-vue/shared` → `../../packages/shared/src`
 - `@happy-vue/protocol` → `../../packages/protocol/src`
@@ -138,10 +140,10 @@ When working on the mobile app:
 
 This repository is being built as part of the Vue.js migration:
 
-| Phase | Description | Issues |
-|-------|-------------|--------|
-| 0 | Monorepo setup | HAP-661 |
-| 1 | Web app | TBD |
-| 2 | Mobile app | TBD |
+| Phase | Description    | Issues  |
+| ----- | -------------- | ------- |
+| 0     | Monorepo setup | HAP-661 |
+| 1     | Web app        | TBD     |
+| 2     | Mobile app     | TBD     |
 
 Reference the original React Native app at `../happy-app/` for implementation details.
