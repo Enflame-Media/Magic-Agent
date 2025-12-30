@@ -117,8 +117,48 @@ export const ClientMetricsInternalErrorSchema = z
     .openapi('ClientMetricsInternalError');
 
 // ============================================================================
+// Restore Metrics Types (HAP-688)
+// ============================================================================
+
+/**
+ * Schema for session restore metrics request body
+ *
+ * Tracks restore operations to understand timeout patterns and success rates.
+ * Helps answer: "What is the actual success rate of restores that timeout?"
+ */
+export const RestoreMetricsRequestSchema = z
+    .object({
+        sessionId: z.string().openapi({
+            description: 'The session ID being restored',
+            example: 'sess_abc123',
+        }),
+        machineId: z.string().openapi({
+            description: 'The machine ID where the session is restored',
+            example: 'mach_xyz789',
+        }),
+        success: z.boolean().openapi({
+            description: 'Whether the restore was successful',
+            example: true,
+        }),
+        timedOut: z.boolean().openapi({
+            description: 'Whether the operation timed out (may have succeeded despite timeout)',
+            example: false,
+        }),
+        durationMs: z.number().int().min(0).openapi({
+            description: 'Duration of the restore operation in milliseconds',
+            example: 45000,
+        }),
+        newSessionId: z.string().nullish().openapi({
+            description: 'The new session ID if successful',
+            example: 'sess_def456',
+        }),
+    })
+    .openapi('RestoreMetricsRequest');
+
+// ============================================================================
 // Type Exports
 // ============================================================================
 
 export type ValidationMetricsRequest = z.infer<typeof ValidationMetricsRequestSchema>;
+export type RestoreMetricsRequest = z.infer<typeof RestoreMetricsRequestSchema>;
 export type ClientMetricsResponse = z.infer<typeof ClientMetricsResponseSchema>;

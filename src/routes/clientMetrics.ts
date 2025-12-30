@@ -3,6 +3,7 @@ import type { Context } from 'hono';
 import { authMiddleware, type AuthVariables } from '@/middleware/auth';
 import {
     ValidationMetricsRequestSchema,
+    RestoreMetricsRequestSchema,
     ClientMetricsResponseSchema,
     ClientMetricsUnauthorizedErrorSchema,
     ClientMetricsInternalErrorSchema,
@@ -176,6 +177,117 @@ clientMetricsRoutes.openapi(ingestValidationMetricsRoute, async (c) => {
         return c.json({ success: true, dataPointsWritten });
     } catch (error) {
         console.error('[ClientMetrics] Failed to ingest validation metrics:', error);
+        return c.json({ error: 'Failed to ingest metrics' }, 500);
+    }
+});
+
+// ============================================================================
+// POST /v1/analytics/client/restore - Ingest Restore Metrics (HAP-688)
+// ============================================================================
+
+const ingestRestoreMetricsRoute = createRoute({
+    method: 'post',
+    path: '/v1/analytics/client/restore',
+    request: {
+        body: {
+            content: {
+                'application/json': {
+                    schema: RestoreMetricsRequestSchema,
+                },
+            },
+        },
+    },
+    responses: {
+        200: {
+            content: {
+                'application/json': {
+                    schema: ClientMetricsResponseSchema,
+                },
+            },
+            description: 'Metrics successfully ingested',
+        },
+        401: {
+            content: {
+                'application/json': {
+                    schema: ClientMetricsUnauthorizedErrorSchema,
+                },
+            },
+            description: 'Unauthorized',
+        },
+        500: {
+            content: {
+                'application/json': {
+                    schema: ClientMetricsInternalErrorSchema,
+                },
+            },
+            description: 'Internal server error',
+        },
+    },
+    tags: ['Analytics', 'Client Metrics'],
+    summary: 'Ingest session restore metrics',
+    description:
+        'Ingest session restore metrics from the client. ' +
+        'Tracks restore operations including success, timeout, and duration. ' +
+        'Helps understand timeout patterns and actual success rates (HAP-659 follow-up).',
+});
+
+/**
+ * POST /v1/analytics/client/restore handler (HAP-688)
+ *
+ * Writes restore metrics to Analytics Engine:
+ * - blob1: metric category = 'restore'
+ * - blob2: outcome = 'success' | 'failure' | 'timeout'
+ * - blob3: session ID (truncated for privacy)
+ * - double1: duration in ms
+ * - double2: 1 if timed out, 0 otherwise
+ * - index1: account ID (for per-user grouping)
+ */
+// @ts-expect-error - OpenAPI handler type inference doesn't carry Variables from middleware
+clientMetricsRoutes.openapi(ingestRestoreMetricsRoute, async (c) => {
+    const userId = (c as unknown as Context<{ Bindings: Env; Variables: AuthVariables }>).get(
+        'userId'
+    );
+    const metrics = c.req.valid('json');
+
+    try {
+        // Check if Analytics Engine is configured
+        if (!c.env.CLIENT_METRICS) {
+            // Silently accept but don't store - allows graceful degradation
+            console.warn('[ClientMetrics] CLIENT_METRICS binding not configured, restore metrics dropped');
+            return c.json({ success: true, dataPointsWritten: 0 });
+        }
+
+        // Determine outcome category for analysis
+        let outcome: string;
+        if (metrics.success) {
+            outcome = 'success';
+        } else if (metrics.timedOut) {
+            outcome = 'timeout';
+        } else {
+            outcome = 'failure';
+        }
+
+        // Write single data point for this restore operation
+        c.env.CLIENT_METRICS.writeDataPoint({
+            blobs: [
+                'restore',                              // blob1: metric category
+                outcome,                                // blob2: outcome type
+                metrics.sessionId.slice(0, 8),          // blob3: truncated session ID (privacy)
+            ],
+            doubles: [
+                metrics.durationMs,                     // double1: operation duration
+                metrics.timedOut ? 1 : 0,               // double2: timeout flag
+                metrics.success ? 1 : 0,                // double3: success flag
+                0,                                      // double4: reserved
+            ],
+            indexes: [
+                userId,                                 // index1: account ID for per-user grouping
+            ],
+        });
+
+        return c.json({ success: true, dataPointsWritten: 1 });
+    } catch (error) {
+        console.error('[ClientMetrics] Failed to ingest restore metrics:', error);
         return c.json({ error: 'Failed to ingest metrics' }, 500);
     }
 });
