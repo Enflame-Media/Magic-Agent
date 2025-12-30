@@ -3,20 +3,31 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
-  "description": "Happy Vue.js web application",
+  "description": "Happy Vue.js web application for Claude Code remote control",
   "scripts": {
-    "dev": "echo 'Web app not yet implemented - see Phase 1'",
-    "build": "echo 'Web app not yet implemented - see Phase 1'",
-    "typecheck": "tsc --noEmit",
-    "lint": "echo 'Linting not yet configured'",
-    "lint:fix": "echo 'Linting not yet configured'",
-    "clean": "rm -rf dist"
+    "dev": "vite",
+    "build": "npx vue-tsc --noEmit && npx vite build",
+    "preview": "vite preview",
+    "typecheck": "npx vue-tsc --noEmit",
+    "lint": "echo 'Linting handled at root level'",
+    "lint:fix": "echo 'Linting handled at root level'",
+    "clean": "rm -rf dist .vite",
+    "deploy:dev": "wrangler deploy --env development",
+    "deploy:prod": "wrangler deploy --env production"
   },
   "dependencies": {
     "@happy-vue/protocol": "workspace:*",
-    "@happy-vue/shared": "workspace:*"
+    "@happy-vue/shared": "workspace:*",
+    "pinia": "^2.3.1",
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.0"
   },
   "devDependencies": {
-    "typescript": "^5.7.2"
+    "@cloudflare/vite-plugin": "^1.0.0",
+    "@vitejs/plugin-vue": "^5.2.4",
+    "typescript": "^5.7.2",
+    "vite": "^6.3.5",
+    "vue-tsc": "^2.2.8",
+    "wrangler": "^4.56.0"
   }
 }

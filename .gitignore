@@ -46,6 +46,8 @@ coverage/
 .cache/
 .temp/
 .turbo/
+.wrangler/
+.vite/
 
 # Debug logs
 npm-debug.log*

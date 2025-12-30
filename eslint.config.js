@@ -28,11 +28,11 @@ export default tseslint.config(
   ...pluginVue.configs['flat/recommended'],
 
   // Type-checked rules ONLY for source files (not config files)
+  // Note: Vue files are handled in a separate config block below
   {
     files: [
       'apps/**/src/**/*.ts',
       'apps/**/src/**/*.tsx',
-      'apps/**/src/**/*.vue',
       'packages/**/src/**/*.ts',
       'packages/**/src/**/*.tsx',
     ],
@@ -66,7 +66,7 @@ export default tseslint.config(
     },
   },
 
-  // Vue-specific rules
+  // Vue-specific rules with TypeScript type-checking
   {
     files: ['**/*.vue'],
     languageOptions: {
@@ -74,6 +74,7 @@ export default tseslint.config(
         parser: tseslint.parser,
         projectService: true,
         tsconfigRootDir: import.meta.dirname,
+        extraFileExtensions: ['.vue'],
       },
     },
     rules: {
@@ -87,7 +88,7 @@ export default tseslint.config(
       'vue/component-name-in-template-casing': ['error', 'PascalCase'],
 
       // Enforce <script setup> before <template>
-      'vue/component-tags-order': ['error', { order: ['script', 'template', 'style'] }],
+      'vue/block-order': ['error', { order: ['script', 'template', 'style'] }],
     },
   },
 
