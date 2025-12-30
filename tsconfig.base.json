@@ -19,6 +19,8 @@
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
     "noEmit": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
     "paths": {
       "@happy-vue/shared": ["./packages/shared/src"],
       "@happy-vue/shared/*": ["./packages/shared/src/*"],
@@ -26,5 +28,5 @@
       "@happy-vue/protocol/*": ["./packages/protocol/src/*"]
     }
   },
-  "exclude": ["node_modules", "**/dist", "**/*.test.ts", "**/*.spec.ts"]
+  "exclude": ["node_modules", "**/dist", "**/*.test.ts", "**/*.spec.ts", ".turbo"]
 }
