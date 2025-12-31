@@ -17,6 +17,10 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { GitHubProfile, ImageRef } from '@happy-vue/protocol';
+import {
+    logout as clearStoredCredentials,
+    loadCredentials,
+} from '@/services/auth';
 
 /**
  * Account information synchronized from the server
@@ -109,10 +113,27 @@ export const useAuthStore = defineStore('auth', () => {
     /**
      * Clear all authentication state (logout)
      */
-    function logout() {
+    function logout(): void {
+        // Clear reactive state
         token.value = null;
         accountId.value = null;
         account.value = null;
+        // Clear persisted credentials from secure storage
+        clearStoredCredentials();
+    }
+
+    /**
+     * Initialize auth state from persisted credentials
+     * Should be called on app startup
+     */
+    async function initialize(): Promise<boolean> {
+        const credentials = await loadCredentials();
+        if (credentials) {
+            token.value = credentials.token;
+            // Note: accountId is set separately after fetching account info
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -132,6 +153,7 @@ export const useAuthStore = defineStore('auth', () => {
         displayName,
         initials,
         // Actions
+        initialize,
         setCredentials,
         setAccount,
         updateAccount,
