@@ -922,15 +922,26 @@ export class ConnectionManager extends DurableObject<ConnectionManagerEnv> {
                         senderClientType: metadata?.clientType,
                     });
 
-                    // Broadcast to all connections - the one with matching pending ack will handle it
-                    // Note: For rpc-response messages, the actual response payload is in normalized.ack
-                    // (from ClientMessage.ack field), NOT in normalized.payload (from ClientMessage.data)
+                    // HAP-689: CRITICAL FIX - Two issues were causing RPC responses to fail:
+                    //
+                    // 1. Event name mismatch: The app's sessionRPC uses emitWithAck which
+                    //    expects responses with event: 'ack', NOT event: 'rpc-response'.
+                    //
+                    // 2. Response format mismatch: The CLI sends just the encrypted response
+                    //    string in the 'ack' field, but the app expects an object with format:
+                    //    { ok: boolean, result: string, cancelled?: boolean, requestId?: string }
+                    //
+                    // The CLI sends: { event: 'rpc-response', ackId, ack: encryptedString }
+                    // The app expects: { event: 'ack', ackId, ack: { ok: true, result: encryptedString } }
+                    //
+                    // Note: The app will decrypt the 'result' field and then check the decrypted
+                    // content for errors like SESSION_NOT_ACTIVE.
                     const filter = { type: 'all' as const };
                     const delivered = this.broadcastClientMessage(
                         {
-                            event: 'rpc-response',
+                            event: 'ack', // Fix #1: Changed from 'rpc-response' to 'ack'
                             ackId: normalized.messageId,
-                            ack: normalized.ack,
+                            ack: { ok: true, result: normalized.ack }, // Fix #2: Wrap in expected format
                         },
                         filter
                     );

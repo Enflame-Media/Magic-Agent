@@ -387,7 +387,13 @@ export async function handleSessionEnd(
         })
         .where(eq(sessions.id, sid));
 
+    // HAP-689: Return response for emitWithAck callers (app's sendSessionEnd)
+    // AND broadcast ephemeral update to all user-scoped connections for real-time UI updates
     return {
+        response: {
+            success: true,
+            activeAt: time,
+        },
         ephemeral: {
             message: {
                 event: 'ephemeral',

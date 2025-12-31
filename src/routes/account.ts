@@ -47,16 +47,22 @@ accountRoutes.use('/v1/account', authMiddleware());
 // ============================================================================
 
 async function getProfileData(userId: string, db: ReturnType<typeof getDb>) {
-    // Fetch account with GitHub profile
+    // Fetch account (without relational query to avoid D1 json_array bug)
+    // See HAP-??? - Drizzle's `with:` generates malformed json_array SQL on D1
     const account = await db.query.accounts.findFirst({
         where: (accounts, { eq }) => eq(accounts.id, userId),
-        with: {
-            githubUser: true,
-        },
     });
 
     if (!account) {
         return null;
+    }
+
+    // Fetch GitHub user separately if linked
+    let githubUser = null;
+    if (account.githubUserId) {
+        githubUser = await db.query.githubUsers.findFirst({
+            where: (githubUsers, { eq }) => eq(githubUsers.id, account.githubUserId!),
+        });
     }
 
     // Fetch connected AI service vendors
@@ -74,7 +80,7 @@ async function getProfileData(userId: string, db: ReturnType<typeof getDb>) {
         firstName: account.firstName,
         lastName: account.lastName,
         username: account.username,
-        github: account.githubUser?.profile ?? null,
+        github: githubUser?.profile ?? null,
         connectedServices,
     };
 }
@@ -282,16 +288,21 @@ accountRoutes.openapi(updateAccountRoute, async (c) => {
         .set(updateData)
         .where(eq(schema.accounts.id, userId));
 
-    // Fetch updated account with GitHub profile
+    // Fetch updated account (without relational query to avoid D1 json_array bug)
     const account = await db.query.accounts.findFirst({
         where: (accounts, { eq }) => eq(accounts.id, userId),
-        with: {
-            githubUser: true,
-        },
     });
 
     if (!account) {
         return c.json({ error: 'Account not found' }, 404);
+    }
+
+    // Fetch GitHub user separately if linked
+    let githubUser = null;
+    if (account.githubUserId) {
+        githubUser = await db.query.githubUsers.findFirst({
+            where: (githubUsers, { eq }) => eq(githubUsers.id, account.githubUserId!),
+        });
     }
 
     // Fetch connected AI service vendors
@@ -311,7 +322,7 @@ accountRoutes.openapi(updateAccountRoute, async (c) => {
             firstName: account.firstName,
             lastName: account.lastName,
             username: account.username,
-            github: account.githubUser?.profile ?? null,
+            github: githubUser?.profile ?? null,
             connectedServices,
         },
     });

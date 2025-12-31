@@ -82,6 +82,7 @@ export const cors = (): MiddlewareHandler => {
             'X-Requested-With',
             'X-Request-Id',
             'X-Client-Version',
+            'X-Correlation-Id',
         ],
 
         // Headers that can be exposed to the client
@@ -91,6 +92,7 @@ export const cors = (): MiddlewareHandler => {
             'X-RateLimit-Limit',
             'X-Response-Time',
             'Server-Timing',
+            'X-Correlation-Id',
         ],
 
         // Cache preflight requests for 24 hours
