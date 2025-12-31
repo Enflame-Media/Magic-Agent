@@ -38,3 +38,16 @@ vars = { ENVIRONMENT = "production" }
 enabled = true
 head_sampling_rate = 0.1
 invocation_logs = true
+
+#############################
+# Preview Environment (PRs)
+#############################
+[env.preview]
+name = "happy-vue-web-preview"
+vars = { ENVIRONMENT = "preview" }
+
+[env.preview.observability]
+[env.preview.observability.logs]
+enabled = true
+head_sampling_rate = 1
+invocation_logs = true
