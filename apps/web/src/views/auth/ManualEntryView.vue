@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Clipboard, CheckCircle2, AlertCircle, Loader2 } from 'lucide-vue-next';
-import { parseConnectionCode } from '@/services/auth';
+import { parseConnectionCode, approveCliConnection } from '@/services/auth';
 import { useAuthStore } from '@/stores/auth';
 import { toast } from 'vue-sonner';
 
@@ -53,18 +53,23 @@ async function handleSubmit() {
   errorMessage.value = null;
 
   try {
-    // Parse the connection code to validate it
-    parseConnectionCode(connectionCode.value);
+    // Parse the connection code to get CLI's public key
+    const connectionInfo = parseConnectionCode(connectionCode.value);
 
-    // Check if we have credentials
-    if (!authStore.isAuthenticated) {
-      router.push('/auth');
-      return;
+    // Check if we have credentials to approve the connection
+    if (!authStore.canApproveConnections || !authStore.token || !authStore.secret) {
+      throw new Error('Not authenticated. Please log in first.');
     }
 
-    // TODO: Complete CLI connection approval
-    toast.success('Connection code valid', {
-      description: 'CLI connection feature coming soon',
+    // Approve the CLI connection
+    await approveCliConnection(
+      authStore.token,
+      connectionInfo.publicKey,
+      authStore.secret
+    );
+
+    toast.success('CLI Connected!', {
+      description: 'The terminal session is now linked to your account',
     });
 
     state.value = 'success';

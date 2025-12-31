@@ -41,6 +41,9 @@ export const useAuthStore = defineStore('auth', () => {
     /** JWT access token for API requests */
     const token = ref<string | null>(null);
 
+    /** Shared secret for CLI approval (base64 encoded) */
+    const secret = ref<string | null>(null);
+
     /** Current user's account ID */
     const accountId = ref<string | null>(null);
 
@@ -53,6 +56,9 @@ export const useAuthStore = defineStore('auth', () => {
 
     /** Whether the user is authenticated (has a valid token) */
     const isAuthenticated = computed(() => !!token.value && !!accountId.value);
+
+    /** Whether we can approve CLI connections (have both token and secret) */
+    const canApproveConnections = computed(() => !!token.value && !!secret.value);
 
     /** User's display name (firstName lastName or 'User') */
     const displayName = computed(() => {
@@ -116,6 +122,7 @@ export const useAuthStore = defineStore('auth', () => {
     function logout(): void {
         // Clear reactive state
         token.value = null;
+        secret.value = null;
         accountId.value = null;
         account.value = null;
         // Clear persisted credentials from secure storage
@@ -130,6 +137,7 @@ export const useAuthStore = defineStore('auth', () => {
         const credentials = await loadCredentials();
         if (credentials) {
             token.value = credentials.token;
+            secret.value = credentials.secret;
             // Note: accountId is set separately after fetching account info
             return true;
         }
@@ -146,10 +154,12 @@ export const useAuthStore = defineStore('auth', () => {
     return {
         // State
         token,
+        secret,
         accountId,
         account,
         // Getters
         isAuthenticated,
+        canApproveConnections,
         displayName,
         initials,
         // Actions

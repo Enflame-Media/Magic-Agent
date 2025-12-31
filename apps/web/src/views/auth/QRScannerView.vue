@@ -12,8 +12,7 @@ import QRScanner from '@/components/app/QRScanner.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Keyboard, CheckCircle2, AlertCircle, Loader2 } from 'lucide-vue-next';
-import { parseConnectionCode } from '@/services/auth';
-// Note: approveCliConnection will be used when full CLI approval is implemented
+import { parseConnectionCode, approveCliConnection } from '@/services/auth';
 import { useAuthStore } from '@/stores/auth';
 import { toast } from 'vue-sonner';
 
@@ -36,25 +35,23 @@ async function handleScan(data: string) {
   state.value = 'connecting';
 
   try {
-    // Parse the QR code to validate it
-    parseConnectionCode(data);
+    // Parse the QR code to get CLI's public key
+    const connectionInfo = parseConnectionCode(data);
 
-    // Check if we have credentials
-    if (!authStore.token) {
+    // Check if we have credentials to approve the connection
+    if (!authStore.canApproveConnections || !authStore.token || !authStore.secret) {
       throw new Error('Not authenticated. Please log in first.');
     }
 
-    // We need the secret from storage to approve CLI
-    // For now, redirect to login if not authenticated
-    if (!authStore.isAuthenticated) {
-      router.push('/auth');
-      return;
-    }
+    // Approve the CLI connection
+    await approveCliConnection(
+      authStore.token,
+      connectionInfo.publicKey,
+      authStore.secret
+    );
 
-    // TODO: Get secret from secure storage
-    // For now, show success message that we detected the QR
-    toast.success('QR code detected', {
-      description: 'CLI connection feature coming soon',
+    toast.success('CLI Connected!', {
+      description: 'The terminal session is now linked to your account',
     });
 
     state.value = 'success';
