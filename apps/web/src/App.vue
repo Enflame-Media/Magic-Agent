@@ -3,13 +3,23 @@
  * Root Vue component for Happy web application
  *
  * Renders the router-view for client-side navigation.
- * Includes dark mode toggle and Sonner toast provider.
+ * Includes dark mode toggle, Sonner toast provider, and WebSocket sync.
  */
 import { Toaster } from '@/components/ui/sonner';
 import { Button } from '@/components/ui/button';
 import { useDarkMode } from '@/composables/useDarkMode';
+import { useSync } from '@/composables/useSync';
+import { useAuthStore } from '@/stores/auth';
+import { storeToRefs } from 'pinia';
 
 const { isDark, toggle } = useDarkMode();
+
+// Initialize WebSocket sync - auto-connects when authenticated (HAP-671)
+const { status, isConnected } = useSync();
+
+// Auth state for conditional UI
+const authStore = useAuthStore();
+const { isAuthenticated } = storeToRefs(authStore);
 </script>
 
 <template>
@@ -29,13 +39,34 @@ const { isDark, toggle } = useDarkMode();
         </p>
       </div>
 
-      <!-- Dark mode toggle button -->
-      <Button
-        variant="outline"
-        size="icon"
-        :aria-label="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
-        @click="toggle"
-      >
+      <div class="flex items-center gap-3">
+        <!-- Connection status indicator (shown when authenticated) -->
+        <div
+          v-if="isAuthenticated"
+          class="flex items-center gap-1.5 text-xs"
+          :title="`Sync: ${status}`"
+        >
+          <span
+            class="w-2 h-2 rounded-full"
+            :class="{
+              'bg-green-500': isConnected,
+              'bg-yellow-500 animate-pulse': status === 'connecting' || status === 'authenticating' || status === 'reconnecting',
+              'bg-red-500': status === 'error',
+              'bg-gray-400': status === 'disconnected',
+            }"
+          />
+          <span class="text-muted-foreground hidden sm:inline">
+            {{ isConnected ? 'Connected' : status === 'error' ? 'Error' : status === 'disconnected' ? 'Offline' : 'Syncing...' }}
+          </span>
+        </div>
+
+        <!-- Dark mode toggle button -->
+        <Button
+          variant="outline"
+          size="icon"
+          :aria-label="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
+          @click="toggle"
+        >
         <!-- Sun icon (shown in dark mode) -->
         <svg
           v-if="isDark"
@@ -77,6 +108,7 @@ const { isDark, toggle } = useDarkMode();
           <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
         </svg>
       </Button>
+      </div>
     </header>
 
     <main>
