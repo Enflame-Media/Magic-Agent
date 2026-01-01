@@ -1,0 +1,298 @@
+name: Build Mobile
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/mobile/**'
+      - 'packages/**'
+      - '.github/workflows/build-mobile.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/mobile/**'
+      - 'packages/**'
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Platform to build'
+        required: true
+        type: choice
+        options:
+          - ios
+          - android
+          - both
+        default: 'both'
+      environment:
+        description: 'Deployment environment'
+        required: true
+        type: choice
+        options:
+          - beta
+          - release
+        default: 'beta'
+
+# Cancel in-progress runs for the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '20'
+  RUBY_VERSION: '3.2'
+  JAVA_VERSION: '17'
+
+jobs:
+  # ============================================
+  # Determine what to build
+  # ============================================
+  setup:
+    name: Setup Build Matrix
+    runs-on: ubuntu-latest
+    outputs:
+      build-ios: ${{ steps.determine.outputs.build-ios }}
+      build-android: ${{ steps.determine.outputs.build-android }}
+      environment: ${{ steps.determine.outputs.environment }}
+    steps:
+      - name: Determine build targets
+        id: determine
+        env:
+          # Use env vars to safely pass workflow inputs
+          INPUT_PLATFORM: ${{ github.event.inputs.platform }}
+          INPUT_ENVIRONMENT: ${{ github.event.inputs.environment }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          # Default to beta for push/PR, use input for workflow_dispatch
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            PLATFORM="$INPUT_PLATFORM"
+            ENVIRONMENT="$INPUT_ENVIRONMENT"
+          else
+            PLATFORM="both"
+            ENVIRONMENT="beta"
+          fi
+
+          # For PRs, we only run tests, not deployments
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            ENVIRONMENT="test"
+          fi
+
+          # Determine platforms to build
+          if [ "$PLATFORM" = "ios" ] || [ "$PLATFORM" = "both" ]; then
+            echo "build-ios=true" >> $GITHUB_OUTPUT
+          else
+            echo "build-ios=false" >> $GITHUB_OUTPUT
+          fi
+
+          if [ "$PLATFORM" = "android" ] || [ "$PLATFORM" = "both" ]; then
+            echo "build-android=true" >> $GITHUB_OUTPUT
+          else
+            echo "build-android=false" >> $GITHUB_OUTPUT
+          fi
+
+          echo "environment=$ENVIRONMENT" >> $GITHUB_OUTPUT
+
+  # ============================================
+  # iOS Build
+  # ============================================
+  build-ios:
+    name: Build iOS
+    needs: setup
+    if: needs.setup.outputs.build-ios == 'true'
+    runs-on: macos-14  # Apple Silicon runner for faster builds
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
+          working-directory: apps/mobile
+
+      - name: Install NativeScript CLI
+        run: npm install -g nativescript
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run type check
+        run: pnpm --filter @happy-vue/mobile typecheck
+
+      - name: Run lint
+        run: pnpm --filter @happy-vue/mobile lint
+
+      # Only run deployment steps for non-PR builds
+      - name: Setup App Store Connect API Key
+        if: needs.setup.outputs.environment != 'test'
+        env:
+          ASC_KEY: ${{ secrets.ASC_KEY }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+        run: |
+          mkdir -p ~/private_keys
+          echo "$ASC_KEY" | base64 -d > ~/private_keys/AuthKey_${ASC_KEY_ID}.p8
+          echo "APP_STORE_CONNECT_API_KEY_PATH=~/private_keys/AuthKey_${ASC_KEY_ID}.p8" >> $GITHUB_ENV
+
+      - name: Build and Deploy iOS
+        if: needs.setup.outputs.environment != 'test'
+        working-directory: apps/mobile
+        env:
+          LANE: ${{ needs.setup.outputs.environment }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+          FASTLANE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+          CI: true
+        run: |
+          bundle exec fastlane ios "$LANE"
+
+      - name: Build iOS (test only)
+        if: needs.setup.outputs.environment == 'test'
+        working-directory: apps/mobile
+        run: |
+          # Just verify NativeScript can prepare the iOS project
+          ns prepare ios --release
+
+      - name: Upload build artifacts
+        if: needs.setup.outputs.environment != 'test'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build
+          path: apps/mobile/build/*.ipa
+          retention-days: 14
+
+  # ============================================
+  # Android Build
+  # ============================================
+  build-android:
+    name: Build Android
+    needs: setup
+    if: needs.setup.outputs.build-android == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
+          working-directory: apps/mobile
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install NativeScript CLI
+        run: npm install -g nativescript
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run type check
+        run: pnpm --filter @happy-vue/mobile typecheck
+
+      - name: Run lint
+        run: pnpm --filter @happy-vue/mobile lint
+
+      # Only run deployment steps for non-PR builds
+      - name: Decode Android Keystore
+        if: needs.setup.outputs.environment != 'test'
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > apps/mobile/keystore.jks
+
+      - name: Build and Deploy Android
+        if: needs.setup.outputs.environment != 'test'
+        working-directory: apps/mobile
+        env:
+          LANE: ${{ needs.setup.outputs.environment }}
+          KEYSTORE_PATH: keystore.jks
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEYSTORE_ALIAS: ${{ secrets.KEYSTORE_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          SUPPLY_JSON_KEY_DATA: ${{ secrets.PLAY_STORE_JSON_KEY }}
+          CI: true
+        run: |
+          bundle exec fastlane android "$LANE"
+
+      - name: Build Android (test only)
+        if: needs.setup.outputs.environment == 'test'
+        working-directory: apps/mobile
+        run: |
+          # Just verify NativeScript can prepare the Android project
+          ns prepare android --release
+
+      - name: Upload build artifacts
+        if: needs.setup.outputs.environment != 'test'
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-build
+          path: |
+            apps/mobile/platforms/android/app/build/outputs/bundle/release/*.aab
+            apps/mobile/platforms/android/app/build/outputs/apk/release/*.apk
+          retention-days: 14
+
+      - name: Cleanup keystore
+        if: always() && needs.setup.outputs.environment != 'test'
+        run: rm -f apps/mobile/keystore.jks
+
+  # ============================================
+  # Notify on completion
+  # ============================================
+  notify:
+    name: Notify Build Status
+    needs: [setup, build-ios, build-android]
+    if: always() && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check build results
+        env:
+          IOS_RESULT: ${{ needs.build-ios.result }}
+          ANDROID_RESULT: ${{ needs.build-android.result }}
+        run: |
+          echo "iOS Build: $IOS_RESULT"
+          echo "Android Build: $ANDROID_RESULT"
+
+          if [ "$IOS_RESULT" = "failure" ] || [ "$ANDROID_RESULT" = "failure" ]; then
+            echo "::error::One or more builds failed"
+            exit 1
+          fi
+
+          echo "All builds completed successfully!"

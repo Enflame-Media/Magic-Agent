@@ -21,6 +21,19 @@ platforms/
 hooks/
 *.log
 
+# Fastlane
+apps/mobile/fastlane/report.xml
+apps/mobile/fastlane/Preview.html
+apps/mobile/fastlane/screenshots/
+apps/mobile/fastlane/test_output/
+apps/mobile/build/
+apps/mobile/*.ipa
+apps/mobile/*.apk
+apps/mobile/*.aab
+apps/mobile/keystore.jks
+apps/mobile/Gemfile.lock
+apps/mobile/vendor/
+
 # Environment files
 .env
 .env.local
