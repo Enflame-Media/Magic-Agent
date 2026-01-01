@@ -4,13 +4,9 @@
  *
  * Admin login page with email/password authentication
  * powered by Better-Auth.
- *
- * Note: Auth requests go to the happy-admin-api worker.
  */
 import { ref } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { API_BASE_URL, apiRequest } from '../lib/api';
-import { getSafeRedirect } from '../lib/security';
 
 const router = useRouter();
 const route = useRoute();
@@ -29,9 +25,10 @@ async function handleLogin() {
     loading.value = true;
 
     try {
-        // HAP-616: Use apiRequest for CSRF protection
-        const response = await apiRequest(`${API_BASE_URL}/api/auth/sign-in/email`, {
+        const response = await fetch('/api/auth/sign-in/email', {
             method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
             body: JSON.stringify({
                 email: email.value,
                 password: password.value,
@@ -44,10 +41,9 @@ async function handleLogin() {
             return;
         }
 
-        // SECURITY FIX (HAP-625): Validate redirect to prevent open redirect attacks
+        // Redirect to original destination or dashboard
         const redirect = route.query.redirect as string | undefined;
-        const safeRedirect = getSafeRedirect(redirect);
-        await router.push(safeRedirect);
+        await router.push(redirect || '/');
     } catch (err) {
         error.value = 'An error occurred. Please try again.';
         console.error('Login error:', err);

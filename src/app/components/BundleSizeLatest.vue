@@ -13,35 +13,12 @@ import type { BundleSizeLatest } from '../lib/api';
 
 interface Props {
     data: BundleSizeLatest[];
-    previousDay: Map<string, number>;
     loading?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     loading: false,
 });
-
-interface PercentChange {
-    value: number;
-    direction: 'up' | 'down' | 'none';
-}
-
-/**
- * Calculate the percentage change from previous day.
- * Returns direction 'none' if change is less than 0.1% or no previous data.
- */
-function getPercentChange(platform: string, currentSize: number): PercentChange {
-    const previous = props.previousDay.get(platform);
-    if (!previous) {
-        return { value: 0, direction: 'none' };
-    }
-
-    const change = ((currentSize - previous) / previous) * 100;
-    return {
-        value: Math.abs(change),
-        direction: change > 0.1 ? 'up' : change < -0.1 ? 'down' : 'none',
-    };
-}
 
 const hasData = computed(() => props.data.length > 0);
 
@@ -148,19 +125,6 @@ function getPlatformStyle(platform: string): { icon: string; bgClass: string; te
                     <div class="text-right">
                         <p class="text-2xl font-bold text-gray-900 dark:text-white">
                             {{ formatBytes(bundle.totalSize) }}
-                        </p>
-                        <!-- % Change Indicator (HAP-571) -->
-                        <p
-                            v-if="getPercentChange(bundle.platform, bundle.totalSize).direction !== 'none'"
-                            class="text-sm mt-0.5"
-                            :class="{
-                                'text-red-600 dark:text-red-400': getPercentChange(bundle.platform, bundle.totalSize).direction === 'up',
-                                'text-green-600 dark:text-green-400': getPercentChange(bundle.platform, bundle.totalSize).direction === 'down',
-                            }"
-                        >
-                            <span v-if="getPercentChange(bundle.platform, bundle.totalSize).direction === 'up'">&#9650;</span>
-                            <span v-else>&#9660;</span>
-                            {{ getPercentChange(bundle.platform, bundle.totalSize).value.toFixed(1) }}% from yesterday
                         </p>
                     </div>
                 </div>

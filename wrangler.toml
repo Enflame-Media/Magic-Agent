@@ -6,13 +6,11 @@ compatibility_flags = ["nodejs_compat"]
 # Cloudflare Account ID
 account_id = "81f483e6767ea3194467ecef42840f79"
 
-# No build command needed for the worker itself
-# Vue.js SPA is built separately via yarn build:app
+# Enable Node.js compatibility for AsyncLocalStorage (required by Better-Auth)
 [build]
 command = ""
 
 # Static assets (Vue.js SPA)
-# This serves the built Vue.js app from ./dist
 [site]
 bucket = "./dist"
 
@@ -22,12 +20,22 @@ bucket = "./dist"
 [env.dev]
 name = "happy-admin-dev"
 vars = { ENVIRONMENT = "development" }
+
+# Custom domain routing
 routes = [
     { pattern = "happy-admin-dev.enflamemedia.com", custom_domain = true }
 ]
 
-# No D1 or Secrets needed - happy-admin-api handles all backend functionality
-# This worker only serves static Vue.js SPA files
+# D1 Database binding (development) - for Better-Auth storage
+[[env.dev.d1_databases]]
+binding = "DB"
+database_name = "happy-admin-dev"
+database_id = "PLACEHOLDER_DEV_DB_ID"
+
+# Analytics Engine SQL API configuration
+# Note: Analytics Engine is queried via REST API, not direct binding
+# The ANALYTICS_ACCOUNT_ID and ANALYTICS_API_TOKEN secrets are used for API access
+# Dataset: sync_metrics_dev (from happy-server-workers)
 
 [env.dev.observability]
 [env.dev.observability.logs]
@@ -42,12 +50,22 @@ persist = true
 [env.prod]
 name = "happy-admin-prod"
 vars = { ENVIRONMENT = "production" }
+
+# Custom domain routing
 routes = [
     { pattern = "happy-admin.enflamemedia.com", custom_domain = true }
 ]
 
-# No D1 or Secrets needed - happy-admin-api handles all backend functionality
-# This worker only serves static Vue.js SPA files
+# D1 Database binding (production) - for Better-Auth storage
+[[env.prod.d1_databases]]
+binding = "DB"
+database_name = "happy-admin-prod"
+database_id = "PLACEHOLDER_PROD_DB_ID"
+
+# Analytics Engine SQL API configuration
+# Note: Analytics Engine is queried via REST API, not direct binding
+# The ANALYTICS_ACCOUNT_ID and ANALYTICS_API_TOKEN secrets are used for API access
+# Dataset: sync_metrics_prod (from happy-server-workers)
 
 [env.prod.observability]
 [env.prod.observability.logs]
