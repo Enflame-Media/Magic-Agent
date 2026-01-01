@@ -4,6 +4,7 @@ import App from './App.vue';
 import './style.css';
 import { API_BASE_URL } from './lib/api';
 import { isValidRedirect } from './lib/security';
+import { i18n, setLocale, getStoredLocale } from '../i18n';
 
 /**
  * Vue Router configuration
@@ -69,4 +70,9 @@ router.beforeEach(async (to, _from, next) => {
  */
 const app = createApp(App);
 app.use(router);
+app.use(i18n);
+
+// Set initial locale from localStorage or browser detection
+setLocale(getStoredLocale());
+
 app.mount('#app');
