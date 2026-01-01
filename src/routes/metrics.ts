@@ -893,12 +893,25 @@ type UnknownTypeBreakdown = z.infer<typeof UnknownTypeBreakdownSchema>;
 type ValidationTimeseriesPoint = z.infer<typeof ValidationTimeseriesPointSchema>;
 
 // Validation Summary Route
+// HAP-638: Added hours parameter for time range filtering
 const validationSummaryRoute = createRoute({
     method: 'get',
     path: '/validation-summary',
     tags: ['Metrics', 'Validation'],
     summary: 'Get validation failure summary',
-    description: 'Returns aggregated validation failure metrics for the last 24 hours.',
+    description: 'Returns aggregated validation failure metrics for the specified time range.',
+    request: {
+        query: z.object({
+            hours: z
+                .string()
+                .regex(/^\d{1,3}$/, 'Hours must be a number between 1-720')
+                .optional()
+                .openapi({
+                    example: '24',
+                    description: 'Number of hours to look back (1-720, default: 24)',
+                }),
+        }),
+    },
     responses: {
         200: {
             description: 'Validation summary retrieved successfully',
@@ -912,6 +925,14 @@ const validationSummaryRoute = createRoute({
                         }),
                         timestamp: z.string(),
                     }),
+                },
+            },
+        },
+        400: {
+            description: 'Validation error',
+            content: {
+                'application/json': {
+                    schema: ErrorResponseSchema,
                 },
             },
         },
@@ -1025,24 +1046,34 @@ const validationTimeseriesRoute = createRoute({
 
 /**
  * GET /api/metrics/validation-summary
- * Returns 24h validation failure summary
+ * Returns validation failure summary for the specified time range
+ * HAP-638: Added hours parameter support
  */
 metricsRoutes.openapi(validationSummaryRoute, async (c) => {
-    const result = await queryAnalyticsEngine(
-        c.env,
-        `
-        SELECT
-            SUM(double1) as totalFailures,
-            SUM(double3) as schemaFailures,
-            SUM(double4) as strictFailures,
-            COUNT(DISTINCT index1) as uniqueUsers,
-            AVG(double2) as avgSessionDurationMs
-        FROM client_metrics_${c.env.ENVIRONMENT === 'production' ? 'prod' : 'dev'}
-        WHERE timestamp > NOW() - INTERVAL '24' HOUR
-          AND blob1 = 'validation'
-          AND blob2 = 'summary'
-        `
-    );
+    const { hours = '24' } = c.req.valid('query');
+
+    // Validate hours with bounds checking
+    const hoursResult = validateNumber(hours, NumericBounds.HOURS, 'hours', 24);
+    if (!hoursResult.success) {
+        return c.json({ error: hoursResult.error }, 400);
+    }
+    const hoursNum = hoursResult.value;
+
+    // Build safe query using query builder
+    const query = createQueryBuilder('client_metrics', c.env.ENVIRONMENT);
+    query
+        .select([
+            'SUM(double1) as totalFailures',
+            'SUM(double3) as schemaFailures',
+            'SUM(double4) as strictFailures',
+            'COUNT(DISTINCT index1) as uniqueUsers',
+            'AVG(double2) as avgSessionDurationMs',
+        ])
+        .whereTimestampInterval(hoursNum, 'HOUR')
+        .whereRaw("blob1 = 'validation'")
+        .whereRaw("blob2 = 'summary'");
+
+    const result = await queryAnalyticsEngine(c.env, query.build());
 
     // Calculate unknown types from total - schema - strict
     let data: ValidationSummary;
