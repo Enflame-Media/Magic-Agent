@@ -1,0 +1,34 @@
+# frozen_string_literal: true
+
+# Appfile - App identifiers and credentials for Fastlane
+# For more information: https://docs.fastlane.tools/advanced/Appfile/
+
+# iOS App Identifier (Bundle ID)
+app_identifier("com.enflamemedia.happy")
+
+# Apple Developer Portal team
+# Set via environment variable or uncomment and set directly
+# team_id("YOUR_TEAM_ID")
+
+# App Store Connect team (may differ from Developer Portal team)
+# itc_team_id("YOUR_ITC_TEAM_ID")
+
+# Apple ID for App Store Connect
+# Prefer using App Store Connect API keys instead (more secure)
+# apple_id("your@email.com")
+
+# Android package name (same as iOS for this app)
+# Used by supply for Play Store uploads
+json_key_file(ENV["GOOGLE_PLAY_JSON_KEY_FILE"])
+package_name("com.enflamemedia.happy")
+
+# Environment-based overrides
+for_platform :ios do
+  # iOS-specific settings can go here
+  # team_id is typically set via FASTLANE_TEAM_ID env var
+end
+
+for_platform :android do
+  # Android-specific settings can go here
+  # json_key_file is set above or via SUPPLY_JSON_KEY_DATA env var
+end

@@ -1,72 +1,161 @@
 <script setup lang="ts">
 /**
- * Settings View - App Configuration
+ * Settings View - App Configuration Hub
  *
- * Provides access to user preferences, account settings,
- * and connected machine management.
+ * Provides navigation to appearance, account settings,
+ * and other app configuration options.
  */
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
+import { Frame } from '@nativescript/core';
+import { useAuth } from '../composables/useAuth';
+import AppearanceView from './settings/AppearanceView.vue';
+import AccountView from './settings/AccountView.vue';
 
-const darkModeEnabled = ref(false);
-const notificationsEnabled = ref(true);
-const version = ref('0.0.1');
+const { machines } = useAuth();
 
-const toggleDarkMode = () => {
-  darkModeEnabled.value = !darkModeEnabled.value;
-  // TODO: Implement dark mode toggle
-};
+// App version (would come from build config in production)
+const version = ref('0.1.0');
 
-const toggleNotifications = () => {
-  notificationsEnabled.value = !notificationsEnabled.value;
-  // TODO: Implement notifications toggle
-};
+// Connected machines count for badge
+const machinesCount = computed(() => machines.value.length);
 
-const signOut = () => {
-  // TODO: Implement sign out
-  console.log('Sign out pressed');
-};
+/**
+ * Navigate back
+ */
+function navigateBack() {
+  const frame = Frame.topmost();
+  if (frame?.canGoBack()) {
+    frame.goBack();
+  }
+}
+
+/**
+ * Navigate to appearance settings
+ */
+function navigateToAppearance() {
+  const frame = Frame.topmost();
+  frame?.navigate({
+    create: () => AppearanceView,
+  });
+}
+
+/**
+ * Navigate to account settings
+ */
+function navigateToAccount() {
+  const frame = Frame.topmost();
+  frame?.navigate({
+    create: () => AccountView,
+  });
+}
+
+/**
+ * Open external link (placeholder)
+ */
+function openLink(url: string) {
+  // TODO: Implement with utils.openUrl
+  console.log('Opening:', url);
+}
 </script>
 
 <template>
   <Page actionBarHidden="false">
     <ActionBar title="Settings">
-      <NavigationButton text="Back" android.systemIcon="ic_menu_back" />
+      <NavigationButton text="Back" android.systemIcon="ic_menu_back" @tap="navigateBack" />
     </ActionBar>
 
     <ScrollView>
       <StackLayout class="settings-container">
-        <!-- Appearance Section -->
-        <Label text="Appearance" class="section-header" />
-        <GridLayout columns="*, auto" class="setting-item" @tap="toggleDarkMode">
+        <!-- Preferences Section -->
+        <Label text="PREFERENCES" class="section-header" />
+
+        <GridLayout columns="*, auto" class="setting-item" @tap="navigateToAppearance">
           <StackLayout col="0">
-            <Label text="Dark Mode" class="setting-title" />
-            <Label text="Use dark theme throughout the app" class="setting-subtitle" />
+            <Label text="Appearance" class="setting-title" />
+            <Label text="Theme, fonts, and display options" class="setting-subtitle" />
           </StackLayout>
-          <Switch col="1" :checked="darkModeEnabled" />
+          <Label col="1" text="›" class="chevron" />
         </GridLayout>
 
-        <!-- Notifications Section -->
-        <Label text="Notifications" class="section-header" />
-        <GridLayout columns="*, auto" class="setting-item" @tap="toggleNotifications">
+        <GridLayout columns="*, auto" class="setting-item">
           <StackLayout col="0">
-            <Label text="Push Notifications" class="setting-title" />
-            <Label text="Receive alerts for session activity" class="setting-subtitle" />
+            <Label text="Notifications" class="setting-title" />
+            <Label text="Alerts and push notification settings" class="setting-subtitle" />
           </StackLayout>
-          <Switch col="1" :checked="notificationsEnabled" />
+          <Label col="1" text="›" class="chevron" />
         </GridLayout>
 
         <!-- Account Section -->
-        <Label text="Account" class="section-header" />
-        <StackLayout class="setting-item" @tap="signOut">
-          <Label text="Sign Out" class="setting-title text-danger" />
-          <Label text="Disconnect from all sessions" class="setting-subtitle" />
-        </StackLayout>
+        <Label text="ACCOUNT" class="section-header" />
+
+        <GridLayout columns="*, auto" class="setting-item" @tap="navigateToAccount">
+          <StackLayout col="0">
+            <Label text="Connected Machines" class="setting-title" />
+            <Label
+              :text="`${machinesCount} machine${machinesCount !== 1 ? 's' : ''} connected`"
+              class="setting-subtitle"
+            />
+          </StackLayout>
+          <StackLayout col="1" orientation="horizontal" verticalAlignment="center">
+            <Label
+              v-if="machinesCount > 0"
+              :text="machinesCount.toString()"
+              class="badge"
+            />
+            <Label text="›" class="chevron" />
+          </StackLayout>
+        </GridLayout>
+
+        <GridLayout columns="*, auto" class="setting-item">
+          <StackLayout col="0">
+            <Label text="Privacy & Security" class="setting-title" />
+            <Label text="Encryption and data settings" class="setting-subtitle" />
+          </StackLayout>
+          <Label col="1" text="›" class="chevron" />
+        </GridLayout>
+
+        <!-- Support Section -->
+        <Label text="SUPPORT" class="section-header" />
+
+        <GridLayout columns="*, auto" class="setting-item" @tap="openLink('https://happy.engineering/help')">
+          <StackLayout col="0">
+            <Label text="Help Center" class="setting-title" />
+            <Label text="FAQs and troubleshooting guides" class="setting-subtitle" />
+          </StackLayout>
+          <Label col="1" text="↗" class="external-icon" />
+        </GridLayout>
+
+        <GridLayout columns="*, auto" class="setting-item" @tap="openLink('https://happy.engineering/feedback')">
+          <StackLayout col="0">
+            <Label text="Send Feedback" class="setting-title" />
+            <Label text="Report bugs or suggest features" class="setting-subtitle" />
+          </StackLayout>
+          <Label col="1" text="↗" class="external-icon" />
+        </GridLayout>
 
         <!-- About Section -->
-        <Label text="About" class="section-header" />
-        <StackLayout class="setting-item">
-          <Label text="Version" class="setting-title" />
-          <Label :text="version" class="setting-subtitle" />
+        <Label text="ABOUT" class="section-header" />
+
+        <GridLayout columns="*, auto" class="setting-item">
+          <Label col="0" text="Version" class="setting-title" />
+          <Label col="1" :text="version" class="version-text" />
+        </GridLayout>
+
+        <GridLayout columns="*, auto" class="setting-item" @tap="openLink('https://happy.engineering/terms')">
+          <Label col="0" text="Terms of Service" class="setting-title" />
+          <Label col="1" text="↗" class="external-icon" />
+        </GridLayout>
+
+        <GridLayout columns="*, auto" class="setting-item" @tap="openLink('https://happy.engineering/privacy')">
+          <Label col="0" text="Privacy Policy" class="setting-title" />
+          <Label col="1" text="↗" class="external-icon" />
+        </GridLayout>
+
+        <!-- Footer -->
+        <StackLayout class="footer">
+          <Label text="Happy" class="footer-logo" />
+          <Label text="Remote control for Claude Code" class="footer-tagline" />
+          <Label text="Made with ♥ by Enflame Media" class="footer-credit" />
         </StackLayout>
       </StackLayout>
     </ScrollView>
@@ -79,10 +168,11 @@ const signOut = () => {
 }
 
 .section-header {
-  font-size: 14;
+  font-size: 13;
   font-weight: bold;
   color: #6b7280;
   text-transform: uppercase;
+  letter-spacing: 0.5;
   padding: 16;
   padding-bottom: 8;
   background-color: #f9fafb;
@@ -96,7 +186,7 @@ const signOut = () => {
 }
 
 .setting-title {
-  font-size: 16;
+  font-size: 17;
   color: #1f2937;
 }
 
@@ -106,7 +196,52 @@ const signOut = () => {
   margin-top: 4;
 }
 
-.text-danger {
-  color: #ef4444;
+.chevron {
+  font-size: 22;
+  color: #d1d5db;
+}
+
+.external-icon {
+  font-size: 16;
+  color: #9ca3af;
+}
+
+.badge {
+  background-color: #6366f1;
+  color: #ffffff;
+  font-size: 12;
+  font-weight: bold;
+  padding: 2 8;
+  border-radius: 10;
+  margin-right: 8;
+}
+
+.version-text {
+  font-size: 16;
+  color: #6b7280;
+}
+
+.footer {
+  padding: 32;
+  text-align: center;
+  background-color: #f9fafb;
+}
+
+.footer-logo {
+  font-size: 24;
+  font-weight: bold;
+  color: #6366f1;
+  margin-bottom: 4;
+}
+
+.footer-tagline {
+  font-size: 14;
+  color: #6b7280;
+  margin-bottom: 16;
+}
+
+.footer-credit {
+  font-size: 12;
+  color: #9ca3af;
 }
 </style>
