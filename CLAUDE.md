@@ -244,4 +244,25 @@ class SessionViewModel: ObservableObject {
 
 ## Project Status
 
-> ⚠️ **Phase 0**: This project is being initialized. The `.xcodeproj` file must be created using Xcode on macOS.
+> ✅ **Phase 3 Complete**: Core SwiftUI implementation done.
+
+### Implemented Features
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| MVVM Architecture | ✅ | Models, ViewModels, Views, Services |
+| Authentication | ✅ | AuthService with QR scanning support |
+| Keychain Storage | ✅ | KeychainHelper for secure credentials |
+| Encryption | ✅ | EncryptionService with CryptoKit |
+| WebSocket Sync | ✅ | SyncService with Combine publishers |
+| Sessions List | ✅ | NavigationSplitView with sidebar |
+| Session Detail | ✅ | Message display with tool uses |
+| Settings | ✅ | Tabbed preferences via Settings scene |
+| Menu Commands | ✅ | File, Session, Connection menus |
+| Keyboard Shortcuts | ✅ | ⌘R refresh, ⌘N scan, etc. |
+
+### Next Steps (Phase 4)
+
+- Voice features integration
+- Artifacts display
+- Push notifications
