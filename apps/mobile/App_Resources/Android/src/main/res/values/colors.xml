@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand Colors - Indigo/Violet theme matching Happy design -->
+    <color name="ns_primary">#6366F1</color>         <!-- Indigo 500 -->
+    <color name="ns_primaryDark">#4F46E5</color>     <!-- Indigo 600 -->
+    <color name="ns_accent">#8B5CF6</color>          <!-- Violet 500 -->
+
+    <!-- Background Colors -->
+    <color name="ns_background">#FFFFFF</color>
+    <color name="ns_backgroundDark">#1F2937</color>
+
+    <!-- Text Colors -->
+    <color name="ns_text">#1F2937</color>            <!-- Gray 800 -->
+    <color name="ns_textSecondary">#6B7280</color>   <!-- Gray 500 -->
+    <color name="ns_textLight">#FFFFFF</color>
+
+    <!-- Utility Colors -->
+    <color name="ns_white">#FFFFFF</color>
+    <color name="ns_black">#000000</color>
+    <color name="ns_success">#10B981</color>         <!-- Green 500 -->
+    <color name="ns_warning">#F59E0B</color>         <!-- Amber 500 -->
+    <color name="ns_error">#EF4444</color>           <!-- Red 500 -->
+</resources>

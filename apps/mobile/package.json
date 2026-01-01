@@ -2,21 +2,41 @@
   "name": "@happy-vue/mobile",
   "version": "0.0.1",
   "private": true,
-  "type": "module",
-  "description": "Happy NativeScript-Vue mobile application",
+  "main": "src/app.ts",
+  "description": "Happy NativeScript-Vue 3 mobile application for iOS and Android",
   "scripts": {
-    "dev": "echo 'Mobile app not yet implemented - see Phase 2'",
-    "build": "echo 'Mobile app not yet implemented - see Phase 2'",
+    "dev:ios": "ns run ios",
+    "dev:android": "ns run android",
+    "dev:ios:devtools": "ns run ios --env.vueDevtools",
+    "dev:android:devtools": "ns run android --env.vueDevtools",
+    "build:ios": "ns build ios --release",
+    "build:android": "ns build android --release",
     "typecheck": "tsc --noEmit",
-    "lint": "echo 'Linting not yet configured'",
-    "lint:fix": "echo 'Linting not yet configured'",
-    "clean": "rm -rf dist platforms"
+    "lint": "eslint src --ext .ts,.vue",
+    "lint:fix": "eslint src --ext .ts,.vue --fix",
+    "clean": "ns clean && rm -rf dist platforms hooks",
+    "prepare": "ns prepare ios && ns prepare android"
   },
   "dependencies": {
     "@happy-vue/protocol": "workspace:*",
-    "@happy-vue/shared": "workspace:*"
+    "@happy-vue/shared": "workspace:*",
+    "@nativescript-community/ui-material-activityindicator": "^7.2.0",
+    "@nativescript-community/ui-material-bottomnavigationbar": "^7.2.0",
+    "@nativescript-community/ui-material-button": "^7.2.0",
+    "@nativescript-community/ui-material-core": "^7.2.0",
+    "@nativescript-community/ui-material-progress": "^7.2.0",
+    "@nativescript-community/ui-material-textfield": "^7.2.0",
+    "@nativescript/core": "~8.8.0",
+    "nativescript-vue": "^3.0.0-rc.3",
+    "pinia": "^2.3.0"
   },
   "devDependencies": {
-    "typescript": "^5.7.2"
+    "@nativescript/types": "~8.8.0",
+    "@nativescript/webpack": "~5.0.0",
+    "typescript": "^5.7.2",
+    "vue": "^3.5.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   }
 }
