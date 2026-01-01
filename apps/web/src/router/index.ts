@@ -4,6 +4,15 @@
  * Uses HTML5 history mode for clean URLs.
  * Routes are lazy-loaded for optimal bundle splitting.
  *
+ * Route structure:
+ * - / - Home (sessions list) - requires auth
+ * - /session/:id - Session detail - requires auth
+ * - /session/:id/info - Session info - requires auth
+ * - /settings - Settings main - requires auth
+ * - /settings/account - Account settings - requires auth
+ * - /settings/appearance - Appearance settings - requires auth
+ * - /settings/language - Language settings - requires auth
+ *
  * Authentication routes:
  * - /auth - Login options (QR scan, mobile auth, manual entry)
  * - /auth/scan - Camera-based QR scanning
@@ -31,6 +40,46 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: () => import('@/views/HomeView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/session/:id',
+      name: 'session',
+      component: () => import('@/views/SessionView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/session/:id/info',
+      name: 'session-info',
+      component: () => import('@/views/SessionView.vue'), // Same view, different tab
+      meta: { requiresAuth: true },
+    },
+
+    // ─────────────────────────────────────────────────────────────────────
+    // Settings Routes (require authentication)
+    // ─────────────────────────────────────────────────────────────────────
+    {
+      path: '/settings',
+      name: 'settings',
+      component: () => import('@/views/SettingsView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/settings/account',
+      name: 'settings-account',
+      component: () => import('@/views/settings/AccountView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/settings/appearance',
+      name: 'settings-appearance',
+      component: () => import('@/views/settings/AppearanceView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/settings/language',
+      name: 'settings-language',
+      component: () => import('@/views/settings/LanguageView.vue'),
       meta: { requiresAuth: true },
     },
 

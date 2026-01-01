@@ -1,120 +1,124 @@
 <script setup lang="ts">
 /**
- * Home View - Landing page for Happy web application
+ * Home View - Sessions List
  *
- * Displays welcome message and getting started information.
- * Demonstrates ShadCN-Vue components (Card, Button, Input, Avatar, Skeleton).
+ * Displays all synced sessions from the user's connected machines.
+ * Main landing page for authenticated users.
+ *
+ * Features:
+ * - Real-time session list with sync status
+ * - Search/filter sessions (future)
+ * - Navigate to session detail
+ * - Empty state for new users
  */
 
-import { ref } from 'vue';
-import { toast } from 'vue-sonner';
+import { computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { useSessionsStore } from '@/stores/sessions';
+import { useSyncStore } from '@/stores/sync';
+import { SessionCard, EmptyState, ConnectionStatus } from '@/components/app';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Skeleton } from '@/components/ui/skeleton';
 
-const version = ref('0.0.1');
-const email = ref('');
+const router = useRouter();
+const sessionsStore = useSessionsStore();
+const syncStore = useSyncStore();
 
-function handleGetStarted() {
-  if (email.value) {
-    toast.success('Thanks for signing up!', {
-      description: `We'll notify you at ${email.value}`,
-    });
-    email.value = '';
-  } else {
-    toast.error('Please enter your email');
-  }
+// Computed session lists
+const activeSessions = computed(() => sessionsStore.activeSessions);
+const inactiveSessions = computed(() => sessionsStore.inactiveSessions);
+const hasAnySessions = computed(() => sessionsStore.count > 0);
+
+// Connection status
+const isConnected = computed(() => syncStore.isConnected);
+
+function navigateToSettings() {
+  router.push('/settings');
 }
 </script>
 
 <template>
-  <div class="py-8 space-y-12">
-    <!-- Hero Section -->
-    <section class="text-center space-y-4">
-      <h2 class="text-3xl font-semibold text-foreground">Welcome to Happy</h2>
-      <p class="text-muted-foreground text-lg max-w-xl mx-auto">
-        Control your Claude Code sessions remotely from any device.
-      </p>
-
-      <!-- Email signup with ShadCN-Vue components -->
-      <div class="flex gap-2 max-w-md mx-auto mt-6">
-        <Input
-          v-model="email"
-          type="email"
-          placeholder="Enter your email"
-          class="flex-1"
-          @keyup.enter="handleGetStarted"
-        />
-        <Button @click="handleGetStarted">Get Started</Button>
+  <div class="container mx-auto px-4 py-6 max-w-3xl">
+    <!-- Header -->
+    <header class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-2xl font-semibold">Sessions</h1>
+        <p class="text-sm text-muted-foreground mt-1">
+          Your Claude Code sessions across all machines
+        </p>
       </div>
-    </section>
+      <div class="flex items-center gap-4">
+        <ConnectionStatus />
+        <Button variant="ghost" size="icon" @click="navigateToSettings">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+            />
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+            />
+          </svg>
+        </Button>
+      </div>
+    </header>
 
-    <!-- Features Section with Cards -->
-    <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle class="text-primary">Real-time Sync</CardTitle>
-          <CardDescription>
-            See your coding sessions update in real-time across all devices.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div class="flex items-center gap-3">
-            <Avatar>
-              <AvatarImage src="https://github.com/anthropics.png" alt="Anthropic" />
-              <AvatarFallback>AN</AvatarFallback>
-            </Avatar>
-            <div class="flex-1">
-              <Skeleton class="h-4 w-3/4 mb-2" />
-              <Skeleton class="h-3 w-1/2" />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+    <!-- Empty State -->
+    <template v-if="!hasAnySessions">
+      <EmptyState
+        title="No Sessions Yet"
+        description="Connect a terminal running Claude Code with the Happy CLI to see your sessions here."
+        action-label="Go to Settings"
+        @action="navigateToSettings"
+      />
+    </template>
 
-      <Card>
-        <CardHeader>
-          <CardTitle class="text-primary">End-to-End Encrypted</CardTitle>
-          <CardDescription>
-            Your code and conversations are encrypted and only visible to you.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div class="flex gap-2">
-            <Button variant="outline" size="sm">Learn More</Button>
-            <Button variant="secondary" size="sm">View Docs</Button>
-          </div>
-        </CardContent>
-      </Card>
+    <!-- Sessions List -->
+    <template v-else>
+      <!-- Active Sessions -->
+      <section v-if="activeSessions.length > 0" class="mb-8">
+        <h2 class="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+          Active Sessions
+        </h2>
+        <div class="space-y-3">
+          <SessionCard
+            v-for="session in activeSessions"
+            :key="session.id"
+            :session="session"
+          />
+        </div>
+      </section>
 
-      <Card>
-        <CardHeader>
-          <CardTitle class="text-primary">Multi-Platform</CardTitle>
-          <CardDescription>
-            Available on web, iOS, and Android for seamless access anywhere.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div class="flex gap-2 flex-wrap">
-            <Button variant="outline" size="sm">Web</Button>
-            <Button variant="outline" size="sm">iOS</Button>
-            <Button variant="outline" size="sm">Android</Button>
-          </div>
-        </CardContent>
-      </Card>
-    </section>
+      <!-- Inactive/Archived Sessions -->
+      <section v-if="inactiveSessions.length > 0">
+        <h2 class="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+          Archived Sessions
+        </h2>
+        <div class="space-y-3">
+          <SessionCard
+            v-for="session in inactiveSessions"
+            :key="session.id"
+            :session="session"
+          />
+        </div>
+      </section>
 
-    <!-- Footer -->
-    <footer class="text-center">
-      <p class="text-muted-foreground text-xs">Version {{ version }}</p>
-    </footer>
+      <!-- Sync Status Banner -->
+      <div
+        v-if="!isConnected"
+        class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-yellow-500/90 text-white px-4 py-2 rounded-full text-sm shadow-lg"
+      >
+        Reconnecting to server...
+      </div>
+    </template>
   </div>
 </template>
