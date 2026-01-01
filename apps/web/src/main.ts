@@ -4,6 +4,7 @@
  * Bootstraps the Vue 3 application with:
  * - Vue Router for client-side routing
  * - Pinia for state management
+ * - Vue I18n for internationalization (7 languages)
  * - Tailwind CSS with ShadCN-Vue theme
  */
 
@@ -11,6 +12,7 @@ import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 import App from './App.vue';
 import router from './router';
+import i18n from './i18n';
 import { useAuthStore } from './stores/auth';
 
 // Import global styles (Tailwind CSS + ShadCN-Vue variables)
@@ -22,6 +24,7 @@ const pinia = createPinia();
 // Install plugins
 app.use(pinia);
 app.use(router);
+app.use(i18n);
 
 // Initialize auth state from persisted credentials before mounting
 // This runs async but we don't block - router guards will handle auth checks

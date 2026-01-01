@@ -17,3 +17,6 @@ export { default as PaywallDialog } from './PaywallDialog.vue';
 export { default as ArtifactViewer } from './ArtifactViewer.vue';
 export { default as FileTree } from './FileTree.vue';
 export { default as ImagePreview } from './ImagePreview.vue';
+
+// i18n components
+export { default as LanguageSelector } from './LanguageSelector.vue';
