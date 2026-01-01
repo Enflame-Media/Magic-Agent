@@ -26,8 +26,8 @@
     "@nativescript-community/ui-material-core": "^7.2.0",
     "@nativescript-community/ui-material-progress": "^7.2.0",
     "@nativescript-community/ui-material-textfield": "^7.2.0",
-    "@aspect/nativescript-barcodescanner": "^5.0.0",
     "@nativescript/core": "~8.8.0",
+    "@nstudio/nativescript-barcodescanner": "^5.0.1",
     "nativescript-vue": "^3.0.0-rc.3",
     "pinia": "^2.3.0"
   },
