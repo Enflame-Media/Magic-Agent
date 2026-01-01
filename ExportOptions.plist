@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  ExportOptions.plist - Archive Export Configuration for Happy macOS
+
+  This file configures how Xcode exports the Happy.xcarchive for distribution.
+  Used by: xcodebuild -exportArchive -exportOptionsPlist ExportOptions.plist
+
+  Note: The teamID should be replaced with your actual Apple Developer Team ID
+  when committing, or use the dynamically generated version in CI/CD.
+
+  Part of HAP-680 implementation.
+-->
+<plist version="1.0">
+<dict>
+    <!-- Distribution method: app-store for Mac App Store / TestFlight -->
+    <key>method</key>
+    <string>app-store</string>
+
+    <!-- Apple Developer Team ID (replace YOUR_TEAM_ID with actual value) -->
+    <key>teamID</key>
+    <string>YOUR_TEAM_ID</string>
+
+    <!-- Upload destination -->
+    <key>destination</key>
+    <string>upload</string>
+
+    <!-- Let Xcode manage signing automatically -->
+    <key>signingStyle</key>
+    <string>automatic</string>
+
+    <!-- Generate app store compatible bitcode (for universal binaries) -->
+    <key>uploadBitcode</key>
+    <false/>
+
+    <!-- Include symbols for crash reports -->
+    <key>uploadSymbols</key>
+    <true/>
+
+    <!-- Compile bitcode during export (not needed for macOS) -->
+    <key>compileBitcode</key>
+    <false/>
+</dict>
+</plist>
