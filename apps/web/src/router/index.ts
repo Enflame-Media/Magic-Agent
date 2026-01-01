@@ -8,6 +8,8 @@
  * - / - Home (sessions list) - requires auth
  * - /session/:id - Session detail - requires auth
  * - /session/:id/info - Session info - requires auth
+ * - /session/:id/artifacts - Session artifacts - requires auth
+ * - /artifacts - All artifacts - requires auth
  * - /settings - Settings main - requires auth
  * - /settings/account - Account settings - requires auth
  * - /settings/appearance - Appearance settings - requires auth
@@ -52,6 +54,22 @@ const router = createRouter({
       path: '/session/:id/info',
       name: 'session-info',
       component: () => import('@/views/SessionView.vue'), // Same view, different tab
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/session/:id/artifacts',
+      name: 'session-artifacts',
+      component: () => import('@/views/ArtifactsView.vue'),
+      meta: { requiresAuth: true },
+    },
+
+    // ─────────────────────────────────────────────────────────────────────
+    // Artifacts Routes (require authentication)
+    // ─────────────────────────────────────────────────────────────────────
+    {
+      path: '/artifacts',
+      name: 'artifacts',
+      component: () => import('@/views/ArtifactsView.vue'),
       meta: { requiresAuth: true },
     },
 
