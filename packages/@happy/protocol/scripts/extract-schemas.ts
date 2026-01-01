@@ -14,9 +14,10 @@
  *   - packages/@happy/protocol/protocol-schemas.json
  *
  * @see HAP-565 - Add cross-project schema drift detection to CI
+ * @see HAP-695 - Migrate to Zod 4 native JSON Schema
  */
 
-import { zodToJsonSchema } from 'zod-to-json-schema';
+import { z } from 'zod';
 import { writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -121,6 +122,18 @@ const schemas = {
 };
 
 /**
+ * Convert Zod schema to JSON Schema using Zod 4's native toJSONSchema
+ *
+ * Note: Zod 4 has built-in JSON Schema support, eliminating the need for
+ * the zod-to-json-schema library which has compatibility issues with Zod 4.
+ *
+ * @see https://zod.dev/v4 for Zod 4 JSON Schema documentation
+ */
+function zodToJson(schema: unknown): Record<string, unknown> {
+    return z.toJSONSchema(schema as z.ZodType) as Record<string, unknown>;
+}
+
+/**
  * Convert all Zod schemas to JSON Schema format
  */
 function extractSchemas(): Record<string, unknown> {
@@ -130,12 +143,7 @@ function extractSchemas(): Record<string, unknown> {
         result[category] = {};
         for (const [name, schema] of Object.entries(categorySchemas)) {
             try {
-                result[category][name] = zodToJsonSchema(schema, {
-                    name,
-                    // Use 'strict' mode for better compatibility with OpenAPI schemas
-                    // This prevents additionalProperties: false from being added automatically
-                    $refStrategy: 'none',
-                });
+                result[category][name] = zodToJson(schema);
             } catch (error) {
                 console.error(`⚠️  Failed to convert ${category}.${name}:`, error);
                 result[category][name] = {
