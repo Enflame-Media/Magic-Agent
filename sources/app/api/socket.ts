@@ -13,6 +13,7 @@ import { machineUpdateHandler } from "./socket/machineUpdateHandler";
 import { artifactUpdateHandler } from "./socket/artifactUpdateHandler";
 import { accessKeyHandler } from "./socket/accessKeyHandler";
 import { generateCorrelationId, isValidCorrelationId } from "@/utils/correlationId";
+import { presenceTracker } from "@/app/social/presenceTracker";
 
 export function startSocket(app: Fastify) {
     const io = new Server(app.server, {
@@ -118,6 +119,12 @@ export function startSocket(app: Fastify) {
             });
         }
 
+        // Track user presence for friend status (user-scoped connections only)
+        // User-scoped = mobile/web app clients that should show in friend lists
+        if (connection.connectionType === 'user-scoped') {
+            void presenceTracker.handleUserConnect(userId, socket.id);
+        }
+
         socket.on('disconnect', () => {
             websocketEventsCounter.inc({ event_type: 'disconnect' });
 
@@ -135,6 +142,11 @@ export function startSocket(app: Fastify) {
                     payload: machineActivity,
                     recipientFilter: { type: 'user-scoped-only' }
                 });
+            }
+
+            // Track user presence disconnect for friend status
+            if (connection.connectionType === 'user-scoped') {
+                void presenceTracker.handleUserDisconnect(userId, socket.id);
             }
         });
 

@@ -354,7 +354,7 @@ export function buildUpdateMachineUpdate(machineId: string, updateSeq: number, u
 export function buildSessionActivityEphemeral(sessionId: string, active: boolean, activeAt: number, thinking?: boolean): EphemeralPayload {
     return {
         type: 'activity',
-        id: sessionId,
+        sid: sessionId,
         active,
         activeAt,
         thinking: thinking || false
@@ -364,7 +364,7 @@ export function buildSessionActivityEphemeral(sessionId: string, active: boolean
 export function buildMachineActivityEphemeral(machineId: string, active: boolean, activeAt: number): EphemeralPayload {
     return {
         type: 'machine-activity',
-        id: machineId,
+        machineId,
         active,
         activeAt
     };
@@ -373,7 +373,7 @@ export function buildMachineActivityEphemeral(machineId: string, active: boolean
 export function buildUsageEphemeral(sessionId: string, key: string, tokens: Record<string, number>, cost: Record<string, number>): EphemeralPayload {
     return {
         type: 'usage',
-        id: sessionId,
+        sid: sessionId,
         key,
         tokens,
         cost,
