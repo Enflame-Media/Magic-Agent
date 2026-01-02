@@ -20,3 +20,8 @@ export { default as ImagePreview } from './ImagePreview.vue';
 
 // i18n components
 export { default as LanguageSelector } from './LanguageSelector.vue';
+
+// Friends/Social components
+export { default as FriendRequestCard } from './FriendRequestCard.vue';
+export { default as UserProfileCard } from './UserProfileCard.vue';
+export { default as UserSearch } from './UserSearch.vue';

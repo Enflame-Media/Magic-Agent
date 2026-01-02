@@ -10,6 +10,7 @@
  * - /session/:id/info - Session info - requires auth
  * - /session/:id/artifacts - Session artifacts - requires auth
  * - /artifacts - All artifacts - requires auth
+ * - /friends - Friends list and search - requires auth
  * - /settings - Settings main - requires auth
  * - /settings/account - Account settings - requires auth
  * - /settings/appearance - Appearance settings - requires auth
@@ -74,6 +75,16 @@ const router = createRouter({
     },
 
     // ─────────────────────────────────────────────────────────────────────
+    // Friends Routes (require authentication)
+    // ─────────────────────────────────────────────────────────────────────
+    {
+      path: '/friends',
+      name: 'friends',
+      component: () => import('@/views/FriendsView.vue'),
+      meta: { requiresAuth: true },
+    },
+
+    // ─────────────────────────────────────────────────────────────────────
     // Settings Routes (require authentication)
     // ─────────────────────────────────────────────────────────────────────
     {
@@ -98,6 +109,12 @@ const router = createRouter({
       path: '/settings/language',
       name: 'settings-language',
       component: () => import('@/views/settings/LanguageView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/settings/privacy',
+      name: 'settings-privacy',
+      component: () => import('@/views/settings/PrivacyView.vue'),
       meta: { requiresAuth: true },
     },
 
