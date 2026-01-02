@@ -10,6 +10,7 @@ import { onMounted, computed, toRef, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAnalytics } from '../composables/useAnalytics';
 import { useMetrics } from '../composables/useMetrics';
+import { useTranslation } from '@/composables/useTranslation';
 import DateRangeSelector from '../components/DateRangeSelector.vue';
 import PlatformSelector from '../components/PlatformSelector.vue';
 import type { Platform } from '../components/PlatformSelector.vue';
@@ -22,11 +23,13 @@ import BundleSizeLatest from '../components/BundleSizeLatest.vue';
 import ValidationSummary from '../components/ValidationSummary.vue';
 import ValidationTrendsChart from '../components/ValidationTrendsChart.vue';
 import UnknownTypeBreakdown from '../components/UnknownTypeBreakdown.vue';
+import LanguageSelector from '../components/app/LanguageSelector.vue';
 import { formatDuration, formatPercent, API_BASE_URL, apiRequest } from '../lib/api';
 import { useBundleSize, useBundleSizeCharts } from '../composables/useBundleSize';
 import { useValidation, useValidationCharts } from '../composables/useValidation';
 
 const router = useRouter();
+const { t } = useTranslation();
 
 // Initialize analytics composable
 const {
@@ -167,9 +170,12 @@ watch(
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <h1 class="text-xl font-bold text-gray-900 dark:text-white">
-                        Happy Admin Dashboard
+                        {{ t('dashboard.header') }}
                     </h1>
                     <div class="flex flex-wrap items-center gap-3">
+                        <!-- Language Selector (HAP-697) -->
+                        <LanguageSelector :show-label="false" />
+
                         <!-- Time Range Selector -->
                         <DateRangeSelector
                             v-model="timeRange"
@@ -187,7 +193,7 @@ watch(
                             "
                             @click="toggleAutoRefresh()"
                         >
-                            {{ autoRefreshEnabled ? 'Auto ✓' : 'Auto ✗' }}
+                            {{ autoRefreshEnabled ? t('dashboard.autoOn') : t('dashboard.autoOff') }}
                         </button>
 
                         <!-- Last updated -->
@@ -195,7 +201,7 @@ watch(
                             v-if="state.lastUpdated"
                             class="hidden sm:inline text-sm text-gray-500 dark:text-gray-400"
                         >
-                            Updated: {{ state.lastUpdated }}
+                            {{ t('dashboard.updated') }} {{ state.lastUpdated }}
                         </span>
 
                         <!-- Refresh button -->
@@ -206,9 +212,9 @@ watch(
                         >
                             <span v-if="loading" class="inline-flex items-center gap-1">
                                 <span class="animate-spin h-4 w-4 border-2 border-gray-400 border-t-transparent rounded-full" />
-                                Loading...
+                                {{ t('common.loading') }}
                             </span>
-                            <span v-else>Refresh</span>
+                            <span v-else>{{ t('common.refresh') }}</span>
                         </button>
 
                         <!-- User Management (HAP-639) -->
@@ -224,12 +230,12 @@ watch(
                                     d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
                                 />
                             </svg>
-                            Users
+                            {{ t('navigation.users') }}
                         </router-link>
 
                         <!-- Sign Out -->
                         <button class="btn-secondary text-sm" @click="handleLogout">
-                            Sign Out
+                            {{ t('auth.signOut') }}
                         </button>
                     </div>
                 </div>
@@ -255,7 +261,7 @@ watch(
                 </svg>
                 <p class="text-red-600 dark:text-red-400 mb-4">{{ error }}</p>
                 <button class="btn-primary" @click="fetchAll">
-                    Try Again
+                    {{ t('dashboard.tryAgain') }}
                 </button>
             </div>
 
@@ -274,13 +280,13 @@ watch(
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <SyncMetricsChart
                         :data="timeseriesChartData"
-                        title="Sync Activity Over Time"
+                        :title="t('dashboard.syncActivity')"
                         y-axis-label="Sync Count"
                         :loading="loading && !state.timeseries.length"
                     />
                     <SyncMetricsChart
                         :data="durationChartData"
-                        title="Average Duration Over Time"
+                        :title="t('dashboard.avgDuration')"
                         y-axis-label="Duration (ms)"
                         :loading="loading && !state.timeseries.length"
                     />
@@ -304,7 +310,7 @@ watch(
                 <div class="border-t border-gray-200 dark:border-gray-700 pt-6 md:pt-8">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                         <h2 class="text-xl font-bold text-gray-900 dark:text-white">
-                            Bundle Size Metrics
+                            {{ t('dashboard.bundleSizeMetrics') }}
                         </h2>
                         <PlatformSelector
                             v-model="selectedPlatform"
@@ -316,7 +322,7 @@ watch(
                         <div class="lg:col-span-2">
                             <BundleSizeChart
                                 :data="bundleSizeChartData"
-                                title="Bundle Size Trends (30 days)"
+                                :title="t('dashboard.bundleTrends')"
                                 :loading="bundleState.loading && !bundleState.trends.length"
                             />
                         </div>
@@ -333,7 +339,7 @@ watch(
                 <!-- Validation Metrics Section (HAP-582) -->
                 <div class="border-t border-gray-200 dark:border-gray-700 pt-6 md:pt-8">
                     <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">
-                        Validation Metrics
+                        {{ t('dashboard.validationMetrics') }}
                     </h2>
 
                     <!-- Validation Summary Cards -->
@@ -347,7 +353,7 @@ watch(
                         <div class="lg:col-span-2">
                             <ValidationTrendsChart
                                 :data="validationTimeseriesChartData"
-                                title="Validation Failures Over Time (24h)"
+                                :title="t('dashboard.validationTrends')"
                                 :loading="validationState.loading && !validationState.timeseries.length"
                             />
                         </div>
@@ -363,7 +369,7 @@ watch(
                 <!-- Detailed Metrics Table -->
                 <div class="card overflow-hidden">
                     <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 px-6 pt-6">
-                        Metrics by Type &amp; Mode
+                        {{ t('dashboard.metricsByType') }}
                     </h2>
 
                     <!-- Loading State for table -->
@@ -379,7 +385,7 @@ watch(
                         v-else-if="!state.summary.length"
                         class="flex items-center justify-center py-12"
                     >
-                        <p class="text-gray-400 dark:text-gray-500">No metrics data available</p>
+                        <p class="text-gray-400 dark:text-gray-500">{{ t('dashboard.noMetrics') }}</p>
                     </div>
 
                     <!-- Table -->
@@ -390,32 +396,32 @@ watch(
                                     <th
                                         class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
                                     >
-                                        Type
+                                        {{ t('dashboard.tableHeaders.type') }}
                                     </th>
                                     <th
                                         class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
                                     >
-                                        Mode
+                                        {{ t('dashboard.tableHeaders.mode') }}
                                     </th>
                                     <th
                                         class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
                                     >
-                                        Count
+                                        {{ t('dashboard.tableHeaders.count') }}
                                     </th>
                                     <th
                                         class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
                                     >
-                                        Avg Duration
+                                        {{ t('dashboard.tableHeaders.avgDuration') }}
                                     </th>
                                     <th
                                         class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
                                     >
-                                        P95 Duration
+                                        {{ t('dashboard.tableHeaders.p95Duration') }}
                                     </th>
                                     <th
                                         class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
                                     >
-                                        Success Rate
+                                        {{ t('dashboard.tableHeaders.successRate') }}
                                     </th>
                                 </tr>
                             </thead>

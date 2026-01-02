@@ -36,6 +36,13 @@ export default {
         loginFailed: 'Login failed',
         sessionExpired: 'Your session has expired. Please login again.',
         unauthorized: 'You are not authorized to access this page.',
+        signIn: 'Sign In',
+        signingIn: 'Signing in...',
+        signOut: 'Sign Out',
+        signInSubtitle: 'Sign in to access the dashboard',
+        email: 'Email',
+        password: 'Password',
+        happyAdmin: 'Happy Admin',
     },
 
     navigation: {
@@ -53,6 +60,27 @@ export default {
         metrics: 'Metrics',
         recentActivity: 'Recent Activity',
         quickActions: 'Quick Actions',
+        header: 'Happy Admin Dashboard',
+        autoOn: 'Auto ✓',
+        autoOff: 'Auto ✗',
+        updated: 'Updated:',
+        tryAgain: 'Try Again',
+        syncActivity: 'Sync Activity Over Time',
+        avgDuration: 'Average Duration Over Time',
+        bundleSizeMetrics: 'Bundle Size Metrics',
+        bundleTrends: 'Bundle Size Trends (30 days)',
+        validationMetrics: 'Validation Metrics',
+        validationTrends: 'Validation Failures Over Time (24h)',
+        metricsByType: 'Metrics by Type & Mode',
+        noMetrics: 'No metrics data available',
+        tableHeaders: {
+            type: 'Type',
+            mode: 'Mode',
+            count: 'Count',
+            avgDuration: 'Avg Duration',
+            p95Duration: 'P95 Duration',
+            successRate: 'Success Rate',
+        },
     },
 
     users: {
@@ -68,6 +96,38 @@ export default {
         active: 'Active',
         inactive: 'Inactive',
         banned: 'Banned',
+        management: 'User Management',
+        backToDashboard: 'Back to Dashboard',
+        searchPlaceholder: 'Search by email or name...',
+        allRoles: 'All Roles',
+        admins: 'Admins',
+        role: 'Role',
+        status: 'Status',
+        created: 'Created',
+        actions: 'Actions',
+        you: '(you)',
+        user: 'User',
+        edit: 'Edit',
+        ban: 'Ban',
+        unban: 'Unban',
+        editRole: 'Edit User Role',
+        changingRoleFor: 'Changing role for',
+        banUser: 'Ban User',
+        banConfirm: 'Are you sure you want to ban',
+        banReason: 'Reason (optional)',
+        banReasonPlaceholder: 'Enter reason for banning...',
+        saving: 'Saving...',
+        banning: 'Banning...',
+        roleUpdated: 'Role updated to',
+        userBanned: 'User banned successfully',
+        userUnbanned: 'User unbanned successfully',
+        failedUpdateRole: 'Failed to update role',
+        failedBan: 'Failed to ban user',
+        failedUnban: 'Failed to unban user',
+        showing: 'Showing',
+        of: 'of',
+        users: 'users',
+        page: 'Page',
     },
 
     analytics: {
@@ -121,6 +181,10 @@ export default {
         lastWeek: 'Last Week',
         thisMonth: 'This Month',
         lastMonth: 'Last Month',
+        lastHour: 'Last Hour',
+        last6Hours: 'Last 6 Hours',
+        last24Hours: 'Last 24 Hours',
+        timeRange: 'Time Range',
     },
 
     metrics: {
@@ -169,6 +233,13 @@ export interface AdminTranslations {
         loginFailed: string;
         sessionExpired: string;
         unauthorized: string;
+        signIn: string;
+        signingIn: string;
+        signOut: string;
+        signInSubtitle: string;
+        email: string;
+        password: string;
+        happyAdmin: string;
     };
     navigation: {
         dashboard: string;
@@ -184,6 +255,27 @@ export interface AdminTranslations {
         metrics: string;
         recentActivity: string;
         quickActions: string;
+        header: string;
+        autoOn: string;
+        autoOff: string;
+        updated: string;
+        tryAgain: string;
+        syncActivity: string;
+        avgDuration: string;
+        bundleSizeMetrics: string;
+        bundleTrends: string;
+        validationMetrics: string;
+        validationTrends: string;
+        metricsByType: string;
+        noMetrics: string;
+        tableHeaders: {
+            type: string;
+            mode: string;
+            count: string;
+            avgDuration: string;
+            p95Duration: string;
+            successRate: string;
+        };
     };
     users: {
         title: string;
@@ -198,6 +290,38 @@ export interface AdminTranslations {
         active: string;
         inactive: string;
         banned: string;
+        management: string;
+        backToDashboard: string;
+        searchPlaceholder: string;
+        allRoles: string;
+        admins: string;
+        role: string;
+        status: string;
+        created: string;
+        actions: string;
+        you: string;
+        user: string;
+        edit: string;
+        ban: string;
+        unban: string;
+        editRole: string;
+        changingRoleFor: string;
+        banUser: string;
+        banConfirm: string;
+        banReason: string;
+        banReasonPlaceholder: string;
+        saving: string;
+        banning: string;
+        roleUpdated: string;
+        userBanned: string;
+        userUnbanned: string;
+        failedUpdateRole: string;
+        failedBan: string;
+        failedUnban: string;
+        showing: string;
+        of: string;
+        users: string;
+        page: string;
     };
     analytics: {
         title: string;
@@ -247,6 +371,10 @@ export interface AdminTranslations {
         lastWeek: string;
         thisMonth: string;
         lastMonth: string;
+        lastHour: string;
+        last6Hours: string;
+        last24Hours: string;
+        timeRange: string;
     };
     metrics: {
         sessions: string;

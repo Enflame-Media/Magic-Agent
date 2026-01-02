@@ -4,8 +4,12 @@
  *
  * Dropdown selector for filtering metrics by time range.
  * Supports 1h, 6h, 24h, and 7d options.
+ *
+ * @see HAP-697 - i18n migration
  */
+import { computed } from 'vue';
 import type { TimeRange } from '../lib/api';
+import { useTranslation } from '@/composables/useTranslation';
 
 interface Props {
     modelValue: TimeRange;
@@ -20,12 +24,15 @@ const emit = defineEmits<{
     'update:modelValue': [value: TimeRange];
 }>();
 
-const options: { value: TimeRange; label: string }[] = [
-    { value: '1h', label: 'Last Hour' },
-    { value: '6h', label: 'Last 6 Hours' },
-    { value: '24h', label: 'Last 24 Hours' },
-    { value: '7d', label: 'Last 7 Days' },
-];
+const { t } = useTranslation();
+
+// Computed options to enable reactive i18n labels
+const options = computed<{ value: TimeRange; label: string }[]>(() => [
+    { value: '1h', label: t('time.lastHour') },
+    { value: '6h', label: t('time.last6Hours') },
+    { value: '24h', label: t('time.last24Hours') },
+    { value: '7d', label: t('analytics.last7Days') },
+]);
 
 function handleChange(event: Event) {
     const target = event.target as HTMLSelectElement;
@@ -36,7 +43,7 @@ function handleChange(event: Event) {
 <template>
     <div class="inline-flex items-center gap-2">
         <label for="time-range" class="text-sm font-medium text-gray-600 dark:text-gray-400">
-            Time Range:
+            {{ t('time.timeRange') }}:
         </label>
         <select
             id="time-range"

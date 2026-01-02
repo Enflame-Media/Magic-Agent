@@ -137,6 +137,38 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
     return response.json();
 }
 
+/**
+ * CSRF-protected API request wrapper
+ * HAP-616: Provides fetch with credentials for CSRF protection
+ *
+ * @param url - Full URL to request
+ * @param options - Fetch options
+ */
+export async function apiRequest<T = Response>(
+    url: string,
+    options?: RequestInit
+): Promise<T> {
+    const response = await fetch(url, {
+        credentials: 'include',
+        ...options,
+    });
+
+    if (!response.ok) {
+        throw new ApiError(
+            `API request failed: ${response.status} ${response.statusText}`,
+            response.status,
+            response.statusText
+        );
+    }
+
+    // Return response if no body expected, otherwise parse JSON
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+        return response.json();
+    }
+    return response as unknown as T;
+}
+
 /*
  * Metrics API functions
  */

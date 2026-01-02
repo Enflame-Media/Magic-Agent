@@ -12,13 +12,16 @@
  * - Self-action buttons disabled
  *
  * @see HAP-639 Admin User Management API & Dashboard UI
+ * @see HAP-697 i18n migration
  */
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAdminUsers, type AdminUser } from '../composables/useAdminUsers';
+import { useTranslation } from '@/composables/useTranslation';
 import { API_BASE_URL, apiRequest } from '../lib/api';
 
 const router = useRouter();
+const { t } = useTranslation();
 
 // Initialize composable
 const {
@@ -115,10 +118,10 @@ async function saveRole() {
     actionLoading.value = false;
 
     if (success) {
-        showToast('success', `Role updated to ${selectedRole.value}`);
+        showToast('success', `${t('users.roleUpdated')} ${selectedRole.value}`);
         closeEditModal();
     } else {
-        showToast('error', error.value || 'Failed to update role');
+        showToast('error', error.value || t('users.failedUpdateRole'));
     }
 }
 
@@ -151,10 +154,10 @@ async function confirmBan() {
     actionLoading.value = false;
 
     if (success) {
-        showToast('success', 'User banned successfully');
+        showToast('success', t('users.userBanned'));
         closeBanModal();
     } else {
-        showToast('error', error.value || 'Failed to ban user');
+        showToast('error', error.value || t('users.failedBan'));
     }
 }
 
@@ -167,9 +170,9 @@ async function handleUnban(user: AdminUser) {
     actionLoading.value = false;
 
     if (success) {
-        showToast('success', 'User unbanned successfully');
+        showToast('success', t('users.userUnbanned'));
     } else {
-        showToast('error', error.value || 'Failed to unban user');
+        showToast('error', error.value || t('users.failedUnban'));
     }
 }
 
@@ -241,7 +244,7 @@ onMounted(async () => {
                     <div class="flex items-center gap-4">
                         <button
                             class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                            title="Back to Dashboard"
+                            :title="t('users.backToDashboard')"
                             @click="goToDashboard"
                         >
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -254,7 +257,7 @@ onMounted(async () => {
                             </svg>
                         </button>
                         <h1 class="text-xl font-bold text-gray-900 dark:text-white">
-                            User Management
+                            {{ t('users.management') }}
                         </h1>
                     </div>
                     <div class="flex flex-wrap items-center gap-3">
@@ -266,14 +269,14 @@ onMounted(async () => {
                         >
                             <span v-if="loading" class="inline-flex items-center gap-1">
                                 <span class="animate-spin h-4 w-4 border-2 border-gray-400 border-t-transparent rounded-full" />
-                                Loading...
+                                {{ t('common.loading') }}
                             </span>
-                            <span v-else>Refresh</span>
+                            <span v-else>{{ t('common.refresh') }}</span>
                         </button>
 
                         <!-- Sign Out -->
                         <button class="btn-secondary text-sm" @click="handleLogout">
-                            Sign Out
+                            {{ t('auth.signOut') }}
                         </button>
                     </div>
                 </div>
@@ -287,7 +290,7 @@ onMounted(async () => {
                 <div class="flex flex-col sm:flex-row gap-4">
                     <!-- Search -->
                     <div class="flex-1">
-                        <label for="search" class="sr-only">Search users</label>
+                        <label for="search" class="sr-only">{{ t('common.search') }}</label>
                         <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -303,7 +306,7 @@ onMounted(async () => {
                                 id="search"
                                 type="text"
                                 class="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-happy-500 focus:border-transparent"
-                                placeholder="Search by email or name..."
+                                :placeholder="t('users.searchPlaceholder')"
                                 :value="searchQuery"
                                 @input="handleSearch"
                             />
@@ -312,16 +315,16 @@ onMounted(async () => {
 
                     <!-- Role Filter -->
                     <div class="sm:w-40">
-                        <label for="role-filter" class="sr-only">Filter by role</label>
+                        <label for="role-filter" class="sr-only">{{ t('users.filterByStatus') }}</label>
                         <select
                             id="role-filter"
                             class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-happy-500 focus:border-transparent"
                             :value="roleFilter"
                             @change="handleRoleFilter"
                         >
-                            <option value="">All Roles</option>
-                            <option value="admin">Admins</option>
-                            <option value="user">Users</option>
+                            <option value="">{{ t('users.allRoles') }}</option>
+                            <option value="admin">{{ t('users.admins') }}</option>
+                            <option value="user">{{ t('navigation.users') }}</option>
                         </select>
                     </div>
                 </div>
@@ -344,7 +347,7 @@ onMounted(async () => {
                 </svg>
                 <p class="text-red-600 dark:text-red-400 mb-4">{{ error }}</p>
                 <button class="btn-primary" @click="fetchUsers()">
-                    Try Again
+                    {{ t('dashboard.tryAgain') }}
                 </button>
             </div>
 
@@ -371,7 +374,7 @@ onMounted(async () => {
                             d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
                         />
                     </svg>
-                    <p class="text-gray-400 dark:text-gray-500">No users found</p>
+                    <p class="text-gray-400 dark:text-gray-500">{{ t('users.noUsers') }}</p>
                 </div>
 
                 <!-- Table -->
@@ -380,19 +383,19 @@ onMounted(async () => {
                         <thead class="bg-gray-50 dark:bg-gray-800/50">
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                    User
+                                    {{ t('users.user') }}
                                 </th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                    Role
+                                    {{ t('users.role') }}
                                 </th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                    Status
+                                    {{ t('users.status') }}
                                 </th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                    Created
+                                    {{ t('users.created') }}
                                 </th>
                                 <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                    Actions
+                                    {{ t('users.actions') }}
                                 </th>
                             </tr>
                         </thead>
@@ -423,7 +426,7 @@ onMounted(async () => {
                                         <div class="ml-4">
                                             <div class="text-sm font-medium text-gray-900 dark:text-white">
                                                 {{ user.name }}
-                                                <span v-if="isSelf(user)" class="ml-1 text-xs text-gray-400">(you)</span>
+                                                <span v-if="isSelf(user)" class="ml-1 text-xs text-gray-400">{{ t('users.you') }}</span>
                                             </div>
                                             <div class="text-sm text-gray-500 dark:text-gray-400">
                                                 {{ user.email }}
@@ -454,7 +457,7 @@ onMounted(async () => {
                                             'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400': !user.banned,
                                         }"
                                     >
-                                        {{ user.banned ? 'Banned' : 'Active' }}
+                                        {{ user.banned ? t('users.banned') : t('users.active') }}
                                     </span>
                                     <p v-if="user.banned && user.banReason" class="text-xs text-gray-400 mt-1 max-w-[200px] truncate">
                                         {{ user.banReason }}
@@ -473,10 +476,10 @@ onMounted(async () => {
                                         <button
                                             class="text-happy-600 hover:text-happy-900 dark:text-happy-400 dark:hover:text-happy-300 disabled:opacity-50 disabled:cursor-not-allowed"
                                             :disabled="isSelf(user)"
-                                            :title="isSelf(user) ? 'Cannot edit your own role' : 'Edit role'"
+                                            :title="isSelf(user) ? 'Cannot edit your own role' : t('users.edit')"
                                             @click="openEditModal(user)"
                                         >
-                                            Edit
+                                            {{ t('users.edit') }}
                                         </button>
 
                                         <!-- Ban/Unban Button -->
@@ -484,19 +487,19 @@ onMounted(async () => {
                                             v-if="!user.banned"
                                             class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed"
                                             :disabled="isSelf(user)"
-                                            :title="isSelf(user) ? 'Cannot ban yourself' : 'Ban user'"
+                                            :title="isSelf(user) ? 'Cannot ban yourself' : t('users.ban')"
                                             @click="openBanModal(user)"
                                         >
-                                            Ban
+                                            {{ t('users.ban') }}
                                         </button>
                                         <button
                                             v-else
                                             class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 disabled:opacity-50 disabled:cursor-not-allowed"
                                             :disabled="isSelf(user)"
-                                            :title="isSelf(user) ? 'Cannot unban yourself' : 'Unban user'"
+                                            :title="isSelf(user) ? 'Cannot unban yourself' : t('users.unban')"
                                             @click="handleUnban(user)"
                                         >
-                                            Unban
+                                            {{ t('users.unban') }}
                                         </button>
                                     </div>
                                 </td>
@@ -511,7 +514,7 @@ onMounted(async () => {
                     class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between"
                 >
                     <div class="text-sm text-gray-500 dark:text-gray-400">
-                        Showing {{ users.length }} of {{ total }} users
+                        {{ t('users.showing') }} {{ users.length }} {{ t('users.of') }} {{ total }} {{ t('users.users') }}
                     </div>
                     <div class="flex items-center gap-2">
                         <button
@@ -519,17 +522,17 @@ onMounted(async () => {
                             :disabled="!hasPrevPage || loading"
                             @click="prevPage()"
                         >
-                            Previous
+                            {{ t('common.previous') }}
                         </button>
                         <span class="text-sm text-gray-500 dark:text-gray-400">
-                            Page {{ currentPage }} of {{ totalPages }}
+                            {{ t('users.page') }} {{ currentPage }} {{ t('users.of') }} {{ totalPages }}
                         </span>
                         <button
                             class="btn-secondary text-sm"
                             :disabled="!hasNextPage || loading"
                             @click="nextPage()"
                         >
-                            Next
+                            {{ t('common.next') }}
                         </button>
                     </div>
                 </div>
@@ -544,15 +547,15 @@ onMounted(async () => {
         >
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
                 <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                    Edit User Role
+                    {{ t('users.editRole') }}
                 </h2>
                 <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                    Changing role for <span class="font-medium">{{ editingUser?.email }}</span>
+                    {{ t('users.changingRoleFor') }} <span class="font-medium">{{ editingUser?.email }}</span>
                 </p>
 
                 <div class="mb-6">
                     <label for="role-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Role
+                        {{ t('users.role') }}
                     </label>
                     <select
                         id="role-select"
@@ -560,7 +563,7 @@ onMounted(async () => {
                         class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-happy-500 focus:border-transparent"
                         data-testid="role-select"
                     >
-                        <option value="user">User</option>
+                        <option value="user">{{ t('users.user') }}</option>
                         <option value="admin">Admin</option>
                     </select>
                 </div>
@@ -571,7 +574,7 @@ onMounted(async () => {
                         :disabled="actionLoading"
                         @click="closeEditModal"
                     >
-                        Cancel
+                        {{ t('common.cancel') }}
                     </button>
                     <button
                         class="btn-primary"
@@ -581,9 +584,9 @@ onMounted(async () => {
                     >
                         <span v-if="actionLoading" class="inline-flex items-center gap-1">
                             <span class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-                            Saving...
+                            {{ t('users.saving') }}
                         </span>
-                        <span v-else>Save</span>
+                        <span v-else>{{ t('common.save') }}</span>
                     </button>
                 </div>
             </div>
@@ -597,22 +600,22 @@ onMounted(async () => {
         >
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
                 <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                    Ban User
+                    {{ t('users.banUser') }}
                 </h2>
                 <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                    Are you sure you want to ban <span class="font-medium">{{ editingUser?.email }}</span>?
+                    {{ t('users.banConfirm') }} <span class="font-medium">{{ editingUser?.email }}</span>?
                 </p>
 
                 <div class="mb-6">
                     <label for="ban-reason" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Reason (optional)
+                        {{ t('users.banReason') }}
                     </label>
                     <textarea
                         id="ban-reason"
                         v-model="banReason"
                         rows="3"
                         class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                        placeholder="Enter reason for banning..."
+                        :placeholder="t('users.banReasonPlaceholder')"
                     />
                 </div>
 
@@ -622,7 +625,7 @@ onMounted(async () => {
                         :disabled="actionLoading"
                         @click="closeBanModal"
                     >
-                        Cancel
+                        {{ t('common.cancel') }}
                     </button>
                     <button
                         class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50"
@@ -631,9 +634,9 @@ onMounted(async () => {
                     >
                         <span v-if="actionLoading" class="inline-flex items-center gap-1">
                             <span class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-                            Banning...
+                            {{ t('users.banning') }}
                         </span>
-                        <span v-else>Ban User</span>
+                        <span v-else>{{ t('users.banUser') }}</span>
                     </button>
                 </div>
             </div>

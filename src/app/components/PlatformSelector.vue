@@ -6,7 +6,10 @@
  * Follows DateRangeSelector.vue pattern.
  *
  * @see HAP-571 - Add platform filter selector to bundle size dashboard
+ * @see HAP-697 - i18n migration
  */
+import { computed } from 'vue';
+import { useTranslation } from '@/composables/useTranslation';
 
 export type Platform = 'all' | 'web' | 'ios' | 'android';
 
@@ -23,12 +26,15 @@ const emit = defineEmits<{
     'update:modelValue': [value: Platform];
 }>();
 
-const options: { value: Platform; label: string }[] = [
-    { value: 'all', label: 'All Platforms' },
-    { value: 'web', label: 'Web' },
-    { value: 'ios', label: 'iOS' },
-    { value: 'android', label: 'Android' },
-];
+const { t } = useTranslation();
+
+// Computed options to enable reactive i18n labels
+const options = computed<{ value: Platform; label: string }[]>(() => [
+    { value: 'all', label: t('analytics.allPlatforms') },
+    { value: 'web', label: t('analytics.web') },
+    { value: 'ios', label: t('analytics.ios') },
+    { value: 'android', label: t('analytics.android') },
+]);
 
 function handleChange(event: Event) {
     const target = event.target as HTMLSelectElement;
@@ -39,7 +45,7 @@ function handleChange(event: Event) {
 <template>
     <div class="inline-flex items-center gap-2">
         <label for="platform" class="text-sm font-medium text-gray-600 dark:text-gray-400">
-            Platform:
+            {{ t('analytics.platform') }}:
         </label>
         <select
             id="platform"

@@ -7,9 +7,11 @@
  */
 import { ref } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import { useTranslation } from '@/composables/useTranslation';
 
 const router = useRouter();
 const route = useRoute();
+const { t } = useTranslation();
 
 const email = ref('');
 const password = ref('');
@@ -37,7 +39,7 @@ async function handleLogin() {
 
         if (!response.ok) {
             const data = await response.json();
-            error.value = data.message || 'Invalid credentials';
+            error.value = data.message || t('auth.loginFailed');
             return;
         }
 
@@ -45,7 +47,7 @@ async function handleLogin() {
         const redirect = route.query.redirect as string | undefined;
         await router.push(redirect || '/');
     } catch (err) {
-        error.value = 'An error occurred. Please try again.';
+        error.value = t('errors.unknownError');
         console.error('Login error:', err);
     } finally {
         loading.value = false;
@@ -58,16 +60,16 @@ async function handleLogin() {
         <div class="card max-w-md w-full">
             <div class="text-center mb-8">
                 <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
-                    Happy Admin
+                    {{ t('auth.happyAdmin') }}
                 </h1>
                 <p class="text-gray-600 dark:text-gray-400 mt-2">
-                    Sign in to access the dashboard
+                    {{ t('auth.signInSubtitle') }}
                 </p>
             </div>
 
             <form @submit.prevent="handleLogin" class="space-y-6">
                 <div>
-                    <label for="email" class="label">Email</label>
+                    <label for="email" class="label">{{ t('auth.email') }}</label>
                     <input
                         id="email"
                         v-model="email"
@@ -80,7 +82,7 @@ async function handleLogin() {
                 </div>
 
                 <div>
-                    <label for="password" class="label">Password</label>
+                    <label for="password" class="label">{{ t('auth.password') }}</label>
                     <input
                         id="password"
                         v-model="password"
@@ -101,8 +103,8 @@ async function handleLogin() {
                     class="btn-primary w-full"
                     :disabled="loading"
                 >
-                    <span v-if="loading">Signing in...</span>
-                    <span v-else>Sign In</span>
+                    <span v-if="loading">{{ t('auth.signingIn') }}</span>
+                    <span v-else>{{ t('auth.signIn') }}</span>
                 </button>
             </form>
         </div>
