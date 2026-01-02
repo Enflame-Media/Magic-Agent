@@ -137,6 +137,43 @@ export const ApiEphemeralMachineStatusUpdateSchema = z.object({
 export type ApiEphemeralMachineStatusUpdate = z.infer<typeof ApiEphemeralMachineStatusUpdateSchema>;
 
 /**
+ * Friend online/offline status update
+ *
+ * Real-time indicator of friend presence status.
+ * Sent to a user's friends when they come online or go offline.
+ *
+ * @see HAP-716 - Implement real-time friend online status
+ */
+export const ApiEphemeralFriendStatusUpdateSchema = z.object({
+    type: z.literal('friend-status'),
+    /**
+     * User ID of the friend whose status changed
+     *
+     * @remarks
+     * This is the ID of the user who came online/went offline,
+     * not the recipient. The event is sent TO friends, containing
+     * this user's status.
+     */
+    userId: z.string().min(1).max(STRING_LIMITS.ID_MAX),
+    /**
+     * Whether the user is currently online
+     *
+     * True when the user has at least one active WebSocket connection.
+     * False when all connections are closed.
+     */
+    isOnline: z.boolean(),
+    /**
+     * ISO-8601 timestamp of last activity
+     *
+     * Present when isOnline is false to indicate when the user
+     * was last seen. Omitted when user is currently online.
+     */
+    lastSeen: z.string().datetime().optional(),
+});
+
+export type ApiEphemeralFriendStatusUpdate = z.infer<typeof ApiEphemeralFriendStatusUpdateSchema>;
+
+/**
  * Union of all ephemeral update types
  */
 export const ApiEphemeralUpdateSchema = z.union([
@@ -144,6 +181,7 @@ export const ApiEphemeralUpdateSchema = z.union([
     ApiEphemeralUsageUpdateSchema,
     ApiEphemeralMachineActivityUpdateSchema,
     ApiEphemeralMachineStatusUpdateSchema,
+    ApiEphemeralFriendStatusUpdateSchema,
 ]);
 
 export type ApiEphemeralUpdate = z.infer<typeof ApiEphemeralUpdateSchema>;

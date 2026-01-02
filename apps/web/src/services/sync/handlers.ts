@@ -247,6 +247,14 @@ function handleEphemeral(data: unknown): void {
             break;
         }
 
+        case 'friend-status': {
+            // Friend online/offline status (HAP-716)
+            // Dispatched to useFriendStatus composable via custom event
+            // This decouples the handler from the composable's reactive state
+            window.dispatchEvent(new CustomEvent('friend-status', { detail: event }));
+            break;
+        }
+
         default: {
             // TypeScript exhaustiveness check
             const _exhaustiveCheck: never = event;
