@@ -48,3 +48,6 @@ export * from './mcp';
 
 // Type-safe accessor helpers for session and machine IDs
 export * from './helpers';
+
+// Usage limits schemas for plan and rate limiting data
+export * from './usageLimits';
