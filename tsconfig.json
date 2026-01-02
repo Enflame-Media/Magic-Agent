@@ -49,5 +49,5 @@
         "jsx": "preserve"
     },
     "include": ["src/**/*", "src/**/*.vue"],
-    "exclude": ["node_modules", "dist", ".wrangler"]
+    "exclude": ["node_modules", "dist", ".wrangler", "**/*.test.ts", "**/*.spec.ts", "test/**"]
 }
