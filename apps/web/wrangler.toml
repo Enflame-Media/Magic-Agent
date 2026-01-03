@@ -5,7 +5,9 @@
 # serve index.html for client-side routing to handle.
 
 name = "happy-vue-web"
-compatibility_date = "2025-01-01"
+compatibility_date = "2026-01-01"
+compatibility_flags = ["nodejs_compat"]
+account_id = "81f483e6767ea3194467ecef42840f79"
 
 # Static assets configuration for SPA
 # Vite builds to ./dist by default
@@ -18,7 +20,10 @@ not_found_handling = "single-page-application"
 #############################
 [env.development]
 name = "happy-vue-web-dev"
-vars = { ENVIRONMENT = "development" }
+
+[[env.development.routes]]
+pattern = "happy-vue-dev.enflamemedia.com"
+custom_domain = true
 
 [env.development.observability]
 [env.development.observability.logs]
@@ -26,12 +31,20 @@ enabled = true
 head_sampling_rate = 1
 invocation_logs = true
 
+[env.development.vars]
+ENVIRONMENT = "development"
+BASE_URL = "https://happy-vue-dev.enflamemedia.com"
+API_BASE_URL = "https://happy-api-dev.enflamemedia.com"
+
 #############################
 # Production Environment
 #############################
 [env.production]
 name = "happy-vue-web"
-vars = { ENVIRONMENT = "production" }
+
+[[env.production.routes]]
+pattern = "happy-vue.enflamemedia.com"
+custom_domain = true
 
 [env.production.observability]
 [env.production.observability.logs]
@@ -39,15 +52,7 @@ enabled = true
 head_sampling_rate = 0.1
 invocation_logs = true
 
-#############################
-# Preview Environment (PRs)
-#############################
-[env.preview]
-name = "happy-vue-web-preview"
-vars = { ENVIRONMENT = "preview" }
-
-[env.preview.observability]
-[env.preview.observability.logs]
-enabled = true
-head_sampling_rate = 1
-invocation_logs = true
+[env.production.vars]
+ENVIRONMENT = "production"
+BASE_URL = "https://happy-vue.enflamemedia.com"
+API_BASE_URL = "https://happy-api.enflamemedia.com"

@@ -31,7 +31,7 @@ interface Props {
   filename?: string;
 }
 
-const { src, alt, filename } = withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   alt: 'Artifact image',
   filename: '',
 });
@@ -148,8 +148,8 @@ onUnmounted(() => {
   <div class="flex flex-col h-full">
     <!-- Toolbar -->
     <div class="flex items-center justify-between px-3 py-2 border-b bg-muted/30">
-      <span v-if="filename" class="text-sm font-medium text-muted-foreground truncate">
-        {{ filename }}
+      <span v-if="props.filename" class="text-sm font-medium text-muted-foreground truncate">
+        {{ props.filename }}
       </span>
       <span v-else class="text-sm text-muted-foreground">Image Preview</span>
 
@@ -259,8 +259,8 @@ onUnmounted(() => {
       <img
         v-show="!isLoading && !hasError"
         ref="imageRef"
-        :src="src"
-        :alt="alt"
+        :src="props.src"
+        :alt="props.alt"
         class="max-w-none select-none transition-transform duration-100"
         :style="imageStyle"
         draggable="false"
