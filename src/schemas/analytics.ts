@@ -120,5 +120,4 @@ export const AnalyticsInternalErrorSchema = z
 // Type Exports
 // ============================================================================
 
-export type SyncMetricRequest = z.infer<typeof SyncMetricRequestSchema>;
-export type SyncMetricResponse = z.infer<typeof SyncMetricResponseSchema>;
+// Types inferred from schemas were previously exported, but they are currently unused and were removed to reduce API surface.

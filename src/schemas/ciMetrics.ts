@@ -115,5 +115,4 @@ export const CIMetricsInternalErrorSchema = z
 // Type Exports
 // ============================================================================
 
-export type CIMetricRequest = z.infer<typeof CIMetricRequestSchema>;
-export type CIMetricResponse = z.infer<typeof CIMetricResponseSchema>;
+// Types inferred from schemas were previously exported, but they are currently unused and were removed to reduce API surface.

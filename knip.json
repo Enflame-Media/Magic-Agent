@@ -8,12 +8,10 @@
   "ignore": ["src/**/*.test.ts", "src/**/*.spec.ts", "src/__tests__/**", "load-tests/**"],
   "ignoreDependencies": [
     "@happy/protocol",
-    "eslint",
     "oxlint",
     "prettier",
     "tsx",
-    "wrangler",
-    "zod"
+    "wrangler"
   ],
   "ignoreBinaries": [
     "drizzle-kit",

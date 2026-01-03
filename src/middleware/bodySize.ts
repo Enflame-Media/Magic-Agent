@@ -45,7 +45,7 @@ export interface BodySizeLimitOptions {
  * app.use('/api/uploads/*', bodySizeLimit({ maxSize: BODY_SIZE_LIMITS.UPLOAD }));
  * ```
  */
-export function bodySizeLimit(options: BodySizeLimitOptions = {}): MiddlewareHandler {
+function bodySizeLimit(options: BodySizeLimitOptions = {}): MiddlewareHandler {
     const maxSize = options.maxSize ?? BODY_SIZE_LIMITS.DEFAULT;
     const message = options.message ?? `Request body exceeds maximum size of ${formatBytes(maxSize)}`;
 

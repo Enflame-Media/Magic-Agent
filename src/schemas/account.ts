@@ -1,5 +1,4 @@
 import { z } from '@hono/zod-openapi';
-import { GitHubProfileSchema as CanonicalGitHubProfileSchema } from '@happy/protocol';
 
 /**
  * Zod schemas for account management endpoints with OpenAPI metadata
@@ -18,14 +17,14 @@ import { GitHubProfileSchema as CanonicalGitHubProfileSchema } from '@happy/prot
 /**
  * Schema for GitHub profile data with OpenAPI metadata
  *
- * Uses the canonical GitHubProfileSchema from @happy/protocol and wraps it
- * with OpenAPI metadata for API documentation.
- *
- * Note: We cast to add openapi() method since @hono/zod-openapi extends Zod
+ * Uses the canonical factory from `@happy/protocol` to build an OpenAPI-ready
+ * schema at runtime. This relies on the protocol package being built so the
+ * factory is available as a static import.
  * @internal Used for composing account profile schema
  */
-const GitHubProfileSchema = (CanonicalGitHubProfileSchema as z.ZodTypeAny)
-    .openapi('GitHubProfile');
+import { makeOpenApiGitHubProfileSchema } from '@happy/protocol';
+
+const GitHubProfileSchema = makeOpenApiGitHubProfileSchema(z);
 
 /**
  * Schema for user account profile returned in API responses

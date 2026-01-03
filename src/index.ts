@@ -46,7 +46,7 @@ interface Env {
      * Current deployment environment
      * @default 'production'
      */
-    ENVIRONMENT?: 'development' | 'staging' | 'production';
+    ENVIRONMENT?: 'development' | 'production';
 
     /**
      * D1 Database binding

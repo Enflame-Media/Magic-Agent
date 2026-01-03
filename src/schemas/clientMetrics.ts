@@ -159,6 +159,4 @@ export const RestoreMetricsRequestSchema = z
 // Type Exports
 // ============================================================================
 
-export type ValidationMetricsRequest = z.infer<typeof ValidationMetricsRequestSchema>;
-export type RestoreMetricsRequest = z.infer<typeof RestoreMetricsRequestSchema>;
-export type ClientMetricsResponse = z.infer<typeof ClientMetricsResponseSchema>;
+// Types inferred from schemas were previously exported, but they are currently unused and were removed to reduce API surface.
