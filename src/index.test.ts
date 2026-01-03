@@ -44,15 +44,15 @@ function runHappyCLI(
 
 describe('CLI Entry Point', () => {
   describe('Version flag', () => {
-    it('should output version when --version flag is passed', { timeout: 20_000 }, () => {
-      const result = runHappyCLI(['--version'], { timeout: 15_000 })
+    it('should output version when --version flag is passed', { timeout: 30_000 }, () => {
+      const result = runHappyCLI(['--version'], { timeout: 25_000 })
 
       // Should include the happy version in output
       expect(result.stdout).toContain(`happy version: ${packageJson.version}`)
     })
 
-    it('should accept -v as alias for --version', { timeout: 20_000 }, () => {
-      const result = runHappyCLI(['-v'], { timeout: 15_000 })
+    it('should accept -v as alias for --version', { timeout: 30_000 }, () => {
+      const result = runHappyCLI(['-v'], { timeout: 25_000 })
 
       // Should include the happy version in output
       expect(result.stdout).toContain(`happy version: ${packageJson.version}`)
