@@ -344,6 +344,17 @@
     "systemDefault": "System default",
     "currentLanguage": "Current: {language}"
   },
+  "sessionRevival": {
+    "reviving": "Reconnecting to session...",
+    "revivingDescription": "Your session stopped unexpectedly. Attempting to restore.",
+    "failedTitle": "Session Could Not Be Restored",
+    "failedDescription": "The session stopped and could not be revived automatically.",
+    "dismiss": "Dismiss",
+    "archiveSession": "Archive Session",
+    "archiveSuccess": "Session archived",
+    "archiveFailed": "Failed to archive session",
+    "unknownError": "An unknown error occurred during revival"
+  },
   "formatting": {
     "dateTime": {
       "today": "Today",

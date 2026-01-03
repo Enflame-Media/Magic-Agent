@@ -3,19 +3,30 @@
  * Root Vue component for Happy web application
  *
  * Renders the router-view for client-side navigation.
- * Includes dark mode toggle, Sonner toast provider, and WebSocket sync.
+ * Includes dark mode toggle, Sonner toast provider, WebSocket sync,
+ * and session revival error handling.
  */
 import { Toaster } from '@/components/ui/sonner';
 import { Button } from '@/components/ui/button';
 import { useDarkMode } from '@/composables/useDarkMode';
 import { useSync } from '@/composables/useSync';
+import { useSessionRevival } from '@/composables/useSessionRevival';
 import { useAuthStore } from '@/stores/auth';
 import { storeToRefs } from 'pinia';
+import SessionErrorDialog from '@/components/app/SessionErrorDialog.vue';
 
 const { isDark, toggle } = useDarkMode();
 
 // Initialize WebSocket sync - auto-connects when authenticated (HAP-671)
 const { status, isConnected } = useSync();
+
+// Session revival error handling (HAP-736)
+const {
+  revivalFailed,
+  copySessionId,
+  archiveFailedSession,
+  dismissError,
+} = useSessionRevival();
 
 // Auth state for conditional UI
 const authStore = useAuthStore();
@@ -25,6 +36,14 @@ const { isAuthenticated } = storeToRefs(authStore);
 <template>
   <!-- Sonner toast provider for notifications -->
   <Toaster />
+
+  <!-- Session revival error dialog (HAP-736) -->
+  <SessionErrorDialog
+    :revival-failed="revivalFailed"
+    @copy="copySessionId"
+    @archive="archiveFailedSession"
+    @dismiss="dismissError"
+  />
 
   <div id="happy-app" class="max-w-5xl mx-auto p-8 text-center min-h-screen">
     <header class="mb-8 flex items-center justify-between">
