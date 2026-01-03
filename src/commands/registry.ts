@@ -119,8 +119,11 @@ export interface CommandDefinition {
 
 /**
  * All CLI commands with their complete definitions
+ *
+ * This registry is the single source of truth for command metadata.
+ * The command router validates that all commands here have handlers.
  */
-const commands: Record<string, CommandDefinition> = {
+export const commands: Record<string, CommandDefinition> = {
   auth: {
     name: 'auth',
     description: 'Manage authentication',
@@ -148,6 +151,27 @@ const commands: Record<string, CommandDefinition> = {
     ],
     examples: [
       'happy codex',
+    ],
+  },
+
+  gemini: {
+    name: 'gemini',
+    description: 'Start Gemini mode',
+    detailedDescription: 'Start an interactive Gemini session with mobile control',
+    subcommands: [
+      { name: 'model set <model>', description: 'Set the default Gemini model' },
+      { name: 'model get', description: 'Show the current Gemini model' },
+    ],
+    options: [
+      { flags: '--started-by <mode>', description: 'Specify how session was started (daemon|terminal)' },
+    ],
+    examples: [
+      'happy gemini',
+      'happy gemini model set gemini-2.5-pro',
+      'happy gemini model get',
+    ],
+    notes: [
+      'Available models: gemini-2.5-pro, gemini-2.5-flash, gemini-2.5-flash-lite',
     ],
   },
 

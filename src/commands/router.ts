@@ -15,6 +15,7 @@ import { handleLogoutCommand } from '@/commands/logout'
 import { handleNotifyCommand } from '@/commands/notify'
 import { handleMcpCommand } from '@/commands/mcp'
 import { handleDaemonCommand } from '@/commands/daemon'
+import { commands } from '@/commands/registry'
 import { addBreadcrumb, trackMetric } from '@/telemetry'
 import { logger } from '@/ui/logger'
 
@@ -115,3 +116,54 @@ export function hasCommand(command: string): boolean {
 export function getCommandNames(): string[] {
   return Object.keys(commandHandlers)
 }
+
+// ============================================================================
+// Router-Registry Validation
+// ============================================================================
+
+/**
+ * Validate that command handlers match the command registry
+ *
+ * This function ensures consistency between the command registry (metadata)
+ * and the command router (handlers). It catches common issues:
+ * - Commands in registry without handlers (developer forgot to add handler)
+ * - Handlers without registry entries (orphaned handlers)
+ *
+ * @throws Error if critical mismatches are found (commands without handlers)
+ */
+function validateCommandHandlers(): void {
+  const registryCommands = Object.keys(commands)
+  const routerCommands = Object.keys(commandHandlers)
+
+  // Check for commands in registry without handlers
+  const missingHandlers = registryCommands.filter(cmd => !routerCommands.includes(cmd))
+
+  // Check for handlers without registry entries (orphaned handlers)
+  const orphanedHandlers = routerCommands.filter(cmd => !registryCommands.includes(cmd))
+
+  const errors: string[] = []
+
+  if (missingHandlers.length > 0) {
+    errors.push(
+      `Commands in registry without handlers: ${missingHandlers.join(', ')}\n` +
+      `  Add handlers to commandHandlers in src/commands/router.ts`
+    )
+  }
+
+  if (orphanedHandlers.length > 0) {
+    errors.push(
+      `Handlers without registry entries: ${orphanedHandlers.join(', ')}\n` +
+      `  Add command definitions to src/commands/registry.ts`
+    )
+  }
+
+  if (errors.length > 0) {
+    throw new Error(
+      `Command router validation failed:\n\n${errors.join('\n\n')}\n\n` +
+      `The command registry and router must stay in sync.`
+    )
+  }
+}
+
+// Run validation at module load
+validateCommandHandlers()
