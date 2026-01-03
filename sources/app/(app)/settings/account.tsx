@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, Pressable, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/auth/AuthContext';
@@ -24,6 +24,7 @@ import { useHappyAction } from '@/hooks/useHappyAction';
 import { disconnectGitHub } from '@/sync/apiGithub';
 import { disconnectService } from '@/sync/apiServices';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
+import { getPrivacySettings, updatePrivacySettings } from '@/sync/apiPrivacy';
 
 export default React.memo(() => {
     const { theme } = useUnistyles();
@@ -35,6 +36,36 @@ export default React.memo(() => {
     const [analyticsOptOut, setAnalyticsOptOut] = useSettingMutable('analyticsOptOut');
     const { connectAccount, isLoading: isConnecting } = useConnectAccount();
     const profile = useProfile();
+
+    // Privacy settings state (HAP-727)
+    const [showOnlineStatus, setShowOnlineStatus] = useState(true);
+    const [showOnlineStatusLoading, setShowOnlineStatusLoading] = useState(false);
+
+    // Load privacy settings on mount
+    useEffect(() => {
+        if (auth.credentials) {
+            getPrivacySettings(auth.credentials)
+                .then(settings => setShowOnlineStatus(settings.showOnlineStatus))
+                .catch(error => console.error('Failed to load privacy settings:', error));
+        }
+    }, [auth.credentials]);
+
+    // Handle showOnlineStatus toggle
+    const handleShowOnlineStatusChange = useCallback(async (value: boolean) => {
+        if (!auth.credentials) return;
+
+        setShowOnlineStatusLoading(true);
+        try {
+            const updated = await updatePrivacySettings(auth.credentials, { showOnlineStatus: value });
+            setShowOnlineStatus(updated.showOnlineStatus);
+        } catch (error) {
+            showError(error, { fallbackMessage: 'Failed to update privacy setting' });
+            // Revert on error
+            setShowOnlineStatus(!value);
+        } finally {
+            setShowOnlineStatusLoading(false);
+        }
+    }, [auth.credentials, showError]);
 
     // Get the current secret key
     const currentSecret = auth.credentials?.secret || '';
@@ -283,11 +314,26 @@ export default React.memo(() => {
                     </ItemGroup>
                 )}
 
-                {/* Analytics Section */}
+                {/* Privacy Section (HAP-727) */}
                 <ItemGroup
                     title={t('settingsAccount.privacy')}
                     footer={t('settingsAccount.privacyDescription')}
                 >
+                    <Item
+                        title={t('settingsAccount.showOnlineStatus')}
+                        subtitle={showOnlineStatus ? t('settingsAccount.showOnlineStatusEnabled') : t('settingsAccount.showOnlineStatusDisabled')}
+                        icon={<Ionicons name={showOnlineStatus ? "eye-outline" : "eye-off-outline"} size={29} color="#34C759" />}
+                        rightElement={
+                            <Switch
+                                value={showOnlineStatus}
+                                onValueChange={handleShowOnlineStatusChange}
+                                disabled={showOnlineStatusLoading}
+                                trackColor={{ false: '#767577', true: '#34C759' }}
+                                thumbColor="#FFFFFF"
+                            />
+                        }
+                        showChevron={false}
+                    />
                     <Item
                         title={t('settingsAccount.analytics')}
                         subtitle={analyticsOptOut ? t('settingsAccount.analyticsDisabled') : t('settingsAccount.analyticsEnabled')}
