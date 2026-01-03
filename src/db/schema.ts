@@ -1,5 +1,5 @@
 import { relations, sql } from "drizzle-orm";
-import { sqliteTable, text, integer, index } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, index, uniqueIndex, blob } from "drizzle-orm/sqlite-core";
 
 export const users = sqliteTable("users", {
   id: text("id").primaryKey(),
@@ -110,3 +110,133 @@ export const accountsRelations = relations(accounts, ({ one }) => ({
     references: [users.id],
   }),
 }));
+
+// ============================================================================
+// App Session Tables (from happy-server-workers schema)
+// These tables are managed by happy-server-workers but we need read/write
+// access for admin operations like bulk archive/delete.
+// ============================================================================
+
+/**
+ * App Sessions - Work sessions with encrypted state
+ * Note: This is different from Better-Auth sessions above (admin auth sessions)
+ */
+export const appSessions = sqliteTable(
+  "Session",
+  {
+    id: text("id").primaryKey(),
+    tag: text("tag").notNull(),
+    accountId: text("accountId").notNull(),
+    metadata: text("metadata").notNull(),
+    metadataVersion: integer("metadataVersion").notNull().default(0),
+    agentState: text("agentState"),
+    agentStateVersion: integer("agentStateVersion").notNull().default(0),
+    dataEncryptionKey: blob("dataEncryptionKey", { mode: "buffer" }),
+    seq: integer("seq").notNull().default(0),
+    active: integer("active", { mode: "boolean" }).notNull().default(true),
+    lastActiveAt: integer("lastActiveAt", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`),
+    // Session state tracking for revival flow (HAP-734)
+    stoppedAt: integer("stoppedAt", { mode: "timestamp_ms" }),
+    stoppedReason: text("stoppedReason"),
+    archivedAt: integer("archivedAt", { mode: "timestamp_ms" }),
+    archiveReason: text("archiveReason"), // 'revival_failed' | 'user_requested' | 'timeout'
+    archiveError: text("archiveError"),
+    createdAt: integer("createdAt", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`),
+    updatedAt: integer("updatedAt", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`)
+      .$onUpdate(() => /* @__PURE__ */ new Date()),
+  },
+  (table) => [
+    uniqueIndex("Session_accountId_tag_key").on(table.accountId, table.tag),
+    index("Session_accountId_updatedAt_idx").on(table.accountId, table.updatedAt),
+  ]
+);
+
+/**
+ * Session Messages - Encrypted messages within sessions
+ */
+export const sessionMessages = sqliteTable(
+  "SessionMessage",
+  {
+    id: text("id").primaryKey(),
+    sessionId: text("sessionId").notNull(),
+    localId: text("localId"),
+    seq: integer("seq").notNull(),
+    content: text("content", { mode: "json" }).notNull(),
+    createdAt: integer("createdAt", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`),
+    updatedAt: integer("updatedAt", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`)
+      .$onUpdate(() => /* @__PURE__ */ new Date()),
+  },
+  (table) => [
+    uniqueIndex("SessionMessage_sessionId_localId_key").on(table.sessionId, table.localId),
+    index("SessionMessage_sessionId_seq_idx").on(table.sessionId, table.seq),
+  ]
+);
+
+/**
+ * Access Keys - Session-machine access credentials
+ */
+export const accessKeys = sqliteTable(
+  "AccessKey",
+  {
+    id: text("id").primaryKey(),
+    accountId: text("accountId").notNull(),
+    machineId: text("machineId").notNull(),
+    sessionId: text("sessionId").notNull(),
+    data: text("data").notNull(),
+    dataVersion: integer("dataVersion").notNull().default(0),
+    createdAt: integer("createdAt", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`),
+    updatedAt: integer("updatedAt", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`)
+      .$onUpdate(() => /* @__PURE__ */ new Date()),
+  },
+  (table) => [
+    uniqueIndex("AccessKey_accountId_machineId_sessionId_key").on(
+      table.accountId,
+      table.machineId,
+      table.sessionId
+    ),
+    index("AccessKey_sessionId_idx").on(table.sessionId),
+  ]
+);
+
+/**
+ * Usage Reports - Token/cost tracking data
+ */
+export const usageReports = sqliteTable(
+  "UsageReport",
+  {
+    id: text("id").primaryKey(),
+    key: text("key").notNull(),
+    accountId: text("accountId").notNull(),
+    sessionId: text("sessionId"),
+    data: text("data", { mode: "json" }).notNull(),
+    createdAt: integer("createdAt", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`),
+    updatedAt: integer("updatedAt", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`)
+      .$onUpdate(() => /* @__PURE__ */ new Date()),
+  },
+  (table) => [
+    uniqueIndex("UsageReport_accountId_sessionId_key_key").on(
+      table.accountId,
+      table.sessionId,
+      table.key
+    ),
+    index("UsageReport_sessionId_idx").on(table.sessionId),
+  ]
+);

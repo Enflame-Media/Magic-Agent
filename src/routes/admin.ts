@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { drizzle } from 'drizzle-orm/d1';
-import { eq } from 'drizzle-orm';
+import { eq, isNull, sql } from 'drizzle-orm';
 import type { Env, Variables } from '../env';
 import * as schema from '../db/schema';
 
@@ -252,5 +252,231 @@ adminRoutes.post('/users/:id/role', async (c) => {
         userId: id,
         previousRole: targetUser.role,
         newRole: role,
+    });
+});
+
+// ─────────────────────────────────────────────────────────────
+// POST /api/admin/sessions/bulk-archive-delete - Archive and delete all sessions
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Bulk archive and delete all app sessions
+ *
+ * This is a DESTRUCTIVE operation that:
+ * 1. Archives all non-archived sessions (sets archivedAt, archiveReason)
+ * 2. Deletes all session messages
+ * 3. Deletes all access keys referencing sessions
+ * 4. Clears session references from usage reports
+ * 5. Deletes all sessions
+ *
+ * Body (optional):
+ * - dryRun: boolean (default: false) - If true, only counts what would be deleted
+ * - archiveReason: string (default: 'admin_bulk_delete') - Reason for archival
+ *
+ * SECURITY: Requires admin role via adminAuthMiddleware
+ */
+adminRoutes.post('/sessions/bulk-archive-delete', async (c) => {
+    const currentUser = c.get('user');
+
+    // Parse request body
+    let body: { dryRun?: boolean; archiveReason?: string } = {};
+    try {
+        const rawBody = await c.req.text();
+        if (rawBody) {
+            body = JSON.parse(rawBody);
+        }
+    } catch {
+        return c.json(
+            {
+                error: 'Bad Request',
+                message: 'Invalid JSON body',
+            },
+            400
+        );
+    }
+
+    const dryRun = body.dryRun ?? false;
+    const archiveReason = body.archiveReason ?? 'admin_bulk_delete';
+    const now = Date.now();
+
+    const db = drizzle(c.env.DB, { schema });
+
+    // Count sessions
+    const allSessions = await db
+        .select({
+            id: schema.appSessions.id,
+            accountId: schema.appSessions.accountId,
+            archivedAt: schema.appSessions.archivedAt,
+        })
+        .from(schema.appSessions);
+
+    const sessionIds = allSessions.map((s) => s.id);
+    const unarchivedCount = allSessions.filter((s) => !s.archivedAt).length;
+    const alreadyArchivedCount = allSessions.filter((s) => s.archivedAt).length;
+
+    // Count related records
+    const messageCount = sessionIds.length > 0
+        ? (await db.select({ count: sql<number>`count(*)` }).from(schema.sessionMessages))[0]?.count ?? 0
+        : 0;
+
+    const accessKeyCount = sessionIds.length > 0
+        ? (await db.select({ count: sql<number>`count(*)` }).from(schema.accessKeys))[0]?.count ?? 0
+        : 0;
+
+    const usageReportCount = sessionIds.length > 0
+        ? (await db.select({ count: sql<number>`count(*)` }).from(schema.usageReports).where(sql`sessionId IS NOT NULL`))[0]?.count ?? 0
+        : 0;
+
+    const stats = {
+        sessionsToArchive: unarchivedCount,
+        sessionsAlreadyArchived: alreadyArchivedCount,
+        totalSessions: allSessions.length,
+        messagesToDelete: messageCount,
+        accessKeysToDelete: accessKeyCount,
+        usageReportsToUpdate: usageReportCount,
+    };
+
+    // If dry run, return stats only
+    if (dryRun) {
+        console.log(
+            `[Admin Audit] DRY RUN - User ${currentUser?.email} requested bulk session archive+delete. Stats: ${JSON.stringify(stats)}`
+        );
+
+        return c.json({
+            success: true,
+            dryRun: true,
+            stats,
+            message: 'Dry run completed. No changes made.',
+            timestamp: new Date().toISOString(),
+        });
+    }
+
+    // Perform the actual deletion
+    console.log(
+        `[Admin Audit] User ${currentUser?.email} initiating bulk session archive+delete. Stats: ${JSON.stringify(stats)}`
+    );
+
+    try {
+        // Step 1: Archive all unarchived sessions
+        if (unarchivedCount > 0) {
+            await db
+                .update(schema.appSessions)
+                .set({
+                    archivedAt: new Date(now),
+                    archiveReason: archiveReason,
+                    active: false,
+                    updatedAt: new Date(now),
+                })
+                .where(isNull(schema.appSessions.archivedAt));
+        }
+
+        // Step 2: Delete all session messages
+        if (messageCount > 0) {
+            await db.delete(schema.sessionMessages);
+        }
+
+        // Step 3: Delete all access keys
+        if (accessKeyCount > 0) {
+            await db.delete(schema.accessKeys);
+        }
+
+        // Step 4: Clear session references from usage reports (set sessionId to null)
+        if (usageReportCount > 0) {
+            await db
+                .update(schema.usageReports)
+                .set({ sessionId: null })
+                .where(sql`sessionId IS NOT NULL`);
+        }
+
+        // Step 5: Delete all sessions
+        if (allSessions.length > 0) {
+            await db.delete(schema.appSessions);
+        }
+
+        console.log(
+            `[Admin Audit] User ${currentUser?.email} completed bulk session archive+delete. Deleted ${allSessions.length} sessions.`
+        );
+
+        return c.json({
+            success: true,
+            dryRun: false,
+            stats: {
+                ...stats,
+                sessionsArchived: unarchivedCount,
+                sessionsDeleted: allSessions.length,
+                messagesDeleted: messageCount,
+                accessKeysDeleted: accessKeyCount,
+                usageReportsUpdated: usageReportCount,
+            },
+            message: `Successfully archived and deleted ${allSessions.length} sessions.`,
+            timestamp: new Date().toISOString(),
+        });
+    } catch (error) {
+        console.error(
+            `[Admin Audit] User ${currentUser?.email} bulk session archive+delete FAILED:`,
+            error
+        );
+
+        return c.json(
+            {
+                error: 'Internal Server Error',
+                message: 'Failed to complete bulk archive+delete operation',
+                details: error instanceof Error ? error.message : 'Unknown error',
+            },
+            500
+        );
+    }
+});
+
+// ─────────────────────────────────────────────────────────────
+// GET /api/admin/sessions/stats - Get session statistics
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Get statistics about app sessions
+ *
+ * Returns counts of:
+ * - Total sessions
+ * - Active sessions
+ * - Archived sessions
+ * - Sessions with agent state
+ * - Related records (messages, access keys, usage reports)
+ */
+adminRoutes.get('/sessions/stats', async (c) => {
+    const db = drizzle(c.env.DB, { schema });
+
+    // Get session counts
+    const allSessions = await db
+        .select({
+            id: schema.appSessions.id,
+            active: schema.appSessions.active,
+            archivedAt: schema.appSessions.archivedAt,
+            agentState: schema.appSessions.agentState,
+        })
+        .from(schema.appSessions);
+
+    const totalSessions = allSessions.length;
+    const activeSessions = allSessions.filter((s) => s.active).length;
+    const archivedSessions = allSessions.filter((s) => s.archivedAt).length;
+    const sessionsWithAgentState = allSessions.filter((s) => s.agentState).length;
+
+    // Get related record counts
+    const messageCount = (await db.select({ count: sql<number>`count(*)` }).from(schema.sessionMessages))[0]?.count ?? 0;
+    const accessKeyCount = (await db.select({ count: sql<number>`count(*)` }).from(schema.accessKeys))[0]?.count ?? 0;
+    const usageReportCount = (await db.select({ count: sql<number>`count(*)` }).from(schema.usageReports).where(sql`sessionId IS NOT NULL`))[0]?.count ?? 0;
+
+    return c.json({
+        sessions: {
+            total: totalSessions,
+            active: activeSessions,
+            archived: archivedSessions,
+            withAgentState: sessionsWithAgentState,
+        },
+        relatedRecords: {
+            messages: messageCount,
+            accessKeys: accessKeyCount,
+            usageReports: usageReportCount,
+        },
+        timestamp: new Date().toISOString(),
     });
 });
