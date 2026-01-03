@@ -16,9 +16,10 @@
  * ```
  *
  * @see HAP-736 - Handle "Method not found" errors with session revival flow
+ * @see HAP-750 - Integrate useSessionRevival with WebSocket error events
  */
 
-import { ref, readonly } from 'vue';
+import { ref, readonly, onMounted, onUnmounted } from 'vue';
 import { toast } from 'vue-sonner';
 import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '@/stores/auth';
@@ -188,6 +189,35 @@ export function useSessionRevival() {
   function dismissError(): void {
     revivalFailed.value = null;
   }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // WebSocket Error Event Handler (HAP-750)
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Handle session revival error events dispatched from sync handlers.
+   * This enables automatic detection of SESSION_REVIVAL_FAILED errors
+   * without manual integration in each component.
+   *
+   * @see HAP-750 - Integrate useSessionRevival with WebSocket error events
+   */
+  function handleSessionRevivalError(event: CustomEvent<RpcError>): void {
+    handleRpcError(event.detail);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Lifecycle
+  // ─────────────────────────────────────────────────────────────────────────
+
+  onMounted(() => {
+    // Listen for session revival errors from WebSocket sync handlers
+    window.addEventListener('session-revival-error', handleSessionRevivalError as EventListener);
+  });
+
+  onUnmounted(() => {
+    // Clean up event listener
+    window.removeEventListener('session-revival-error', handleSessionRevivalError as EventListener);
+  });
 
   // ─────────────────────────────────────────────────────────────────────────
   // Return API

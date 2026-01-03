@@ -263,6 +263,64 @@ function handleEphemeral(data: unknown): void {
     }
 }
 
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Error Event Handler
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Expected structure of WebSocket error events from the server.
+ *
+ * The server sends errors in the format:
+ * { event: 'error', data: { code, message, timestamp, context? } }
+ *
+ * For session revival errors (HAP-750), the error will have:
+ * - code: 'SESSION_REVIVAL_FAILED' (string error code)
+ * - message: Human-readable error description
+ * - context: { sessionId: string } for identifying the failed session
+ */
+interface WebSocketErrorData {
+    /** Error code (string from @happy/errors ErrorCodes) */
+    code?: string;
+    /** Human-readable error message */
+    message?: string;
+    /** Unix timestamp when error occurred */
+    timestamp?: number;
+    /** Additional error context */
+    context?: {
+        sessionId?: string;
+        [key: string]: unknown;
+    };
+}
+
+/**
+ * Handle error events from the WebSocket connection.
+ * Dispatches session revival errors to the useSessionRevival composable
+ * via CustomEvent, similar to the friend-status pattern (HAP-716).
+ *
+ * @see HAP-750 - Integrate useSessionRevival with WebSocket error events
+ */
+function handleError(data: unknown): void {
+    // Cast to expected shape - we'll validate what we need
+    const errorData = data as WebSocketErrorData | null | undefined;
+
+    if (!errorData) {
+        console.warn('[sync] Received empty error event');
+        return;
+    }
+
+    // Log all errors for debugging
+    console.error('[sync] WebSocket error:', errorData.code, errorData.message);
+
+    // Check for session revival failure (HAP-750)
+    // These errors need to be dispatched to the useSessionRevival composable
+    if (errorData.code === 'SESSION_REVIVAL_FAILED') {
+        // Dispatch to useSessionRevival via CustomEvent
+        // This follows the same pattern as friend-status (HAP-716)
+        window.dispatchEvent(new CustomEvent('session-revival-error', { detail: errorData }));
+    }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Handler Setup
 // ─────────────────────────────────────────────────────────────────────────────
@@ -300,8 +358,10 @@ export function setupSyncHandlers(): () => void {
     // Register handlers
     const unsubUpdate = wsService.onMessage('update', handleUpdate);
     const unsubEphemeral = wsService.onMessage('ephemeral', handleEphemeral);
+    // HAP-750: Register error handler for session revival failures
+    const unsubError = wsService.onMessage('error', handleError);
 
-    cleanupFunctions = [unsubUpdate, unsubEphemeral];
+    cleanupFunctions = [unsubUpdate, unsubEphemeral, unsubError];
 
     // Return cleanup function
     return () => {
