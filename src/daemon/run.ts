@@ -17,7 +17,7 @@ import packageJson from '../../package.json';
 import { getEnvironmentInfo } from '@/ui/doctor';
 import { killOrphanedCaffeinate, cleanupOrphanedCodexTempDirs } from './doctor';
 import { spawnHappyCLI } from '@/utils/spawnHappyCLI';
-import { writeDaemonState, DaemonLocallyPersistedState, acquireDaemonLock } from '@/persistence';
+import { writeDaemonState, DaemonLocallyPersistedState, acquireDaemonLock, clearCredentials, clearMachineId } from '@/persistence';
 import { withRetry } from '@/utils/retry';
 import { AppError, ErrorCodes } from '@/utils/errors';
 
@@ -166,8 +166,8 @@ export async function startDaemon(): Promise<void> {
   //
   // In case the setup malfunctions - our signal handlers will not properly
   // shut down. We will force exit the process with code 1.
-  let requestShutdown: (source: 'happy-app' | 'happy-cli' | 'os-signal' | 'exception', errorMessage?: string) => void;
-  let resolvesWhenShutdownRequested = new Promise<({ source: 'happy-app' | 'happy-cli' | 'os-signal' | 'exception', errorMessage?: string })>((resolve) => {
+  let requestShutdown: (source: 'happy-app' | 'happy-cli' | 'os-signal' | 'exception' | 'machine-disconnected', errorMessage?: string) => void;
+  let resolvesWhenShutdownRequested = new Promise<({ source: 'happy-app' | 'happy-cli' | 'os-signal' | 'exception' | 'machine-disconnected', errorMessage?: string })>((resolve) => {
     requestShutdown = (source, errorMessage) => {
       logger.debug(`[DAEMON RUN] Requesting shutdown (source: ${source}, errorMessage: ${errorMessage})`);
 
@@ -805,7 +805,13 @@ export async function startDaemon(): Promise<void> {
       stopSession,
       requestShutdown: () => requestShutdown('happy-app'),
       getSessionStatus,
-      getSessionDirectory // HAP-740: For session revival directory lookup
+      getSessionDirectory, // HAP-740: For session revival directory lookup
+      // HAP-781: Handle machine disconnect notification from server
+      onMachineDisconnected: (reason: string) => {
+        logger.warn(`[DAEMON RUN] Machine disconnected from account: ${reason}`);
+        console.log(`\n[Happy] This machine was disconnected from your account.\n`);
+        requestShutdown('machine-disconnected');
+      }
     });
 
     // Connect to server
@@ -1000,7 +1006,7 @@ export async function startDaemon(): Promise<void> {
     });
 
     // Setup signal handlers
-    const cleanupAndShutdown = async (source: 'happy-app' | 'happy-cli' | 'os-signal' | 'exception', errorMessage?: string) => {
+    const cleanupAndShutdown = async (source: 'happy-app' | 'happy-cli' | 'os-signal' | 'exception' | 'machine-disconnected', errorMessage?: string) => {
       logger.debug(`[DAEMON RUN] Starting proper cleanup (source: ${source}, errorMessage: ${errorMessage})...`);
 
       // Track daemon uptime and session count before shutdown (HAP-522)
@@ -1049,6 +1055,20 @@ export async function startDaemon(): Promise<void> {
         logger.debug('[DAEMON RUN] Auth token file removed');
       } catch {
         // Ignore if file doesn't exist
+      }
+
+      // HAP-781: Clear credentials when machine is disconnected from account
+      // This ensures the CLI is fully logged out after remote disconnect
+      if (source === 'machine-disconnected') {
+        logger.debug('[DAEMON RUN] Machine disconnected - clearing local credentials');
+        try {
+          await clearCredentials();
+          await clearMachineId();
+          logger.debug('[DAEMON RUN] Local credentials cleared successfully');
+        } catch (error) {
+          // Log but don't fail shutdown if cleanup fails
+          logger.debug('[DAEMON RUN] Failed to clear credentials:', error);
+        }
       }
 
       // Flush telemetry before exit (HAP-522)

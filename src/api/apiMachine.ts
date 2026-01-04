@@ -6,7 +6,7 @@
  */
 
 import { AppError, ErrorCodes } from '@/utils/errors';
-import { getSessionIdFromEphemeral, getMachineIdFromEphemeral, type SessionIdEphemeral, type MachineIdEphemeral } from '@happy/protocol';
+import { getSessionIdFromEphemeral, getMachineIdFromEphemeral, ApiDeleteMachineSchema, type SessionIdEphemeral, type MachineIdEphemeral } from '@happy/protocol';
 import { logger } from '@/ui/logger';
 import { configuration } from '@/configuration';
 import { EphemeralUpdate, MachineMetadata, DaemonState, Machine, Update, UpdateMachineBody } from './types';
@@ -46,6 +46,12 @@ type MachineRpcHandlers = {
      * @see HAP-740 - Track session working directory for revival
      */
     getSessionDirectory: (sessionId: string) => string | undefined;
+    /**
+     * Called when this machine is disconnected from the account via the mobile app.
+     * The daemon should shut down gracefully after receiving this notification.
+     * @see HAP-781 - Handle remote machine disconnect in CLI daemon
+     */
+    onMachineDisconnected: (reason: string) => void;
 }
 
 export class ApiMachineClient {
@@ -132,10 +138,11 @@ export class ApiMachineClient {
         stopSession,
         requestShutdown,
         getSessionStatus,
-        getSessionDirectory
+        getSessionDirectory,
+        onMachineDisconnected
     }: MachineRpcHandlers) {
-        // Store handlers for revival access (HAP-733, HAP-740)
-        this.rpcHandlers = { spawnSession, stopSession, requestShutdown, getSessionStatus, getSessionDirectory };
+        // Store handlers for revival access (HAP-733, HAP-740, HAP-781)
+        this.rpcHandlers = { spawnSession, stopSession, requestShutdown, getSessionStatus, getSessionDirectory, onMachineDisconnected };
 
         // Register spawn session handler
         type SpawnSessionParams = {
@@ -782,6 +789,28 @@ export class ApiMachineClient {
             } else if (updateType === 'new-machine') {
                 // Silently ignore new machine registrations (not relevant to this daemon)
                 return;
+            } else if (updateType === 'delete-machine') {
+                // HAP-781: Machine deleted/disconnected from account via server broadcast
+                // Parse using protocol schema for type safety
+                const parseResult = ApiDeleteMachineSchema.safeParse(data.body);
+                if (!parseResult.success) {
+                    logger.debug(`[API MACHINE] Received malformed delete-machine update, ignoring`);
+                    return;
+                }
+
+                const deletedMachineId = parseResult.data.machineId;
+
+                // Only respond if this is for our machine ID
+                if (deletedMachineId === this.machine.id) {
+                    logger.debug(`[API MACHINE] [UPDATE] Machine ${deletedMachineId} deleted from account`);
+
+                    // Notify the daemon to shut down gracefully
+                    if (this.rpcHandlers?.onMachineDisconnected) {
+                        this.rpcHandlers.onMachineDisconnected('Machine was disconnected from your account');
+                    }
+                }
+                // Silently ignore delete events for other machines
+                return;
             } else if (updateType === 'new-session' || updateType === 'update-session' || updateType === 'new-message' || updateType === 'delete-session') {
                 // Silently ignore session-scoped updates (handled by session clients, not machine client)
                 return;
@@ -823,6 +852,21 @@ export class ApiMachineClient {
                     if (machineId !== this.machine.id) {
                         logger.debug(`[API MACHINE] [EPHEMERAL] Peer daemon ${machineId} active=${data.active}`);
                     }
+                    break;
+                }
+                case 'machine-disconnected': {
+                    // HAP-780/HAP-781: Machine disconnected from account via ephemeral event
+                    // The server broadcasts this when a machine is removed from the account
+                    const disconnectedMachineId = getMachineIdFromEphemeral(data as MachineIdEphemeral);
+                    if (disconnectedMachineId === this.machine.id) {
+                        logger.debug(`[API MACHINE] [EPHEMERAL] Machine ${disconnectedMachineId} disconnected from account`);
+                        // Extract reason if provided in the event
+                        const reason = (data as { reason?: string }).reason || 'Machine was disconnected from your account';
+                        if (this.rpcHandlers?.onMachineDisconnected) {
+                            this.rpcHandlers.onMachineDisconnected(reason);
+                        }
+                    }
+                    // Silently ignore disconnect events for other machines
                     break;
                 }
                 default:

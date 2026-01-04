@@ -331,8 +331,32 @@ trackMetric('command_duration', Date.now() - start, { command: 'start' })
 ### User Notice
 
 On first run, users see a one-time informational notice about telemetry options.
-This is controlled by the `telemetryNoticeShown` setting flag. 
+This is controlled by the `telemetryNoticeShown` setting flag.
 
+## Session Revival Configuration
+
+Session revival allows automatically resuming stopped sessions when RPC requests fail with `SESSION_NOT_ACTIVE`. This is useful for long-running sessions that may be interrupted.
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `HAPPY_SESSION_REVIVAL_TIMEOUT` | Timeout for revival attempts (milliseconds) | 60000 |
+| `HAPPY_SESSION_REVIVAL_MAX_ATTEMPTS` | Max revival attempts per session before giving up | 3 |
+
+**Example:**
+```bash
+# Allow more revival attempts for debugging
+HAPPY_SESSION_REVIVAL_MAX_ATTEMPTS=5 ./bin/happy.mjs daemon start
+
+# Shorter timeout for faster failure detection
+HAPPY_SESSION_REVIVAL_TIMEOUT=30000 ./bin/happy.mjs daemon start
+```
+
+**Notes:**
+- Circuit breaker triggers after 10 failures in 30 seconds, pausing revivals for 60 seconds
+- Per-session attempt counter resets on successful revival
+- Invalid values for `HAPPY_SESSION_REVIVAL_MAX_ATTEMPTS` (non-positive integers) default to 3
+
+@see HAP-733, HAP-744, HAP-782
 
 # Running the Daemon
 
