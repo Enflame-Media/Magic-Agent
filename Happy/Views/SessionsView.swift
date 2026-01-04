@@ -13,7 +13,7 @@ import SwiftUI
 /// Uses NavigationSplitView for a proper macOS sidebar layout with
 /// a list of sessions and a detail pane.
 struct SessionsView: View {
-    @State private var viewModel = SessionsViewModel()
+    @State private var viewModel = SessionsViewModel.shared
     @State private var columnVisibility = NavigationSplitViewVisibility.all
 
     var body: some View {

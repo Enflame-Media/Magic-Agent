@@ -13,8 +13,16 @@ import Combine
 ///
 /// Manages the list of sessions and handles selection, filtering,
 /// and sync status updates.
+///
+/// This class uses a shared singleton pattern to allow other views
+/// (like FriendProfileView) to access the currently selected session.
 @Observable
 final class SessionsViewModel {
+    // MARK: - Shared Instance
+
+    /// Shared instance for cross-view session selection access.
+    static let shared = SessionsViewModel()
+
     // MARK: - Published State
 
     /// All sessions from the sync service.
@@ -36,6 +44,16 @@ final class SessionsViewModel {
     var searchQuery = ""
 
     // MARK: - Computed Properties
+
+    /// The currently selected session ID, if any.
+    var selectedSessionId: String? {
+        selectedSession?.id
+    }
+
+    /// Whether a session is currently selected.
+    var hasSelectedSession: Bool {
+        selectedSession != nil
+    }
 
     /// Filtered sessions based on search query.
     var filteredSessions: [Session] {

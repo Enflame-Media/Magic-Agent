@@ -28,6 +28,10 @@ struct FriendProfileView: View {
     @State private var showingRemoveConfirmation = false
     @State private var showingBlockConfirmation = false
     @State private var isProcessing = false
+    @State private var showingNoSessionAlert = false
+
+    /// Access the shared sessions view model for session selection state.
+    private var sessionsViewModel: SessionsViewModel { SessionsViewModel.shared }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -78,6 +82,14 @@ struct FriendProfileView: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("Are you sure you want to block \(displayName)? They won't be able to send you friend requests or share sessions with you.")
+        }
+        .alert(
+            "No Session Selected",
+            isPresented: $showingNoSessionAlert
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Please select a session from the Sessions tab first, then return here to share it with \(displayName).")
         }
     }
 
@@ -192,6 +204,26 @@ struct FriendProfileView: View {
             .background(.quaternary)
             .clipShape(RoundedRectangle(cornerRadius: 8))
 
+            // Friendship date row (only for friends)
+            if let friendshipDate = friend.friendshipDate,
+               let date = ISO8601DateFormatter().date(from: friendshipDate) {
+                HStack {
+                    Image(systemName: "person.2")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    Text(friendsSinceText(date))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(.quaternary)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+
             // Bio if available
             if let bio = friend.bio, !bio.isEmpty {
                 Text(bio)
@@ -210,7 +242,11 @@ struct FriendProfileView: View {
         VStack(spacing: 12) {
             // Share Session button
             Button {
-                shareSession()
+                if sessionsViewModel.hasSelectedSession {
+                    shareSession()
+                } else {
+                    showingNoSessionAlert = true
+                }
             } label: {
                 HStack {
                     Image(systemName: "square.and.arrow.up")
@@ -220,7 +256,10 @@ struct FriendProfileView: View {
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
-            .disabled(isProcessing)
+            .disabled(isProcessing || !sessionsViewModel.hasSelectedSession)
+            .help(sessionsViewModel.hasSelectedSession
+                  ? "Share the selected session with \(displayName)"
+                  : "Select a session first to share")
 
             // Remove Friend button
             Button(role: .destructive) {
@@ -275,10 +314,33 @@ struct FriendProfileView: View {
         }
     }
 
+    /// Formats the friendship date as "Friends since [Month Year]" for dates older than 30 days,
+    /// or as a relative time string for more recent friendships.
+    private func friendsSinceText(_ date: Date) -> String {
+        let calendar = Calendar.current
+        let now = Date()
+        let daysSince = calendar.dateComponents([.day], from: date, to: now).day ?? 0
+
+        if daysSince < 1 {
+            return "Friends since today"
+        } else if daysSince < 7 {
+            let formatter = RelativeDateTimeFormatter()
+            formatter.unitsStyle = .full
+            return "Friends since \(formatter.localizedString(for: date, relativeTo: now))"
+        } else {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "MMMM yyyy"
+            return "Friends since \(formatter.string(from: date))"
+        }
+    }
+
     // MARK: - Actions
 
     private func shareSession() {
-        guard let sessionId = getSelectedSessionId() else { return }
+        guard let sessionId = sessionsViewModel.selectedSessionId else {
+            showingNoSessionAlert = true
+            return
+        }
 
         let shareURL = URL(string: "happy://session/\(sessionId)?share=\(friend.id)")!
 
@@ -287,13 +349,6 @@ struct FriendProfileView: View {
             let picker = NSSharingServicePicker(items: [shareURL])
             picker.show(relativeTo: .zero, of: contentView, preferredEdge: .minY)
         }
-    }
-
-    /// Get the currently selected session ID from the app state.
-    private func getSelectedSessionId() -> String? {
-        // This would be connected to the session selection state
-        // For now, return nil - will be integrated with session management
-        nil
     }
 
     private func removeFriend() {
@@ -331,6 +386,7 @@ struct FriendProfileView: View {
             avatar: nil,
             bio: "Swift developer and coffee enthusiast",
             firstName: "Alice",
+            friendshipDate: "2025-06-15T10:30:00Z",
             id: "1",
             lastName: "Smith",
             status: .friend,

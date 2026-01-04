@@ -215,8 +215,11 @@ struct FriendsView: View {
 
     // MARK: - Share Session
 
+    /// Access the shared sessions view model for session selection state.
+    private var sessionsViewModel: SessionsViewModel { SessionsViewModel.shared }
+
     private func shareSessionWithFriend(_ friend: UserProfile) {
-        guard let sessionId = getSelectedSessionId() else { return }
+        guard let sessionId = sessionsViewModel.selectedSessionId else { return }
 
         let shareURL = URL(string: "happy://session/\(sessionId)?share=\(friend.id)")!
 
@@ -225,13 +228,6 @@ struct FriendsView: View {
             let picker = NSSharingServicePicker(items: [shareURL])
             picker.show(relativeTo: .zero, of: contentView, preferredEdge: .minY)
         }
-    }
-
-    /// Get the currently selected session ID from the app state.
-    private func getSelectedSessionId() -> String? {
-        // This would be connected to the session selection state
-        // For now, return nil - will be integrated with session management
-        nil
     }
 
     // MARK: - Filtered Friends
