@@ -5,13 +5,13 @@
     "type": "module",
     "main": "src/index.ts",
     "scripts": {
-        "help": "echo '\nHappy Admin API - Available Scripts\n====================================\n\nDevelopment:\n  dev                Start Wrangler dev server\n\nDeployment:\n  deploy:dev         Deploy to development environment\n  deploy:prod        Deploy to production environment\n\nCode Quality:\n  typecheck          Type-check TypeScript\n  lint               Run ESLint\n  lint:fix           Run ESLint with auto-fix\n  test               Run tests with Vitest\n  test:security      Run security-specific tests\n\nDatabase:\n  db:generate        Generate Better-Auth migrations\n  db:migrate         Apply migrations to remote dev D1\n  db:migrate:prod    Apply migrations to remote prod D1\n'",
+        "help": "echo '\nHappy Admin API - Available Scripts\n====================================\n\nDevelopment:\n  dev                Start Wrangler dev server\n\nDeployment:\n  deploy:dev         Deploy to development environment\n  deploy:prod        Deploy to production environment\n\nCode Quality:\n  typecheck          Type-check TypeScript\n  lint               Run oxlint\n  lint:fix           Run oxlint with auto-fix\n  test               Run tests with Vitest\n  test:security      Run security-specific tests\n\nDatabase:\n  db:generate        Generate Better-Auth migrations\n  db:migrate         Apply migrations to remote dev D1\n  db:migrate:prod    Apply migrations to remote prod D1\n'",
         "dev": "wrangler dev",
         "deploy:dev": "wrangler deploy --env dev",
         "deploy:prod": "wrangler deploy --env prod",
         "typecheck": "tsc --noEmit",
-        "lint": "eslint . --ext .ts",
-        "lint:fix": "eslint . --ext .ts --fix",
+        "lint": "oxlint src --config oxlint.json",
+        "lint:fix": "oxlint src --config oxlint.json --fix",
         "test": "vitest run",
         "test:watch": "vitest",
         "test:security": "vitest run --grep 'SQL Injection'",
@@ -31,7 +31,9 @@
     "private": true,
     "devDependencies": {
         "@cloudflare/workers-types": "^4.20251229.0",
+        "@happy/lint-rules": "workspace:*",
         "@types/node": "^25.0.3",
+        "oxlint": "^1.36.0",
         "typescript": "^5.9.3",
         "vitest": "^4.0.16",
         "wrangler": "^4.54.0"
