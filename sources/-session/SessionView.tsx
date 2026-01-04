@@ -6,6 +6,7 @@ import { ChatHeaderView } from '@/components/ChatHeaderView';
 import { ChatList } from '@/components/ChatList';
 import { Deferred } from '@/components/Deferred';
 import { EmptyMessages } from '@/components/EmptyMessages';
+import { SessionRevivalBanner } from '@/components/SessionRevivalBanner';
 import { SyncFailedBanner } from '@/components/SyncFailedBanner';
 import { VoiceAssistantStatusBar } from '@/components/VoiceAssistantStatusBar';
 import { SessionTabs } from '@/components/SessionTabs';
@@ -396,7 +397,8 @@ function SessionViewLoaded({ sessionId, session }: { sessionId: string, session:
     const styles = stylesheet;
     const { messages, isLoaded } = useSessionMessages(sessionId);
     const acknowledgedCliVersions = useLocalSetting('acknowledgedCliVersions');
-    const { handleRpcError } = useSessionRevival();
+    // HAP-752: Get revival state for showing banner during session revival attempts
+    const { reviving, startReviving, stopReviving } = useSessionRevival();
 
     // HAP-581: Loading timeout state for better error surfacing
     const [loadingTimedOut, setLoadingTimedOut] = useState(false);
@@ -487,6 +489,13 @@ function SessionViewLoaded({ sessionId, session }: { sessionId: string, session:
     const sessionUsage = useSessionUsage(sessionId);
     const alwaysShowContextSize = useSetting('alwaysShowContextSize');
     const experiments = useSetting('experiments');
+
+    // HAP-752: Auto-dismiss revival banner when session becomes active
+    useEffect(() => {
+        if (reviving && sessionStatus.isConnected) {
+            stopReviving();
+        }
+    }, [reviving, sessionStatus.isConnected, stopReviving]);
 
     // Use draft hook for auto-saving message drafts
     const { clearDraft } = useDraft(sessionId, message, setMessage);
@@ -681,6 +690,11 @@ function SessionViewLoaded({ sessionId, session }: { sessionId: string, session:
         router.replace(`/session/${sessionId}`);
     });
 
+    // HAP-747: Use useHappyAction for abort handler
+    const [, handleAbort] = useHappyAction(async () => {
+        await sessionAbort(sessionId);
+    });
+
     const input = (
         <AgentInput
             placeholder={t('session.inputPlaceholder')}
@@ -708,13 +722,7 @@ function SessionViewLoaded({ sessionId, session }: { sessionId: string, session:
             }}
             onMicPress={micButtonState.onMicPress}
             isMicActive={micButtonState.isMicActive}
-            onAbort={async () => {
-                try {
-                    await sessionAbort(sessionId);
-                } catch (error) {
-                    handleRpcError(error);
-                }
-            }}
+            onAbort={handleAbort}
             showAbortButton={sessionStatus.state === 'thinking' || sessionStatus.state === 'waiting'}
             onFileViewerPress={experiments ? () => router.push(`/session/${sessionId}/files`) : undefined}
             // Autocomplete configuration
@@ -782,8 +790,16 @@ function SessionViewLoaded({ sessionId, session }: { sessionId: string, session:
                 </View>
             )}
 
+            {/* HAP-752: Session Revival Banner - shows during revival attempts */}
+            {reviving && !(isLandscape && deviceType === 'phone') && (
+                <View style={styles.revivalBannerContainer}>
+                    <SessionRevivalBanner onDismiss={stopReviving} />
+                </View>
+            )}
+
             {/* HAP-392: Archived Session Banner with Restore Button */}
-            {isInputDisabled && !(isLandscape && deviceType === 'phone') && (
+            {/* HAP-752: Hide archived banner when revival is in progress to show revival banner */}
+            {isInputDisabled && !reviving && !(isLandscape && deviceType === 'phone') && (
                 <View style={styles.archivedBannerContainer}>
                     <View style={styles.archivedBanner}>
                         <Ionicons name="archive-outline" size={16} color="#856404" />
@@ -798,6 +814,8 @@ function SessionViewLoaded({ sessionId, session }: { sessionId: string, session:
                                         Toast.show({ message: t('sessionInfo.restoreRequiresMachine') });
                                         return;
                                     }
+                                    // HAP-752: Show revival banner during restore
+                                    startReviving();
                                     performRestore();
                                 }}
                                 disabled={isRestoring}
@@ -955,6 +973,14 @@ const stylesheet = StyleSheet.create((theme) => ({
         fontSize: 12,
         color: '#856404',
         fontWeight: '600',
+    },
+    // HAP-752: Session revival banner container
+    revivalBannerContainer: {
+        position: 'absolute',
+        top: 8,
+        left: 0,
+        right: 0,
+        zIndex: 994,
     },
     // HAP-392: Archived session banner styles
     archivedBannerContainer: {
