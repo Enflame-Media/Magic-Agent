@@ -37,6 +37,7 @@ import type {
     ApiUpdateMachineState,
     ApiEphemeralMachineActivityUpdate,
     ApiEphemeralMachineStatusUpdate,
+    ApiEphemeralMachineDisconnectedUpdate,
 } from './index';
 
 // =============================================================================
@@ -213,10 +214,12 @@ export type MachineIdUpdate = ApiNewMachine | ApiUpdateMachineState;
  * All machine-related ephemeral schemas now use `machineId` for consistency (HAP-655):
  * - `machine-activity`: uses field `machineId`
  * - `machine-status`: uses field `machineId`
+ * - `machine-disconnected`: uses field `machineId` (HAP-780)
  */
 export type MachineIdEphemeral =
     | ApiEphemeralMachineActivityUpdate
-    | ApiEphemeralMachineStatusUpdate;
+    | ApiEphemeralMachineStatusUpdate
+    | ApiEphemeralMachineDisconnectedUpdate;
 
 /**
  * Type guard: checks if an update contains a machine ID
@@ -251,7 +254,7 @@ export function hasMachineId(update: ApiUpdate): update is MachineIdUpdate {
  * ```
  */
 export function hasMachineIdEphemeral(update: ApiEphemeralUpdate): update is MachineIdEphemeral {
-    return ['machine-activity', 'machine-status'].includes(update.type);
+    return ['machine-activity', 'machine-status', 'machine-disconnected'].includes(update.type);
 }
 
 /**

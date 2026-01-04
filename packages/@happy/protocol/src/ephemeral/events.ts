@@ -137,6 +137,39 @@ export const ApiEphemeralMachineStatusUpdateSchema = z.object({
 export type ApiEphemeralMachineStatusUpdate = z.infer<typeof ApiEphemeralMachineStatusUpdateSchema>;
 
 /**
+ * Machine disconnected notification
+ *
+ * Sent to a machine's WebSocket connection when it is disconnected
+ * from an account (e.g., via the mobile app). This is a fire-and-forget
+ * notification that allows the CLI daemon to gracefully shut down.
+ *
+ * @see HAP-780 - Add CLI disconnect notification when machine is removed via app
+ */
+export const ApiEphemeralMachineDisconnectedUpdateSchema = z.object({
+    type: z.literal('machine-disconnected'),
+    /**
+     * Machine ID - uniquely identifies the machine being disconnected
+     *
+     * @remarks
+     * Field name: `machineId` (standardized in HAP-655)
+     */
+    machineId: z.string().min(1).max(STRING_LIMITS.ID_MAX),
+    /**
+     * Reason for disconnection
+     *
+     * Currently always 'disconnected_by_user' when user disconnects
+     * a machine via the mobile app.
+     */
+    reason: z.enum(['disconnected_by_user']),
+    /**
+     * Timestamp of when the disconnection occurred
+     */
+    timestamp: z.number(),
+});
+
+export type ApiEphemeralMachineDisconnectedUpdate = z.infer<typeof ApiEphemeralMachineDisconnectedUpdateSchema>;
+
+/**
  * Friend online/offline status update
  *
  * Real-time indicator of friend presence status.
@@ -181,6 +214,7 @@ export const ApiEphemeralUpdateSchema = z.union([
     ApiEphemeralUsageUpdateSchema,
     ApiEphemeralMachineActivityUpdateSchema,
     ApiEphemeralMachineStatusUpdateSchema,
+    ApiEphemeralMachineDisconnectedUpdateSchema,
     ApiEphemeralFriendStatusUpdateSchema,
 ]);
 
