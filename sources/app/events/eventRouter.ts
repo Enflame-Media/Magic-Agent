@@ -406,6 +406,20 @@ export function buildMachineStatusEphemeral(machineId: string, online: boolean):
     };
 }
 
+/**
+ * HAP-780: Build a machine-disconnected ephemeral event.
+ * Sent to a machine's WebSocket connection when it is disconnected from an account.
+ * This allows the CLI daemon to gracefully shut down.
+ */
+export function buildMachineDisconnectedEphemeral(machineId: string, reason: 'disconnected_by_user'): EphemeralPayload {
+    return {
+        type: 'machine-disconnected',
+        machineId,
+        reason,
+        timestamp: Date.now()
+    };
+}
+
 export function buildNewArtifactUpdate(artifact: {
     id: string;
     seq: number;

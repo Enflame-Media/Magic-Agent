@@ -1,4 +1,4 @@
-import { eventRouter, buildMachineStatusEphemeral, buildDeleteMachineUpdate } from "@/app/events/eventRouter";
+import { eventRouter, buildMachineStatusEphemeral, buildDeleteMachineUpdate, buildMachineDisconnectedEphemeral } from "@/app/events/eventRouter";
 import { Fastify } from "../types";
 import { z } from "zod";
 import { db } from "@/storage/db";
@@ -283,6 +283,16 @@ export function machinesRoutes(app: Fastify) {
         if (!machine) {
             return reply.code(404).send({ error: 'Machine not found' });
         }
+
+        // HAP-780: Emit machine-disconnected ephemeral event BEFORE deletion
+        // This notifies the CLI daemon that it's being disconnected, allowing graceful shutdown.
+        // Fire-and-forget: we don't wait for acknowledgment.
+        const disconnectedPayload = buildMachineDisconnectedEphemeral(id, 'disconnected_by_user');
+        eventRouter.emitEphemeral({
+            userId,
+            payload: disconnectedPayload,
+            recipientFilter: { type: 'machine-scoped-only', machineId: id }
+        });
 
         // Delete the machine
         await db.machine.delete({
