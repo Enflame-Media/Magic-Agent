@@ -8,10 +8,12 @@
 import { ref, computed } from 'vue';
 import { Frame } from '@nativescript/core';
 import { useAuth } from '../composables/useAuth';
+import { usePurchases } from '../composables/usePurchases';
 import AppearanceView from './settings/AppearanceView.vue';
 import AccountView from './settings/AccountView.vue';
 
 const { machines } = useAuth();
+const { isPro, showPaywall } = usePurchases();
 
 // App version (would come from build config in production)
 const version = ref('0.1.0');
@@ -55,6 +57,13 @@ function navigateToAccount() {
 function openLink(url: string) {
   // TODO: Implement with utils.openUrl
   console.log('Opening:', url);
+}
+
+/**
+ * Show subscription paywall
+ */
+function navigateToSubscription(): void {
+  showPaywall('settings');
 }
 </script>
 
@@ -101,6 +110,24 @@ function openLink(url: string) {
               v-if="machinesCount > 0"
               :text="machinesCount.toString()"
               class="badge"
+            />
+            <Label text="›" class="chevron" />
+          </StackLayout>
+        </GridLayout>
+
+        <GridLayout columns="*, auto" class="setting-item" @tap="navigateToSubscription">
+          <StackLayout col="0">
+            <Label text="Subscription" class="setting-title" />
+            <Label
+              :text="isPro ? 'Happy Pro' : 'Upgrade to Pro'"
+              class="setting-subtitle"
+            />
+          </StackLayout>
+          <StackLayout col="1" orientation="horizontal" vertical-alignment="center">
+            <Label
+              v-if="isPro"
+              text="PRO"
+              class="pro-badge"
             />
             <Label text="›" class="chevron" />
           </StackLayout>
@@ -213,6 +240,16 @@ function openLink(url: string) {
   font-weight: bold;
   padding: 2 8;
   border-radius: 10;
+  margin-right: 8;
+}
+
+.pro-badge {
+  background-color: #10b981;
+  color: #ffffff;
+  font-size: 11;
+  font-weight: bold;
+  padding: 2 8;
+  border-radius: 8;
   margin-right: 8;
 }
 
