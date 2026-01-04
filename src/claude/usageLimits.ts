@@ -61,6 +61,7 @@ function parseResetTimestamp(isoTimestamp: string | null): number | null {
  * @param label - Human-readable label
  * @param utilization - Percentage used (0-1 from Anthropic API)
  * @param resetsAt - ISO timestamp when limit resets
+ * @param resetDisplayType - How to display reset time ('countdown' for session, 'datetime' for weekly)
  * @param description - Optional description
  * @returns UsageLimit in Happy format
  */
@@ -69,6 +70,7 @@ function transformLimit(
     label: string,
     utilization: number,
     resetsAt: string | null,
+    resetDisplayType: 'countdown' | 'datetime',
     description?: string
 ): UsageLimit {
     return {
@@ -76,7 +78,7 @@ function transformLimit(
         label,
         percentageUsed: Math.min(100, Math.max(0, utilization * 100)),
         resetsAt: parseResetTimestamp(resetsAt),
-        resetDisplayType: 'countdown',
+        resetDisplayType,
         ...(description && { description }),
     };
 }
@@ -95,18 +97,19 @@ function transformLimit(
 function transformToHappyFormat(data: AnthropicUsageResponse): PlanLimitsResponse {
     const weeklyLimits: UsageLimit[] = [];
 
-    // Transform session limit (five_hour)
+    // Transform session limit (five_hour) - uses countdown display
     const sessionLimit = data.five_hour
         ? transformLimit(
             'session',
             'Session Limit',
             data.five_hour.utilization,
             data.five_hour.resets_at,
+            'countdown',
             '5-hour rolling usage limit'
         )
         : undefined;
 
-    // Transform 7-day limit
+    // Transform 7-day limit - uses datetime display
     if (data.seven_day) {
         weeklyLimits.push(
             transformLimit(
@@ -114,12 +117,13 @@ function transformToHappyFormat(data: AnthropicUsageResponse): PlanLimitsRespons
                 'Weekly Limit',
                 data.seven_day.utilization,
                 data.seven_day.resets_at,
+                'datetime',
                 '7-day rolling usage limit'
             )
         );
     }
 
-    // Transform 7-day Opus limit
+    // Transform 7-day Opus limit - uses datetime display
     if (data.seven_day_opus) {
         weeklyLimits.push(
             transformLimit(
@@ -127,6 +131,7 @@ function transformToHappyFormat(data: AnthropicUsageResponse): PlanLimitsRespons
                 'Weekly Opus Limit',
                 data.seven_day_opus.utilization,
                 data.seven_day_opus.resets_at,
+                'datetime',
                 '7-day rolling Opus model limit'
             )
         );

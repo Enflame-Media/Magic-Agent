@@ -73,18 +73,21 @@ describe('usageLimits', () => {
             expect(result!.limitsAvailable).toBe(true);
             expect(result!.provider).toBe('anthropic');
 
-            // Verify session limit (five_hour)
+            // Verify session limit (five_hour) - should use 'countdown' display
             expect(result!.sessionLimit).toBeDefined();
             expect(result!.sessionLimit!.id).toBe('session');
             expect(result!.sessionLimit!.percentageUsed).toBe(50);
             expect(result!.sessionLimit!.resetsAt).toBe(new Date('2026-01-03T15:00:00Z').getTime());
+            expect(result!.sessionLimit!.resetDisplayType).toBe('countdown');
 
-            // Verify weekly limits
+            // Verify weekly limits - should use 'datetime' display (HAP-728)
             expect(result!.weeklyLimits).toHaveLength(2);
             expect(result!.weeklyLimits[0].id).toBe('weekly');
             expect(result!.weeklyLimits[0].percentageUsed).toBe(25);
+            expect(result!.weeklyLimits[0].resetDisplayType).toBe('datetime');
             expect(result!.weeklyLimits[1].id).toBe('weekly_opus');
             expect(result!.weeklyLimits[1].percentageUsed).toBe(75);
+            expect(result!.weeklyLimits[1].resetDisplayType).toBe('datetime');
 
             // Verify schema validation
             const parseResult = PlanLimitsResponseSchema.safeParse(result);
