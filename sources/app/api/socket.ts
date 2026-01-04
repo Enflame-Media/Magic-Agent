@@ -4,6 +4,7 @@ import { buildMachineActivityEphemeral, ClientConnection, eventRouter } from "@/
 import { Server, Socket } from "socket.io";
 import { log } from "@/utils/log";
 import { auth } from "@/app/auth/auth";
+import { db } from "@/storage/db";
 import { decrementWebSocketConnection, incrementWebSocketConnection, websocketEventsCounter } from "../monitoring/metrics2";
 import { usageHandler } from "./socket/usageHandler";
 import { rpcHandler } from "./socket/rpcHandler";
@@ -108,10 +109,16 @@ export function startSocket(app: Fastify) {
         eventRouter.addConnection(userId, connection);
         incrementWebSocketConnection(connection.connectionType);
 
-        // Broadcast daemon online status
+        // HAP-778: Update machine online status in database and broadcast ephemeral event
         if (connection.connectionType === 'machine-scoped') {
+            const now = new Date();
+            // Update database to reflect machine is online
+            void db.machine.updateMany({
+                where: { id: machineId!, accountId: userId },
+                data: { active: true, lastActiveAt: now }
+            });
             // Broadcast daemon online
-            const machineActivity = buildMachineActivityEphemeral(machineId!, true, Date.now());
+            const machineActivity = buildMachineActivityEphemeral(machineId!, true, now.getTime());
             eventRouter.emitEphemeral({
                 userId,
                 payload: machineActivity,
@@ -134,9 +141,16 @@ export function startSocket(app: Fastify) {
 
             log({ module: 'websocket', correlationId, userId }, `User disconnected`);
 
-            // Broadcast daemon offline status
+            // HAP-778: Update machine offline status in database and broadcast ephemeral event
             if (connection.connectionType === 'machine-scoped') {
-                const machineActivity = buildMachineActivityEphemeral(connection.machineId, false, Date.now());
+                const now = new Date();
+                // Update database to reflect machine is offline
+                void db.machine.updateMany({
+                    where: { id: connection.machineId, accountId: userId },
+                    data: { active: false, lastActiveAt: now }
+                });
+                // Broadcast daemon offline
+                const machineActivity = buildMachineActivityEphemeral(connection.machineId, false, now.getTime());
                 eventRouter.emitEphemeral({
                     userId,
                     payload: machineActivity,

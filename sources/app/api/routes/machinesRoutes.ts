@@ -1,4 +1,4 @@
-import { eventRouter, buildMachineStatusEphemeral } from "@/app/events/eventRouter";
+import { eventRouter, buildMachineStatusEphemeral, buildDeleteMachineUpdate } from "@/app/events/eventRouter";
 import { Fastify } from "../types";
 import { z } from "zod";
 import { db } from "@/storage/db";
@@ -249,6 +249,57 @@ export function machinesRoutes(app: Fastify) {
                 updatedAt: updatedMachine.updatedAt.getTime()
             }
         };
+    });
+
+    /**
+     * HAP-778: DELETE /v1/machines/:id - Disconnect/unauthenticate a machine
+     *
+     * Removes the machine from the user's account. The machine will need to
+     * re-authenticate via QR code to reconnect. This does NOT terminate active
+     * sessions on that machine - they will persist until they expire naturally.
+     */
+    app.delete('/v1/machines/:id', {
+        preHandler: app.authenticate,
+        config: {
+            rateLimit: RateLimitTiers.HIGH  // 30/min - destructive action
+        },
+        schema: {
+            params: z.object({
+                id: z.string()
+            })
+        }
+    }, async (request, reply) => {
+        const userId = request.userId;
+        const { id } = request.params;
+
+        // Find the machine (must belong to the authenticated user)
+        const machine = await db.machine.findFirst({
+            where: {
+                accountId: userId,
+                id: id
+            }
+        });
+
+        if (!machine) {
+            return reply.code(404).send({ error: 'Machine not found' });
+        }
+
+        // Delete the machine
+        await db.machine.delete({
+            where: { id: id }
+        });
+
+        log({ module: 'machines', machineId: id, userId }, 'Machine disconnected/deleted');
+
+        // Emit delete-machine event for real-time UI update
+        const updateSeq = await allocateUserSeq(userId);
+        const deletePayload = buildDeleteMachineUpdate(id, updateSeq, randomKeyNaked(12));
+        eventRouter.emitUpdate({
+            userId,
+            payload: deletePayload
+        });
+
+        return { success: true };
     });
 
 }
