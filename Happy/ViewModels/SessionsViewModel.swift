@@ -90,11 +90,18 @@ final class SessionsViewModel {
 
     /// Refresh the sessions list.
     func refresh() async {
-        // Re-fetch sessions from server
         isLoading = true
+        errorMessage = nil
 
-        // TODO: Implement API fetch for initial session list
-        // For now, sessions come via WebSocket updates
+        do {
+            // Fetch sessions from the API
+            let fetchedSessions = try await APIService.shared.fetchSessions()
+            sessions = fetchedSessions.sorted { $0.updatedAt > $1.updatedAt }
+        } catch let error as APIError {
+            errorMessage = error.localizedDescription
+        } catch {
+            errorMessage = "Failed to load sessions: \(error.localizedDescription)"
+        }
 
         isLoading = false
     }

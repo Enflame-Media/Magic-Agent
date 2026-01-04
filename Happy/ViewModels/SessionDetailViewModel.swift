@@ -92,13 +92,17 @@ final class SessionDetailViewModel {
             // Subscribe to updates for this session
             try await syncService.subscribe(to: session.id)
 
-            // TODO: Fetch initial messages from API
-            // Messages will be pushed via WebSocket after subscription
+            // Fetch initial messages from the API
+            let fetchedMessages = try await APIService.shared.fetchMessages(sessionId: session.id)
+            messages = fetchedMessages.sorted { $0.createdAt < $1.createdAt }
 
             isLoading = false
-        } catch {
+        } catch let error as APIError {
             isLoading = false
             errorMessage = error.localizedDescription
+        } catch {
+            isLoading = false
+            errorMessage = "Failed to load messages: \(error.localizedDescription)"
         }
     }
 
@@ -133,6 +137,32 @@ final class SessionDetailViewModel {
                 self?.session = updatedSession
             }
             .store(in: &cancellables)
+
+        // Listen for new messages in this session
+        syncService.messageUpdates
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] message in
+                self?.handleIncomingMessage(message)
+            }
+            .store(in: &cancellables)
+    }
+
+    /// Handle an incoming message from WebSocket.
+    private func handleIncomingMessage(_ message: Message) {
+        if let index = messages.firstIndex(where: { $0.id == message.id }) {
+            // Update existing message
+            messages[index] = message
+        } else {
+            // Add new message
+            messages.append(message)
+        }
+
+        // Track streaming state
+        if message.isStreaming {
+            streamingMessageId = message.id
+        } else if streamingMessageId == message.id {
+            streamingMessageId = nil
+        }
     }
 
     /// Decrypt and add a message.

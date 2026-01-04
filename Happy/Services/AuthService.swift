@@ -115,13 +115,58 @@ final class AuthService {
 
     /// Validate the current authentication token with the server.
     func validateToken() async throws {
-        guard let token = KeychainHelper.readString(.authToken) else {
+        guard KeychainHelper.readString(.authToken) != nil else {
             throw AuthError.noToken
         }
 
-        // TODO: Call API to validate token
-        // For now, assume valid if token exists
-        state = .authenticated
+        do {
+            let isValid = try await APIService.shared.validateToken()
+            if isValid {
+                state = .authenticated
+            } else {
+                // Try to refresh the token
+                try await refreshTokenIfNeeded()
+            }
+        } catch let error as APIError {
+            switch error {
+            case .unauthorized:
+                // Token is invalid, try refresh
+                try await refreshTokenIfNeeded()
+            case .noAuthToken:
+                throw AuthError.noToken
+            default:
+                // For network errors, assume valid if we have credentials
+                // (optimistic offline support)
+                if hasStoredCredentials() {
+                    state = .authenticated
+                } else {
+                    throw AuthError.tokenValidationFailed
+                }
+            }
+        }
+    }
+
+    /// Attempt to refresh the authentication token.
+    private func refreshTokenIfNeeded() async throws {
+        guard KeychainHelper.exists(.refreshToken) else {
+            state = .unauthenticated
+            throw AuthError.tokenValidationFailed
+        }
+
+        do {
+            _ = try await APIService.shared.refreshToken()
+            state = .authenticated
+        } catch {
+            state = .unauthenticated
+            throw AuthError.tokenValidationFailed
+        }
+    }
+
+    /// Check if we have stored credentials for optimistic auth.
+    private func hasStoredCredentials() -> Bool {
+        return KeychainHelper.exists(.authToken) &&
+               KeychainHelper.exists(.privateKey) &&
+               KeychainHelper.exists(.peerPublicKey)
     }
 
     /// Log out and clear all stored credentials.

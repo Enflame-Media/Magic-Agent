@@ -42,6 +42,9 @@ struct HappyApp: App {
                     PaywallView()
                 }
                 .task {
+                    // Validate authentication token on app launch
+                    await validateAuthenticationOnLaunch()
+                    // Configure in-app purchases
                     await configurePurchases()
                 }
         }
@@ -144,6 +147,29 @@ struct HappyApp: App {
         Settings {
             SettingsView()
                 .environment(authService)
+        }
+    }
+
+    // MARK: - Authentication Validation
+
+    /// Validate the stored authentication token on app launch.
+    ///
+    /// This ensures the token is still valid with the server and refreshes
+    /// if needed. On network errors, optimistically assumes valid if
+    /// credentials exist (for offline support).
+    private func validateAuthenticationOnLaunch() async {
+        // Only validate if we have stored credentials
+        guard authService.state == .authenticated else {
+            return
+        }
+
+        do {
+            try await authService.validateToken()
+            print("[App] Authentication token validated successfully")
+        } catch {
+            print("[App] Token validation failed: \(error.localizedDescription)")
+            // AuthService handles state transitions internally
+            // If validation fails completely, user will be shown login
         }
     }
 
