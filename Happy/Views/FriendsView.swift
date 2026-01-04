@@ -17,6 +17,7 @@ struct FriendsView: View {
     @State private var selectedFriend: UserProfile?
     @State private var showingAddFriend = false
     @State private var searchQuery = ""
+    @State private var selectedFriendForProfile: UserProfile?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -46,6 +47,9 @@ struct FriendsView: View {
         }
         .sheet(isPresented: $showingAddFriend) {
             AddFriendSheet()
+        }
+        .sheet(item: $selectedFriendForProfile) { friend in
+            FriendProfileView(friend: friend)
         }
     }
 
@@ -181,7 +185,7 @@ struct FriendsView: View {
     @ViewBuilder
     private func friendContextMenu(for friend: UserProfile) -> some View {
         Button {
-            // View profile - could navigate or show sheet
+            selectedFriendForProfile = friend
         } label: {
             Label("View Profile", systemImage: "person.circle")
         }
