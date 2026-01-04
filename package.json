@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
-  "packageManager": "yarn@4.6.0",
+  "packageManager": "yarn@4.12.0",
   "description": "Happy Vue.js monorepo - Web and mobile client for Claude Code remote control",
   "workspaces": [
     "apps/*",
