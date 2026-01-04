@@ -17,6 +17,26 @@ import { t } from '@/text';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 
+/**
+ * Formats a friendship date for display using translations.
+ * - Recent (< 7 days): Uses relative time (e.g., "today", "2 days ago")
+ * - Older: Uses "Month Year" format (e.g., "January 2025")
+ */
+function formatFriendshipDate(isoDate: string, translate: typeof t): string {
+    const date = new Date(isoDate);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) {
+        return translate('time.today');
+    } else if (diffDays < 7) {
+        return translate('time.daysAgo', { count: diffDays });
+    } else {
+        return date.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+    }
+}
+
 function UserProfileScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const { credentials } = useAuth();
@@ -187,11 +207,15 @@ function UserProfileScreen() {
                         <Text style={styles.bio}>{userProfile.bio}</Text>
                     )}
 
-                    {/* Friend Status Badge */}
+                    {/* Friend Status Badge with Friendship Date */}
                     {userProfile.status === 'friend' && (
                         <View style={styles.statusBadge}>
                             <Ionicons name="checkmark-circle" size={16} color="#34C759" />
-                            <Text style={styles.statusText}>{t('friends.alreadyFriends')}</Text>
+                            <Text style={styles.statusText}>
+                                {userProfile.friendshipDate
+                                    ? t('friends.friendsSince', { date: formatFriendshipDate(userProfile.friendshipDate, t) })
+                                    : t('friends.alreadyFriends')}
+                            </Text>
                         </View>
                     )}
                 </View>

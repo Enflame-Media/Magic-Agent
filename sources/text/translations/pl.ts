@@ -103,8 +103,10 @@ export const pl: TranslationStructure = {
 
     time: {
         justNow: 'teraz',
+        today: 'dzisiaj',
         minutesAgo: ({ count }: { count: number }) => `${count} ${plural({ count, one: 'minuta', few: 'minuty', many: 'minut' })} temu`,
         hoursAgo: ({ count }: { count: number }) => `${count} ${plural({ count, one: 'godzina', few: 'godziny', many: 'godzin' })} temu`,
+        daysAgo: ({ count }: { count: number }) => `${count} ${plural({ count, one: 'dzień', few: 'dni', many: 'dni' })} temu`,
     },
 
     connect: {
@@ -1078,6 +1080,7 @@ export const pl: TranslationStructure = {
         reject: 'Odrzuć',
         addFriend: 'Dodaj do znajomych',
         alreadyFriends: 'Już jesteście znajomymi',
+        friendsSince: ({ date }: { date: string }) => `Znajomi od ${date}`,
         requestPending: 'Zaproszenie oczekuje',
         searchInstructions: 'Wprowadź nazwę użytkownika, aby znaleźć przyjaciół',
         searchPlaceholder: 'Wprowadź nazwę użytkownika...',

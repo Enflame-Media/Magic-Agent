@@ -92,8 +92,10 @@ export const es: TranslationStructure = {
 
     time: {
         justNow: 'ahora mismo',
+        today: 'hoy',
         minutesAgo: ({ count }: { count: number }) => `hace ${count} minuto${count !== 1 ? 's' : ''}`,
         hoursAgo: ({ count }: { count: number }) => `hace ${count} hora${count !== 1 ? 's' : ''}`,
+        daysAgo: ({ count }: { count: number }) => `hace ${count} día${count !== 1 ? 's' : ''}`,
     },
 
     connect: {
@@ -1043,6 +1045,7 @@ export const es: TranslationStructure = {
         reject: 'Rechazar',
         addFriend: 'Agregar amigo',
         alreadyFriends: 'Ya son amigos',
+        friendsSince: ({ date }: { date: string }) => `Amigos desde ${date}`,
         requestPending: 'Solicitud pendiente',
         searchInstructions: 'Ingresa un nombre de usuario para buscar amigos',
         searchPlaceholder: 'Ingresa nombre de usuario...',

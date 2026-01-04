@@ -92,8 +92,10 @@ export const en = {
 
     time: {
         justNow: 'just now',
+        today: 'today',
         minutesAgo: ({ count }: { count: number }) => `${count} minute${count !== 1 ? 's' : ''} ago`,
         hoursAgo: ({ count }: { count: number }) => `${count} hour${count !== 1 ? 's' : ''} ago`,
+        daysAgo: ({ count }: { count: number }) => `${count} day${count !== 1 ? 's' : ''} ago`,
     },
 
     connect: {
@@ -1044,6 +1046,7 @@ export const en = {
         reject: 'Reject',
         addFriend: 'Add Friend',
         alreadyFriends: 'Already Friends',
+        friendsSince: ({ date }: { date: string }) => `Friends since ${date}`,
         requestPending: 'Request Pending',
         searchInstructions: 'Enter a username to search for friends',
         searchPlaceholder: 'Enter username...',

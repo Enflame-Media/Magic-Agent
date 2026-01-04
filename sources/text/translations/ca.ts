@@ -92,8 +92,10 @@ export const ca: TranslationStructure = {
 
     time: {
         justNow: 'ara mateix',
+        today: 'avui',
         minutesAgo: ({ count }: { count: number }) => `fa ${count} minut${count !== 1 ? 's' : ''}`,
         hoursAgo: ({ count }: { count: number }) => `fa ${count} hora${count !== 1 ? 'es' : ''}`,
+        daysAgo: ({ count }: { count: number }) => `fa ${count} dia${count !== 1 ? 'es' : ''}`,
     },
 
     connect: {
@@ -1042,6 +1044,7 @@ export const ca: TranslationStructure = {
         reject: 'Rebutjar',
         addFriend: 'Afegir amic',
         alreadyFriends: 'Ja sou amics',
+        friendsSince: ({ date }: { date: string }) => `Amics des de ${date}`,
         requestPending: 'Sol·licitud pendent',
         searchInstructions: 'Introdueix un nom d\'usuari per buscar amics',
         searchPlaceholder: 'Introdueix nom d\'usuari...',

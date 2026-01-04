@@ -542,8 +542,10 @@ export const ru: TranslationStructure = {
 
     time: {
         justNow: 'только что',
+        today: 'сегодня',
         minutesAgo: ({ count }: { count: number }) => `${count} ${plural({ count, one: 'минуту', few: 'минуты', many: 'минут' })} назад`,
         hoursAgo: ({ count }: { count: number }) => `${count} ${plural({ count, one: 'час', few: 'часа', many: 'часов' })} назад`,
+        daysAgo: ({ count }: { count: number }) => `${count} ${plural({ count, one: 'день', few: 'дня', many: 'дней' })} назад`,
     },
 
     session: {
@@ -1086,6 +1088,7 @@ export const ru: TranslationStructure = {
         reject: 'Отклонить',
         addFriend: 'Добавить в друзья',
         alreadyFriends: 'Уже в друзьях',
+        friendsSince: ({ date }: { date: string }) => `Друзья с ${date}`,
         requestPending: 'Запрос отправлен',
         searchInstructions: 'Введите имя пользователя для поиска друзей',
         searchPlaceholder: 'Введите имя пользователя...',

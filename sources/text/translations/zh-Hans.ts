@@ -94,8 +94,10 @@ export const zhHans: TranslationStructure = {
 
     time: {
         justNow: '刚刚',
+        today: '今天',
         minutesAgo: ({ count }: { count: number }) => `${count} 分钟前`,
         hoursAgo: ({ count }: { count: number }) => `${count} 小时前`,
+        daysAgo: ({ count }: { count: number }) => `${count} 天前`,
     },
 
     connect: {
@@ -1044,6 +1046,7 @@ export const zhHans: TranslationStructure = {
         reject: '拒绝',
         addFriend: '添加好友',
         alreadyFriends: '已是好友',
+        friendsSince: ({ date }: { date: string }) => `${date}成为好友`,
         requestPending: '请求待处理',
         searchInstructions: '输入用户名搜索好友',
         searchPlaceholder: '输入用户名...',
