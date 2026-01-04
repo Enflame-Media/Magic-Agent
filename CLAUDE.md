@@ -85,7 +85,7 @@ yarn dev
 # Type checking
 yarn typecheck
 
-# Linting
+# Linting (oxlint with type-aware mode)
 yarn lint
 yarn lint:fix
 
@@ -136,6 +136,45 @@ npx vite --config vite.config.ts
 - Use lowercase with dashes for directories (e.g., `api-routes`)
 - Vue components use PascalCase (e.g., `Dashboard.vue`)
 - TypeScript files use camelCase (e.g., `metrics.ts`)
+
+## Linting
+
+This project uses **oxlint** exclusively (no ESLint). The configuration is in `oxlint.json`.
+
+### Key Features
+
+- **Type-aware linting**: Uses `--type-aware` flag for TypeScript-aware rules
+- **JS Plugins**: Custom rules from `@happy/lint-rules` package
+- **Performance**: oxlint is 50-100x faster than ESLint
+
+### Configuration (`oxlint.json`)
+
+```json
+{
+    "plugins": ["eslint", "typescript", "oxc", "vitest", "unicorn"],
+    "jsPlugins": ["@happy/lint-rules"],
+    "rules": {
+        "happy/github-casing": "warn",
+        "happy/protocol-helpers": "warn"
+    }
+}
+```
+
+### Commands
+
+```bash
+# Run linting
+yarn lint
+
+# Run linting with auto-fix
+yarn lint:fix
+```
+
+### Dependencies
+
+- `oxlint`: Core linter (v1.36.0+)
+- `oxlint-tsgolint`: Type-aware linting support (v0.10.1+)
+- `@happy/lint-rules`: Custom rules (workspace package)
 
 ## Environment Variables & Secrets
 
