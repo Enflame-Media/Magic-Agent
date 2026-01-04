@@ -51,3 +51,6 @@ export * from './helpers';
 
 // Usage limits schemas for plan and rate limiting data
 export * from './usageLimits';
+
+// Session sharing schemas for sharing sessions with other users
+export * from './sharing';

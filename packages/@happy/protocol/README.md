@@ -109,6 +109,34 @@ Shared types used across the protocol.
 | `VersionedValueSchema` | `VersionedValue` | Optimistic concurrency value |
 | `NullableVersionedValueSchema` | `NullableVersionedValue` | Nullable versioned value |
 
+### Session Sharing Schemas
+
+Types for sharing sessions with other users (HAP-766).
+
+| Schema | Type | Description |
+|--------|------|-------------|
+| `SessionSharePermissionSchema` | `SessionSharePermission` | Permission enum (view_only, view_and_chat) |
+| `SessionShareEntrySchema` | `SessionShareEntry` | Individual user share with profile |
+| `SessionShareUrlConfigSchema` | `SessionShareUrlConfig` | Public URL sharing configuration |
+| `InvitationStatusSchema` | `InvitationStatus` | Invitation status enum |
+| `SessionShareInvitationSchema` | `SessionShareInvitation` | Email invitation with status |
+| `SessionShareSettingsSchema` | `SessionShareSettings` | Combined sharing state container |
+| `AddSessionShareRequestSchema` | `AddSessionShareRequest` | Add share by userId or email |
+| `UpdateSessionShareRequestSchema` | `UpdateSessionShareRequest` | Update permission level |
+| `RemoveSessionShareRequestSchema` | `RemoveSessionShareRequest` | Remove share access |
+| `UpdateUrlSharingRequestSchema` | `UpdateUrlSharingRequest` | Configure URL sharing |
+| `RevokeInvitationRequestSchema` | `RevokeInvitationRequest` | Revoke pending invitation |
+| `ResendInvitationRequestSchema` | `ResendInvitationRequest` | Resend invitation email |
+
+### Usage Limits Schemas
+
+Types for plan and rate limiting data.
+
+| Schema | Type | Description |
+|--------|------|-------------|
+| `UsageLimitSchema` | `UsageLimit` | Single usage limit entry |
+| `PlanLimitsResponseSchema` | `PlanLimitsResponse` | Complete plan limits response |
+
 ## Field Name Reference
 
 ### Session ID Field Names

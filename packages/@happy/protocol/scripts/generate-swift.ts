@@ -65,6 +65,19 @@ import {
     ApiUpdateContainerSchema,
     UpdatePayloadSchema,
     EphemeralPayloadSchema,
+    // Session sharing schemas (HAP-766)
+    SessionSharePermissionSchema,
+    SessionShareEntrySchema,
+    SessionShareUrlConfigSchema,
+    InvitationStatusSchema,
+    SessionShareInvitationSchema,
+    SessionShareSettingsSchema,
+    AddSessionShareRequestSchema,
+    UpdateSessionShareRequestSchema,
+    RemoveSessionShareRequestSchema,
+    UpdateUrlSharingRequestSchema,
+    RevokeInvitationRequestSchema,
+    ResendInvitationRequestSchema,
 } from '../src/index';
 
 // Get the directory of the current script
@@ -128,6 +141,20 @@ const schemasToGenerate = {
     ApiUpdateContainer: ApiUpdateContainerSchema,
     UpdatePayload: UpdatePayloadSchema,
     EphemeralPayload: EphemeralPayloadSchema,
+
+    // Session sharing (HAP-766)
+    SessionSharePermission: SessionSharePermissionSchema,
+    SessionShareEntry: SessionShareEntrySchema,
+    SessionShareUrlConfig: SessionShareUrlConfigSchema,
+    InvitationStatus: InvitationStatusSchema,
+    SessionShareInvitation: SessionShareInvitationSchema,
+    SessionShareSettings: SessionShareSettingsSchema,
+    AddSessionShareRequest: AddSessionShareRequestSchema,
+    UpdateSessionShareRequest: UpdateSessionShareRequestSchema,
+    RemoveSessionShareRequest: RemoveSessionShareRequestSchema,
+    UpdateUrlSharingRequest: UpdateUrlSharingRequestSchema,
+    RevokeInvitationRequest: RevokeInvitationRequestSchema,
+    ResendInvitationRequest: ResendInvitationRequestSchema,
 };
 
 /**
