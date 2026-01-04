@@ -1,10 +1,14 @@
 {
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["eslint", "typescript", "oxc", "vitest", "unicorn"],
-  "env": {
-    "node": true,
-    "es2024": true
-  },
-  "rules": {},
-  "ignorePatterns": ["node_modules", "dist", "build", "coverage", "*.d.ts"]
+    "$schema": "./node_modules/oxlint/configuration_schema.json",
+    "plugins": ["eslint", "typescript", "oxc", "vitest", "unicorn"],
+    "jsPlugins": ["@happy/lint-rules"],
+    "env": {
+        "node": true,
+        "es2024": true
+    },
+    "rules": {
+        "happy/github-casing": "warn",
+        "happy/protocol-helpers": "warn"
+    },
+    "ignorePatterns": ["node_modules", "dist", "build", "coverage", "*.d.ts", ".wrangler"]
 }
