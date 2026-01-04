@@ -115,6 +115,38 @@ yarn dev
 
 **Note**: Local development uses port 8788 (different from happy-admin's 8787) to allow running both simultaneously.
 
+## Linting
+
+This project uses **oxlint** exclusively (no ESLint). The configuration is in `oxlint.json`.
+
+### Key Features
+
+- **JS Plugins**: Custom rules from `@happy/lint-rules` package
+- **Performance**: oxlint is 50-100x faster than ESLint
+
+### Configuration (`oxlint.json`)
+
+```json
+{
+    "plugins": ["eslint", "typescript", "oxc", "vitest", "unicorn"],
+    "jsPlugins": ["@happy/lint-rules"],
+    "rules": {
+        "happy/github-casing": "warn",
+        "happy/protocol-helpers": "warn"
+    }
+}
+```
+
+### Custom Rules
+
+- `happy/github-casing`: Enforces "GitHub" (not "Github") in PascalCase identifiers (HAP-502)
+- `happy/protocol-helpers`: Enforces `getSessionId()`/`getMachineId()` helpers (HAP-658)
+
+### Dependencies
+
+- `oxlint`: Core linter (v1.36.0+)
+- `@happy/lint-rules`: Custom rules (workspace package)
+
 ## Cross-Origin Configuration
 
 ### CORS Settings
