@@ -32,6 +32,7 @@ const {
   loadFriends,
   acceptRequest,
   rejectRequest,
+  blockUser,
 } = useFriends();
 
 const processingId = ref<string | null>(null);
@@ -105,6 +106,16 @@ function handleFriendTap(userId: string) {
   // Navigate to user profile
   console.log('[FriendsView] Navigate to user:', userId);
   // TODO: Implement navigation to user profile
+}
+
+// Handle block user (via long-press)
+async function handleBlock(userId: string) {
+  processingId.value = userId;
+  try {
+    await blockUser(userId);
+  } finally {
+    processingId.value = null;
+  }
 }
 
 // Open QR scanner
@@ -215,6 +226,7 @@ onMounted(() => {
             @tap="handleFriendTap(item.user.id)"
             @accept="handleAccept(item.user.id)"
             @reject="handleReject(item.user.id)"
+            @block="handleBlock(item.user.id)"
           />
         </template>
       </ListView>

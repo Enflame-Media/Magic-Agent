@@ -7,7 +7,7 @@
  */
 
 import { computed } from 'vue';
-import { type UserProfile, getDisplayName, isPendingRequest } from '@/services/friends';
+import { type UserProfile, getDisplayName, isPendingRequest, isFriend } from '@/services/friends';
 
 const props = defineProps<{
   user: UserProfile;
@@ -18,10 +18,12 @@ const emit = defineEmits<{
   (e: 'tap'): void;
   (e: 'accept'): void;
   (e: 'reject'): void;
+  (e: 'block'): void;
 }>();
 
 const displayName = computed(() => getDisplayName(props.user));
 const isPending = computed(() => isPendingRequest(props.user.status));
+const isAcceptedFriend = computed(() => isFriend(props.user.status));
 const avatarUrl = computed(() => props.user.avatar?.url ?? '');
 
 function onTap() {
@@ -35,6 +37,10 @@ function onAccept() {
 function onReject() {
   emit('reject');
 }
+
+function onBlock() {
+  emit('block');
+}
 </script>
 
 <template>
@@ -43,6 +49,7 @@ function onReject() {
     columns="48, *, auto"
     class="friend-card"
     @tap="onTap"
+    @longPress="isAcceptedFriend ? onBlock() : undefined"
   >
     <!-- Avatar -->
     <Image

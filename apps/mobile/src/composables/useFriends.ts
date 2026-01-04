@@ -154,6 +154,24 @@ export function useFriends() {
   }
 
   /**
+   * Block a user - prevents them from sending friend requests
+   */
+  async function blockUser(userId: string): Promise<boolean> {
+    try {
+      const success = await friendsService.blockUser(userId);
+      if (success) {
+        friends.value.delete(userId);
+      }
+      return success;
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Failed to block user';
+      error.value = message;
+      console.error('[useFriends] Block user error:', e);
+      return false;
+    }
+  }
+
+  /**
    * Process a QR code or deep link friend invite
    */
   async function processFriendInvite(qrData: string): Promise<boolean> {
@@ -254,6 +272,7 @@ export function useFriends() {
     acceptRequest,
     removeFriend,
     rejectRequest,
+    blockUser,
     processFriendInvite,
     searchUsers,
     getFriend,

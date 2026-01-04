@@ -298,6 +298,31 @@ class FriendsServiceImpl {
   }
 
   /**
+   * Block a user - prevents them from sending friend requests
+   *
+   * @param userId - The user ID to block
+   * @returns true on success, false on failure
+   */
+  async blockUser(userId: string): Promise<boolean> {
+    return withBackoff(async () => {
+      const response = await this.authenticatedFetch('/v1/friends/block', {
+        method: 'POST',
+        body: JSON.stringify({ uid: userId }),
+      });
+
+      if (!response.ok) {
+        throw new FriendsApiError(
+          `Failed to block user: ${response.status}`,
+          response.status,
+          response.status >= 500
+        );
+      }
+
+      return true;
+    });
+  }
+
+  /**
    * Process a friend invite from QR code or deep link
    * QR code format: happy://friend/add/{userId}
    */
