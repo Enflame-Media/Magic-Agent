@@ -98,7 +98,7 @@ jobs:
             ${{ runner.os }}-yarn-
 
       - name: Download protocol dist
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: protocol-dist
           path: packages/@happy/protocol/dist
@@ -139,7 +139,7 @@ jobs:
             ${{ runner.os }}-yarn-
 
       - name: Download protocol dist
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: protocol-dist
           path: packages/@happy/protocol/dist
@@ -180,7 +180,7 @@ jobs:
             ${{ runner.os }}-yarn-
 
       - name: Download protocol dist
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: protocol-dist
           path: packages/@happy/protocol/dist
@@ -224,7 +224,7 @@ jobs:
             ${{ runner.os }}-yarn-
 
       - name: Download protocol dist
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: protocol-dist
           path: packages/@happy/protocol/dist
@@ -265,7 +265,7 @@ jobs:
             ${{ runner.os }}-yarn-
 
       - name: Download protocol dist
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: protocol-dist
           path: packages/@happy/protocol/dist
@@ -306,7 +306,7 @@ jobs:
             ${{ runner.os }}-yarn-
 
       - name: Download protocol dist
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: protocol-dist
           path: packages/@happy/protocol/dist
@@ -347,7 +347,7 @@ jobs:
             ${{ runner.os }}-yarn-
 
       - name: Download protocol dist
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: protocol-dist
           path: packages/@happy/protocol/dist
@@ -388,7 +388,7 @@ jobs:
             ${{ runner.os }}-yarn-
 
       - name: Download protocol dist
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: protocol-dist
           path: packages/@happy/protocol/dist
@@ -432,7 +432,7 @@ jobs:
             ${{ runner.os }}-yarn-
 
       - name: Download protocol dist
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: protocol-dist
           path: packages/@happy/protocol/dist
@@ -476,7 +476,7 @@ jobs:
             ${{ runner.os }}-yarn-
 
       - name: Download protocol dist
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: protocol-dist
           path: packages/@happy/protocol/dist
@@ -522,7 +522,7 @@ jobs:
             ${{ runner.os }}-yarn-
 
       - name: Download protocol dist
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: protocol-dist
           path: packages/@happy/protocol/dist
@@ -566,7 +566,7 @@ jobs:
             ${{ runner.os }}-yarn-
 
       - name: Download protocol dist
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: protocol-dist
           path: packages/@happy/protocol/dist
@@ -621,13 +621,13 @@ jobs:
             ${{ runner.os }}-yarn-
 
       - name: Download protocol dist
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: protocol-dist
           path: packages/@happy/protocol/dist
 
       - name: Download OpenAPI spec
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: openapi-spec
           path: happy-server
