@@ -117,14 +117,23 @@ actor SyncService {
 
 ### EncryptionService
 
-End-to-end encryption using the same algorithms as other Happy clients.
+End-to-end encryption using AES-256-GCM, matching happy-cli and happy-app.
 
 ```swift
 struct EncryptionService {
-    func encrypt(_ data: Data, with key: SymmetricKey) throws -> Data
-    func decrypt(_ data: Data, with key: SymmetricKey) throws -> Data
+    static func encrypt(_ data: Data, with key: SymmetricKey) throws -> Data
+    static func decrypt(_ data: Data, with key: SymmetricKey) throws -> Data
+    static func generateKeyPair() -> (privateKey: Data, publicKey: Data)
+    static func deriveSharedSecret(privateKey: Data, peerPublicKey: Data) throws -> SymmetricKey
 }
 ```
+
+**Cross-Platform Compatibility:**
+- Uses AES-256-GCM (same as happy-cli primary, happy-app primary)
+- Bundle format: `[version:1][nonce:12][ciphertext:N][authTag:16]`
+- Supports version 0x00 (no key versioning) and 0x01 (with key versioning)
+- Key derivation uses X25519 ECDH with HKDF
+- See [ENCRYPTION-ARCHITECTURE.md](../docs/ENCRYPTION-ARCHITECTURE.md) for details
 
 ## Testing
 
@@ -253,7 +262,7 @@ class SessionViewModel: ObservableObject {
 | MVVM Architecture | ✅ | Models, ViewModels, Views, Services |
 | Authentication | ✅ | AuthService with QR scanning support |
 | Keychain Storage | ✅ | KeychainHelper for secure credentials |
-| Encryption | ✅ | EncryptionService with CryptoKit |
+| Encryption | ✅ | EncryptionService with AES-256-GCM (CryptoKit) |
 | WebSocket Sync | ✅ | SyncService with Combine publishers |
 | Sessions List | ✅ | NavigationSplitView with sidebar |
 | Session Detail | ✅ | Message display with tool uses |
