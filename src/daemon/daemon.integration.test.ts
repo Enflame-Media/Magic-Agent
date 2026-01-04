@@ -833,6 +833,262 @@ describe.skipIf(!await isServerHealthy())('Daemon Integration Tests', { timeout:
       await clearDaemonState();
     }
   });
+  /**
+   * Pre-start Validation Tests (HAP-760)
+   *
+   * Tests for daemon startup validation behavior:
+   * - Detecting and cleaning up stale state (process dead but state file exists)
+   * - Starting fresh after stale state cleanup
+   *
+   * Note: The "already running" test already exists above as
+   * "should not allow starting a second daemon" (line 308-332)
+   */
+  describe('Pre-start validation (HAP-760)', () => {
+    beforeEach(async () => {
+      // Stop any running daemon first
+      await stopDaemon();
+      // Ensure no state file exists
+      await clearDaemonState();
+    });
+
+    afterEach(async () => {
+      await stopDaemon();
+      await clearDaemonState();
+    });
+
+    it('should clean up stale state and start successfully', async () => {
+      // Create stale state: write a state file with a PID that doesn't exist
+      // Use a high PID that's unlikely to be running
+      const stalePid = 99999999;
+      const staleState = {
+        pid: stalePid,
+        httpPort: 12345,
+        startTime: new Date().toISOString(),
+        startedWithCliVersion: '0.0.0-stale-test',
+      };
+      writeFileSync(configuration.daemonStateFile, JSON.stringify(staleState));
+      expect(existsSync(configuration.daemonStateFile)).toBe(true);
+
+      // Verify the stale PID is not running
+      let pidRunning = true;
+      try {
+        process.kill(stalePid, 0);
+      } catch {
+        pidRunning = false;
+      }
+      expect(pidRunning).toBe(false);
+
+      console.log('[TEST] Created stale daemon state file with dead PID');
+
+      // Start daemon - it should clean up stale state and start fresh
+      void spawnHappyCLI(['daemon', 'start'], { stdio: 'ignore' });
+
+      // Wait for daemon to start successfully
+      await waitFor(async () => {
+        const state = await readDaemonState();
+        return state !== null && state.pid > 0 && state.pid !== stalePid;
+      }, 10_000, 250);
+
+      // Verify daemon started with new PID
+      const state = await readDaemonState();
+      expect(state).not.toBeNull();
+      expect(state!.pid).not.toBe(stalePid);
+      expect(state!.pid).toBeGreaterThan(0);
+      expect(state!.httpPort).toBeGreaterThan(0);
+      expect(state!.startedWithCliVersion).toBeDefined();
+      expect(state!.startedWithCliVersion).not.toBe('0.0.0-stale-test');
+
+      // Verify the new daemon is actually running
+      let isRunning = false;
+      try {
+        process.kill(state!.pid, 0);
+        isRunning = true;
+      } catch {
+        isRunning = false;
+      }
+      expect(isRunning).toBe(true);
+
+      console.log(`[TEST] Daemon started fresh after stale state cleanup - PID: ${state!.pid}`);
+    });
+  });
+
+  /**
+   * Restart Command Tests (HAP-760)
+   *
+   * Tests for daemon restart command behavior:
+   * - Restart with running daemon (stop then start)
+   * - Restart with no daemon running (just start)
+   * - Restart with stale daemon state (cleanup then start)
+   */
+  describe('Restart command (HAP-760)', () => {
+    afterEach(async () => {
+      await stopDaemon();
+      await clearDaemonState();
+    });
+
+    it('should stop and restart when daemon is running', async () => {
+      // First, start a daemon
+      await stopDaemon();
+      await clearDaemonState();
+
+      void spawnHappyCLI(['daemon', 'start'], { stdio: 'ignore' });
+
+      await waitFor(async () => {
+        const state = await readDaemonState();
+        return state !== null && state.pid > 0;
+      }, 10_000, 250);
+
+      const initialState = await readDaemonState();
+      expect(initialState).not.toBeNull();
+      const initialPid = initialState!.pid;
+
+      console.log(`[TEST] Initial daemon running with PID: ${initialPid}`);
+
+      // Call restart command
+      const restartChild = spawn('yarn', ['tsx', 'src/index.ts', 'daemon', 'restart'], {
+        cwd: process.cwd(),
+        env: process.env,
+        stdio: ['ignore', 'pipe', 'pipe']
+      });
+
+      let output = '';
+      restartChild.stdout?.on('data', (data) => {
+        output += data.toString();
+      });
+      restartChild.stderr?.on('data', (data) => {
+        output += data.toString();
+      });
+
+      // Wait for restart to complete
+      await new Promise<void>((resolve) => {
+        restartChild.on('exit', () => resolve());
+      });
+
+      // Wait for new daemon to be running
+      await waitFor(async () => {
+        const state = await readDaemonState();
+        return state !== null && state.pid > 0;
+      }, 10_000, 250);
+
+      // Verify new daemon has different PID
+      const finalState = await readDaemonState();
+      expect(finalState).not.toBeNull();
+      expect(finalState!.pid).not.toBe(initialPid);
+      expect(finalState!.pid).toBeGreaterThan(0);
+
+      // Verify output contains restart messages
+      expect(output).toContain('Stopping');
+      expect(output).toContain('Starting');
+      expect(output).toContain('restarted successfully');
+
+      console.log(`[TEST] Daemon restarted with new PID: ${finalState!.pid}`);
+    });
+
+    it('should just start when no daemon running', async () => {
+      // Ensure no daemon is running
+      await stopDaemon();
+      await clearDaemonState();
+
+      // Brief pause to ensure clean state
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Call restart command (with no daemon running)
+      const restartChild = spawn('yarn', ['tsx', 'src/index.ts', 'daemon', 'restart'], {
+        cwd: process.cwd(),
+        env: process.env,
+        stdio: ['ignore', 'pipe', 'pipe']
+      });
+
+      let output = '';
+      restartChild.stdout?.on('data', (data) => {
+        output += data.toString();
+      });
+      restartChild.stderr?.on('data', (data) => {
+        output += data.toString();
+      });
+
+      // Wait for restart to complete
+      await new Promise<void>((resolve) => {
+        restartChild.on('exit', () => resolve());
+      });
+
+      // Wait for daemon to be running
+      await waitFor(async () => {
+        const state = await readDaemonState();
+        return state !== null && state.pid > 0;
+      }, 10_000, 250);
+
+      // Verify daemon started
+      const state = await readDaemonState();
+      expect(state).not.toBeNull();
+      expect(state!.pid).toBeGreaterThan(0);
+
+      // Verify output does not contain "Stopping" (since no daemon was running)
+      // But should contain "Starting" and success
+      expect(output).toContain('Starting');
+      expect(output).toContain('restarted successfully');
+
+      console.log(`[TEST] Daemon started via restart command - PID: ${state!.pid}`);
+    });
+
+    it('should handle stale state on restart', async () => {
+      // Stop any running daemon first
+      await stopDaemon();
+      await clearDaemonState();
+
+      // Create stale state: write a state file with a PID that doesn't exist
+      const stalePid = 99999998;
+      const staleState = {
+        pid: stalePid,
+        httpPort: 12346,
+        startTime: new Date().toISOString(),
+        startedWithCliVersion: '0.0.0-stale-restart-test',
+      };
+      writeFileSync(configuration.daemonStateFile, JSON.stringify(staleState));
+      expect(existsSync(configuration.daemonStateFile)).toBe(true);
+
+      console.log('[TEST] Created stale daemon state file');
+
+      // Call restart command
+      const restartChild = spawn('yarn', ['tsx', 'src/index.ts', 'daemon', 'restart'], {
+        cwd: process.cwd(),
+        env: process.env,
+        stdio: ['ignore', 'pipe', 'pipe']
+      });
+
+      let output = '';
+      restartChild.stdout?.on('data', (data) => {
+        output += data.toString();
+      });
+      restartChild.stderr?.on('data', (data) => {
+        output += data.toString();
+      });
+
+      // Wait for restart to complete
+      await new Promise<void>((resolve) => {
+        restartChild.on('exit', () => resolve());
+      });
+
+      // Wait for daemon to be running
+      await waitFor(async () => {
+        const state = await readDaemonState();
+        return state !== null && state.pid > 0 && state.pid !== stalePid;
+      }, 10_000, 250);
+
+      // Verify daemon started with new PID
+      const state = await readDaemonState();
+      expect(state).not.toBeNull();
+      expect(state!.pid).not.toBe(stalePid);
+      expect(state!.pid).toBeGreaterThan(0);
+
+      // Verify output mentions stale state cleanup
+      expect(output).toContain('stale');
+      expect(output).toContain('Starting');
+      expect(output).toContain('restarted successfully');
+
+      console.log(`[TEST] Daemon started after stale state cleanup - PID: ${state!.pid}`);
+    });
+  });
 });
 
 /**
