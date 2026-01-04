@@ -164,7 +164,8 @@ export function useAdminUsers() {
      */
     async function updateUserRole(userId: string, role: 'admin' | 'user'): Promise<boolean> {
         try {
-            const response = await apiRequest(
+            // apiRequest throws ApiError on failure and returns parsed JSON
+            const data = await apiRequest<RoleUpdateResponse>(
                 `${API_BASE_URL}/api/admin/users/${userId}/role`,
                 {
                     method: 'POST',
@@ -172,12 +173,6 @@ export function useAdminUsers() {
                 }
             );
 
-            if (!response.ok) {
-                const data = await response.json().catch(() => ({})) as { message?: string };
-                throw new Error(data.message || `Failed to update role: ${response.status}`);
-            }
-
-            const data: RoleUpdateResponse = await response.json();
             if (data.success) {
                 // Update local state
                 const user = users.value.find((u) => u.id === userId);
@@ -212,18 +207,14 @@ export function useAdminUsers() {
             if (reason) body.banReason = reason;
             if (expiresIn) body.banExpiresIn = expiresIn;
 
-            const response = await apiRequest(
+            // apiRequest throws ApiError on failure and returns parsed JSON
+            await apiRequest<{ user: { banned: boolean } }>(
                 `${API_BASE_URL}/api/auth/admin/ban-user`,
                 {
                     method: 'POST',
                     body: JSON.stringify(body),
                 }
             );
-
-            if (!response.ok) {
-                const data = await response.json().catch(() => ({})) as { message?: string };
-                throw new Error(data.message || `Failed to ban user: ${response.status}`);
-            }
 
             // Refresh user list to get updated ban status
             await fetchUsers();
@@ -243,18 +234,14 @@ export function useAdminUsers() {
      */
     async function unbanUser(userId: string): Promise<boolean> {
         try {
-            const response = await apiRequest(
+            // apiRequest throws ApiError on failure and returns parsed JSON
+            await apiRequest<{ user: { banned: boolean } }>(
                 `${API_BASE_URL}/api/auth/admin/unban-user`,
                 {
                     method: 'POST',
                     body: JSON.stringify({ userId }),
                 }
             );
-
-            if (!response.ok) {
-                const data = await response.json().catch(() => ({})) as { message?: string };
-                throw new Error(data.message || `Failed to unban user: ${response.status}`);
-            }
 
             // Refresh user list to get updated ban status
             await fetchUsers();
