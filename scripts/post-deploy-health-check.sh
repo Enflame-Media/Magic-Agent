@@ -42,6 +42,27 @@ TIMEOUT_SECONDS=5
 MAX_RETRIES=3
 RETRY_DELAY_SECONDS=2
 
+# Detect best available method for millisecond timestamps
+# Priority: 1) GNU date %N, 2) Perl Time::HiRes, 3) seconds-only fallback
+#
+# BusyBox date (Synology DSM, Alpine) doesn't support %N nanoseconds
+# Bash EPOCHREALTIME requires bash 5.0+ (not available on older systems)
+_test_ns=$(date +%N 2>/dev/null)
+if [[ "$_test_ns" =~ ^[0-9]+$ ]]; then
+    # GNU date with nanosecond support - best option
+    get_timestamp_ms() { date +%s%3N; }
+    TIMESTAMP_PRECISION="ms"
+elif perl -MTime::HiRes -e '1' 2>/dev/null; then
+    # Perl with Time::HiRes - common on Unix systems
+    get_timestamp_ms() { perl -MTime::HiRes -e 'print int(Time::HiRes::time * 1000)'; }
+    TIMESTAMP_PRECISION="ms"
+else
+    # Fallback: seconds with 000 appended (only second precision available)
+    get_timestamp_ms() { echo "$(date +%s)000"; }
+    TIMESTAMP_PRECISION="s"
+fi
+unset _test_ns
+
 # Script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -136,7 +157,7 @@ check_health() {
         local end_time
         local duration
 
-        start_time=$(date +%s%3N 2>/dev/null || date +%s)000
+        start_time=$(get_timestamp_ms)
 
         # Use a temporary file for the response body
         local tmp_file=$(mktemp)
@@ -178,7 +199,7 @@ check_health() {
         response=$(cat "$tmp_file")
         rm -f "$tmp_file"
 
-        end_time=$(date +%s%3N 2>/dev/null || date +%s)000
+        end_time=$(get_timestamp_ms)
         duration=$((end_time - start_time))
 
         # Show verbose output if requested
