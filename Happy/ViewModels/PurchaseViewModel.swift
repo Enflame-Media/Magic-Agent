@@ -153,16 +153,47 @@ final class PurchaseViewModel {
         isLoading = true
         selectedPackage = package
 
+        // Track purchase started
+        AnalyticsService.shared.trackPurchaseEvent(
+            .purchaseStarted,
+            properties: .purchase(package: package)
+        )
+
         do {
             _ = try await purchaseService.purchase(package: package)
+
+            // Track purchase completed
+            AnalyticsService.shared.trackPurchaseEvent(
+                .purchaseCompleted,
+                properties: .purchase(package: package)
+            )
+
             successMessage = "Thank you for your purchase!"
             showingSuccess = true
         } catch let error as PurchaseError {
-            if error != .cancelled {
+            if error == .cancelled {
+                // Track purchase cancelled
+                AnalyticsService.shared.trackPurchaseEvent(
+                    .purchaseCancelled,
+                    properties: .purchase(package: package)
+                )
+            } else {
+                // Track purchase failed
+                AnalyticsService.shared.trackPurchaseEvent(
+                    .purchaseFailed,
+                    properties: .purchaseError(package: package, error: error)
+                )
+
                 errorMessage = error.errorDescription
                 showingError = true
             }
         } catch {
+            // Track purchase failed (unknown error)
+            AnalyticsService.shared.trackPurchaseEvent(
+                .purchaseFailed,
+                properties: .purchaseError(package: package, error: .unknown(error.localizedDescription))
+            )
+
             errorMessage = error.localizedDescription
             showingError = true
         }
@@ -175,8 +206,22 @@ final class PurchaseViewModel {
     func restore() async {
         isRestoring = true
 
+        // Track restore started
+        AnalyticsService.shared.trackPurchaseEvent(
+            .restoreStarted,
+            properties: [.platform: AnalyticsPlatform.macos]
+        )
+
         do {
             let info = try await purchaseService.restorePurchases()
+
+            // Track restore completed
+            let restoredCount = info.activeSubscriptions.count
+            let restoredPro = info.entitlements["pro"]?.isActive ?? false
+            AnalyticsService.shared.trackPurchaseEvent(
+                .restoreCompleted,
+                properties: .restoreCompleted(restoredCount: restoredCount, restoredPro: restoredPro)
+            )
 
             if info.activeSubscriptions.isEmpty {
                 errorMessage = "No active subscriptions found to restore."

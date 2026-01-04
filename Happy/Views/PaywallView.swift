@@ -59,6 +59,12 @@ struct PaywallView: View {
         }
         .frame(width: 480, height: 600)
         .task {
+            // Track paywall presented event
+            AnalyticsService.shared.trackPurchaseEvent(
+                .paywallPresented,
+                properties: .paywall(offeringId: viewModel.offering?.identifier, source: "paywall_sheet")
+            )
+
             await viewModel.loadOfferings()
         }
         .alert("Error", isPresented: $viewModel.showingError) {
