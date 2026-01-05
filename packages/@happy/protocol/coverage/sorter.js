@@ -99,9 +99,13 @@ var addSorting = (function() {
         for (i = 0; i < tableCols.length; i += 1) {
             colNode = tableCols[i];
             col = cols[i];
-            val = colNode.getAttribute('data-value');
             if (col.type === 'number') {
-                val = Number(val);
+                val = Number(colNode.getAttribute('data-value'));
+            } else {
+                // For non-numeric data, derive the sort key from the cell's text
+                // content rather than from an arbitrary data-value attribute,
+                // to avoid reinterpreting untrusted DOM text as HTML elsewhere.
+                val = (colNode.textContent || colNode.innerText || '').trim();
             }
             data[col.key] = val;
         }
