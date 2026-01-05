@@ -139,15 +139,13 @@ function createMockWebSocket(_id: string = 'ws-1'): WebSocket & {
 } {
     const messages: string[] = [];
     let closed = false;
-    let closeCode: number | undefined;
-    let closeReason: string | undefined;
     let attachment: unknown = null;
 
     const ws = {
         _messages: messages,
         _closed: closed,
-        _closeCode: closeCode,
-        _closeReason: closeReason,
+        _closeCode: undefined as number | undefined,
+        _closeReason: undefined as string | undefined,
         _attachment: attachment,
         send: vi.fn((msg: string) => {
             if (closed) throw new Error('WebSocket is closed');

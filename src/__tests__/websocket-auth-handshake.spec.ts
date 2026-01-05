@@ -480,8 +480,8 @@ describe('WebSocket Auth Handshake (HAP-360)', () => {
             const messages = serverWs._getParsedMessages();
             const errorMsg = messages.find((m: ClientMessage) => m.event === 'auth-error');
             expect(errorMsg).toBeDefined();
-            expect(errorMsg?.data).toHaveProperty('message');
-            expect((errorMsg?.data as { message: string }).message).toContain('token');
+            expect(errorMsg!.data).toHaveProperty('message');
+            expect((errorMsg!.data as { message: string }).message).toContain('token');
         });
 
         it('should reject non-auth message before authentication', async () => {
@@ -518,8 +518,8 @@ describe('WebSocket Auth Handshake (HAP-360)', () => {
             const messages = serverWs._getParsedMessages();
             const errorMsg = messages.find((m: ClientMessage) => m.event === 'auth-error');
             expect(errorMsg).toBeDefined();
-            expect(errorMsg?.data).toHaveProperty('message');
-            expect((errorMsg?.data as { message: string }).message).toContain('not authenticated');
+            expect(errorMsg!.data).toHaveProperty('message');
+            expect((errorMsg!.data as { message: string }).message).toContain('not authenticated');
         });
 
         it('should require sessionId for session-scoped auth', async () => {

@@ -24,7 +24,7 @@ function createTestJpeg(width: number, height: number): ArrayBuffer {
         0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0x01, 0x01, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00,
         // DQT (Define Quantization Table)
         0xff, 0xdb, 0x00, 0x43, 0x00,
-        ...new Array(64).fill(0x10), // Quantization table values
+        ...Array.from({ length: 64 }, () => 0x10), // Quantization table values
         // SOF0 (Start of Frame - Baseline DCT)
         0xff, 0xc0, 0x00, 0x0b, 0x08,
         (height >> 8) & 0xff, height & 0xff,  // Height (big-endian)
@@ -33,7 +33,7 @@ function createTestJpeg(width: number, height: number): ArrayBuffer {
         0x01, 0x11, 0x00, // Component 1: Y, 1x1 sampling, QT 0
         // DHT (Define Huffman Table)
         0xff, 0xc4, 0x00, 0x1f, 0x00,
-        ...new Array(28).fill(0x00), // Minimal Huffman table
+        ...Array.from({ length: 28 }, () => 0x00), // Minimal Huffman table
         // SOS (Start of Scan)
         0xff, 0xda, 0x00, 0x08, 0x01, 0x01, 0x00, 0x00, 0x3f, 0x00,
         // Minimal scan data
