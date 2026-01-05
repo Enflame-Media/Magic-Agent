@@ -4,6 +4,9 @@
 
 name: Shared Types Validation
 
+permissions:
+  contents: read
+
 on:
   push:
     branches:
