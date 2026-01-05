@@ -10,5 +10,13 @@
         "happy/github-casing": "warn",
         "happy/protocol-helpers": "warn"
     },
+    "overrides": [
+        {
+            "files": ["*.spec.ts", "*.test.ts"],
+            "rules": {
+                "@typescript-eslint/unbound-method": "off"
+            }
+        }
+    ],
     "ignorePatterns": ["node_modules", "dist", "build", "coverage", "*.d.ts", ".wrangler"]
 }

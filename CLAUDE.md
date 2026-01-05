@@ -145,9 +145,25 @@ Both commands use the `--type-aware` flag which enables TypeScript-aware linting
     "rules": {
         "happy/github-casing": "warn",
         "happy/protocol-helpers": "warn"
-    }
+    },
+    "overrides": [
+        {
+            "files": ["*.spec.ts", "*.test.ts"],
+            "rules": {
+                "@typescript-eslint/unbound-method": "off"
+            }
+        }
+    ]
 }
 ```
+
+### Test File Overrides (HAP-789)
+
+The `typescript-eslint/unbound-method` rule is disabled for test files (`*.spec.ts`, `*.test.ts`). This is intentional because:
+
+- Vitest mock patterns like `expect(mock.method).toHaveBeenCalled()` trigger false positives
+- Mock objects don't use `this` binding, so the warning is not applicable
+- This matches the standard practice in Jest/Vitest ecosystems
 
 ### Custom Rules
 
