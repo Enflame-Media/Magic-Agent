@@ -500,7 +500,11 @@ class ApiSocket {
         });
 
         if (result.ok) {
-            return await machineEncryption.decryptRaw(result.result!) as R;
+            const decrypted = await machineEncryption.decryptRaw(result.result!);
+            if (decrypted === null) {
+                throw new AppError(ErrorCodes.DECRYPTION_FAILED, 'Failed to decrypt RPC response', { canTryAgain: true });
+            }
+            return decrypted as R;
         }
         if (result.cancelled) {
             throw new AppError(ErrorCodes.RPC_CANCELLED, 'RPC call was cancelled');
