@@ -119,7 +119,7 @@ pushRoutes.openapi(registerPushTokenRoute, async (c) => {
 
         return c.json({ success: true as const });
     } catch (error) {
-        console.error(`Failed to register push token: ${error}`);
+        console.error(`Failed to register push token: ${error instanceof Error ? error.message : String(error)}`);
         return c.json({ error: 'Failed to register push token' }, 500);
     }
 });
@@ -186,7 +186,7 @@ pushRoutes.openapi(deletePushTokenRoute, async (c) => {
 
         return c.json({ success: true as const });
     } catch (error) {
-        console.error(`Failed to delete push token: ${error}`);
+        console.error(`Failed to delete push token: ${error instanceof Error ? error.message : String(error)}`);
         return c.json({ error: 'Failed to delete push token' }, 500);
     }
 });
@@ -253,7 +253,7 @@ pushRoutes.openapi(listPushTokensRoute, async (c) => {
             })),
         });
     } catch (error) {
-        console.error(`Failed to get push tokens: ${error}`);
+        console.error(`Failed to get push tokens: ${error instanceof Error ? error.message : String(error)}`);
         return c.json({ error: 'Failed to get push tokens' }, 500);
     }
 });

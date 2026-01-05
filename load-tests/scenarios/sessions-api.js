@@ -72,6 +72,7 @@ export default function () {
             }
         );
 
+        /** @type {string | null} */
         let sessionId = null;
 
         check(createRes, {

@@ -120,7 +120,7 @@ kvRoutes.openapi(getKVRoute, async (c) => {
             version: result.version,
         });
     } catch (error) {
-        console.error(`Failed to get KV value: ${error}`);
+        console.error(`Failed to get KV value: ${error instanceof Error ? error.message : String(error)}`);
         return c.json({ error: 'Failed to get value' }, 500);
     }
 });
@@ -198,7 +198,7 @@ kvRoutes.openapi(listKVRoute, async (c) => {
 
         return c.json({ items });
     } catch (error) {
-        console.error(`Failed to list KV items: ${error}`);
+        console.error(`Failed to list KV items: ${error instanceof Error ? error.message : String(error)}`);
         return c.json({ error: 'Failed to list items' }, 500);
     }
 });
@@ -278,7 +278,7 @@ kvRoutes.openapi(bulkGetKVRoute, async (c) => {
 
         return c.json({ values });
     } catch (error) {
-        console.error(`Failed to bulk get KV values: ${error}`);
+        console.error(`Failed to bulk get KV values: ${error instanceof Error ? error.message : String(error)}`);
         return c.json({ error: 'Failed to get values' }, 500);
     }
 });
@@ -458,7 +458,7 @@ kvRoutes.openapi(mutateKVRoute, async (c) => {
             results,
         });
     } catch (error) {
-        console.error(`Failed to mutate KV values: ${error}`);
+        console.error(`Failed to mutate KV values: ${error instanceof Error ? error.message : String(error)}`);
         return c.json({ error: 'Failed to mutate values' }, 500);
     }
 });
