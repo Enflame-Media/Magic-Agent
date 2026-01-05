@@ -61,6 +61,12 @@ vi.mock('@/mcp/config', () => ({
     buildMcpSyncState: vi.fn(() => ({})),
 }));
 
+// Mock telemetry (HAP-783)
+const mockTrackEvent = vi.fn();
+vi.mock('@/telemetry', () => ({
+    trackEvent: (...args: unknown[]) => mockTrackEvent(...args),
+}));
+
 // Mock HappyWebSocket
 vi.mock('./HappyWebSocket', () => {
     return {
@@ -363,6 +369,130 @@ describe('ApiMachineClient Circuit Breaker', () => {
 
             expect(result.revived).toBe(false);
             expect(result.error).toContain(`Max revival attempts (${clientAny.MAX_REVIVAL_ATTEMPTS_PER_SESSION})`);
+        });
+    });
+
+    /**
+     * Tests for telemetry emission on circuit breaker events
+     * @see HAP-783 - Add telemetry emission when session revival circuit breaker trips
+     */
+    describe('Telemetry emission (HAP-783)', () => {
+        beforeEach(() => {
+            mockTrackEvent.mockClear();
+        });
+
+        it('should emit session_revival_limit_exceeded when per-session limit exceeded', async () => {
+            const clientAny = client as unknown as {
+                sessionRevivalAttempts: Map<string, number>;
+                MAX_REVIVAL_ATTEMPTS_PER_SESSION: number;
+                tryReviveSession: (sessionId: string, directory: string) => Promise<{ revived: boolean; error?: string; originalSessionId: string }>;
+            };
+
+            // Simulate exceeding the limit
+            const testSessionId = 'test-session-for-telemetry';
+            clientAny.sessionRevivalAttempts.set(testSessionId, clientAny.MAX_REVIVAL_ATTEMPTS_PER_SESSION);
+
+            // Attempt revival - should fail and emit telemetry
+            await clientAny.tryReviveSession(testSessionId, '/test/dir');
+
+            expect(mockTrackEvent).toHaveBeenCalledWith('session_revival_limit_exceeded', {
+                attempts: clientAny.MAX_REVIVAL_ATTEMPTS_PER_SESSION,
+                maxAttempts: clientAny.MAX_REVIVAL_ATTEMPTS_PER_SESSION,
+            });
+        });
+
+        it('should emit session_revival_cooldown_triggered when global cooldown activates', () => {
+            const clientAny = client as unknown as {
+                recordRevivalFailure: () => void;
+                COOLDOWN_FAILURE_THRESHOLD: number;
+                COOLDOWN_DURATION_MS: number;
+                COOLDOWN_WINDOW_MS: number;
+            };
+
+            // Record enough failures to trigger cooldown
+            for (let i = 0; i < clientAny.COOLDOWN_FAILURE_THRESHOLD; i++) {
+                clientAny.recordRevivalFailure();
+            }
+
+            // Should have emitted telemetry on the threshold-th failure
+            expect(mockTrackEvent).toHaveBeenCalledWith('session_revival_cooldown_triggered', {
+                failureCount: clientAny.COOLDOWN_FAILURE_THRESHOLD,
+                cooldownDurationMs: clientAny.COOLDOWN_DURATION_MS,
+                windowMs: clientAny.COOLDOWN_WINDOW_MS,
+                threshold: clientAny.COOLDOWN_FAILURE_THRESHOLD,
+            });
+        });
+
+        it('should emit session_revival_attempt on each revival attempt', async () => {
+            // Mock claudeCheckSession to allow revival to proceed
+            vi.mock('@/claude/utils/claudeCheckSession', () => ({
+                claudeCheckSession: vi.fn(() => true),
+            }));
+
+            const clientAny = client as unknown as {
+                tryReviveSession: (sessionId: string, directory: string) => Promise<{ revived: boolean; error?: string; originalSessionId: string }>;
+                revivalMetrics: { attempted: number; succeeded: number; failed: number };
+                MAX_REVIVAL_ATTEMPTS_PER_SESSION: number;
+            };
+
+            // Configure mocks for a valid revival attempt
+            mockGetSessionStatus.mockReturnValue({ status: 'unknown' });
+            mockSpawnSession.mockResolvedValue({
+                type: 'success',
+                sessionId: 'new-session-id',
+            });
+
+            // Trigger a revival attempt
+            await clientAny.tryReviveSession(testSessionId, testDirectory);
+
+            // Check that session_revival_attempt was emitted
+            expect(mockTrackEvent).toHaveBeenCalledWith('session_revival_attempt', expect.objectContaining({
+                attemptNumber: expect.any(Number),
+                maxAttempts: clientAny.MAX_REVIVAL_ATTEMPTS_PER_SESSION,
+                globalAttemptCount: expect.any(Number),
+            }));
+        });
+
+        it('should emit session_revival_failure on failed revival', async () => {
+            const clientAny = client as unknown as {
+                tryReviveSession: (sessionId: string, directory: string) => Promise<{ revived: boolean; error?: string; originalSessionId: string }>;
+            };
+
+            // Mock spawnSession to fail
+            mockSpawnSession.mockResolvedValue({
+                type: 'error',
+                errorMessage: 'Test failure',
+            });
+
+            // Trigger a revival attempt that will fail
+            const result = await clientAny.tryReviveSession(testSessionId, testDirectory);
+
+            // Verify the result and telemetry
+            if (!result.revived) {
+                expect(mockTrackEvent).toHaveBeenCalledWith('session_revival_failure', expect.objectContaining({
+                    failureCount: expect.any(Number),
+                    totalAttempts: expect.any(Number),
+                    failureRate: expect.any(Number),
+                }));
+            }
+        });
+
+        it('should not emit cooldown telemetry when below threshold', () => {
+            const clientAny = client as unknown as {
+                recordRevivalFailure: () => void;
+                COOLDOWN_FAILURE_THRESHOLD: number;
+            };
+
+            // Record failures below threshold
+            for (let i = 0; i < clientAny.COOLDOWN_FAILURE_THRESHOLD - 1; i++) {
+                clientAny.recordRevivalFailure();
+            }
+
+            // Should NOT have emitted cooldown telemetry
+            expect(mockTrackEvent).not.toHaveBeenCalledWith(
+                'session_revival_cooldown_triggered',
+                expect.anything()
+            );
         });
     });
 });

@@ -17,6 +17,7 @@ import { RpcHandlerManager, RPC_ERROR_CODES, type SessionRevivalResult } from '.
 import { HappyWebSocket, WebSocketMetrics } from './HappyWebSocket';
 import type { MetadataUpdateResponse, DaemonStateUpdateResponse } from './socketUtils';
 import { buildMcpSyncState } from '@/mcp/config';
+import { trackEvent } from '@/telemetry';
 
 // Keep-alive timing configuration (prevents thundering herd on reconnection)
 const KEEP_ALIVE_BASE_INTERVAL_MS = 20000; // 20 seconds base interval
@@ -34,6 +35,7 @@ const SESSION_REVIVAL_MAX_ATTEMPTS = (() => {
 
 import type { GetSessionStatusResponse } from '@/daemon/types';
 import { isValidSessionId, normalizeSessionId } from '@/claude/utils/sessionValidation';
+import { claudeCheckSession } from '@/claude/utils/claudeCheckSession';
 
 /**
  * RPC handlers provided by the daemon to the machine client
@@ -268,6 +270,7 @@ export class ApiMachineClient {
      * Record a revival failure and potentially trigger cooldown.
      *
      * @see HAP-744 - Fix session revival race condition causing infinite loop
+     * @see HAP-783 - Add telemetry emission when circuit breaker trips
      */
     private recordRevivalFailure(): void {
         const now = Date.now();
@@ -282,6 +285,14 @@ export class ApiMachineClient {
         if (this.revivalFailureTimestamps.length >= this.COOLDOWN_FAILURE_THRESHOLD) {
             this.revivalCooldownUntil = now + this.COOLDOWN_DURATION_MS;
             logger.debug(`[API MACHINE] [REVIVAL] Circuit breaker triggered: ${this.revivalFailureTimestamps.length} failures in ${this.COOLDOWN_WINDOW_MS}ms window, pausing revivals for ${this.COOLDOWN_DURATION_MS}ms`);
+
+            // HAP-783: Emit telemetry when global cooldown triggers
+            trackEvent('session_revival_cooldown_triggered', {
+                failureCount: this.revivalFailureTimestamps.length,
+                cooldownDurationMs: this.COOLDOWN_DURATION_MS,
+                windowMs: this.COOLDOWN_WINDOW_MS,
+                threshold: this.COOLDOWN_FAILURE_THRESHOLD,
+            });
         }
     }
 
@@ -319,6 +330,13 @@ export class ApiMachineClient {
         const attempts = this.sessionRevivalAttempts.get(sessionId) || 0;
         if (attempts >= this.MAX_REVIVAL_ATTEMPTS_PER_SESSION) {
             logger.debug(`[API MACHINE] [REVIVAL] Max attempts (${this.MAX_REVIVAL_ATTEMPTS_PER_SESSION}) exceeded for session ${sessionId.substring(0, 8)}...`);
+
+            // HAP-783: Emit telemetry when per-session limit exceeded
+            trackEvent('session_revival_limit_exceeded', {
+                attempts,
+                maxAttempts: this.MAX_REVIVAL_ATTEMPTS_PER_SESSION,
+            });
+
             return {
                 revived: false,
                 originalSessionId: sessionId,
@@ -348,6 +366,13 @@ export class ApiMachineClient {
         this.revivalMetrics.attempted++;
         logger.debug(`[API MACHINE] [REVIVAL] Attempting revival for session ${sessionId.substring(0, 8)}... (attempt #${attempts + 1}/${this.MAX_REVIVAL_ATTEMPTS_PER_SESSION}, global #${this.revivalMetrics.attempted})`);
 
+        // HAP-783: Emit telemetry for revival attempt
+        trackEvent('session_revival_attempt', {
+            attemptNumber: attempts + 1,
+            maxAttempts: this.MAX_REVIVAL_ATTEMPTS_PER_SESSION,
+            globalAttemptCount: this.revivalMetrics.attempted,
+        });
+
         // Create the revival promise
         const revivalPromise = this.executeSessionRevival(sessionId, directory);
 
@@ -363,11 +388,30 @@ export class ApiMachineClient {
                 // HAP-744: Clear attempt counter on success
                 this.sessionRevivalAttempts.delete(sessionId);
                 logger.debug(`[API MACHINE] [REVIVAL] Session ${sessionId.substring(0, 8)}... revived successfully -> ${result.newSessionId?.substring(0, 8)}...`);
+
+                // HAP-783: Emit telemetry for successful revival
+                trackEvent('session_revival_success', {
+                    successCount: this.revivalMetrics.succeeded,
+                    totalAttempts: this.revivalMetrics.attempted,
+                    successRate: this.revivalMetrics.attempted > 0
+                        ? this.revivalMetrics.succeeded / this.revivalMetrics.attempted
+                        : 0,
+                });
             } else {
                 this.revivalMetrics.failed++;
                 // HAP-744: Record failure for circuit breaker
                 this.recordRevivalFailure();
                 logger.debug(`[API MACHINE] [REVIVAL] Session ${sessionId.substring(0, 8)}... revival failed: ${result.error}`);
+
+                // HAP-783: Emit telemetry for failed revival
+                trackEvent('session_revival_failure', {
+                    failureCount: this.revivalMetrics.failed,
+                    totalAttempts: this.revivalMetrics.attempted,
+                    failureRate: this.revivalMetrics.attempted > 0
+                        ? this.revivalMetrics.failed / this.revivalMetrics.attempted
+                        : 0,
+                    reason: result.error,
+                });
             }
 
             return result;
@@ -409,7 +453,32 @@ export class ApiMachineClient {
             // Continue with revival attempt even if status check fails
         }
 
-        // Step 2: Spawn new session with --resume flag
+        // Step 2: Validate session has actual content before revival
+        // HAP-XXX: Prevent spawning blank sessions by verifying the session file exists
+        // and contains valid messages with UUIDs. This prevents "blank sessions out of thin air"
+        // when attempting to revive sessions that never had content or were corrupted.
+        try {
+            const hasValidContent = claudeCheckSession(sessionId, directory);
+            if (!hasValidContent) {
+                logger.debug(`[API MACHINE] [REVIVAL] Session ${sessionId.substring(0, 8)}... has no valid content, refusing to revive`);
+                return {
+                    revived: false,
+                    originalSessionId: sessionId,
+                    error: 'Cannot revive session: session has no messages or does not exist'
+                };
+            }
+            logger.debug(`[API MACHINE] [REVIVAL] Session ${sessionId.substring(0, 8)}... has valid content, proceeding with revival`);
+        } catch (error) {
+            logger.debug(`[API MACHINE] [REVIVAL] Failed to validate session content: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            // If we can't validate, refuse to revive to prevent blank sessions
+            return {
+                revived: false,
+                originalSessionId: sessionId,
+                error: `Cannot revive session: validation failed - ${error instanceof Error ? error.message : 'Unknown error'}`
+            };
+        }
+
+        // Step 3: Spawn new session with --resume flag
         try {
             // Create a timeout promise
             const timeoutPromise = new Promise<never>((_, reject) => {
@@ -427,7 +496,7 @@ export class ApiMachineClient {
             const spawnResult = await Promise.race([spawnPromise, timeoutPromise]);
 
             if (spawnResult.type === 'success') {
-                // Step 3: Broadcast session:updated event to connected clients
+                // Step 4: Broadcast session:updated event to connected clients
                 // Note: The mobile app will receive this via the WebSocket connection
                 // and should update its session reference accordingly
                 if (this.socket?.connected && spawnResult.sessionId !== sessionId) {

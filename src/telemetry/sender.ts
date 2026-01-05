@@ -27,6 +27,12 @@ export type TelemetryEventType =
   | 'command_executed'
   | 'feature_used'
   | 'error_occurred'
+  // Session revival circuit breaker events (HAP-783)
+  | 'session_revival_attempt'
+  | 'session_revival_success'
+  | 'session_revival_failure'
+  | 'session_revival_limit_exceeded'
+  | 'session_revival_cooldown_triggered'
 
 /**
  * Base telemetry event structure.
