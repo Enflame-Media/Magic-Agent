@@ -25,7 +25,7 @@ interface BaseEntity {
  * Query options matching Drizzle's relational query API
  */
 interface QueryOptions<T> {
-    where?: (table: T, ops: WhereOperators) => boolean | unknown;
+    where?: (table: T, ops: WhereOperators) => unknown;
     orderBy?: (table: T, ops: OrderByOperators) => unknown[];
     limit?: number;
     offset?: number;
@@ -42,8 +42,8 @@ interface WhereOperators {
     gte: <T>(field: T, value: T) => boolean;
     lt: <T>(field: T, value: T) => boolean;
     lte: <T>(field: T, value: T) => boolean;
-    and: (...conditions: (boolean | unknown)[]) => boolean;
-    or: (...conditions: (boolean | unknown)[]) => boolean;
+    and: (...conditions: unknown[]) => boolean;
+    or: (...conditions: unknown[]) => boolean;
     like: (field: string, pattern: string) => boolean;
     inArray: <T>(field: T, values: T[]) => boolean;
     isNull: <T>(field: T) => boolean;
@@ -128,7 +128,7 @@ function createOrderByOps(): OrderByOperators {
  */
 function applyWhere<T extends BaseEntity>(
     data: T[],
-    where: ((table: T, ops: WhereOperators) => boolean | unknown) | undefined
+    where: ((table: T, ops: WhereOperators) => unknown) | undefined
 ): T[] {
     if (!where) return data;
 
@@ -683,6 +683,7 @@ function createSelectMock<T extends BaseEntity>(store: DataStore): SelectBuilder
         },
 
         // Make the builder thenable so it can be awaited directly
+        // oxlint-disable-next-line unicorn/no-thenable -- Required for Drizzle thenable mock
         then: <TResult1 = T[], TResult2 = never>(
             onfulfilled?: ((value: T[]) => TResult1 | PromiseLike<TResult1>) | null,
             onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null
