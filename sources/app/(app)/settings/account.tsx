@@ -24,7 +24,7 @@ import { useHappyAction } from '@/hooks/useHappyAction';
 import { disconnectGitHub } from '@/sync/apiGithub';
 import { disconnectService } from '@/sync/apiServices';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
-import { getPrivacySettings, updatePrivacySettings } from '@/sync/apiPrivacy';
+import { getPrivacySettings, updatePrivacySettings, type ProfileVisibility, type FriendRequestPermission } from '@/sync/apiPrivacy';
 
 export default React.memo(() => {
     const { theme } = useUnistyles();
@@ -37,35 +37,64 @@ export default React.memo(() => {
     const { connectAccount, isLoading: isConnecting } = useConnectAccount();
     const profile = useProfile();
 
-    // Privacy settings state (HAP-727)
+    // Privacy settings state (HAP-727, HAP-768)
     const [showOnlineStatus, setShowOnlineStatus] = useState(true);
-    const [showOnlineStatusLoading, setShowOnlineStatusLoading] = useState(false);
+    const [profileVisibility, setProfileVisibility] = useState<ProfileVisibility>('public');
+    const [friendRequestPermission, setFriendRequestPermission] = useState<FriendRequestPermission>('anyone');
+    const [privacySettingsLoading, setPrivacySettingsLoading] = useState(false);
 
     // Load privacy settings on mount
     useEffect(() => {
         if (auth.credentials) {
             getPrivacySettings(auth.credentials)
-                .then(settings => setShowOnlineStatus(settings.showOnlineStatus))
+                .then(settings => {
+                    setShowOnlineStatus(settings.showOnlineStatus);
+                    setProfileVisibility(settings.profileVisibility);
+                    setFriendRequestPermission(settings.friendRequestPermission);
+                })
                 .catch(error => console.error('Failed to load privacy settings:', error));
         }
     }, [auth.credentials]);
 
-    // Handle showOnlineStatus toggle
-    const handleShowOnlineStatusChange = useCallback(async (value: boolean) => {
+    // Handle privacy setting changes (HAP-727, HAP-768)
+    const handlePrivacySettingChange = useCallback(async <K extends keyof { showOnlineStatus: boolean; profileVisibility: ProfileVisibility; friendRequestPermission: FriendRequestPermission }>(
+        key: K,
+        value: { showOnlineStatus: boolean; profileVisibility: ProfileVisibility; friendRequestPermission: FriendRequestPermission }[K],
+        revert: () => void
+    ) => {
         if (!auth.credentials) return;
 
-        setShowOnlineStatusLoading(true);
+        setPrivacySettingsLoading(true);
         try {
-            const updated = await updatePrivacySettings(auth.credentials, { showOnlineStatus: value });
+            const updated = await updatePrivacySettings(auth.credentials, { [key]: value });
             setShowOnlineStatus(updated.showOnlineStatus);
+            setProfileVisibility(updated.profileVisibility);
+            setFriendRequestPermission(updated.friendRequestPermission);
         } catch (error) {
             showError(error, { fallbackMessage: 'Failed to update privacy setting' });
-            // Revert on error
-            setShowOnlineStatus(!value);
+            revert();
         } finally {
-            setShowOnlineStatusLoading(false);
+            setPrivacySettingsLoading(false);
         }
     }, [auth.credentials, showError]);
+
+    const handleShowOnlineStatusChange = useCallback((value: boolean) => {
+        const prev = showOnlineStatus;
+        setShowOnlineStatus(value);
+        handlePrivacySettingChange('showOnlineStatus', value, () => setShowOnlineStatus(prev));
+    }, [showOnlineStatus, handlePrivacySettingChange]);
+
+    const handleProfileVisibilityChange = useCallback((value: ProfileVisibility) => {
+        const prev = profileVisibility;
+        setProfileVisibility(value);
+        handlePrivacySettingChange('profileVisibility', value, () => setProfileVisibility(prev));
+    }, [profileVisibility, handlePrivacySettingChange]);
+
+    const handleFriendRequestPermissionChange = useCallback((value: FriendRequestPermission) => {
+        const prev = friendRequestPermission;
+        setFriendRequestPermission(value);
+        handlePrivacySettingChange('friendRequestPermission', value, () => setFriendRequestPermission(prev));
+    }, [friendRequestPermission, handlePrivacySettingChange]);
 
     // Get the current secret key
     const currentSecret = auth.credentials?.secret || '';
@@ -314,7 +343,7 @@ export default React.memo(() => {
                     </ItemGroup>
                 )}
 
-                {/* Privacy Section (HAP-727) */}
+                {/* Privacy Section (HAP-727, HAP-768) */}
                 <ItemGroup
                     title={t('settingsAccount.privacy')}
                     footer={t('settingsAccount.privacyDescription')}
@@ -327,13 +356,90 @@ export default React.memo(() => {
                             <Switch
                                 value={showOnlineStatus}
                                 onValueChange={handleShowOnlineStatusChange}
-                                disabled={showOnlineStatusLoading}
+                                disabled={privacySettingsLoading}
                                 trackColor={{ false: '#767577', true: '#34C759' }}
                                 thumbColor="#FFFFFF"
                             />
                         }
                         showChevron={false}
                     />
+                </ItemGroup>
+
+                {/* Profile Visibility (HAP-768) */}
+                <ItemGroup title={t('settingsAccount.profileVisibility')}>
+                    <Item
+                        title={t('settingsAccount.profileVisibilityPublic')}
+                        subtitle={t('settingsAccount.profileVisibilityPublicDescription')}
+                        icon={<Ionicons name="globe-outline" size={29} color="#007AFF" />}
+                        rightElement={
+                            profileVisibility === 'public' ? (
+                                <Ionicons name="checkmark" size={20} color="#007AFF" />
+                            ) : null
+                        }
+                        onPress={() => handleProfileVisibilityChange('public')}
+                        disabled={privacySettingsLoading}
+                        showChevron={false}
+                    />
+                    <Item
+                        title={t('settingsAccount.profileVisibilityFriendsOnly')}
+                        subtitle={t('settingsAccount.profileVisibilityFriendsOnlyDescription')}
+                        icon={<Ionicons name="people-outline" size={29} color="#007AFF" />}
+                        rightElement={
+                            profileVisibility === 'friends-only' ? (
+                                <Ionicons name="checkmark" size={20} color="#007AFF" />
+                            ) : null
+                        }
+                        onPress={() => handleProfileVisibilityChange('friends-only')}
+                        disabled={privacySettingsLoading}
+                        showChevron={false}
+                    />
+                </ItemGroup>
+
+                {/* Friend Request Permission (HAP-768) */}
+                <ItemGroup title={t('settingsAccount.friendRequestPermission')}>
+                    <Item
+                        title={t('settingsAccount.friendRequestPermissionAnyone')}
+                        subtitle={t('settingsAccount.friendRequestPermissionAnyoneDescription')}
+                        icon={<Ionicons name="person-add-outline" size={29} color="#5856D6" />}
+                        rightElement={
+                            friendRequestPermission === 'anyone' ? (
+                                <Ionicons name="checkmark" size={20} color="#5856D6" />
+                            ) : null
+                        }
+                        onPress={() => handleFriendRequestPermissionChange('anyone')}
+                        disabled={privacySettingsLoading}
+                        showChevron={false}
+                    />
+                    <Item
+                        title={t('settingsAccount.friendRequestPermissionFriendsOfFriends')}
+                        subtitle={t('settingsAccount.friendRequestPermissionFriendsOfFriendsDescription')}
+                        icon={<Ionicons name="people-circle-outline" size={29} color="#5856D6" />}
+                        rightElement={
+                            friendRequestPermission === 'friends-of-friends' ? (
+                                <Ionicons name="checkmark" size={20} color="#5856D6" />
+                            ) : null
+                        }
+                        onPress={() => handleFriendRequestPermissionChange('friends-of-friends')}
+                        disabled={privacySettingsLoading}
+                        showChevron={false}
+                    />
+                    <Item
+                        title={t('settingsAccount.friendRequestPermissionNone')}
+                        subtitle={t('settingsAccount.friendRequestPermissionNoneDescription')}
+                        icon={<Ionicons name="close-circle-outline" size={29} color="#5856D6" />}
+                        rightElement={
+                            friendRequestPermission === 'none' ? (
+                                <Ionicons name="checkmark" size={20} color="#5856D6" />
+                            ) : null
+                        }
+                        onPress={() => handleFriendRequestPermissionChange('none')}
+                        disabled={privacySettingsLoading}
+                        showChevron={false}
+                    />
+                </ItemGroup>
+
+                {/* Analytics */}
+                <ItemGroup>
                     <Item
                         title={t('settingsAccount.analytics')}
                         subtitle={analyticsOptOut ? t('settingsAccount.analyticsDisabled') : t('settingsAccount.analyticsEnabled')}

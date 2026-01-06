@@ -686,7 +686,8 @@ function SessionViewLoaded({ sessionId, session }: { sessionId: string, session:
             storage.getState().markSessionAsSuperseded(result.resumedFrom, sessionId);
         }
 
-        Toast.show({ message: t('sessionInfo.restoreSessionSuccess') });
+        // Use server-provided message if available (e.g., "Session file not found locally. Started a new session.")
+        Toast.show({ message: result.message || t('sessionInfo.restoreSessionSuccess') });
         router.replace(`/session/${sessionId}`);
     });
 

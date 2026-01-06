@@ -17,8 +17,16 @@ import { authenticatedFetch } from './apiHelper';
 // Types
 // ═══════════════════════════════════════════════════════════════════════════
 
+export const ProfileVisibilitySchema = z.enum(['public', 'friends-only']);
+export type ProfileVisibility = z.infer<typeof ProfileVisibilitySchema>;
+
+export const FriendRequestPermissionSchema = z.enum(['anyone', 'friends-of-friends', 'none']);
+export type FriendRequestPermission = z.infer<typeof FriendRequestPermissionSchema>;
+
 export const PrivacySettingsSchema = z.object({
-    showOnlineStatus: z.boolean()
+    showOnlineStatus: z.boolean(),
+    profileVisibility: ProfileVisibilitySchema,
+    friendRequestPermission: FriendRequestPermissionSchema
 });
 
 export type PrivacySettings = z.infer<typeof PrivacySettingsSchema>;
@@ -56,7 +64,11 @@ export async function getPrivacySettings(
         if (!parsed.success) {
             console.error('Failed to parse privacy settings:', parsed.error);
             // Return default if parse fails
-            return { showOnlineStatus: true };
+            return {
+                showOnlineStatus: true,
+                profileVisibility: 'public',
+                friendRequestPermission: 'anyone'
+            };
         }
 
         return parsed.data;

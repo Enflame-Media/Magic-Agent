@@ -2485,13 +2485,15 @@ class Sync {
             const machine = storage.getState().machines[machineId];
 
             // Create or update machine with all required fields
+            // Preserve existing active status if update-machine doesn't include it
+            // (update-machine events for metadata/daemonState changes don't include active status)
             const updatedMachine: Machine = {
                 id: machineId,
                 seq: updateData.seq,
                 createdAt: machine?.createdAt ?? updateData.createdAt,
                 updatedAt: updateData.createdAt,
-                active: machineUpdate.active ?? true,
-                activeAt: machineUpdate.activeAt ?? updateData.createdAt,
+                active: machineUpdate.active ?? machine?.active ?? false,
+                activeAt: machineUpdate.activeAt ?? machine?.activeAt ?? updateData.createdAt,
                 metadata: machine?.metadata ?? null,
                 metadataVersion: machine?.metadataVersion ?? 0,
                 daemonState: machine?.daemonState ?? null,
