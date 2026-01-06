@@ -980,6 +980,15 @@ export const pt: TranslationStructure = {
         disconnectSubtitle: 'Remove esta máquina da sua conta. Você precisará autenticar novamente com o código QR para reconectar.',
         disconnectTitle: 'Desconectar máquina?',
         disconnectMessage: 'Isso removerá a máquina da sua conta. Você precisará escanear o código QR novamente para reconectar. As sessões ativas não serão afetadas.',
+        // HAP-802: Bulk archive functionality
+        archiveAll: 'Arquivar todas as sessões ativas',
+        archiveAllSubtitle: ({ count }: { count: number }) => count === 1 ? 'Arquivar 1 sessão ativa' : `Arquivar ${count} sessões ativas`,
+        archiveAllTitle: 'Arquivar todas as sessões ativas?',
+        archiveAllMessage: ({ count }: { count: number }) => count === 1 ? 'Isso arquivará 1 sessão ativa. Você poderá restaurá-la mais tarde do arquivo.' : `Isso arquivará ${count} sessões ativas. Você poderá restaurá-las mais tarde do arquivo.`,
+        archiveAllSuccess: ({ count }: { count: number }) => count === 1 ? 'Arquivada 1 sessão com sucesso' : `Arquivadas ${count} sessões com sucesso`,
+        archiveAllPartial: 'Sucesso parcial',
+        archiveAllPartialMessage: ({ successCount, failureCount, failedNames }: { successCount: number; failureCount: number; failedNames: string }) =>
+            `Arquivadas com sucesso ${successCount} sessõe${successCount === 1 ? '' : 's'}. Falha ao arquivar ${failureCount} sessõe${failureCount === 1 ? '' : 's'}: ${failedNames}`,
     },
 
     message: {

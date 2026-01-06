@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, ActivityIndicator, Pressable } from 'react-native';
 import { Text } from '@/components/StyledText';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
-import { useEntitlement } from '@/sync/storage';
 import {
     usePlanLimits,
     formatResetCountdown,
@@ -180,18 +179,19 @@ const LimitProgressBar: React.FC<LimitProgressBarProps> = ({ limit, color = '#00
 };
 
 /**
- * PlanUsageLimits - Shows subscription plan usage limits for Pro users
+ * PlanUsageLimits - Shows Claude Code subscription usage limits
  *
  * This component displays:
  * - Current session usage with countdown timer
  * - Weekly limits with per-model breakdown
  * - Last updated timestamp with refresh capability
  *
- * Only renders for users with 'pro' entitlement via RevenueCat.
+ * Renders when Claude Code reports usage limits (limitsAvailable === true).
+ * This is independent of the Happy app subscription - it shows Anthropic's
+ * Claude Pro/Max usage limits, not Happy app entitlements.
  */
 export const PlanUsageLimits: React.FC = () => {
     const { theme } = useUnistyles();
-    const isPro = __DEV__ || useEntitlement('pro');
     const { data, loading, error, refresh } = usePlanLimits();
     const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -207,11 +207,6 @@ export const PlanUsageLimits: React.FC = () => {
         await refresh();
         setIsRefreshing(false);
     }, [refresh]);
-
-    // Don't render for non-Pro users
-    if (!isPro) {
-        return null;
-    }
 
     // Loading state
     if (loading && !data) {

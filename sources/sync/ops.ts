@@ -456,8 +456,24 @@ export async function sessionSwitch(sessionId: string, to: 'remote' | 'local'): 
  * HAP-691: Returns a failure response if the RPC result is null.
  * Null responses occur when decryption fails - this happens when the session
  * is dead and the machine handler encrypts with the wrong key.
+ *
+ * HAP-800: Added early-exit guard if session is offline to prevent triggering
+ * the CLI daemon's auto-revival logic. When sessionRPC is called for an
+ * offline session, CLI returns SESSION_NOT_ACTIVE which triggers revival.
  */
 export async function sessionBash(sessionId: string, request: SessionBashRequest): Promise<SessionBashResponse> {
+    // Guard: Don't make RPC calls to offline sessions to prevent revival trigger
+    const session = storage.getState().sessions[sessionId];
+    if (!session || session.presence !== 'online') {
+        return {
+            success: false,
+            stdout: '',
+            stderr: 'Session is not online',
+            exitCode: -1,
+            error: 'Session is not online'
+        };
+    }
+
     try {
         const response = await apiSocket.sessionRPC<SessionBashResponse, SessionBashRequest>(
             sessionId,
@@ -830,6 +846,13 @@ export async function sessionKill(sessionId: string): Promise<SessionKillRespons
     if (!session || session.presence !== "online") {
         return { success: true, message: 'Session already offline' };
     }
+
+    // HAP-800: Stop gitStatusSync BEFORE killing the session to prevent revival bug.
+    // When gitStatusSync calls sessionBash after the session dies, it triggers
+    // SESSION_NOT_ACTIVE error which causes CLI daemon to auto-spawn a new session.
+    // By stopping the sync first, we prevent any pending git status fetches.
+    const { gitStatusSync } = await import('./gitStatusSync');
+    gitStatusSync.stop(sessionId);
 
     // Race the RPC call against session going offline
     // Use 15 second timeout for offline detection (less than 30s RPC timeout)

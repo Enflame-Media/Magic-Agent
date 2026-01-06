@@ -980,6 +980,15 @@ export const ca: TranslationStructure = {
         disconnectSubtitle: 'Elimina aquesta màquina del teu compte. Hauràs de tornar a autenticar-te amb el codi QR per reconnectar.',
         disconnectTitle: 'Desconnectar màquina?',
         disconnectMessage: 'Això eliminarà la màquina del teu compte. Hauràs d\'escanejar el codi QR de nou per reconnectar. Les sessions actives no es veuran afectades.',
+        // HAP-802: Bulk archive functionality
+        archiveAll: 'Arxivar totes les sessions actives',
+        archiveAllSubtitle: ({ count }: { count: number }) => count === 1 ? 'Arxivar 1 sessió activa' : `Arxivar ${count} sessions actives`,
+        archiveAllTitle: 'Arxivar totes les sessions actives?',
+        archiveAllMessage: ({ count }: { count: number }) => count === 1 ? 'Això arxivarà 1 sessió activa. Podràs restaurar-la més tard des de l\'arxiu.' : `Això arxivarà ${count} sessions actives. Podràs restaurar-les més tard des de l\'arxiu.`,
+        archiveAllSuccess: ({ count }: { count: number }) => count === 1 ? 'S\'ha arxivat correctament 1 sessió' : `S\'han arxivat correctament ${count} sessions`,
+        archiveAllPartial: 'Èxit parcial',
+        archiveAllPartialMessage: ({ successCount, failureCount, failedNames }: { successCount: number; failureCount: number; failedNames: string }) =>
+            `S\'han arxivat correctament ${successCount} sessió${successCount === 1 ? '' : 'ns'}. No s\'han pogut arxivar ${failureCount} sessió${failureCount === 1 ? '' : 'ns'}: ${failedNames}`,
     },
 
     message: {

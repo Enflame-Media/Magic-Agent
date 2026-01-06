@@ -982,6 +982,15 @@ export const zhHans: TranslationStructure = {
         disconnectSubtitle: '从您的账户中移除此设备。您需要重新使用 QR 码进行身份验证才能重新连接。',
         disconnectTitle: '断开设备连接？',
         disconnectMessage: '这将从您的账户中移除该设备。您需要重新扫描 QR 码才能重新连接。活跃的会话不会受到影响。',
+        // HAP-802: Bulk archive functionality
+        archiveAll: '归档所有活动会话',
+        archiveAllSubtitle: ({ count }: { count: number }) => count === 1 ? '归档 1 个活动会话' : `归档 ${count} 个活动会话`,
+        archiveAllTitle: '归档所有活动会话？',
+        archiveAllMessage: ({ count }: { count: number }) => count === 1 ? '这将归档 1 个活动会话。您可以稍后从归档中恢复它。' : `这将归档 ${count} 个活动会话。您可以稍后从归档中恢复它们。`,
+        archiveAllSuccess: ({ count }: { count: number }) => count === 1 ? '成功归档 1 个会话' : `成功归档 ${count} 个会话`,
+        archiveAllPartial: '部分成功',
+        archiveAllPartialMessage: ({ successCount, failureCount, failedNames }: { successCount: number; failureCount: number; failedNames: string }) =>
+            `成功归档 ${successCount} 个会话。归档失败 ${failureCount} 个会话：${failedNames}`,
     },
 
     message: {

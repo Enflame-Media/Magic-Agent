@@ -9,7 +9,7 @@ import { useSessions, useMachine } from '@/sync/storage';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import Octicons from '@expo/vector-icons/Octicons';
 import { type Session } from '@/sync/storageTypes';
-import { machineStopDaemon, machineUpdateMetadata, machineDisconnect } from '@/sync/ops';
+import { machineStopDaemon, machineUpdateMetadata, machineDisconnect, sessionKill } from '@/sync/ops';
 import { Modal } from '@/modal';
 import { formatPathRelativeToHome, getSessionName, getSessionSubtitle } from '@/utils/sessionUtils';
 import { isMachineOnline } from '@/utils/machineUtils';
@@ -80,6 +80,7 @@ function MachineDetailScreen() {
     const [isSpawning, setIsSpawning] = useState(false);
     const inputRef = useRef<MultiTextInputHandle>(null);
     const [showAllPaths, setShowAllPaths] = useState(false);
+    const [isArchivingAll, setIsArchivingAll] = useState(false);
     // Variant D only
 
     const machineSessions = useMemo(() => {
@@ -112,6 +113,13 @@ function MachineDetailScreen() {
         if (showAllPaths) return recentPaths;
         return recentPaths.slice(0, 5);
     }, [recentPaths, showAllPaths]);
+
+    // HAP-802: Filter active sessions for bulk archive
+    const activeSessions = useMemo(() => {
+        return machineSessions.filter(session =>
+            session.active && session.presence === 'online'
+        );
+    }, [machineSessions]);
 
     // Determine daemon status from metadata
     const daemonStatus = useMemo(() => {
@@ -186,6 +194,79 @@ function MachineDetailScreen() {
                             showError(error, { fallbackMessage: 'Failed to disconnect machine' });
                         } finally {
                             setIsDisconnecting(false);
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
+    // HAP-802: Bulk archive all active sessions
+    const handleArchiveAllSessions = async () => {
+        const count = activeSessions.length;
+        if (count === 0) return;
+
+        Modal.alert(
+            t('machine.archiveAllTitle'),
+            t('machine.archiveAllMessage', { count }),
+            [
+                {
+                    text: t('common.cancel'),
+                    style: 'cancel'
+                },
+                {
+                    text: t('machine.archiveAll'),
+                    style: 'destructive',
+                    onPress: async () => {
+                        setIsArchivingAll(true);
+                        const results: { success: boolean; sessionId: string; name: string }[] = [];
+
+                        try {
+                            // Archive each session sequentially
+                            for (const session of activeSessions) {
+                                try {
+                                    const result = await sessionKill(session.id);
+                                    results.push({
+                                        success: result.success,
+                                        sessionId: session.id,
+                                        name: getSessionName(session)
+                                    });
+                                } catch (error) {
+                                    results.push({
+                                        success: false,
+                                        sessionId: session.id,
+                                        name: getSessionName(session)
+                                    });
+                                }
+                            }
+
+                            // Show results
+                            const successCount = results.filter(r => r.success).length;
+                            const failureCount = results.filter(r => !r.success).length;
+
+                            if (failureCount === 0) {
+                                Modal.alert(
+                                    t('common.success'),
+                                    t('machine.archiveAllSuccess', { count: successCount })
+                                );
+                            } else {
+                                const failedNames = results
+                                    .filter(r => !r.success)
+                                    .map(r => r.name)
+                                    .join(', ');
+                                Modal.alert(
+                                    t('machine.archiveAllPartial'),
+                                    t('machine.archiveAllPartialMessage', {
+                                        successCount,
+                                        failureCount,
+                                        failedNames
+                                    })
+                                );
+                            }
+                        } catch (error) {
+                            showError(error, { fallbackMessage: 'Failed to archive sessions' });
+                        } finally {
+                            setIsArchivingAll(false);
                         }
                     }
                 }
@@ -572,6 +653,31 @@ function MachineDetailScreen() {
                                 rightElement={<Ionicons name="chevron-forward" size={20} color="#C7C7CC" />}
                             />
                         ))}
+                    </ItemGroup>
+                )}
+
+                {/* HAP-802: Bulk Archive Active Sessions */}
+                {activeSessions.length > 0 && (
+                    <ItemGroup title={t('machine.activeSessions', { count: activeSessions.length })}>
+                        <Item
+                            title={t('machine.archiveAll')}
+                            subtitle={t('machine.archiveAllSubtitle', { count: activeSessions.length })}
+                            subtitleLines={0}
+                            titleStyle={{ color: '#FF9500' }}
+                            onPress={handleArchiveAllSessions}
+                            disabled={isArchivingAll}
+                            rightElement={
+                                isArchivingAll ? (
+                                    <ActivityIndicator size="small" color={theme.colors.textSecondary} />
+                                ) : (
+                                    <Ionicons
+                                        name="archive-outline"
+                                        size={20}
+                                        color="#FF9500"
+                                    />
+                                )
+                            }
+                        />
                     </ItemGroup>
                 )}
 

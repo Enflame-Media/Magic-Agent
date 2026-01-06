@@ -981,6 +981,15 @@ export const en = {
         disconnectSubtitle: 'Remove this machine from your account. You will need to re-authenticate with QR code to reconnect.',
         disconnectTitle: 'Disconnect Machine?',
         disconnectMessage: 'This will remove the machine from your account. You will need to scan the QR code again to reconnect. Active sessions will not be affected.',
+        // HAP-802: Bulk archive functionality
+        archiveAll: 'Archive All Active Sessions',
+        archiveAllSubtitle: ({ count }: { count: number }) => count === 1 ? 'Archive 1 active session' : `Archive ${count} active sessions`,
+        archiveAllTitle: 'Archive All Active Sessions?',
+        archiveAllMessage: ({ count }: { count: number }) => count === 1 ? 'This will archive 1 active session. You can restore it later from the archive.' : `This will archive ${count} active sessions. You can restore them later from the archive.`,
+        archiveAllSuccess: ({ count }: { count: number }) => count === 1 ? 'Successfully archived 1 session' : `Successfully archived ${count} sessions`,
+        archiveAllPartial: 'Partial Success',
+        archiveAllPartialMessage: ({ successCount, failureCount, failedNames }: { successCount: number; failureCount: number; failedNames: string }) =>
+            `Successfully archived ${successCount} session${successCount === 1 ? '' : 's'}. Failed to archive ${failureCount} session${failureCount === 1 ? '' : 's'}: ${failedNames}`,
     },
 
     message: {

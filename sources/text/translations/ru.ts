@@ -944,6 +944,15 @@ export const ru: TranslationStructure = {
         disconnectSubtitle: 'Удалить эту машину из вашего аккаунта. Для повторного подключения потребуется повторная аутентификация через QR код.',
         disconnectTitle: 'Отключить машину?',
         disconnectMessage: 'Это удалит машину из вашего аккаунта. Для повторного подключения потребуется отсканировать QR код снова. Активные сессии не будут затронуты.',
+        // HAP-802: Bulk archive functionality
+        archiveAll: 'Архивировать все активные сессии',
+        archiveAllSubtitle: ({ count }: { count: number }) => count === 1 ? 'Архивировать 1 активную сессию' : `Архивировать ${count} активных сессий`,
+        archiveAllTitle: 'Архивировать все активные сессии?',
+        archiveAllMessage: ({ count }: { count: number }) => count === 1 ? 'Это архивирует 1 активную сессию. Вы сможете восстановить её позже из архива.' : `Это архивирует ${count} активных сессий. Вы сможете восстановить их позже из архива.`,
+        archiveAllSuccess: ({ count }: { count: number }) => count === 1 ? 'Успешно архивирована 1 сессия' : `Успешно архивировано ${count} сессий`,
+        archiveAllPartial: 'Частичный успех',
+        archiveAllPartialMessage: ({ successCount, failureCount, failedNames }: { successCount: number; failureCount: number; failedNames: string }) =>
+            `Успешно архивировано ${successCount} сесси${successCount === 1 ? 'я' : 'й'}. Не удалось архивировать ${failureCount} сесси${failureCount === 1 ? 'ю' : 'й'}: ${failedNames}`,
     },
 
     message: {
