@@ -19,7 +19,9 @@
     "typecheck:protocol": "yarn workspace @happy/protocol typecheck",
     "schema:extract": "yarn workspace @happy/protocol schema:extract",
     "schema:compare": "tsx scripts/compare-schemas.ts",
-    "ncu:all": "find . -name package.json -not -path '*/node_modules/*' -execdir ncu -u \\;"
+    "ncu:all": "find . -name package.json -not -path '*/node_modules/*' -execdir ncu -u \\;",
+    "deploy:stack:pro": "yarn install && cd happy-cli && yarn build && cd ../happy-app && yarn deploy:workers:pro && cd ../happy-server-workers && yarn deploy:prod",
+    "deploy:stack:dev": "yarn install && cd happy-cli && yarn build && cd ../happy-app && yarn deploy:workers:dev && cd ../happy-server-workers && yarn deploy:dev"
   },
   "engines": {
     "node": ">=18.0.0"
