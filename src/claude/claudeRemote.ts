@@ -53,8 +53,14 @@ export async function claudeRemote(opts: {
                     const nextArg = opts.claudeArgs[i + 1];
                     // If next arg doesn't start with dash and contains dashes, it's likely a UUID
                     if (!nextArg.startsWith('-') && nextArg.includes('-')) {
-                        startFrom = nextArg;
-                        logger.debug(`[claudeRemote] Found --resume with session ID: ${startFrom}`);
+                        // HAP-XXX: Validate session has content before resuming
+                        // Prevents spawning blank sessions when --resume points to an empty/invalid session
+                        if (claudeCheckSession(nextArg, opts.path)) {
+                            startFrom = nextArg;
+                            logger.debug(`[claudeRemote] Found --resume with valid session ID: ${startFrom}`);
+                        } else {
+                            logger.debug(`[claudeRemote] Found --resume with session ID ${nextArg.substring(0, 8)}... but session has no valid content, ignoring`);
+                        }
                         break;
                     } else {
                         // Just --resume without UUID - SDK doesn't support this

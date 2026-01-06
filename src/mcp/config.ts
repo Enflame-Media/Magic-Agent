@@ -2,8 +2,8 @@
  * MCP Configuration File Management
  *
  * Provides utilities for loading, saving, and merging MCP configurations
- * from both user-level (~/.happy/config/mcp.json) and project-level
- * (.happy/mcp.json) config files.
+ * from both user-level (~/.enfm-happy/config/mcp.json) and project-level
+ * (.enfm-happy/mcp.json) config files.
  *
  * @module mcp/config
  * @see {@link ./types.ts} for schema definitions
@@ -11,8 +11,8 @@
 
 import { existsSync, readFileSync, writeFileSync, mkdirSync, copyFileSync } from 'fs';
 import { join, dirname } from 'path';
-import { homedir } from 'os';
 import { logger } from '@/ui/logger';
+import { configuration } from '@/configuration';
 import {
     HappyMcpConfig,
     HappyMcpConfigSchema,
@@ -21,20 +21,21 @@ import {
 } from './types';
 
 /** Filename for project-level MCP configuration */
-const PROJECT_CONFIG_NAME = '.happy/mcp.json';
+const PROJECT_CONFIG_NAME = '.enfm-happy/mcp.json';
 
 /**
  * Get the path to user-level MCP configuration.
- * Uses a function instead of constant to support testing with mocked homedir.
+ * Uses configuration.happyHomeDir which defaults to ~/.enfm-happy
+ * but can be overridden via HAPPY_HOME_DIR environment variable.
  */
 function getUserConfigPath(): string {
-    return join(homedir(), '.happy', 'config', 'mcp.json');
+    return join(configuration.happyHomeDir, 'config', 'mcp.json');
 }
 
 /**
  * Config scope determines which config file to operate on.
- * - 'user': Global config in ~/.happy/config/mcp.json
- * - 'project': Per-project config in .happy/mcp.json at project root
+ * - 'user': Global config in ~/.enfm-happy/config/mcp.json (or HAPPY_HOME_DIR/config/mcp.json)
+ * - 'project': Per-project config in .enfm-happy/mcp.json at project root
  */
 export type ConfigScope = 'user' | 'project';
 
@@ -84,8 +85,8 @@ export function findProjectRoot(): string {
  *
  * @example
  * ```typescript
- * getMcpConfigPath('user')     // "/home/user/.happy/config/mcp.json"
- * getMcpConfigPath('project')  // "/project/root/.happy/mcp.json"
+ * getMcpConfigPath('user')     // "/home/user/.enfm-happy/config/mcp.json"
+ * getMcpConfigPath('project')  // "/project/root/.enfm-happy/mcp.json"
  * ```
  */
 export function getMcpConfigPath(scope: ConfigScope = 'user'): string {

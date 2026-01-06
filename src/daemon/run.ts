@@ -32,6 +32,7 @@ import { createDefaultMemoryMonitor, MemoryMonitorHandle } from './memoryMonitor
 import { clearGlobalDeduplicator } from '@/utils/requestDeduplication';
 import { addBreadcrumb, setTag, trackMetric, shutdownTelemetry } from '@/telemetry';
 import { isValidSessionId, normalizeSessionId, InvalidSessionIdError } from '@/claude/utils/sessionValidation';
+import { claudeCheckSession } from '@/claude/utils/claudeCheckSession';
 import type { GetSessionStatusResponse } from './types';
 
 // Version cache for package.json (HAP-354)
@@ -462,6 +463,8 @@ export async function startDaemon(): Promise<void> {
         // with the full conversation history from the original session
         // HAP-649: Track the original session ID to return as 'resumedFrom' in the response
         let resumedFromSessionId: string | undefined;
+        // Track when resume was requested but session file wasn't found locally
+        let sessionFileNotFoundLocally = false;
         if (options.sessionId) {
           if (options.agent === 'codex') {
             logger.debug(`[DAEMON RUN] Ignoring sessionId for Codex (resume not supported)`);
@@ -478,10 +481,22 @@ export async function startDaemon(): Promise<void> {
 
             // Normalize to UUID format for Claude's --resume flag
             const normalizedSessionId = normalizeSessionId(options.sessionId);
-            args.push('--resume', normalizedSessionId);
-            // HAP-649: Store original session ID to include in response
-            resumedFromSessionId = options.sessionId;
-            logger.debug(`[DAEMON RUN] Resuming session with --resume ${normalizedSessionId}${normalizedSessionId !== options.sessionId ? ` (normalized from ${options.sessionId})` : ''}`);
+
+            // HAP-XXX: Validate session has actual content before resuming
+            // If session file doesn't exist locally, gracefully start a new session instead of failing
+            // This handles cases where the session was created on a different machine or file was deleted
+            if (!claudeCheckSession(normalizedSessionId, directory)) {
+              logger.warn(`[DAEMON RUN] Session ${options.sessionId.substring(0, 8)}... file not found locally, will start a new session without resume`);
+              // Don't add --resume flag - a new session will be started
+              // Don't set resumedFromSessionId - the app will see resumedFrom: undefined
+              sessionFileNotFoundLocally = true;
+            } else {
+              logger.debug(`[DAEMON RUN] Session ${options.sessionId.substring(0, 8)}... has valid content, proceeding with resume`);
+              args.push('--resume', normalizedSessionId);
+              // HAP-649: Store original session ID to include in response
+              resumedFromSessionId = options.sessionId;
+              logger.debug(`[DAEMON RUN] Resuming session with --resume ${normalizedSessionId}${normalizedSessionId !== options.sessionId ? ` (normalized from ${options.sessionId})` : ''}`);
+            }
           }
         }
 
@@ -553,6 +568,12 @@ export async function startDaemon(): Promise<void> {
             pidToAwaiter.delete(happyProcess.pid!);
             logger.debug(`[DAEMON RUN] Session spawn timeout after ${effectiveTimeout}ms for PID ${happyProcess.pid}`);
 
+            // Build the timeout message
+            let timeoutMessage = 'Session starting slowly. Check daemon logs for status.';
+            if (sessionFileNotFoundLocally) {
+              timeoutMessage = 'Session file not found locally. New session starting slowly. Check daemon logs for status.';
+            }
+
             // Graceful handling: return success with PID-based session ID
             // The session may still complete - this prevents false "timeout" errors
             resolve({
@@ -560,7 +581,7 @@ export async function startDaemon(): Promise<void> {
               sessionId: `PID-${happyProcess.pid}`,
               // HAP-649: Include resumedFrom if this was a resume request
               ...(resumedFromSessionId && { resumedFrom: resumedFromSessionId }),
-              message: 'Session starting slowly. Check daemon logs for status.'
+              message: timeoutMessage
             });
           }, effectiveTimeout);
 
@@ -568,11 +589,21 @@ export async function startDaemon(): Promise<void> {
           pidToAwaiter.set(happyProcess.pid!, (completedSession) => {
             clearTimeout(timeout);
             logger.debug(`[DAEMON RUN] Session ${completedSession.happySessionId} fully spawned with webhook`);
+
+            // Build the response message
+            let responseMessage: string | undefined;
+            if (sessionFileNotFoundLocally) {
+              responseMessage = 'Session file not found locally. Started a new session.';
+            } else if (directoryCreated) {
+              responseMessage = `The path '${directory}' did not exist. Created a new folder and spawned a new session there.`;
+            }
+
             resolve({
               type: 'success',
               sessionId: completedSession.happySessionId!,
               // HAP-649: Include resumedFrom if this was a resume request
-              ...(resumedFromSessionId && { resumedFrom: resumedFromSessionId })
+              ...(resumedFromSessionId && { resumedFrom: resumedFromSessionId }),
+              ...(responseMessage && { message: responseMessage })
             });
           });
         });

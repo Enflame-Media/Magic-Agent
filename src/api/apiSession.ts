@@ -1,6 +1,6 @@
 import { logger } from '@/ui/logger'
 import { AppError, ErrorCodes } from '@/utils/errors'
-import { getSessionId, getSessionIdFromEphemeral, getMachineIdFromEphemeral, type SessionIdUpdate, type SessionIdEphemeral, type MachineIdEphemeral } from '@happy/protocol'
+import { getSessionId, getSessionIdFromEphemeral, getMachineIdFromEphemeral, hasSessionId, tryGetSessionId, tryGetSessionIdFromEphemeral, type SessionIdUpdate, type SessionIdEphemeral, type MachineIdEphemeral } from '@happy/protocol'
 import { EventEmitter } from 'node:events'
 import { HappyWebSocket } from './HappyWebSocket'
 import { AgentState, EphemeralUpdate, MessageContent, Metadata, Session, Update, UserMessage, UserMessageSchema, Usage } from './types'
@@ -206,6 +206,14 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
                     return;
                 }
 
+                // Early session ID filtering: skip updates intended for other sessions
+                // This prevents decrypt errors for messages with different encryption keys
+                const updateSessionId = tryGetSessionId(data.body);
+                if (updateSessionId && updateSessionId !== this.sessionId) {
+                    // Silently skip - this is expected when multiple sessions share a WebSocket
+                    return;
+                }
+
                 if (data.body.t === 'new-message' && data.body.message.content.t === 'encrypted') {
                     const body = decrypt<MessageContent>(this.encryptionKey, this.encryptionVariant, decodeBase64(data.body.message.content.c));
 
@@ -300,6 +308,13 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
 
         // Ephemeral events - real-time status updates from server (HAP-357)
         this.onSocketEphemeral = (data: EphemeralUpdate) => {
+            // Early session ID filtering: skip ephemeral updates for other sessions
+            const ephemeralSessionId = tryGetSessionIdFromEphemeral(data);
+            if (ephemeralSessionId && ephemeralSessionId !== this.sessionId) {
+                // Silently skip - this is expected when multiple sessions share a WebSocket
+                return;
+            }
+
             switch (data.type) {
                 case 'activity': {
                     // Session activity update - currently handled elsewhere via keep-alive

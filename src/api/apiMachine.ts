@@ -453,29 +453,20 @@ export class ApiMachineClient {
             // Continue with revival attempt even if status check fails
         }
 
-        // Step 2: Validate session has actual content before revival
-        // HAP-XXX: Prevent spawning blank sessions by verifying the session file exists
-        // and contains valid messages with UUIDs. This prevents "blank sessions out of thin air"
-        // when attempting to revive sessions that never had content or were corrupted.
+        // Step 2: Check if session has valid content for informational logging
+        // Note: spawnSession now handles the case where session file doesn't exist gracefully
+        // by starting a new session without --resume. We just log here for debugging.
         try {
             const hasValidContent = claudeCheckSession(sessionId, directory);
             if (!hasValidContent) {
-                logger.debug(`[API MACHINE] [REVIVAL] Session ${sessionId.substring(0, 8)}... has no valid content, refusing to revive`);
-                return {
-                    revived: false,
-                    originalSessionId: sessionId,
-                    error: 'Cannot revive session: session has no messages or does not exist'
-                };
+                logger.warn(`[API MACHINE] [REVIVAL] Session ${sessionId.substring(0, 8)}... file not found locally, will start a new session`);
+                // Continue with revival - spawnSession will handle this gracefully
+            } else {
+                logger.debug(`[API MACHINE] [REVIVAL] Session ${sessionId.substring(0, 8)}... has valid content, proceeding with revival`);
             }
-            logger.debug(`[API MACHINE] [REVIVAL] Session ${sessionId.substring(0, 8)}... has valid content, proceeding with revival`);
         } catch (error) {
-            logger.debug(`[API MACHINE] [REVIVAL] Failed to validate session content: ${error instanceof Error ? error.message : 'Unknown error'}`);
-            // If we can't validate, refuse to revive to prevent blank sessions
-            return {
-                revived: false,
-                originalSessionId: sessionId,
-                error: `Cannot revive session: validation failed - ${error instanceof Error ? error.message : 'Unknown error'}`
-            };
+            logger.warn(`[API MACHINE] [REVIVAL] Failed to validate session content: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            // Continue with revival attempt - spawnSession will handle any issues
         }
 
         // Step 3: Spawn new session with --resume flag

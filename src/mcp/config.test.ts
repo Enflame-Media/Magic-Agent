@@ -12,14 +12,71 @@ import { existsSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 
-// Mock the os module for homedir
-vi.mock('os', async (importOriginal) => {
-    const original = await importOriginal<typeof import('os')>();
+// Variables for per-test directories
+let testDir: string;
+let fakeHome: string;
+let fakeProject: string;
+
+// Mock the configuration module
+// We need to create temp directories at mock time to handle module initialization
+vi.mock('@/configuration', () => {
+    const { join: joinPath } = require('path');
+    const { mkdtempSync, mkdirSync: mkdirSyncFs } = require('fs');
+    const { tmpdir: tmpdirFn } = require('os');
+
+    // Create a temp directory immediately for initial module load
+    const initialTempDir = mkdtempSync(joinPath(tmpdirFn(), 'happy-mcp-test-'));
+    const initialLogsDir = joinPath(initialTempDir, 'logs');
+    mkdirSyncFs(initialLogsDir, { recursive: true });
+
+    // Store the current home directory in a mutable object
+    // Tests can update this via globalThis.__mcpTestConfig
+    const config = {
+        _fakeHome: initialTempDir,
+    };
+
+    // Make config accessible to tests
+    (globalThis as unknown as { __mcpTestConfig: typeof config }).__mcpTestConfig = config;
+
     return {
-        ...original,
-        homedir: vi.fn(() => original.homedir()),
+        configuration: {
+            get happyHomeDir() {
+                return config._fakeHome;
+            },
+            get logsDir() {
+                return joinPath(config._fakeHome, 'logs');
+            },
+            get settingsFile() {
+                return joinPath(config._fakeHome, 'settings.json');
+            },
+            get privateKeyFile() {
+                return joinPath(config._fakeHome, 'access.key');
+            },
+            get daemonStateFile() {
+                return joinPath(config._fakeHome, 'daemon.state.json');
+            },
+            get daemonLockFile() {
+                return joinPath(config._fakeHome, 'daemon.state.json.lock');
+            },
+            get daemonAuthTokenFile() {
+                return joinPath(config._fakeHome, '.daemon-token');
+            },
+            isDaemonProcess: false,
+            serverUrl: 'http://localhost:3005',
+            webAppUrl: 'http://localhost:3000',
+            isExperimentalEnabled: false,
+            disableCaffeinate: true,
+            currentCliVersion: '0.0.0-test',
+            ensureSetup() { /* no-op */ }
+        }
     };
 });
+
+// Type declaration for the global config
+declare global {
+    // eslint-disable-next-line no-var
+    var __mcpTestConfig: { _fakeHome: string };
+}
 
 import {
     findProjectRoot,
@@ -32,12 +89,6 @@ import {
     buildMcpSyncState,
 } from './config';
 import { DEFAULT_MCP_CONFIG, type HappyMcpConfig } from './types';
-import * as os from 'os';
-
-// Create unique temp directories for isolation
-let testDir: string;
-let fakeHome: string;
-let fakeProject: string;
 
 // Sample valid configs for testing
 const sampleUserConfig: HappyMcpConfig = {
@@ -102,13 +153,14 @@ describe('MCP Config Module', () => {
         fakeProject = join(testDir, 'project');
 
         mkdirSync(fakeHome, { recursive: true });
+        mkdirSync(join(fakeHome, 'logs'), { recursive: true }); // Create logs dir for Logger
         mkdirSync(fakeProject, { recursive: true });
+
+        // Update the mock configuration to use this test's fakeHome
+        globalThis.__mcpTestConfig._fakeHome = fakeHome;
 
         // Create a package.json to mark project root
         writeFileSync(join(fakeProject, 'package.json'), '{}');
-
-        // Reset mocks
-        vi.mocked(os.homedir).mockReturnValue(fakeHome);
     });
 
     afterEach(() => {
@@ -163,17 +215,17 @@ describe('MCP Config Module', () => {
     describe('getMcpConfigPath', () => {
         it('should return user config path for user scope', () => {
             const result = getMcpConfigPath('user');
-            expect(result).toContain('.happy');
             expect(result).toContain('config');
             expect(result).toContain('mcp.json');
-            expect(result).toBe(join(fakeHome, '.happy', 'config', 'mcp.json'));
+            // fakeHome is used as happyHomeDir, so path is fakeHome/config/mcp.json
+            expect(result).toBe(join(fakeHome, 'config', 'mcp.json'));
         });
 
         it('should return project config path for project scope', () => {
             vi.spyOn(process, 'cwd').mockReturnValue(fakeProject);
 
             const result = getMcpConfigPath('project');
-            expect(result).toBe(join(fakeProject, '.happy', 'mcp.json'));
+            expect(result).toBe(join(fakeProject, '.enfm-happy', 'mcp.json'));
         });
 
         it('should default to user scope', () => {
@@ -191,7 +243,7 @@ describe('MCP Config Module', () => {
 
         it('should load and parse valid config file', () => {
             // Create config directory and file
-            const configDir = join(fakeHome, '.happy', 'config');
+            const configDir = join(fakeHome, 'config');
             mkdirSync(configDir, { recursive: true });
             writeFileSync(
                 join(configDir, 'mcp.json'),
@@ -205,7 +257,7 @@ describe('MCP Config Module', () => {
         });
 
         it('should return default config for invalid JSON', () => {
-            const configDir = join(fakeHome, '.happy', 'config');
+            const configDir = join(fakeHome, 'config');
             mkdirSync(configDir, { recursive: true });
             writeFileSync(join(configDir, 'mcp.json'), '{ invalid json }');
 
@@ -214,7 +266,7 @@ describe('MCP Config Module', () => {
         });
 
         it('should return default config for invalid schema', () => {
-            const configDir = join(fakeHome, '.happy', 'config');
+            const configDir = join(fakeHome, 'config');
             mkdirSync(configDir, { recursive: true });
             // Missing required version field
             writeFileSync(join(configDir, 'mcp.json'), '{ "mcpServers": {} }');
@@ -224,7 +276,7 @@ describe('MCP Config Module', () => {
         });
 
         it('should load project config from project scope', () => {
-            const projectConfigDir = join(fakeProject, '.happy');
+            const projectConfigDir = join(fakeProject, '.enfm-happy');
             mkdirSync(projectConfigDir, { recursive: true });
             writeFileSync(
                 join(projectConfigDir, 'mcp.json'),
@@ -255,7 +307,7 @@ describe('MCP Config Module', () => {
 
             saveMcpConfig(config, 'user');
 
-            const savedPath = join(fakeHome, '.happy', 'config', 'mcp.json');
+            const savedPath = join(fakeHome, 'config', 'mcp.json');
             expect(existsSync(savedPath)).toBe(true);
 
             const savedContent = JSON.parse(readFileSync(savedPath, 'utf-8'));
@@ -264,7 +316,7 @@ describe('MCP Config Module', () => {
         });
 
         it('should create backup before overwriting', () => {
-            const configDir = join(fakeHome, '.happy', 'config');
+            const configDir = join(fakeHome, 'config');
             mkdirSync(configDir, { recursive: true });
             const configPath = join(configDir, 'mcp.json');
             const backupPath = configPath + '.bak';
@@ -325,7 +377,7 @@ describe('MCP Config Module', () => {
 
             saveMcpConfig(config, 'project');
 
-            const savedPath = join(fakeProject, '.happy', 'mcp.json');
+            const savedPath = join(fakeProject, '.enfm-happy', 'mcp.json');
             expect(existsSync(savedPath)).toBe(true);
         });
     });
@@ -335,8 +387,8 @@ describe('MCP Config Module', () => {
             // Setup cwd for project scope
             vi.spyOn(process, 'cwd').mockReturnValue(fakeProject);
 
-            const userConfigDir = join(fakeHome, '.happy', 'config');
-            const projectConfigDir = join(fakeProject, '.happy');
+            const userConfigDir = join(fakeHome, 'config');
+            const projectConfigDir = join(fakeProject, '.enfm-happy');
 
             mkdirSync(userConfigDir, { recursive: true });
             mkdirSync(projectConfigDir, { recursive: true });
@@ -390,7 +442,7 @@ describe('MCP Config Module', () => {
 
         it('should handle missing project config gracefully', () => {
             // Remove project config
-            rmSync(join(fakeProject, '.happy', 'mcp.json'));
+            rmSync(join(fakeProject, '.enfm-happy', 'mcp.json'));
 
             const merged = getMergedMcpServers();
 
@@ -404,7 +456,7 @@ describe('MCP Config Module', () => {
 
         it('should handle missing user config gracefully', () => {
             // Remove user config
-            rmSync(join(fakeHome, '.happy', 'config', 'mcp.json'));
+            rmSync(join(fakeHome, 'config', 'mcp.json'));
 
             const merged = getMergedMcpServers();
 
@@ -417,7 +469,7 @@ describe('MCP Config Module', () => {
         beforeEach(() => {
             vi.spyOn(process, 'cwd').mockReturnValue(fakeProject);
 
-            const userConfigDir = join(fakeHome, '.happy', 'config');
+            const userConfigDir = join(fakeHome, 'config');
             mkdirSync(userConfigDir, { recursive: true });
 
             const configWithDisabled: HappyMcpConfig = {
@@ -465,7 +517,7 @@ describe('MCP Config Module', () => {
         it('should return true when user config exists', () => {
             vi.spyOn(process, 'cwd').mockReturnValue(fakeProject);
 
-            const configDir = join(fakeHome, '.happy', 'config');
+            const configDir = join(fakeHome, 'config');
             mkdirSync(configDir, { recursive: true });
             writeFileSync(join(configDir, 'mcp.json'), '{}');
 
@@ -475,7 +527,7 @@ describe('MCP Config Module', () => {
         it('should return true when project config exists', () => {
             vi.spyOn(process, 'cwd').mockReturnValue(fakeProject);
 
-            const projectConfigDir = join(fakeProject, '.happy');
+            const projectConfigDir = join(fakeProject, '.enfm-happy');
             mkdirSync(projectConfigDir, { recursive: true });
             writeFileSync(join(projectConfigDir, 'mcp.json'), '{}');
 
@@ -492,8 +544,8 @@ describe('MCP Config Module', () => {
                 mcpServers: {},
             };
 
-            const userConfigDir = join(fakeHome, '.happy', 'config');
-            const projectConfigDir = join(fakeProject, '.happy');
+            const userConfigDir = join(fakeHome, 'config');
+            const projectConfigDir = join(fakeProject, '.enfm-happy');
 
             mkdirSync(userConfigDir, { recursive: true });
             mkdirSync(projectConfigDir, { recursive: true });
@@ -543,8 +595,8 @@ describe('MCP Config Module', () => {
                 },
             };
 
-            const userConfigDir = join(fakeHome, '.happy', 'config');
-            const projectConfigDir = join(fakeProject, '.happy');
+            const userConfigDir = join(fakeHome, 'config');
+            const projectConfigDir = join(fakeProject, '.enfm-happy');
 
             mkdirSync(userConfigDir, { recursive: true });
             mkdirSync(projectConfigDir, { recursive: true });
@@ -580,7 +632,7 @@ describe('MCP Config Module', () => {
                 },
             };
 
-            const userConfigDir = join(fakeHome, '.happy', 'config');
+            const userConfigDir = join(fakeHome, 'config');
             mkdirSync(userConfigDir, { recursive: true });
             writeFileSync(join(userConfigDir, 'mcp.json'), JSON.stringify(userConfig));
 
@@ -608,7 +660,7 @@ describe('MCP Config Module', () => {
                 mcpServers: {},
             };
 
-            const userConfigDir = join(fakeHome, '.happy', 'config');
+            const userConfigDir = join(fakeHome, 'config');
             mkdirSync(userConfigDir, { recursive: true });
             writeFileSync(join(userConfigDir, 'mcp.json'), JSON.stringify(emptyConfig));
 
@@ -644,7 +696,7 @@ describe('MCP Config Module', () => {
                 },
             };
 
-            const userConfigDir = join(fakeHome, '.happy', 'config');
+            const userConfigDir = join(fakeHome, 'config');
             mkdirSync(userConfigDir, { recursive: true });
             writeFileSync(join(userConfigDir, 'mcp.json'), JSON.stringify(configWithServers));
 
@@ -681,7 +733,7 @@ describe('MCP Config Module', () => {
                 },
             };
 
-            const userConfigDir = join(fakeHome, '.happy', 'config');
+            const userConfigDir = join(fakeHome, 'config');
             mkdirSync(userConfigDir, { recursive: true });
             writeFileSync(join(userConfigDir, 'mcp.json'), JSON.stringify(config));
 
