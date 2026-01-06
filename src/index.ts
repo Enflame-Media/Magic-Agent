@@ -29,6 +29,7 @@ import websocketRoutes from '@/routes/websocket';
 import uploadRoutes from '@/routes/uploads';
 import usageRoutes from '@/routes/usage';
 import analyticsRoutes from '@/routes/analytics';
+import sharingRoutes from '@/routes/sharing';
 import ciMetricsRoutes from '@/routes/ciMetrics';
 import clientMetricsRoutes from '@/routes/clientMetrics';
 import healthRoutes from '@/routes/health';
@@ -251,6 +252,9 @@ app.route('/', websocketRoutes);
 
 // Mount file upload routes (HAP-5: R2 Storage)
 app.route('/', uploadRoutes);
+
+// Mount session sharing routes (HAP-772: Session sharing API)
+app.route('/', sharingRoutes);
 
 // Mount usage routes (HAP-302: Usage query endpoint)
 app.route('/', usageRoutes);

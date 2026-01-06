@@ -790,6 +790,169 @@ export const revokedTokensRelations = relations(revokedTokens, ({ one }) => ({
 }));
 
 // ============================================================================
+// Session Sharing (HAP-772)
+// ============================================================================
+
+/**
+ * Direct user-to-user session shares
+ *
+ * Represents a user who has been granted access to a session by the owner.
+ */
+export const sessionShares = sqliteTable(
+    'SessionShare',
+    {
+        id: text('id').primaryKey(),
+        sessionId: text('sessionId').notNull(),
+        userId: text('userId').notNull(),
+        permission: text('permission')
+            .notNull()
+            .$type<'view_only' | 'view_and_chat'>(),
+        sharedAt: integer('sharedAt', { mode: 'timestamp_ms' })
+            .notNull()
+            .default(sql`(unixepoch() * 1000)`),
+        sharedBy: text('sharedBy').notNull(),
+        createdAt: integer('createdAt', { mode: 'timestamp_ms' })
+            .notNull()
+            .default(sql`(unixepoch() * 1000)`),
+        updatedAt: integer('updatedAt', { mode: 'timestamp_ms' })
+            .notNull()
+            .default(sql`(unixepoch() * 1000)`)
+            .$onUpdate(() => new Date()),
+    },
+    (table) => ({
+        sessionUserIdx: uniqueIndex('SessionShare_sessionId_userId_key').on(
+            table.sessionId,
+            table.userId
+        ),
+        sessionIdx: index('SessionShare_sessionId_idx').on(table.sessionId),
+        userIdx: index('SessionShare_userId_idx').on(table.userId),
+        permissionCheck: check(
+            'SessionShare_permission_check',
+            sql`permission IN ('view_only', 'view_and_chat')`
+        ),
+    })
+);
+
+export const sessionSharesRelations = relations(sessionShares, ({ one }) => ({
+    session: one(sessions, {
+        fields: [sessionShares.sessionId],
+        references: [sessions.id],
+    }),
+    user: one(accounts, {
+        fields: [sessionShares.userId],
+        references: [accounts.id],
+        relationName: 'SharedWithUser',
+    }),
+    sharer: one(accounts, {
+        fields: [sessionShares.sharedBy],
+        references: [accounts.id],
+        relationName: 'SharedByUser',
+    }),
+}));
+
+/**
+ * Public URL sharing configuration for sessions
+ *
+ * Enables sharing a session via a unique URL with optional password protection.
+ */
+export const sessionShareUrls = sqliteTable(
+    'SessionShareUrl',
+    {
+        sessionId: text('sessionId').primaryKey(),
+        token: text('token').notNull().unique(),
+        passwordHash: text('passwordHash'),
+        permission: text('permission')
+            .notNull()
+            .$type<'view_only' | 'view_and_chat'>(),
+        expiresAt: integer('expiresAt', { mode: 'timestamp_ms' }),
+        createdAt: integer('createdAt', { mode: 'timestamp_ms' })
+            .notNull()
+            .default(sql`(unixepoch() * 1000)`),
+        updatedAt: integer('updatedAt', { mode: 'timestamp_ms' })
+            .notNull()
+            .default(sql`(unixepoch() * 1000)`)
+            .$onUpdate(() => new Date()),
+    },
+    (table) => ({
+        tokenIdx: uniqueIndex('SessionShareUrl_token_key').on(table.token),
+        permissionCheck: check(
+            'SessionShareUrl_permission_check',
+            sql`permission IN ('view_only', 'view_and_chat')`
+        ),
+    })
+);
+
+export const sessionShareUrlsRelations = relations(sessionShareUrls, ({ one }) => ({
+    session: one(sessions, {
+        fields: [sessionShareUrls.sessionId],
+        references: [sessions.id],
+    }),
+}));
+
+/**
+ * Email invitations for non-users
+ *
+ * Allows inviting users who don't have an account yet via email.
+ * When they sign up, the invitation can be accepted.
+ */
+export const sessionShareInvitations = sqliteTable(
+    'SessionShareInvitation',
+    {
+        id: text('id').primaryKey(),
+        sessionId: text('sessionId').notNull(),
+        email: text('email').notNull(),
+        permission: text('permission')
+            .notNull()
+            .$type<'view_only' | 'view_and_chat'>(),
+        token: text('token').notNull().unique(),
+        status: text('status')
+            .notNull()
+            .default('pending')
+            .$type<'pending' | 'accepted' | 'expired' | 'revoked'>(),
+        invitedAt: integer('invitedAt', { mode: 'timestamp_ms' })
+            .notNull()
+            .default(sql`(unixepoch() * 1000)`),
+        invitedBy: text('invitedBy').notNull(),
+        expiresAt: integer('expiresAt', { mode: 'timestamp_ms' }).notNull(),
+        createdAt: integer('createdAt', { mode: 'timestamp_ms' })
+            .notNull()
+            .default(sql`(unixepoch() * 1000)`),
+        updatedAt: integer('updatedAt', { mode: 'timestamp_ms' })
+            .notNull()
+            .default(sql`(unixepoch() * 1000)`)
+            .$onUpdate(() => new Date()),
+    },
+    (table) => ({
+        tokenIdx: uniqueIndex('SessionShareInvitation_token_key').on(table.token),
+        sessionIdx: index('SessionShareInvitation_sessionId_idx').on(table.sessionId),
+        emailIdx: index('SessionShareInvitation_email_idx').on(table.email),
+        statusIdx: index('SessionShareInvitation_status_idx').on(table.status),
+        permissionCheck: check(
+            'SessionShareInvitation_permission_check',
+            sql`permission IN ('view_only', 'view_and_chat')`
+        ),
+        statusCheck: check(
+            'SessionShareInvitation_status_check',
+            sql`status IN ('pending', 'accepted', 'expired', 'revoked')`
+        ),
+    })
+);
+
+export const sessionShareInvitationsRelations = relations(
+    sessionShareInvitations,
+    ({ one }) => ({
+        session: one(sessions, {
+            fields: [sessionShareInvitations.sessionId],
+            references: [sessions.id],
+        }),
+        inviter: one(accounts, {
+            fields: [sessionShareInvitations.invitedBy],
+            references: [accounts.id],
+        }),
+    })
+);
+
+// ============================================================================
 // Schema Exports
 // ============================================================================
 
@@ -839,6 +1002,11 @@ export const schema = {
     // Token revocation tables
     revokedTokens,
 
+    // Session sharing tables (HAP-772)
+    sessionShares,
+    sessionShareUrls,
+    sessionShareInvitations,
+
     // Relations
     accountsRelations,
     terminalAuthRequestsRelations,
@@ -857,4 +1025,7 @@ export const schema = {
     userFeedItemsRelations,
     userKVStoresRelations,
     revokedTokensRelations,
+    sessionSharesRelations,
+    sessionShareUrlsRelations,
+    sessionShareInvitationsRelations,
 };
