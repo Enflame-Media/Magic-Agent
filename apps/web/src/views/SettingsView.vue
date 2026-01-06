@@ -53,6 +53,10 @@ function navigateToPrivacy() {
   router.push('/settings/privacy');
 }
 
+function navigateToVoice() {
+  router.push('/settings/voice');
+}
+
 function navigateToFriends() {
   router.push('/friends');
 }
@@ -308,7 +312,7 @@ function openGitHub() {
               </svg>
             </button>
             <button
-              class="w-full flex items-center justify-between p-4 hover:bg-accent transition-colors"
+              class="w-full flex items-center justify-between p-4 hover:bg-accent transition-colors border-b"
               @click="navigateToPrivacy"
             >
               <div class="flex items-center gap-3">
@@ -331,6 +335,43 @@ function openGitHub() {
                 <div class="text-left">
                   <p class="font-medium">Privacy</p>
                   <p class="text-sm text-muted-foreground">Online status, visibility</p>
+                </div>
+              </div>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5 text-muted-foreground"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+            <button
+              class="w-full flex items-center justify-between p-4 hover:bg-accent transition-colors"
+              @click="navigateToVoice"
+            >
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-5 w-5 text-orange-500"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+                    />
+                  </svg>
+                </div>
+                <div class="text-left">
+                  <p class="font-medium">Voice Assistant</p>
+                  <p class="text-sm text-muted-foreground">Voice language preferences</p>
                 </div>
               </div>
               <svg

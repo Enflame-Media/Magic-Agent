@@ -8,6 +8,7 @@ export * from './encryption';
 export * from './storage';
 export * from './sync';
 export * from './voice';
+export * from './apiVoice';
 
 // Encryption sub-module exports
 export * from './encryption/EncryptionCache';

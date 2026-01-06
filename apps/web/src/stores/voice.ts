@@ -15,8 +15,39 @@
  */
 
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import type { VoiceStatus, VoiceMode } from '@/services/voice/types';
+
+/** LocalStorage key for voice language preference */
+const VOICE_LANGUAGE_STORAGE_KEY = 'happy_voice_language';
+
+/**
+ * Load voice language from localStorage
+ */
+function loadVoiceLanguage(): string {
+    if (typeof window === 'undefined') return 'en';
+    try {
+        const stored = localStorage.getItem(VOICE_LANGUAGE_STORAGE_KEY);
+        if (stored && typeof stored === 'string') {
+            return stored;
+        }
+    } catch {
+        // localStorage not available
+    }
+    return 'en';
+}
+
+/**
+ * Save voice language to localStorage
+ */
+function saveVoiceLanguage(language: string): void {
+    if (typeof window === 'undefined') return;
+    try {
+        localStorage.setItem(VOICE_LANGUAGE_STORAGE_KEY, language);
+    } catch {
+        // localStorage not available
+    }
+}
 
 export const useVoiceStore = defineStore('voice', () => {
     // ─────────────────────────────────────────────────────────────────────────
@@ -41,8 +72,13 @@ export const useVoiceStore = defineStore('voice', () => {
     /** Error message if status is 'error' */
     const error = ref<string | null>(null);
 
-    /** User's preferred voice language */
-    const voiceLanguage = ref<string>('en');
+    /** User's preferred voice language (persisted to localStorage) */
+    const voiceLanguage = ref<string>(loadVoiceLanguage());
+
+    // Persist voice language changes to localStorage
+    watch(voiceLanguage, (newLanguage) => {
+        saveVoiceLanguage(newLanguage);
+    });
 
     // ─────────────────────────────────────────────────────────────────────────
     // Getters (Computed)

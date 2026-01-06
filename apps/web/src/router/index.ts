@@ -117,6 +117,12 @@ const router = createRouter({
       component: () => import('@/views/settings/PrivacyView.vue'),
       meta: { requiresAuth: true },
     },
+    {
+      path: '/settings/voice',
+      name: 'settings-voice',
+      component: () => import('@/views/settings/VoiceView.vue'),
+      meta: { requiresAuth: true },
+    },
 
     // ─────────────────────────────────────────────────────────────────────
     // Auth Routes (public)
