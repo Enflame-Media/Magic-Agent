@@ -945,7 +945,11 @@ userRoutes.openapi(getPrivacyRoute, async (c) => {
     // Fetch user's privacy settings
     const user = await db.query.accounts.findFirst({
         where: (accts, { eq: e }) => e(accts.id, userId),
-        columns: { showOnlineStatus: true },
+        columns: {
+            showOnlineStatus: true,
+            profileVisibility: true,
+            friendRequestPermission: true,
+        },
     });
 
     if (!user) {
@@ -954,6 +958,8 @@ userRoutes.openapi(getPrivacyRoute, async (c) => {
 
     return c.json({
         showOnlineStatus: user.showOnlineStatus,
+        profileVisibility: user.profileVisibility as 'public' | 'friends-only',
+        friendRequestPermission: user.friendRequestPermission as 'anyone' | 'friends-of-friends' | 'none',
     });
 });
 
@@ -999,13 +1005,24 @@ const updatePrivacyRoute = createRoute({
 - When true (default): Friends can see when you're online
 - When false: You appear offline to all friends
 
+**profileVisibility:**
+- "public" (default): Anyone can view your profile
+- "friends-only": Only friends can view your profile
+
+**friendRequestPermission:**
+- "anyone" (default): Anyone can send you friend requests
+- "friends-of-friends": Only users who share mutual friends can send requests
+- "none": Nobody can send you friend requests
+
 Note: This affects presence broadcast to friends.`,
 });
 
 /**
  * Update privacy settings for the current user.
- * Currently supports:
+ * Supports:
  * - showOnlineStatus: Whether to broadcast online status to friends
+ * - profileVisibility: Who can view your profile (HAP-794)
+ * - friendRequestPermission: Who can send friend requests (HAP-794)
  */
 // @ts-expect-error - OpenAPI handler type inference doesn't carry Variables from middleware
 userRoutes.openapi(updatePrivacyRoute, async (c) => {
@@ -1014,12 +1031,25 @@ userRoutes.openapi(updatePrivacyRoute, async (c) => {
     const db = getDb(c.env.DB);
 
     // Build update object with only provided fields
-    const updateData: { showOnlineStatus?: boolean; updatedAt: Date } = {
+    const updateData: {
+        showOnlineStatus?: boolean;
+        profileVisibility?: string;
+        friendRequestPermission?: string;
+        updatedAt: Date;
+    } = {
         updatedAt: new Date(),
     };
 
     if (body.showOnlineStatus !== undefined) {
         updateData.showOnlineStatus = body.showOnlineStatus;
+    }
+
+    if (body.profileVisibility !== undefined) {
+        updateData.profileVisibility = body.profileVisibility;
+    }
+
+    if (body.friendRequestPermission !== undefined) {
+        updateData.friendRequestPermission = body.friendRequestPermission;
     }
 
     // Update user's privacy settings
@@ -1031,7 +1061,11 @@ userRoutes.openapi(updatePrivacyRoute, async (c) => {
     // Fetch updated settings
     const user = await db.query.accounts.findFirst({
         where: (accts, { eq: e }) => e(accts.id, userId),
-        columns: { showOnlineStatus: true },
+        columns: {
+            showOnlineStatus: true,
+            profileVisibility: true,
+            friendRequestPermission: true,
+        },
     });
 
     if (!user) {
@@ -1040,6 +1074,8 @@ userRoutes.openapi(updatePrivacyRoute, async (c) => {
 
     return c.json({
         showOnlineStatus: user.showOnlineStatus,
+        profileVisibility: user.profileVisibility as 'public' | 'friends-only',
+        friendRequestPermission: user.friendRequestPermission as 'anyone' | 'friends-of-friends' | 'none',
     });
 });
 

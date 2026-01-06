@@ -216,6 +216,20 @@ export const FriendListResponseSchema = z
 // ============================================================================
 
 /**
+ * Profile visibility options
+ */
+export const ProfileVisibilitySchema = z
+    .enum(['public', 'friends-only'])
+    .openapi('ProfileVisibility');
+
+/**
+ * Friend request permission options
+ */
+export const FriendRequestPermissionSchema = z
+    .enum(['anyone', 'friends-of-friends', 'none'])
+    .openapi('FriendRequestPermission');
+
+/**
  * Schema for privacy settings
  */
 const PrivacySettingsSchema = z
@@ -223,6 +237,14 @@ const PrivacySettingsSchema = z
         showOnlineStatus: z.boolean().openapi({
             description: 'Whether to show online status to friends',
             example: true,
+        }),
+        profileVisibility: ProfileVisibilitySchema.openapi({
+            description: 'Who can view your profile',
+            example: 'public',
+        }),
+        friendRequestPermission: FriendRequestPermissionSchema.openapi({
+            description: 'Who can send you friend requests',
+            example: 'anyone',
         }),
     })
     .openapi('PrivacySettings');
@@ -240,6 +262,14 @@ export const UpdatePrivacySettingsBodySchema = z
         showOnlineStatus: z.boolean().optional().openapi({
             description: 'Whether to show online status to friends',
             example: true,
+        }),
+        profileVisibility: ProfileVisibilitySchema.optional().openapi({
+            description: 'Who can view your profile',
+            example: 'public',
+        }),
+        friendRequestPermission: FriendRequestPermissionSchema.optional().openapi({
+            description: 'Who can send you friend requests',
+            example: 'anyone',
         }),
     })
     .openapi('UpdatePrivacySettingsBody');
