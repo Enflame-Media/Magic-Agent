@@ -461,22 +461,42 @@ export const ArchiveSessionRequestSchema = z
 
 /**
  * Schema for archive session response
+ *
+ * Returns either:
+ * - `{ success, sessionId, archivedAt }` if session has messages (archived)
+ * - `{ success, sessionId, deleted }` if session has no messages (deleted)
  */
 export const ArchiveSessionResponseSchema = z
-    .object({
-        success: z.boolean().openapi({
-            description: 'Whether the archive operation succeeded',
-            example: true,
+    .union([
+        z.object({
+            success: z.literal(true).openapi({
+                description: 'Whether the operation succeeded',
+                example: true,
+            }),
+            sessionId: z.string().openapi({
+                description: 'Session identifier',
+                example: 'cmed556s4002bvb2020igg8jf',
+            }),
+            archivedAt: z.string().openapi({
+                description: 'ISO timestamp when session was archived',
+                example: '2024-01-15T10:35:00.000Z',
+            }),
         }),
-        sessionId: z.string().openapi({
-            description: 'Session identifier',
-            example: 'cmed556s4002bvb2020igg8jf',
+        z.object({
+            success: z.literal(true).openapi({
+                description: 'Whether the operation succeeded',
+                example: true,
+            }),
+            sessionId: z.string().openapi({
+                description: 'Session identifier',
+                example: 'cmed556s4002bvb2020igg8jf',
+            }),
+            deleted: z.literal(true).openapi({
+                description: 'Whether the session was deleted (empty sessions are deleted instead of archived)',
+                example: true,
+            }),
         }),
-        archivedAt: z.string().openapi({
-            description: 'ISO timestamp when session was archived',
-            example: '2024-01-15T10:35:00.000Z',
-        }),
-    })
+    ])
     .openapi('ArchiveSessionResponse');
 
 // ============================================================================

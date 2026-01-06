@@ -6,7 +6,7 @@ import { schema } from '@/db/schema';
 import { createId } from '@/utils/id';
 // Encoding utilities for base64/hex operations (Workers-compatible)
 import * as privacyKit from '@/lib/privacy-kit-shim';
-import { eq, desc, lt, gt, and, sql } from 'drizzle-orm';
+import { eq, desc, lt, gt, and, sql, count } from 'drizzle-orm';
 import { getEventRouter, buildDeleteSessionUpdate, buildArchiveSessionUpdate } from '@/lib/eventRouter';
 import {
     ListSessionsResponseSchema,
@@ -757,9 +757,51 @@ sessionRoutes.openapi(archiveSessionRoute, async (c) => {
         return c.json({ error: 'Session already archived' }, 400);
     }
 
+    // Check if session has any messages
+    const [messageCount] = await db
+        .select({ count: count() })
+        .from(schema.sessionMessages)
+        .where(eq(schema.sessionMessages.sessionId, id));
+
+    const hasMessages = (messageCount?.count ?? 0) > 0;
+
+    // Allocate sequence number for the update event
+    const [account] = await db
+        .update(schema.accounts)
+        .set({ seq: sql`${schema.accounts.seq} + 1` })
+        .where(eq(schema.accounts.id, userId))
+        .returning({ seq: schema.accounts.seq });
+
+    const connectionManager = c.env.CONNECTION_MANAGER;
+    const updateId = createId();
+
+    if (!hasMessages) {
+        // Session has no messages - delete it entirely (consistency with handleSessionEnd)
+        // Delete related data first (usage reports, access keys)
+        await db.delete(schema.usageReports).where(eq(schema.usageReports.sessionId, id));
+        await db.delete(schema.accessKeys).where(eq(schema.accessKeys.sessionId, id));
+        // Delete the session (no messages to delete since count is 0)
+        await db.delete(schema.sessions).where(eq(schema.sessions.id, id));
+
+        // Emit delete-session event to connected clients
+        if (connectionManager) {
+            const eventRouter = getEventRouter({ CONNECTION_MANAGER: connectionManager });
+            await eventRouter.emitUpdate({
+                userId,
+                payload: buildDeleteSessionUpdate(id, account?.seq ?? 0, updateId),
+            });
+        }
+
+        return c.json({
+            success: true,
+            sessionId: id,
+            deleted: true,
+        });
+    }
+
+    // Session has messages - archive it normally
     const now = new Date();
 
-    // Archive the session
     await db
         .update(schema.sessions)
         .set({
@@ -770,17 +812,8 @@ sessionRoutes.openapi(archiveSessionRoute, async (c) => {
         })
         .where(eq(schema.sessions.id, id));
 
-    // Allocate sequence number for the update event
-    const [account] = await db
-        .update(schema.accounts)
-        .set({ seq: sql`${schema.accounts.seq} + 1` })
-        .where(eq(schema.accounts.id, userId))
-        .returning({ seq: schema.accounts.seq });
-
     // Emit archive-session event to connected clients
-    const connectionManager = c.env.CONNECTION_MANAGER;
     if (connectionManager) {
-        const updateId = createId();
         const eventRouter = getEventRouter({ CONNECTION_MANAGER: connectionManager });
         await eventRouter.emitUpdate({
             userId,
