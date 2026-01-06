@@ -2,6 +2,7 @@ import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi';
 // Encoding utilities for base64/hex operations (Workers-compatible)
 import * as privacyKit from '@/lib/privacy-kit-shim';
 import { createToken, refreshToken } from '@/lib/auth';
+import { initFingerprint, checkForBot, isFingerprintInitialized } from '@/lib/fingerprint';
 import { getDb } from '@/db/client';
 import { schema } from '@/db/schema';
 import { eq } from 'drizzle-orm';
@@ -46,6 +47,14 @@ const RateLimitExceededSchema = z.object({
 });
 
 /**
+ * OpenAPI schema for bot detection error response
+ */
+const BotDetectedErrorSchema = z.object({
+    error: z.literal('Bot detected'),
+    reason: z.string().describe('Bot detection reason'),
+});
+
+/**
  * Environment bindings for auth routes
  */
 interface Env {
@@ -56,6 +65,62 @@ interface Env {
     HANDY_MASTER_SECRET?: string;
     /** KV namespace for rate limiting (HAP-453) */
     RATE_LIMIT_KV?: KVNamespace;
+    /** Fingerprint.js Pro Server API key for device verification */
+    FINGERPRINT_API_KEY?: string;
+}
+
+/**
+ * Verify device using Fingerprint.js
+ *
+ * @param fingerprintRequestId - The requestId from client-side Fingerprint.js
+ * @param env - Environment bindings containing FINGERPRINT_API_KEY
+ * @returns Object with verification result
+ */
+async function verifyFingerprint(
+    fingerprintRequestId: string | undefined,
+    env: Env
+): Promise<{ allowed: boolean; reason?: string }> {
+    // If no requestId provided, allow (Fingerprint is optional)
+    if (!fingerprintRequestId) {
+        return { allowed: true };
+    }
+
+    // If Fingerprint API key not configured, allow with warning
+    if (!env.FINGERPRINT_API_KEY) {
+        console.warn('[Fingerprint] API key not configured, skipping verification');
+        return { allowed: true };
+    }
+
+    try {
+        // Initialize Fingerprint client if not already done
+        if (!isFingerprintInitialized()) {
+            initFingerprint(env.FINGERPRINT_API_KEY);
+        }
+
+        // Check for bot
+        const botCheck = await checkForBot(fingerprintRequestId);
+
+        if (botCheck.error) {
+            // Log error but allow request (fail-open for availability)
+            console.warn('[Fingerprint] Verification error:', botCheck.error);
+            return { allowed: true };
+        }
+
+        if (botCheck.isBot) {
+            console.warn('[Fingerprint] Bot detected:', botCheck.botKind);
+            return {
+                allowed: false,
+                reason: `Bot detected: ${botCheck.botKind ?? 'unknown'}`,
+            };
+        }
+
+        return { allowed: true };
+    } catch (error) {
+        // Log error but allow request (fail-open for availability)
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        console.error('[Fingerprint] Verification failed:', message);
+        return { allowed: true };
+    }
 }
 
 /**
@@ -103,6 +168,14 @@ const directAuthRoute = createRoute({
             },
             description: 'Invalid signature',
         },
+        403: {
+            content: {
+                'application/json': {
+                    schema: BotDetectedErrorSchema,
+                },
+            },
+            description: 'Bot detected - authentication blocked',
+        },
         429: {
             content: {
                 'application/json': {
@@ -129,11 +202,11 @@ const directAuthRoute = createRoute({
     tags: ['Authentication'],
     summary: 'Direct public key authentication',
     description:
-        'Authenticate using Ed25519 public key signature verification. The client signs a challenge with their private key, and the server verifies the signature. Rate limited to 5 requests per minute per public key.',
+        'Authenticate using Ed25519 public key signature verification. The client signs a challenge with their private key, and the server verifies the signature. Rate limited to 5 requests per minute per public key. Optional Fingerprint.js verification for bot detection.',
 });
 
 authRoutes.openapi(directAuthRoute, async (c) => {
-    const { publicKey, challenge, signature } = c.req.valid('json');
+    const { publicKey, challenge, signature, fingerprintRequestId } = c.req.valid('json');
 
     // Check rate limit (HAP-453)
     // Rate limiting is applied before crypto operations to prevent DoS via expensive signature verification
@@ -159,6 +232,18 @@ authRoutes.openapi(directAuthRoute, async (c) => {
                 }
             );
         }
+    }
+
+    // Verify device using Fingerprint.js (HAP-788)
+    const fingerprintResult = await verifyFingerprint(fingerprintRequestId, c.env);
+    if (!fingerprintResult.allowed) {
+        return c.json(
+            {
+                error: 'Bot detected' as const,
+                reason: fingerprintResult.reason ?? 'Suspicious activity detected',
+            },
+            403
+        );
     }
 
     // Import TweetNaCl for signature verification
@@ -252,6 +337,14 @@ const terminalAuthRequestRoute = createRoute({
             },
             description: 'Invalid public key',
         },
+        403: {
+            content: {
+                'application/json': {
+                    schema: BotDetectedErrorSchema,
+                },
+            },
+            description: 'Bot detected - authentication blocked',
+        },
         429: {
             content: {
                 'application/json': {
@@ -278,11 +371,11 @@ const terminalAuthRequestRoute = createRoute({
     tags: ['Authentication'],
     summary: 'Initiate terminal pairing',
     description:
-        'Used by happy-cli to start pairing flow. Creates an auth request that waits for mobile approval. CLI polls this endpoint until approved. Rate limited to 5 requests per minute per public key.',
+        'Used by happy-cli to start pairing flow. Creates an auth request that waits for mobile approval. CLI polls this endpoint until approved. Rate limited to 5 requests per minute per public key. Optional Fingerprint.js verification for bot detection.',
 });
 
 authRoutes.openapi(terminalAuthRequestRoute, async (c) => {
-    const { publicKey, supportsV2 } = c.req.valid('json');
+    const { publicKey, supportsV2, fingerprintRequestId } = c.req.valid('json');
 
     // Check rate limit (HAP-453)
     if (c.env.RATE_LIMIT_KV) {
@@ -307,6 +400,18 @@ authRoutes.openapi(terminalAuthRequestRoute, async (c) => {
                 }
             );
         }
+    }
+
+    // Verify device using Fingerprint.js (HAP-788)
+    const fingerprintResult = await verifyFingerprint(fingerprintRequestId, c.env);
+    if (!fingerprintResult.allowed) {
+        return c.json(
+            {
+                error: 'Bot detected' as const,
+                reason: fingerprintResult.reason ?? 'Suspicious activity detected',
+            },
+            403
+        );
     }
 
     // Import TweetNaCl for key validation
@@ -536,6 +641,14 @@ const accountAuthRequestRoute = createRoute({
             },
             description: 'Invalid public key',
         },
+        403: {
+            content: {
+                'application/json': {
+                    schema: BotDetectedErrorSchema,
+                },
+            },
+            description: 'Bot detected - authentication blocked',
+        },
         429: {
             content: {
                 'application/json': {
@@ -561,11 +674,11 @@ const accountAuthRequestRoute = createRoute({
     },
     tags: ['Authentication'],
     summary: 'Initiate account pairing',
-    description: 'Used by happy-app to pair with another mobile device. Rate limited to 5 requests per minute per public key.',
+    description: 'Used by happy-app to pair with another mobile device. Rate limited to 5 requests per minute per public key. Optional Fingerprint.js verification for bot detection.',
 });
 
 authRoutes.openapi(accountAuthRequestRoute, async (c) => {
-    const { publicKey } = c.req.valid('json');
+    const { publicKey, fingerprintRequestId } = c.req.valid('json');
 
     // Check rate limit (HAP-453)
     if (c.env.RATE_LIMIT_KV) {
@@ -590,6 +703,18 @@ authRoutes.openapi(accountAuthRequestRoute, async (c) => {
                 }
             );
         }
+    }
+
+    // Verify device using Fingerprint.js (HAP-788)
+    const fingerprintResult = await verifyFingerprint(fingerprintRequestId, c.env);
+    if (!fingerprintResult.allowed) {
+        return c.json(
+            {
+                error: 'Bot detected' as const,
+                reason: fingerprintResult.reason ?? 'Suspicious activity detected',
+            },
+            403
+        );
     }
 
     // Import TweetNaCl for key validation

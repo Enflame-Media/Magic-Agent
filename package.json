@@ -53,8 +53,8 @@
     "@types/upng-js": "^2",
     "@vitest/coverage-v8": "^4.0.16",
     "drizzle-kit": "^0.31.8",
-    "knip": "^5.79.0",
-    "oxlint": "^1.36.0",
+    "knip": "^5.80.0",
+    "oxlint": "^1.37.0",
     "oxlint-tsgolint": "^0.10.1",
     "prettier": "^3.7.4",
     "tsx": "^4.21.0",
@@ -63,6 +63,7 @@
     "wrangler": "^4.56.0"
   },
   "dependencies": {
+    "@fingerprintjs/fingerprintjs-pro-server-api": "^6.10.0",
     "@happy/errors": "workspace:*",
     "@happy/protocol": "workspace:*",
     "@hono/zod-openapi": "^1.2.0",

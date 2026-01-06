@@ -7,6 +7,7 @@ import { requestIdMiddleware } from '@/middleware/requestId';
 import { errorHandler } from '@/middleware/error';
 import { bodySizeLimits } from '@/middleware/bodySize';
 import { initAuth, cleanupExpiredTokens } from '@/lib/auth';
+import { cleanupEmptyArchivedSessions } from '@/lib/sessionCleanup';
 import { getMasterSecret, validateEnv } from '@/config/env';
 import { buildSentryOptions } from '@/lib/sentry';
 import authRoutes from '@/routes/auth';
@@ -131,6 +132,13 @@ interface Env {
      * Automatically populated by Cloudflare Workers
      */
     CF_VERSION_METADATA?: { id: string };
+
+    /**
+     * Fingerprint.js Pro Server API key for device intelligence
+     * @optional Used for bot detection and device fingerprinting
+     * @see https://dev.fingerprint.com/docs/get-server-side-intelligence
+     */
+    FINGERPRINT_API_KEY?: string;
 }
 
 /**
@@ -460,7 +468,9 @@ export { app };
 
 /**
  * Scheduled event handler for cron triggers
- * Runs daily at 2 AM UTC to clean up expired token blacklist entries
+ * Runs daily at 2 AM UTC for maintenance tasks:
+ * - Clean up expired token blacklist entries
+ * - Delete empty archived sessions (sessions with no messages)
  *
  * Note: Sentry is automatically initialized by the withSentry wrapper for scheduled handlers.
  * Error capture and flushing is handled by the wrapper.
@@ -473,16 +483,17 @@ export { app };
  * @see HAP-452 for token blacklist architecture
  */
 async function scheduled(event: ScheduledEvent, env: Env, _ctx: ExecutionContext): Promise<void> {
-    console.log(`[Scheduled] Token blacklist cleanup triggered at ${new Date(event.scheduledTime).toISOString()}`);
+    console.log(`[Scheduled] Maintenance triggered at ${new Date(event.scheduledTime).toISOString()}`);
 
     // Set Sentry context for this scheduled job
     Sentry.setTag('handler', 'scheduled');
-    Sentry.setTag('task', 'token-blacklist-cleanup');
     Sentry.setContext('scheduled', {
         scheduledTime: new Date(event.scheduledTime).toISOString(),
         cron: event.cron,
     });
 
+    // Task 1: Token blacklist cleanup
+    Sentry.setTag('task', 'token-blacklist-cleanup');
     try {
         const deleted = await cleanupExpiredTokens(env.DB);
         console.log(`[Scheduled] Removed ${deleted} expired blacklist entries`);
@@ -490,8 +501,18 @@ async function scheduled(event: ScheduledEvent, env: Env, _ctx: ExecutionContext
         // Capture error to Sentry with additional context
         Sentry.captureException(error);
         console.error('[Scheduled] Token blacklist cleanup failed:', error);
+        // Don't rethrow - continue with other tasks
+    }
+
+    // Task 2: Empty archived sessions cleanup
+    Sentry.setTag('task', 'empty-sessions-cleanup');
+    try {
+        const deleted = await cleanupEmptyArchivedSessions(env.DB);
+        console.log(`[Scheduled] Removed ${deleted} empty archived sessions`);
+    } catch (error) {
+        Sentry.captureException(error);
+        console.error('[Scheduled] Empty sessions cleanup failed:', error);
         // Don't rethrow - let the worker complete gracefully
-        // Failed cleanups will be retried on next cron run
     }
     // Note: Sentry flush is handled automatically by withSentry wrapper
 }

@@ -142,19 +142,6 @@ deploy() {
         return 0
     fi
 
-    # Production deployment confirmation
-    if [ "$env" = "prod" ]; then
-        echo ""
-        log_warn "You are about to deploy to PRODUCTION!"
-        echo ""
-        read -p "Type 'yes' to confirm: " confirm
-        if [ "$confirm" != "yes" ]; then
-            log_info "Deployment cancelled."
-            exit 0
-        fi
-        echo ""
-    fi
-
     log_info "Starting deployment..."
 
     # Run wrangler deploy

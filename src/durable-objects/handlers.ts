@@ -8,7 +8,7 @@
  * @see HAP-283 - Implement WebSocket Message Handlers for Database Updates
  */
 
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, sql, count } from 'drizzle-orm';
 import type { DbClient } from '@/db/client';
 import {
     sessions,
@@ -347,6 +347,9 @@ export async function handleSessionAlive(
  *
  * Event: 'session-end'
  * Data: { sid: string, time: number }
+ *
+ * Empty sessions (no messages) are deleted instead of archived to prevent
+ * accumulating orphan session records.
  */
 export async function handleSessionEnd(
     ctx: HandlerContext,
@@ -378,36 +381,85 @@ export async function handleSessionEnd(
         return {};
     }
 
-    // Mark session as inactive
-    await ctx.db
-        .update(sessions)
-        .set({
-            lastActiveAt: new Date(time),
-            active: false,
-        })
-        .where(eq(sessions.id, sid));
+    // Check if session has any messages
+    const [messageCount] = await ctx.db
+        .select({ count: count() })
+        .from(sessionMessages)
+        .where(eq(sessionMessages.sessionId, sid));
 
-    // HAP-689: Return response for emitWithAck callers (app's sendSessionEnd)
-    // AND broadcast ephemeral update to all user-scoped connections for real-time UI updates
-    return {
-        response: {
-            success: true,
-            activeAt: time,
-        },
-        ephemeral: {
-            message: {
-                event: 'ephemeral',
-                data: {
-                    type: 'activity',
-                    sid, // HAP-654: Standardized to `sid`
-                    active: false,
-                    activeAt: time,
-                    thinking: false,
-                } satisfies EphemeralEvent,
+    const hasMessages = (messageCount?.count ?? 0) > 0;
+
+    if (hasMessages) {
+        // Session has messages - archive it (set active: false)
+        await ctx.db
+            .update(sessions)
+            .set({
+                lastActiveAt: new Date(time),
+                active: false,
+            })
+            .where(eq(sessions.id, sid));
+
+        // HAP-689: Return response for emitWithAck callers (app's sendSessionEnd)
+        // AND broadcast ephemeral update to all user-scoped connections for real-time UI updates
+        return {
+            response: {
+                success: true,
+                activeAt: time,
             },
-            filter: { type: 'user-scoped-only' },
-        },
-    };
+            ephemeral: {
+                message: {
+                    event: 'ephemeral',
+                    data: {
+                        type: 'activity',
+                        sid, // HAP-654: Standardized to `sid`
+                        active: false,
+                        activeAt: time,
+                        thinking: false,
+                    } satisfies EphemeralEvent,
+                },
+                filter: { type: 'user-scoped-only' },
+            },
+        };
+    } else {
+        // Session has no messages - delete it entirely
+        // Delete related data first (usage reports, access keys)
+        await ctx.db.delete(usageReports).where(eq(usageReports.sessionId, sid));
+        await ctx.db.delete(accessKeys).where(eq(accessKeys.sessionId, sid));
+        // Delete the session (no messages to delete since count is 0)
+        await ctx.db.delete(sessions).where(eq(sessions.id, sid));
+
+        // Allocate sequence number for delete event
+        const [account] = await ctx.db
+            .update(accounts)
+            .set({ seq: sql`${accounts.seq} + 1` })
+            .where(eq(accounts.id, ctx.userId))
+            .returning({ seq: accounts.seq });
+
+        const updateId = createId();
+
+        // Emit delete-session update instead of activity ephemeral
+        return {
+            response: {
+                success: true,
+                deleted: true,
+            },
+            broadcast: {
+                message: {
+                    event: 'update',
+                    data: {
+                        id: updateId,
+                        seq: account?.seq ?? 0,
+                        body: {
+                            t: 'delete-session',
+                            sid,
+                        },
+                        createdAt: Date.now(),
+                    } satisfies UpdatePayload,
+                },
+                filter: { type: 'user-scoped-only' },
+            },
+        };
+    }
 }
 
 /**

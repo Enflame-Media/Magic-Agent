@@ -417,9 +417,13 @@ describe('Session Handlers', () => {
             expect(Object.keys(result)).toHaveLength(0);
         });
 
-        it('should emit inactive ephemeral event', async () => {
+        it('should emit inactive ephemeral event for session with messages', async () => {
             const mockDb = createMockDb();
-            mockDb._setSelectResults([{ id: 'session-1' }]);
+            // Queue results: 1st call = session exists, 2nd call = message count (has messages)
+            mockDb._queueSelectResults([
+                [{ id: 'session-1' }],
+                [{ count: 5 }],  // Session has 5 messages - should archive, not delete
+            ]);
             const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
 
             const result = await handleSessionEnd(ctx, {
@@ -429,6 +433,28 @@ describe('Session Handlers', () => {
 
             expect(result.ephemeral?.message.data.active).toBe(false);
             expect(result.ephemeral?.message.data.thinking).toBe(false);
+        });
+
+        it('should delete empty session and broadcast delete-session event', async () => {
+            const mockDb = createMockDb();
+            // Queue results: 1st call = session exists, 2nd call = message count (no messages)
+            mockDb._queueSelectResults([
+                [{ id: 'session-1' }],
+                [{ count: 0 }],  // Session has 0 messages - should delete
+            ]);
+            mockDb._setUpdateResults([{ seq: 1 }]);  // Account seq update result
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleSessionEnd(ctx, {
+                sid: 'session-1',
+                time: Date.now(),
+            });
+
+            // Should broadcast delete-session, not ephemeral activity
+            expect(result.broadcast).toBeDefined();
+            expect(result.broadcast?.message.data.body.t).toBe('delete-session');
+            expect(result.broadcast?.message.data.body.sid).toBe('session-1');
+            expect(result.response?.deleted).toBe(true);
         });
     });
 
@@ -1780,7 +1806,11 @@ describe('Additional Coverage Tests', () => {
     describe('handleSessionEnd - Future Time Clamping', () => {
         it('should clamp future timestamps to now', async () => {
             const mockDb = createMockDb();
-            mockDb._setSelectResults([{ id: 'session-1' }]);
+            // Queue results: 1st call = session exists, 2nd call = message count (has messages)
+            mockDb._queueSelectResults([
+                [{ id: 'session-1' }],
+                [{ count: 3 }],  // Session has messages - should archive
+            ]);
             const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
 
             const futureTime = Date.now() + 60000; // 1 minute in future
@@ -1789,7 +1819,7 @@ describe('Additional Coverage Tests', () => {
                 time: futureTime,
             });
 
-            // Should still process (clamped to now)
+            // Should still process (clamped to now) and archive (has messages)
             expect(result.ephemeral).toBeDefined();
             expect(result.ephemeral?.message.data.active).toBe(false);
         });

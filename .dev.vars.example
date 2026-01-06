@@ -55,3 +55,12 @@ HAPPY_MASTER_SECRET=your-32-byte-hex-secret-here
 # Test auth secret for privacy-kit integration tests
 # Can be any random string for local testing
 TEST_AUTH_SECRET=test-secret-for-local-development-only
+
+# ============================================================
+# FINGERPRINT.JS PRO
+# ============================================================
+
+# Fingerprint.js Pro Server API key for device intelligence
+# Get from: https://dashboard.fingerprint.com
+# Used for bot detection and device fingerprinting
+# FINGERPRINT_API_KEY=

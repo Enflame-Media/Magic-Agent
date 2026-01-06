@@ -38,6 +38,8 @@ import {
 } from './types';
 import { verifyToken, initAuth } from '@/lib/auth';
 import { getDb } from '@/db/client';
+import { machines } from '@/db/schema';
+import { eq, and } from 'drizzle-orm';
 import { getMasterSecret } from '@/config/env';
 import type { HandlerResult, HandlerContext } from './handlers';
 import { buildSentryOptions, instrumentDurableObjectWithSentry } from '@/lib/sentry';
@@ -351,13 +353,44 @@ class ConnectionManagerBase extends DurableObject<ConnectionManagerEnv> {
 
                 // Broadcast machine online status if applicable
                 if (clientType === 'machine-scoped' && machineId) {
+                    const now = Date.now();
+
+                    // Update database to mark machine as online
+                    try {
+                        const db = getDb(this.env.DB);
+                        await db
+                            .update(machines)
+                            .set({
+                                active: true,
+                                lastActiveAt: new Date(now),
+                            })
+                            .where(and(eq(machines.id, machineId), eq(machines.accountId, preValidatedUserId)));
+                    } catch (err) {
+                        console.error('[ConnectionManager] Failed to update machine online status:', err);
+                    }
+
+                    // Send machine-status ephemeral event for online/offline UI display
                     this.broadcastClientMessage(
                         {
-                            event: 'machine-update',
+                            event: 'ephemeral',
                             data: {
+                                type: 'machine-status',
+                                machineId,
+                                online: true,
+                                timestamp: now,
+                            },
+                        },
+                        { type: 'user-scoped-only' }
+                    );
+                    // Also send machine-activity for activity tracking
+                    this.broadcastClientMessage(
+                        {
+                            event: 'ephemeral',
+                            data: {
+                                type: 'machine-activity',
                                 machineId,
                                 active: true,
-                                timestamp: Date.now(),
+                                activeAt: now,
                             },
                         },
                         { type: 'user-scoped-only' }
@@ -434,13 +467,44 @@ class ConnectionManagerBase extends DurableObject<ConnectionManagerEnv> {
 
                 // Broadcast machine online status to user-scoped connections
                 if (handshake.clientType === 'machine-scoped' && handshake.machineId) {
+                    const now = Date.now();
+
+                    // Update database to mark machine as online
+                    try {
+                        const db = getDb(this.env.DB);
+                        await db
+                            .update(machines)
+                            .set({
+                                active: true,
+                                lastActiveAt: new Date(now),
+                            })
+                            .where(and(eq(machines.id, handshake.machineId), eq(machines.accountId, verified.userId)));
+                    } catch (err) {
+                        console.error('[ConnectionManager] Failed to update machine online status:', err);
+                    }
+
+                    // Send machine-status ephemeral event for online/offline UI display
                     this.broadcastClientMessage(
                         {
-                            event: 'machine-update',
+                            event: 'ephemeral',
                             data: {
+                                type: 'machine-status',
+                                machineId: handshake.machineId,
+                                online: true,
+                                timestamp: now,
+                            },
+                        },
+                        { type: 'user-scoped-only' }
+                    );
+                    // Also send machine-activity for activity tracking
+                    this.broadcastClientMessage(
+                        {
+                            event: 'ephemeral',
+                            data: {
+                                type: 'machine-activity',
                                 machineId: handshake.machineId,
                                 active: true,
-                                timestamp: Date.now(),
+                                activeAt: now,
                             },
                         },
                         { type: 'user-scoped-only' }
@@ -1109,14 +1173,45 @@ class ConnectionManagerBase extends DurableObject<ConnectionManagerEnv> {
             }
 
             // Broadcast machine offline status if this was a machine-scoped connection
-            if (metadata.clientType === 'machine-scoped' && metadata.machineId) {
+            if (metadata.clientType === 'machine-scoped' && metadata.machineId && metadata.userId) {
+                const now = Date.now();
+
+                // Update database to mark machine as offline
+                try {
+                    const db = getDb(this.env.DB);
+                    await db
+                        .update(machines)
+                        .set({
+                            active: false,
+                            lastActiveAt: new Date(now),
+                        })
+                        .where(and(eq(machines.id, metadata.machineId), eq(machines.accountId, metadata.userId)));
+                } catch (err) {
+                    console.error('[ConnectionManager] Failed to update machine offline status:', err);
+                }
+
+                // Send machine-status ephemeral event for online/offline UI display
                 this.broadcastClientMessage(
                     {
-                        event: 'machine-update',
+                        event: 'ephemeral',
                         data: {
+                            type: 'machine-status',
+                            machineId: metadata.machineId,
+                            online: false,
+                            timestamp: now,
+                        },
+                    },
+                    { type: 'user-scoped-only' }
+                );
+                // Also send machine-activity for activity tracking
+                this.broadcastClientMessage(
+                    {
+                        event: 'ephemeral',
+                        data: {
+                            type: 'machine-activity',
                             machineId: metadata.machineId,
                             active: false,
-                            timestamp: Date.now(),
+                            activeAt: now,
                         },
                     },
                     { type: 'user-scoped-only' }
@@ -2060,13 +2155,44 @@ class ConnectionManagerBase extends DurableObject<ConnectionManagerEnv> {
 
         // Broadcast machine online status if applicable
         if (clientType === 'machine-scoped' && payload.machineId) {
+            const now = Date.now();
+
+            // Update database to mark machine as online
+            try {
+                const db = getDb(this.env.DB);
+                await db
+                    .update(machines)
+                    .set({
+                        active: true,
+                        lastActiveAt: new Date(now),
+                    })
+                    .where(and(eq(machines.id, payload.machineId), eq(machines.accountId, verified.userId)));
+            } catch (err) {
+                console.error('[ConnectionManager] Failed to update machine online status:', err);
+            }
+
+            // Send machine-status ephemeral event for online/offline UI display
             this.broadcastClientMessage(
                 {
-                    event: 'machine-update',
+                    event: 'ephemeral',
                     data: {
+                        type: 'machine-status',
+                        machineId: payload.machineId,
+                        online: true,
+                        timestamp: now,
+                    },
+                },
+                { type: 'user-scoped-only' }
+            );
+            // Also send machine-activity for activity tracking
+            this.broadcastClientMessage(
+                {
+                    event: 'ephemeral',
+                    data: {
+                        type: 'machine-activity',
                         machineId: payload.machineId,
                         active: true,
-                        timestamp: Date.now(),
+                        activeAt: now,
                     },
                 },
                 { type: 'user-scoped-only' }
