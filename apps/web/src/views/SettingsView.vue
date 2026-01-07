@@ -15,6 +15,7 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useSyncStore } from '@/stores/sync';
 import { Button } from '@/components/ui/button';
+import { useLocale } from '@/composables/useLocale';
 import {
   Card,
   CardContent,
@@ -27,6 +28,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 const router = useRouter();
 const authStore = useAuthStore();
 const syncStore = useSyncStore();
+const { t } = useLocale();
 
 // App version (would come from build config)
 const appVersion = '0.1.0';
@@ -51,6 +53,10 @@ function navigateToLanguage() {
 
 function navigateToPrivacy() {
   router.push('/settings/privacy');
+}
+
+function navigateToNotifications() {
+  router.push('/settings/notifications');
 }
 
 function navigateToVoice() {
@@ -298,6 +304,45 @@ function openGitHub() {
                 <div class="text-left">
                   <p class="font-medium">Language</p>
                   <p class="text-sm text-muted-foreground">App language</p>
+                </div>
+              </div>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5 text-muted-foreground"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+            <button
+              class="w-full flex items-center justify-between p-4 hover:bg-accent transition-colors border-b"
+              @click="navigateToNotifications"
+            >
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-5 w-5 text-blue-500"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                    />
+                  </svg>
+                </div>
+                <div class="text-left">
+                  <p class="font-medium">{{ t('settings.notifications') }}</p>
+                  <p class="text-sm text-muted-foreground">
+                    {{ t('settings.notificationsSubtitle') }}
+                  </p>
                 </div>
               </div>
               <svg

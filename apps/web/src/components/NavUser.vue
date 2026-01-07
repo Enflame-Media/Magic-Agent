@@ -1,17 +1,18 @@
 <script setup lang="ts">
 import {
-  IconCreditCard,
   IconDotsVertical,
   IconLogout,
   IconNotification,
+  IconSettings,
   IconUserCircle,
-} from "@tabler/icons-vue"
+} from '@tabler/icons-vue';
+import { useRouter } from 'vue-router';
 
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
-} from '@/components/ui/avatar'
+} from '@/components/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,26 +21,38 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from '@/components/ui/dropdown-menu';
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from '@/components/ui/sidebar'
+} from '@/components/ui/sidebar';
+import { useAuthStore } from '@/stores/auth';
 
 interface User {
-  name: string
-  email: string
-  avatar: string
-  initials?: string
+  name: string;
+  email: string;
+  avatar: string;
+  initials?: string;
 }
 
 defineProps<{
-  user: User
-}>()
+  user: User;
+}>();
 
-const { isMobile } = useSidebar()
+const { isMobile } = useSidebar();
+const router = useRouter();
+const authStore = useAuthStore();
+
+function navigateTo(path: string) {
+  router.push(path);
+}
+
+function handleLogout() {
+  authStore.logout();
+  router.push('/auth');
+}
 </script>
 
 <template>
@@ -90,23 +103,23 @@ const { isMobile } = useSidebar()
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
-            <DropdownMenuItem>
+            <DropdownMenuItem @click="navigateTo('/settings/account')">
               <IconUserCircle />
               Account
             </DropdownMenuItem>
-            <DropdownMenuItem>
-              <IconCreditCard />
-              Billing
+            <DropdownMenuItem @click="navigateTo('/settings')">
+              <IconSettings />
+              Settings
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem @click="navigateTo('/settings/notifications')">
               <IconNotification />
               Notifications
             </DropdownMenuItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>
+          <DropdownMenuItem @click="handleLogout">
             <IconLogout />
-            Log out
+            Logout
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

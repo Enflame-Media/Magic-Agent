@@ -147,12 +147,73 @@ const statusColor = computed(() =>
   session.value?.active ? 'text-green-500' : 'text-gray-500'
 );
 
-const modelLabel = computed(() => {
-  if (decryptedMetadata.value?.flavor === 'codex' || decryptedMetadata.value?.flavor === 'gpt') {
-    return 'gpt-5-codex high';
+const codexModelOptions = [
+  'gpt-5-codex high',
+  'gpt-5-codex medium',
+  'gpt-5-codex low',
+];
+
+const codexPermissionModes = [
+  { value: 'default', label: 'default' },
+  { value: 'read-only', label: 'read-only' },
+  { value: 'safe-yolo', label: 'safe yolo' },
+  { value: 'yolo', label: 'yolo' },
+];
+
+const claudePermissionModes = [
+  { value: 'default', label: 'default' },
+  { value: 'acceptEdits', label: 'accept edits' },
+  { value: 'plan', label: 'plan' },
+  { value: 'bypassPermissions', label: 'bypass permissions' },
+];
+
+const modelLabel = ref('');
+const permissionMode = ref('default');
+
+const permissionLabel = computed(() => {
+  if (permissionMode.value === 'default') {
+    return '';
   }
-  return '';
+  const isCodex = decryptedMetadata.value?.flavor === 'codex' || decryptedMetadata.value?.flavor === 'gpt';
+  const options = isCodex ? codexPermissionModes : claudePermissionModes;
+  const match = options.find((option) => option.value === permissionMode.value);
+  return match?.label ?? 'default';
 });
+
+watch(
+  () => decryptedMetadata.value?.flavor,
+  (flavor) => {
+    const defaultCodexModel = codexModelOptions[0] ?? 'gpt-5-codex high';
+    const defaultCodexMode = codexPermissionModes[0]?.value ?? 'default';
+    const defaultClaudeMode = claudePermissionModes[0]?.value ?? 'default';
+
+    if (flavor === 'codex' || flavor === 'gpt') {
+      modelLabel.value = defaultCodexModel;
+      permissionMode.value = defaultCodexMode;
+      return;
+    }
+    modelLabel.value = '';
+    permissionMode.value = defaultClaudeMode;
+  },
+  { immediate: true }
+);
+
+function cycleModelLabel(): void {
+  if (!modelLabel.value) {
+    return;
+  }
+  const currentIndex = codexModelOptions.indexOf(modelLabel.value);
+  const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % codexModelOptions.length;
+  modelLabel.value = codexModelOptions[nextIndex] ?? codexModelOptions[0] ?? modelLabel.value;
+}
+
+function cyclePermissionMode(): void {
+  const isCodex = decryptedMetadata.value?.flavor === 'codex' || decryptedMetadata.value?.flavor === 'gpt';
+  const options = isCodex ? codexPermissionModes : claudePermissionModes;
+  const currentIndex = options.findIndex((option) => option.value === permissionMode.value);
+  const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % options.length;
+  permissionMode.value = options[nextIndex]?.value ?? 'default';
+}
 
 const normalizedMessages = computed<NormalizedMessage[]>(() => {
   if (!session.value) {
@@ -160,17 +221,20 @@ const normalizedMessages = computed<NormalizedMessage[]>(() => {
   }
 
   const result: NormalizedMessage[] = [];
+  const toolCalls = new Map<string, NormalizedMessage>();
+
   for (const message of messages.value) {
     const decrypted = decryptedContentById.value.get(message.id);
-    if (!decrypted) {
-      result.push({
-        kind: 'system',
-        id: message.id,
-        localId: message.localId,
-        createdAt: message.createdAt,
-        text: '[Encrypted content]',
-      });
-      continue;
+      if (!decrypted) {
+        result.push({
+          kind: 'system',
+          id: message.id,
+          sourceMessageId: message.id,
+          localId: message.localId,
+          createdAt: message.createdAt,
+          text: '[Encrypted content]',
+        });
+        continue;
     }
 
     const normalized = normalizeDecryptedMessage({
@@ -183,12 +247,28 @@ const normalizedMessages = computed<NormalizedMessage[]>(() => {
       result.push({
         kind: 'system',
         id: message.id,
+        sourceMessageId: message.id,
         localId: message.localId,
         createdAt: message.createdAt,
         text: decrypted,
       });
-    } else {
-      result.push(...normalized);
+      continue;
+    }
+
+    for (const item of normalized) {
+      if (item.kind === 'tool-call') {
+        toolCalls.set(item.id, item);
+      }
+      if (item.kind === 'tool-result') {
+        const toolCall = toolCalls.get(item.toolUseId);
+        if (toolCall && toolCall.kind === 'tool-call') {
+          toolCall.tool.state = item.isError ? 'error' : 'completed';
+          toolCall.tool.result = item.content;
+          toolCall.tool.permission = item.permission;
+          continue;
+        }
+      }
+      result.push(item);
     }
   }
 
@@ -263,6 +343,10 @@ function navigateToInfo() {
   router.push(`/session/${sessionId.value}/info`);
 }
 
+function navigateToSettings() {
+  router.push('/settings');
+}
+
 async function handleSendMessage(): Promise<void> {
   if (!session.value || !session.value.active) {
     toast.error('Session is not active');
@@ -279,7 +363,7 @@ async function handleSendMessage(): Promise<void> {
   }
 
   isSending.value = true;
-  const result = await sendSessionMessage(session.value, text);
+  const result = await sendSessionMessage(session.value, text, permissionMode.value);
   isSending.value = false;
 
   if (!result.ok) {
@@ -398,6 +482,7 @@ async function handleOptionPress(option: { title: string }): Promise<void> {
       <template v-else-if="normalizedMessages.length > 0">
         <ChatList
           :messages="normalizedMessages"
+          :session-id="sessionId"
           :on-option-press="handleOptionPress"
         />
       </template>
@@ -437,8 +522,13 @@ async function handleOptionPress(option: { title: string }): Promise<void> {
         :online="machineOnline"
         :disabled="isSending"
         :model-label="modelLabel"
+        :permission-label="permissionLabel"
         placeholder="Type a message..."
         @send="handleSendMessage"
+        @settings="navigateToSettings"
+        @info="navigateToInfo"
+        @cycle-model="cycleModelLabel"
+        @cycle-mode="cyclePermissionMode"
       />
     </div>
 

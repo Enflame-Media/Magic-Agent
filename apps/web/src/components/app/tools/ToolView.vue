@@ -19,17 +19,6 @@ const props = defineProps<Props>();
 
 const toolConfig = computed(() => getToolConfig(props.tool));
 
-const toolTitle = computed(() => {
-  const config = toolConfig.value;
-  if (!config?.title) {
-    return props.tool.name;
-  }
-  if (typeof config.title === 'function') {
-    return config.title(props.tool);
-  }
-  return config.title;
-});
-
 const hasResult = computed(() => props.tool.result !== undefined && props.tool.result !== null);
 
 const SpecificToolView = computed(() => getToolViewComponent(props.tool.name));

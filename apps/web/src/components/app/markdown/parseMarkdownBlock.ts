@@ -8,8 +8,12 @@ function parseTable(
     let index = startIndex;
     const tableLines: string[] = [];
 
-    while (index < lines.length && lines[index].includes('|')) {
-        tableLines.push(lines[index]);
+    while (index < lines.length) {
+        const line = lines[index];
+        if (!line || !line.includes('|')) {
+            break;
+        }
+        tableLines.push(line);
         index += 1;
     }
 
@@ -17,14 +21,14 @@ function parseTable(
         return { table: null, nextIndex: startIndex };
     }
 
-    const separatorLine = tableLines[1].trim();
+    const separatorLine = tableLines[1]?.trim() ?? '';
     const isSeparator = /^[|\s\-:=]*$/.test(separatorLine) && separatorLine.includes('-');
 
     if (!isSeparator) {
         return { table: null, nextIndex: startIndex };
     }
 
-    const headerLine = tableLines[0].trim();
+    const headerLine = tableLines[0]?.trim() ?? '';
     const headers = headerLine
         .split('|')
         .map((cell) => cell.trim())
@@ -36,7 +40,7 @@ function parseTable(
 
     const rows: string[][] = [];
     for (let i = 2; i < tableLines.length; i += 1) {
-        const rowLine = tableLines[i].trim();
+        const rowLine = tableLines[i]?.trim() ?? '';
         const rowCells = rowLine
             .split('|')
             .map((cell) => cell.trim())
@@ -63,6 +67,9 @@ export function parseMarkdownBlock(markdown: string): MarkdownBlock[] {
 
     outer: while (index < lines.length) {
         const line = lines[index];
+        if (!line) {
+            break;
+        }
         index += 1;
 
         for (let i = 1; i <= 6; i += 1) {
@@ -83,6 +90,10 @@ export function parseMarkdownBlock(markdown: string): MarkdownBlock[] {
             const content: string[] = [];
             while (index < lines.length) {
                 const nextLine = lines[index];
+                if (!nextLine) {
+                    index += 1;
+                    break;
+                }
                 if (nextLine.trim() === '```') {
                     index += 1;
                     break;
@@ -110,12 +121,16 @@ export function parseMarkdownBlock(markdown: string): MarkdownBlock[] {
             const items: string[] = [];
             while (index < lines.length) {
                 const nextLine = lines[index];
+                if (!nextLine) {
+                    index += 1;
+                    break;
+                }
                 if (nextLine.trim() === '</options>') {
                     index += 1;
                     break;
                 }
                 const optionMatch = nextLine.match(/<option>(.*?)<\/option>/);
-                if (optionMatch) {
+                if (optionMatch?.[1]) {
                     items.push(optionMatch[1]);
                 }
                 index += 1;
@@ -130,16 +145,20 @@ export function parseMarkdownBlock(markdown: string): MarkdownBlock[] {
         if (numberedListMatch) {
             const allLines = [
                 {
-                    number: Number.parseInt(numberedListMatch[1], 10),
+                    number: Number.parseInt(numberedListMatch[1] ?? '0', 10),
                     content: trimmed.slice(numberedListMatch[0].length),
                 },
             ];
             while (index < lines.length) {
-                const nextLine = lines[index].trim();
+                const rawLine = lines[index];
+                if (!rawLine) {
+                    break;
+                }
+                const nextLine = rawLine.trim();
                 const nextMatch = nextLine.match(/^(\d+)\.\s/);
                 if (!nextMatch) break;
                 allLines.push({
-                    number: Number.parseInt(nextMatch[1], 10),
+                    number: Number.parseInt(nextMatch[1] ?? '0', 10),
                     content: nextLine.slice(nextMatch[0].length),
                 });
                 index += 1;
@@ -156,8 +175,12 @@ export function parseMarkdownBlock(markdown: string): MarkdownBlock[] {
 
         if (trimmed.startsWith('- ')) {
             const allLines = [trimmed.slice(2)];
-            while (index < lines.length && lines[index].trim().startsWith('- ')) {
-                allLines.push(lines[index].trim().slice(2));
+            while (index < lines.length) {
+                const nextLine = lines[index];
+                if (!nextLine || !nextLine.trim().startsWith('- ')) {
+                    break;
+                }
+                allLines.push(nextLine.trim().slice(2));
                 index += 1;
             }
             blocks.push({

@@ -24,7 +24,7 @@ import {
   ItemSeparator,
   ItemTitle,
 } from '@/components/ui/item';
-import { deleteSession } from '@/services/sessions';
+import { archiveSession, deleteSession } from '@/services/sessions';
 import { encryptionCache } from '@/services/encryption/EncryptionCache';
 import { decryptSessionMetadata } from '@/services/encryption/sessionDecryption';
 import {
@@ -58,6 +58,7 @@ const machinesStore = useMachinesStore();
 
 const isDeleting = ref(false);
 const isRestoring = ref(false);
+const isArchiving = ref(false);
 const decryptedMetadata = ref<SessionMetadata | null>(null);
 
 const sessionId = computed(() => route.params.id as string);
@@ -129,14 +130,18 @@ const machineOnline = computed(() => {
   return machine ? isMachineOnline(machine) : false;
 });
 
+const restorePath = computed(() => projectPath.value ?? metadata.value?.path ?? null);
+
 const canRestore = computed(() => {
   return Boolean(
     session.value &&
     !session.value.active &&
     metadata.value?.machineId &&
-    metadata.value?.path
+    restorePath.value
   );
 });
+
+const isActiveSession = computed(() => Boolean(session.value?.active));
 
 function formatDate(timestamp: number): string {
   return new Date(timestamp).toLocaleString();
@@ -165,7 +170,7 @@ async function handleRestore(): Promise<void> {
   if (!session.value || !metadata.value) return;
 
   if (isRestoring.value) return;
-  if (!metadata.value.machineId || !metadata.value.path) {
+  if (!metadata.value.machineId || !restorePath.value) {
     toast.error('Missing machine metadata for restore');
     return;
   }
@@ -184,7 +189,7 @@ async function handleRestore(): Promise<void> {
       : (flavor as 'claude' | 'codex' | 'gemini') ?? 'claude';
     const result = await machineSpawnNewSession({
       machineId: metadata.value.machineId,
-      directory: metadata.value.path,
+      directory: restorePath.value,
       agent,
       sessionId: session.value.id,
     });
@@ -220,6 +225,43 @@ async function handleRestore(): Promise<void> {
     toast.error('Failed to restore session');
   } finally {
     isRestoring.value = false;
+  }
+}
+
+async function handleArchive(): Promise<void> {
+  if (!session.value || !session.value.active || isArchiving.value) return;
+
+  const confirmed = globalThis.confirm('Archive this session?');
+  if (!confirmed) return;
+
+  if (!authStore.token) {
+    toast.error('Not authenticated');
+    return;
+  }
+
+  isArchiving.value = true;
+  try {
+    const result = await archiveSession(session.value.id, authStore.token);
+
+    if ('deleted' in result && result.deleted) {
+      sessionsStore.removeSession(session.value.id);
+      messagesStore.clearSessionMessages(session.value.id);
+      encryptionCache.clearSessionCache(session.value.id);
+      toast.success('Session deleted');
+      router.push('/');
+      return;
+    }
+
+    sessionsStore.updateSession(session.value.id, {
+      active: false,
+      updatedAt: Date.now(),
+    });
+    toast.success('Session archived');
+  } catch (error) {
+    console.error('[session] Failed to archive session', error);
+    toast.error('Failed to archive session');
+  } finally {
+    isArchiving.value = false;
   }
 }
 
@@ -354,7 +396,7 @@ async function handleDelete(): Promise<void> {
       </ItemGroup>
     </section>
 
-    <section v-if="session && !session.active">
+    <section v-if="session">
       <h2 class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
         Quick Actions
       </h2>
@@ -362,6 +404,22 @@ async function handleDelete(): Promise<void> {
         <Item size="sm">
           <ItemMedia variant="icon">
             <svg
+              v-if="isActiveSession"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M3 6h18" />
+              <path d="M8 6v14" />
+              <path d="M16 6v14" />
+              <path d="M5 6l1-3h12l1 3" />
+            </svg>
+            <svg
+              v-else
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
               fill="none"
@@ -376,23 +434,35 @@ async function handleDelete(): Promise<void> {
           </ItemMedia>
           <ItemContent>
             <ItemHeader>
-              <ItemTitle>Restore Session</ItemTitle>
+              <ItemTitle>
+                {{ isActiveSession ? 'Archive Session' : 'Restore Session' }}
+              </ItemTitle>
             </ItemHeader>
             <ItemDescription>
-              {{ machineOnline ? 'Resume this session on its original machine.' : 'Machine must be online to restore.' }}
+              <template v-if="isActiveSession">
+                Archive this session and stop it.
+              </template>
+              <template v-else>
+                {{ machineOnline ? 'Resume this session on its original machine.' : 'Machine must be online to restore.' }}
+              </template>
             </ItemDescription>
           </ItemContent>
           <Button
             variant="outline"
             size="sm"
-            :disabled="!canRestore || !machineOnline || isRestoring"
-            @click="handleRestore"
+            :disabled="isActiveSession ? isArchiving : !canRestore || !machineOnline || isRestoring"
+            @click="isActiveSession ? handleArchive() : handleRestore()"
           >
-            {{ isRestoring ? 'Restoring...' : 'Restore' }}
+            <template v-if="isActiveSession">
+              {{ isArchiving ? 'Archiving...' : 'Archive' }}
+            </template>
+            <template v-else>
+              {{ isRestoring ? 'Restoring...' : 'Restore' }}
+            </template>
           </Button>
         </Item>
-        <ItemSeparator />
-        <Item size="sm">
+        <ItemSeparator v-if="!isActiveSession" />
+        <Item v-if="!isActiveSession" size="sm">
           <ItemMedia variant="icon">
             <svg
               xmlns="http://www.w3.org/2000/svg"

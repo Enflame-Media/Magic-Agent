@@ -13,6 +13,18 @@ interface ListMessagesResponse {
   messages: ApiMessage[];
 }
 
+export type ArchiveSessionResult =
+  | {
+      success: true;
+      sessionId: string;
+      archivedAt: string;
+    }
+  | {
+      success: true;
+      sessionId: string;
+      deleted: true;
+    };
+
 function normalizeMessageContent(content: unknown): EncryptedContent {
   if (typeof content === 'string') {
     try {
@@ -100,4 +112,26 @@ export async function deleteSession(sessionId: string, token: string): Promise<v
     const message = await response.text();
     throw new Error(message || 'Failed to delete session');
   }
+}
+
+export async function archiveSession(
+  sessionId: string,
+  token: string,
+  reason: 'revival_failed' | 'user_requested' | 'timeout' = 'user_requested'
+): Promise<ArchiveSessionResult> {
+  const response = await fetch(`${API_ENDPOINT}/v1/sessions/${sessionId}/archive`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ reason }),
+  });
+
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(message || 'Failed to archive session');
+  }
+
+  return response.json() as Promise<ArchiveSessionResult>;
 }

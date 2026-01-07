@@ -17,7 +17,8 @@ type UserMessagePayload = {
 
 export async function sendSessionMessage(
   session: Session,
-  text: string
+  text: string,
+  permissionMode: string = 'default'
 ): Promise<{ ok: boolean; error?: string }> {
   const trimmed = text.trim();
   if (!trimmed) {
@@ -32,7 +33,7 @@ export async function sendSessionMessage(
     },
     meta: {
       sentFrom: 'web',
-      permissionMode: 'default',
+      permissionMode,
     },
   };
 
@@ -47,7 +48,7 @@ export async function sendSessionMessage(
     message: encryptedMessage,
     localId,
     sentFrom: 'web',
-    permissionMode: 'default',
+    permissionMode,
   });
 
   if (!sent) {

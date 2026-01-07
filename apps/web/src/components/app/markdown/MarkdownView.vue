@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { Button } from '@/components/ui/button';
 import { CodeBlock } from '@/components/app';
 import { parseMarkdown, type MarkdownBlock, type MarkdownSpan } from './parseMarkdown';
@@ -15,6 +15,7 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+const copied = ref(false);
 
 const blocks = computed<MarkdownBlock[]>(() => parseMarkdown(props.markdown));
 
@@ -27,10 +28,36 @@ function spanClasses(span: MarkdownSpan): string[] {
   }
   return classes;
 }
+
+async function copyMarkdown(): Promise<void> {
+  try {
+    await globalThis.navigator.clipboard.writeText(props.markdown);
+  } catch {
+    const textarea = globalThis.document.createElement('textarea');
+    textarea.value = props.markdown;
+    globalThis.document.body.appendChild(textarea);
+    textarea.select();
+    globalThis.document.execCommand('copy');
+    globalThis.document.body.removeChild(textarea);
+  }
+  copied.value = true;
+  globalThis.setTimeout(() => {
+    copied.value = false;
+  }, 1500);
+}
 </script>
 
 <template>
-  <div class="space-y-2">
+  <div class="relative space-y-2">
+    <Button
+      v-if="markdown.length > 0"
+      variant="ghost"
+      size="sm"
+      class="absolute -top-2 right-0 h-6 px-2 text-[11px]"
+      @click="copyMarkdown"
+    >
+      {{ copied ? 'Copied' : 'Copy' }}
+    </Button>
     <template v-for="(block, index) in blocks" :key="index">
       <p
         v-if="block.type === 'text'"
@@ -101,11 +128,12 @@ function spanClasses(span: MarkdownSpan): string[] {
         </li>
       </ol>
 
-      <CodeBlock
-        v-else-if="block.type === 'code-block'"
-        :code="block.content"
-        :language="block.language ?? undefined"
-      />
+      <div v-else-if="block.type === 'code-block'" class="group">
+        <CodeBlock
+          :code="block.content"
+          :language="block.language ?? undefined"
+        />
+      </div>
 
       <MermaidRenderer
         v-else-if="block.type === 'mermaid'"
@@ -144,8 +172,8 @@ function spanClasses(span: MarkdownSpan): string[] {
           <tbody class="divide-y divide-border/60">
             <tr v-for="(row, rowIndex) in block.rows" :key="rowIndex">
               <td
-                v-for="(cell, cellIndex) in block.headers"
-                :key="cellIndex"
+                v-for="(header, cellIndex) in block.headers"
+                :key="header"
                 class="px-3 py-2 text-muted-foreground"
               >
                 {{ row[cellIndex] ?? '' }}

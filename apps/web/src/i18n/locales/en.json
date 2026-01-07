@@ -88,6 +88,8 @@
     "accountSubtitle": "Manage your account details",
     "appearance": "Appearance",
     "appearanceSubtitle": "Customize how the app looks",
+    "notifications": "Notifications",
+    "notificationsSubtitle": "Alerts and sounds",
     "voiceAssistant": "Voice Assistant",
     "voiceAssistantSubtitle": "Configure voice interaction preferences",
     "featuresTitle": "Features",

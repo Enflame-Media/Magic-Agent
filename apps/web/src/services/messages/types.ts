@@ -41,6 +41,7 @@ export type AgentEvent =
 export type UserTextMessage = {
     kind: 'user-text';
     id: string;
+    sourceMessageId?: string;
     localId: string | null;
     createdAt: number;
     text: string;
@@ -51,6 +52,7 @@ export type UserTextMessage = {
 export type AgentTextMessage = {
     kind: 'agent-text';
     id: string;
+    sourceMessageId?: string;
     localId: string | null;
     createdAt: number;
     text: string;
@@ -60,6 +62,7 @@ export type AgentTextMessage = {
 export type ToolCallMessage = {
     kind: 'tool-call';
     id: string;
+    sourceMessageId?: string;
     localId: string | null;
     createdAt: number;
     tool: ToolCall;
@@ -70,6 +73,7 @@ export type ToolCallMessage = {
 export type ToolResultMessage = {
     kind: 'tool-result';
     id: string;
+    sourceMessageId?: string;
     localId: string | null;
     createdAt: number;
     toolUseId: string;
@@ -82,6 +86,7 @@ export type ToolResultMessage = {
 export type AgentEventMessage = {
     kind: 'agent-event';
     id: string;
+    sourceMessageId?: string;
     localId: string | null;
     createdAt: number;
     event: AgentEvent;
@@ -91,6 +96,7 @@ export type AgentEventMessage = {
 export type SystemMessage = {
     kind: 'system';
     id: string;
+    sourceMessageId?: string;
     localId: string | null;
     createdAt: number;
     text: string;

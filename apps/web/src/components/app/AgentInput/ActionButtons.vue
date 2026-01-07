@@ -6,10 +6,10 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="flex items-center gap-3">
+  <div class="flex items-center gap-2">
     <button
       type="button"
-      class="rounded-full border border-border/60 bg-background/40 p-1 text-muted-foreground transition hover:text-foreground"
+      class="flex h-7 w-7 items-center justify-center rounded-full border border-border/60 bg-muted/60 text-muted-foreground transition hover:text-foreground"
       @click="emit('settings')"
     >
       <svg
@@ -28,7 +28,7 @@ const emit = defineEmits<{
     </button>
     <button
       type="button"
-      class="rounded-full border border-border/60 bg-background/40 p-1 text-muted-foreground transition hover:text-foreground"
+      class="flex h-7 w-7 items-center justify-center rounded-full border border-border/60 bg-muted/60 text-muted-foreground transition hover:text-foreground"
       @click="emit('info')"
     >
       <svg

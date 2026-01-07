@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 
 interface Props {
   modelValue: string;
@@ -16,7 +16,8 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   (event: 'update:modelValue', value: string): void;
-  (event: 'submit'): void;
+  (event: 'keydown', keydownEvent: KeyboardEvent): void;
+  (event: 'cursor-change', cursor: number): void;
 }>();
 
 const localValue = computed({
@@ -24,21 +25,43 @@ const localValue = computed({
   set: (value: string) => emit('update:modelValue', value),
 });
 
+const textareaRef = ref<HTMLTextAreaElement | null>(null);
+
 function handleKeydown(event: KeyboardEvent): void {
-  if (event.key === 'Enter' && !event.shiftKey) {
-    event.preventDefault();
-    emit('submit');
-  }
+  emit('keydown', event);
 }
+
+function handleCursorChange(): void {
+  const element = textareaRef.value;
+  if (!element) {
+    return;
+  }
+  emit('cursor-change', element.selectionStart ?? 0);
+}
+
+function setCursor(position: number): void {
+  const element = textareaRef.value;
+  if (!element) {
+    return;
+  }
+  element.setSelectionRange(position, position);
+  element.focus();
+}
+
+defineExpose({ setCursor });
 </script>
 
 <template>
   <textarea
+    ref="textareaRef"
     v-model="localValue"
     :rows="rows"
     :placeholder="placeholder"
     :disabled="disabled"
-    class="min-h-[88px] w-full resize-none bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+    class="min-h-[88px] w-full resize-none bg-transparent py-2 text-sm leading-6 outline-none placeholder:text-muted-foreground"
     @keydown="handleKeydown"
+    @keyup="handleCursorChange"
+    @click="handleCursorChange"
+    @input="handleCursorChange"
   />
 </template>

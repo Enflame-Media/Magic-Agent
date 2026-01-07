@@ -59,6 +59,12 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/session/:id/message/:messageId',
+      name: 'session-message',
+      component: () => import('@/views/ToolMessageView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/session/:id/info',
       name: 'session-info',
       component: () => import('@/views/SessionInfoView.vue'),
@@ -122,6 +128,12 @@ const router = createRouter({
       path: '/settings/language',
       name: 'settings-language',
       component: () => import('@/views/settings/LanguageView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/settings/notifications',
+      name: 'settings-notifications',
+      component: () => import('@/views/settings/NotificationsView.vue'),
       meta: { requiresAuth: true },
     },
     {

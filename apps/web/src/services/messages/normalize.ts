@@ -99,6 +99,7 @@ function buildUserText(
     return {
         kind: 'user-text',
         id: params.id,
+        sourceMessageId: params.id,
         localId: params.localId,
         createdAt: params.createdAt,
         text,
@@ -115,6 +116,7 @@ function buildAgentText(
     return {
         kind: 'agent-text',
         id: params.id,
+        sourceMessageId: params.id,
         localId: params.localId,
         createdAt: params.createdAt,
         text,
@@ -132,7 +134,8 @@ function buildToolResult(
 ): NormalizedMessage {
     return {
         kind: 'tool-result',
-        id: params.id,
+        id: toolUseId,
+        sourceMessageId: params.id,
         localId: params.localId,
         createdAt: params.createdAt,
         toolUseId,
@@ -151,6 +154,7 @@ function buildEventMessage(
     return {
         kind: 'agent-event',
         id: params.id,
+        sourceMessageId: params.id,
         localId: params.localId,
         createdAt: params.createdAt,
         event,
@@ -183,9 +187,11 @@ function normalizeAssistantOutput(
             if (contentRecord.type === 'tool_use') {
                 const toolName = toText(contentRecord.name) ?? 'tool';
                 const toolCall = buildToolCall(toolName, contentRecord.input, params.createdAt);
+                toolCall.state = 'running';
                 messages.push({
                     kind: 'tool-call',
-                    id: params.id,
+                    id: toText(contentRecord.id) ?? params.id,
+                    sourceMessageId: params.id,
                     localId: params.localId,
                     createdAt: params.createdAt,
                     tool: toolCall,
@@ -232,6 +238,7 @@ function normalizeAssistantOutput(
             return [{
                 kind: 'system',
                 id: params.id,
+                sourceMessageId: params.id,
                 localId: params.localId,
                 createdAt: params.createdAt,
                 text,
@@ -262,7 +269,8 @@ function normalizeCodexOutput(
         const toolCall = buildToolCall(toolName, data.input, params.createdAt);
         return [{
             kind: 'tool-call',
-            id: params.id,
+            id: toText(data.callId) ?? params.id,
+            sourceMessageId: params.id,
             localId: params.localId,
             createdAt: params.createdAt,
             tool: toolCall,

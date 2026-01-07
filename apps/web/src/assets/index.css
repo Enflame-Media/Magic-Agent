@@ -85,6 +85,19 @@
     --success: 142 71% 45%;
     --warning: 38 92% 50%;
     --link: 192 67% 48%;
+
+    /* Syntax highlighting (light) */
+    --syntax-keyword: #1d4ed8;
+    --syntax-string: #059669;
+    --syntax-comment: #6b7280;
+    --syntax-number: #0891b2;
+    --syntax-function: #9333ea;
+    --syntax-bracket-1: #ff6b6b;
+    --syntax-bracket-2: #4ecdc4;
+    --syntax-bracket-3: #45b7d1;
+    --syntax-bracket-4: #f7b731;
+    --syntax-bracket-5: #5f27cd;
+    --syntax-default: #374151;
   }
 
   /**
@@ -143,6 +156,19 @@
     --success: 142 69% 52%;
     --warning: 38 92% 50%;
     --link: 192 67% 48%;
+
+    /* Syntax highlighting (dark) */
+    --syntax-keyword: #569CD6;
+    --syntax-string: #CE9178;
+    --syntax-comment: #6A9955;
+    --syntax-number: #B5CEA8;
+    --syntax-function: #DCDCAA;
+    --syntax-bracket-1: #FFD700;
+    --syntax-bracket-2: #DA70D6;
+    --syntax-bracket-3: #179FFF;
+    --syntax-bracket-4: #FF8C00;
+    --syntax-bracket-5: #00FF00;
+    --syntax-default: #D4D4D4;
   }
 }
 

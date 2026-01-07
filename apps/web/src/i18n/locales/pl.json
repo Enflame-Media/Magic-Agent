@@ -88,6 +88,8 @@
     "accountSubtitle": "Zarzadzaj szczegolami konta",
     "appearance": "Wyglad",
     "appearanceSubtitle": "Dostosuj wyglad aplikacji",
+    "notifications": "Powiadomienia",
+    "notificationsSubtitle": "Alerty i dzwieki",
     "voiceAssistant": "Asystent glosowy",
     "voiceAssistantSubtitle": "Konfiguruj preferencje interakcji glosowej",
     "featuresTitle": "Funkcje",

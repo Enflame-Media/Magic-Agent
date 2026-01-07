@@ -88,6 +88,8 @@
     "accountSubtitle": "Gestiona els detalls del teu compte",
     "appearance": "Aparenca",
     "appearanceSubtitle": "Personalitza l'aspecte de l'aplicacio",
+    "notifications": "Notificacions",
+    "notificationsSubtitle": "Alertes i sons",
     "voiceAssistant": "Assistent de veu",
     "voiceAssistantSubtitle": "Configura les preferencies d'interaccio per veu",
     "featuresTitle": "Funcions",

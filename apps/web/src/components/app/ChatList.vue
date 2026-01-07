@@ -5,6 +5,7 @@ import type { Option } from './markdown/MarkdownView.vue';
 
 interface Props {
   messages: NormalizedMessage[];
+  sessionId: string;
   onOptionPress?: (option: Option) => void;
 }
 
@@ -17,6 +18,7 @@ defineProps<Props>();
       v-for="message in messages"
       :key="message.id + String(message.createdAt)"
       :message="message"
+      :session-id="sessionId"
       :on-option-press="onOptionPress"
     />
   </div>

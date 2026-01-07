@@ -5,6 +5,7 @@ import CodexDiffView from './CodexDiffView.vue';
 import CodexPatchView from './CodexPatchView.vue';
 import EditView from './EditView.vue';
 import ExitPlanToolView from './ExitPlanToolView.vue';
+import MCPToolView from './MCPToolView.vue';
 import MultiEditView from './MultiEditView.vue';
 import TaskView from './TaskView.vue';
 import TodoView from './TodoView.vue';
@@ -36,5 +37,8 @@ export const toolViewRegistry: Record<string, ToolViewComponent> = {
 };
 
 export function getToolViewComponent(toolName: string): ToolViewComponent | null {
+  if (toolName.startsWith('mcp__')) {
+    return MCPToolView;
+  }
   return toolViewRegistry[toolName] ?? null;
 }

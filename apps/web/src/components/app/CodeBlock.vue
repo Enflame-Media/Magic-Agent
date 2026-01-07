@@ -7,13 +7,12 @@
  * - Copy to clipboard button
  * - Proper monospace styling
  * - Horizontal scroll for long lines
- *
- * Note: For production, integrate a syntax highlighter like
- * Shiki or Prism for proper syntax highlighting.
+ * - Lightweight syntax highlighting
  */
 
 import { ref, computed } from 'vue';
 import { Button } from '@/components/ui/button';
+import { tokenizeCode, type SyntaxToken } from './simpleSyntaxHighlighter';
 
 interface Props {
   /** The code content to display */
@@ -30,6 +29,7 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const copied = ref(false);
+const tokens = computed<SyntaxToken[]>(() => tokenizeCode(props.code, props.language || null));
 
 const displayLabel = computed(() => {
   if (props.filename) return props.filename;
@@ -57,6 +57,57 @@ async function copyToClipboard() {
       copied.value = false;
     }, 2000);
   }
+}
+
+const tokenWeightTypes = new Set(['keyword', 'controlFlow', 'type', 'function']);
+const bracketColors = [
+  'var(--syntax-bracket-1)',
+  'var(--syntax-bracket-2)',
+  'var(--syntax-bracket-3)',
+  'var(--syntax-bracket-4)',
+  'var(--syntax-bracket-5)',
+];
+const tokenColors: Record<string, string> = {
+  keyword: 'var(--syntax-keyword)',
+  controlFlow: 'var(--syntax-keyword)',
+  type: 'var(--syntax-keyword)',
+  modifier: 'var(--syntax-keyword)',
+  string: 'var(--syntax-string)',
+  regex: 'var(--syntax-string)',
+  number: 'var(--syntax-number)',
+  boolean: 'var(--syntax-number)',
+  function: 'var(--syntax-function)',
+  method: 'var(--syntax-function)',
+  property: 'var(--syntax-default)',
+  comment: 'var(--syntax-comment)',
+  docstring: 'var(--syntax-comment)',
+  operator: 'var(--syntax-default)',
+  assignment: 'var(--syntax-keyword)',
+  comparison: 'var(--syntax-keyword)',
+  logical: 'var(--syntax-keyword)',
+  decorator: 'var(--syntax-keyword)',
+  import: 'var(--syntax-keyword)',
+  variable: 'var(--syntax-default)',
+  parameter: 'var(--syntax-default)',
+  punctuation: 'var(--syntax-default)',
+  default: 'var(--syntax-default)',
+};
+
+function tokenColor(token: SyntaxToken): string {
+  const defaultColor = tokenColors.default ?? 'var(--syntax-default)';
+  if (token.type === 'bracket') {
+    const index = ((token.nestLevel ?? 1) - 1) % bracketColors.length;
+    const bracketColor = bracketColors[index];
+    return bracketColor ?? defaultColor;
+  }
+  return tokenColors[token.type] ?? defaultColor;
+}
+
+function tokenStyle(token: SyntaxToken): Record<string, string> {
+  return {
+    color: tokenColor(token),
+    fontWeight: tokenWeightTypes.has(token.type) ? '600' : '400',
+  };
 }
 </script>
 
@@ -109,7 +160,14 @@ async function copyToClipboard() {
 
     <!-- Code content -->
     <div class="overflow-x-auto">
-      <pre class="p-4 text-sm leading-relaxed"><code class="font-mono">{{ code }}</code></pre>
+      <pre class="p-4 text-sm leading-relaxed">
+        <code class="font-mono whitespace-pre-wrap"><span
+          v-for="(token, index) in tokens"
+          :key="index"
+          :style="tokenStyle(token)"
+          v-text="token.text"
+        /></code>
+      </pre>
     </div>
   </div>
 </template>

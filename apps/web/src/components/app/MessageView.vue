@@ -3,7 +3,8 @@
  * MessageView - Renders a normalized message block in a session.
  */
 
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import MarkdownView, { type Option } from './markdown/MarkdownView.vue';
 import ToolView from './tools/ToolView.vue';
@@ -12,10 +13,16 @@ import type { NormalizedMessage } from '@/services/messages/types';
 
 interface Props {
   message: NormalizedMessage;
+  sessionId: string;
   onOptionPress?: (option: Option) => void;
 }
 
 const props = defineProps<Props>();
+const router = useRouter();
+const isExpanded = ref(false);
+
+const LINE_THRESHOLD = 50;
+const INITIAL_LINES = 20;
 
 const isUser = computed(() => props.message.kind === 'user-text');
 const isAssistant = computed(() => props.message.kind === 'agent-text');
@@ -36,6 +43,50 @@ const avatarInitials = computed(() => {
   if (isAssistant.value) return 'C';
   return 'S';
 });
+
+const rawMarkdown = computed(() => {
+  if (props.message.kind === 'user-text') {
+    return props.message.displayText ?? props.message.text;
+  }
+  if (props.message.kind === 'agent-text') {
+    return props.message.text;
+  }
+  return '';
+});
+
+const truncatedMarkdown = computed(() => {
+  if (!rawMarkdown.value) {
+    return { text: '', needsTruncation: false, hiddenLines: 0 };
+  }
+  const lines = rawMarkdown.value.split('\n');
+  const needsTruncation = lines.length > LINE_THRESHOLD;
+  if (!needsTruncation || isExpanded.value) {
+    return { text: rawMarkdown.value, needsTruncation, hiddenLines: 0 };
+  }
+  const hiddenLines = lines.length - INITIAL_LINES;
+  return {
+    text: lines.slice(0, INITIAL_LINES).join('\n'),
+    needsTruncation,
+    hiddenLines,
+  };
+});
+
+function openToolMessage(): void {
+  if (props.message.kind !== 'tool-call') {
+    return;
+  }
+  router.push({
+    name: 'session-message',
+    params: {
+      id: props.sessionId,
+      messageId: props.message.sourceMessageId ?? props.message.id,
+    },
+  });
+}
+
+function toggleExpanded(): void {
+  isExpanded.value = !isExpanded.value;
+}
 </script>
 
 <template>
@@ -69,23 +120,32 @@ const avatarInitials = computed(() => {
         isSystem && 'bg-muted/50 text-muted-foreground text-sm italic',
       ]"
     >
-      <MarkdownView
-        v-if="message.kind === 'user-text'"
-        :markdown="message.displayText ?? message.text"
-        :on-option-press="props.onOptionPress"
-      />
+      <div v-if="message.kind === 'user-text' || message.kind === 'agent-text'" class="space-y-2">
+        <MarkdownView
+          :markdown="truncatedMarkdown.text"
+          :on-option-press="props.onOptionPress"
+        />
+        <button
+          v-if="truncatedMarkdown.needsTruncation"
+          type="button"
+          class="text-xs text-muted-foreground underline underline-offset-4"
+          @click="toggleExpanded"
+        >
+          {{ isExpanded ? 'Show less' : `Show ${truncatedMarkdown.hiddenLines} more lines` }}
+        </button>
+      </div>
 
-      <MarkdownView
-        v-else-if="message.kind === 'agent-text'"
-        :markdown="message.text"
-        :on-option-press="props.onOptionPress"
-      />
-
-      <ToolView
+      <button
         v-else-if="message.kind === 'tool-call'"
-        :tool="message.tool"
-        :messages="message.children"
-      />
+        type="button"
+        class="w-full text-left"
+        @click="openToolMessage"
+      >
+        <ToolView
+          :tool="message.tool"
+          :messages="message.children"
+        />
+      </button>
 
       <ToolResult
         v-else-if="message.kind === 'tool-result'"
@@ -102,7 +162,12 @@ const avatarInitials = computed(() => {
           {{ message.event.message }}
         </span>
         <span v-else-if="message.event.type === 'limit-reached'">
-          Usage limit until {{ new Date(message.event.endsAt * 1000).toLocaleTimeString() }}
+          <template v-if="Number.isFinite(Number(message.event.endsAt))">
+            Usage limit until {{ new Date(Number(message.event.endsAt) * 1000).toLocaleTimeString() }}
+          </template>
+          <template v-else>
+            Usage limit reached
+          </template>
         </span>
         <span v-else>System event</span>
       </p>
