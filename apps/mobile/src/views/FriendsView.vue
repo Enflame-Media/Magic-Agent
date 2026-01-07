@@ -11,10 +11,12 @@
  */
 
 import { ref, computed, onMounted } from 'vue';
+import { Frame } from '@nativescript/core';
 import { useFriends } from '@/composables/useFriends';
 import { shareService } from '@/services/share';
 import FriendCard from '@/components/FriendCard.vue';
 import QRScannerView from '@/components/QRScannerView.vue';
+import FriendProfileView from './FriendProfileView.vue';
 import type { UserProfile } from '@/services/friends';
 
 // Props for current user context
@@ -103,9 +105,11 @@ async function handleReject(userId: string) {
 
 // Handle friend card tap
 function handleFriendTap(userId: string) {
-  // Navigate to user profile
-  console.log('[FriendsView] Navigate to user:', userId);
-  // TODO: Implement navigation to user profile
+  const frame = Frame.topmost();
+  frame?.navigate({
+    create: () => FriendProfileView,
+    context: { userId },
+  });
 }
 
 // Handle block user (via long-press)

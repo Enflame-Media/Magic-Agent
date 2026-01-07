@@ -13,6 +13,7 @@
  */
 
 import { ref, onMounted, computed } from 'vue';
+import { useRouter } from 'vue-router';
 import { useFriends } from '@/composables/useFriends';
 import { useFriendStatus } from '@/composables/useFriendStatus';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -45,6 +46,7 @@ const {
 } = useFriends();
 
 const { setBulkStatus } = useFriendStatus();
+const router = useRouter();
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Local State
@@ -124,10 +126,8 @@ async function handleRemoveFriend(userId: string): Promise<void> {
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function handleUserClick(_userId: string): void {
-  // Navigate to user profile (future feature)
-  // TODO: Implement user profile navigation
+function handleUserClick(userId: string): void {
+  router.push({ name: 'friend-profile', params: { id: userId } });
 }
 
 async function handleBlockUser(userId: string): Promise<void> {

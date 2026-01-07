@@ -11,6 +11,7 @@
  * - /session/:id/artifacts - Session artifacts - requires auth
  * - /artifacts - All artifacts - requires auth
  * - /friends - Friends list and search - requires auth
+ * - /friends/:id - Friend profile - requires auth
  * - /settings - Settings main - requires auth
  * - /settings/account - Account settings - requires auth
  * - /settings/appearance - Appearance settings - requires auth
@@ -81,6 +82,12 @@ const router = createRouter({
       path: '/friends',
       name: 'friends',
       component: () => import('@/views/FriendsView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/friends/:id',
+      name: 'friend-profile',
+      component: () => import('@/views/FriendProfileView.vue'),
       meta: { requiresAuth: true },
     },
 
