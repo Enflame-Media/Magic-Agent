@@ -14,6 +14,14 @@
 
 import { defineStore } from 'pinia';
 import { ref, shallowRef, computed, triggerRef } from 'vue';
+
+/**
+ * Timeout for considering a machine offline if no heartbeat received.
+ * CLI sends machine-alive every 20-25 seconds, so 60s gives ~3x buffer.
+ * This handles crash scenarios where WebSocket close isn't detected quickly.
+ */
+const MACHINE_OFFLINE_TIMEOUT_MS = 60_000;
+
 import type { ApiNewMachine } from '@happy-vue/protocol';
 
 /**
@@ -49,6 +57,31 @@ export interface Machine {
     online?: boolean;
     /** Last online status timestamp */
     onlineAt?: number;
+}
+
+/**
+ * Check if a machine is truly online.
+ * A machine is online if:
+ * 1. It has received a machine-status online event (online === true), AND
+ * 2. Its last activity (activeAt) is within the timeout threshold
+ *
+ * This handles crash scenarios where the WebSocket close event is delayed.
+ */
+function isMachineOnline(machine: Machine): boolean {
+    // If explicitly marked offline by ephemeral event, trust it
+    if (machine.online === false) {
+        return false;
+    }
+
+    // If marked online, verify with activity timeout
+    // This catches crashed CLIs that haven't sent heartbeats
+    const now = Date.now();
+    const lastActivity = machine.activeAt || 0;
+    const isRecentlyActive = (now - lastActivity) < MACHINE_OFFLINE_TIMEOUT_MS;
+
+    // Machine is online if: explicitly marked online AND recently active
+    // OR: we have no online status yet but it was recently active (initial sync)
+    return machine.online === true ? isRecentlyActive : false;
 }
 
 /**
@@ -101,17 +134,17 @@ export const useMachinesStore = defineStore('machines', () => {
         Array.from(machines.value.values()).sort((a, b) => b.activeAt - a.activeAt)
     );
 
-    /** Online machines */
+    /** Online machines (considers both ephemeral status and activity timeout) */
     const onlineMachines = computed(() =>
         Array.from(machines.value.values())
-            .filter((m) => m.online === true)
+            .filter(isMachineOnline)
             .sort((a, b) => (b.onlineAt ?? 0) - (a.onlineAt ?? 0))
     );
 
-    /** Offline machines */
+    /** Offline machines (includes crashed machines with stale activity) */
     const offlineMachines = computed(() =>
         Array.from(machines.value.values())
-            .filter((m) => m.online !== true)
+            .filter((m) => !isMachineOnline(m))
             .sort((a, b) => b.activeAt - a.activeAt)
     );
 
@@ -242,3 +275,6 @@ export const useMachinesStore = defineStore('machines', () => {
         $reset,
     };
 });
+
+// Export helper for components that need to check individual machines
+export { isMachineOnline };

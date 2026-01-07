@@ -27,7 +27,7 @@
     "@nativescript-community/ui-material-core": "^7.2.78",
     "@nativescript-community/ui-material-progress": "^7.2.78",
     "@nativescript-community/ui-material-textfield": "^7.2.78",
-    "@nativescript/core": "~9.0.10",
+    "@nativescript/core": "~9.0.11",
     "@nstudio/nativescript-barcodescanner": "^5.0.1",
     "nativescript-vue": "^3.0.2",
     "pinia": "^3.0.4",
@@ -35,7 +35,7 @@
   },
   "devDependencies": {
     "@nativescript/types": "~9.0.0",
-    "@nativescript/webpack": "~5.0.29",
+    "@nativescript/webpack": "~5.0.31",
     "typescript": "^5.9.3",
     "vue": "^3.5.26"
   },

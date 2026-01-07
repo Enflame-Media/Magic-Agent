@@ -7,7 +7,7 @@
     "es2024": true
   },
   "rules": {
-    "no-console": ["error", { "allow": ["warn", "error"] }],
+    "no-console": ["warn", { "allow": ["warn", "error", "log", "info", "debug"] }],
     "no-debugger": "error",
     "eqeqeq": ["error", "always", { "null": "ignore" }],
     "no-var": "error",

@@ -21,11 +21,9 @@ import {
   type BoxKeyPair,
 } from './encryption';
 import { secureStorage, type StoredCredentials } from './storage';
+import { getApiBaseUrl } from './apiBase';
 
-/**
- * Server configuration - should come from environment
- */
-const SERVER_URL = import.meta.env.VITE_HAPPY_SERVER_URL || 'https://api.happy.engineering';
+const SERVER_URL = getApiBaseUrl();
 
 /**
  * Connection info parsed from QR code

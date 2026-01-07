@@ -27,9 +27,10 @@ import { storeToRefs } from 'pinia';
 import { useAuthStore } from '@/stores/auth';
 import { useSyncStore } from '@/stores/sync';
 import { wsService, setupSyncHandlers, areHandlersSetup } from '@/services/sync';
+import { getApiBaseUrl } from '@/services/apiBase';
 
 /** API server URL from environment */
-const API_URL: string | undefined = import.meta.env.VITE_API_URL;
+const API_URL = getApiBaseUrl();
 
 // Module-level state for handler cleanup
 let handlersCleanup: (() => void) | null = null;
@@ -55,12 +56,6 @@ export function useSync() {
      * Uses the token from auth store.
      */
     async function connect(): Promise<void> {
-        if (!API_URL) {
-            console.error('[useSync] VITE_API_URL not configured');
-            syncStore.setError('API URL not configured');
-            return;
-        }
-
         if (!token.value) {
             console.error('[useSync] No auth token available');
             syncStore.setError('Not authenticated');

@@ -23,6 +23,7 @@ import { ref, readonly, onMounted, onUnmounted } from 'vue';
 import { toast } from 'vue-sonner';
 import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '@/stores/auth';
+import { getApiBaseUrl } from '@/services/apiBase';
 
 /** Session revival failure state */
 export interface RevivalFailedState {
@@ -43,7 +44,7 @@ export interface RpcError {
 }
 
 /** API base URL from environment */
-const API_URL: string | undefined = import.meta.env.VITE_API_URL;
+const API_URL = getApiBaseUrl();
 
 /**
  * Composable for handling session revival errors.
@@ -154,7 +155,7 @@ export function useSessionRevival() {
       // Get auth token from store
       const token = authStore.token;
 
-      if (!token || !API_URL) {
+      if (!token) {
         toast.error(t('errors.notAuthenticated'));
         return;
       }

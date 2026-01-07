@@ -7,6 +7,7 @@
  */
 
 import { useAuthStore } from '@/stores/auth';
+import { getApiBaseUrl } from './apiBase';
 
 export interface PrivacySettings {
     showOnlineStatus: boolean;
@@ -16,7 +17,7 @@ export interface PrivacySettings {
  * Get the server URL from environment
  */
 function getServerUrl(): string {
-    return import.meta.env.VITE_HAPPY_SERVER_URL || 'https://api.happy.engineering';
+    return getApiBaseUrl();
 }
 
 /**

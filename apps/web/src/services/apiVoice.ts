@@ -28,6 +28,7 @@
 
 import { useAuthStore } from '@/stores/auth';
 import { ELEVENLABS_CONFIG } from '@/services/voice/config';
+import { getApiBaseUrl } from './apiBase';
 
 /**
  * Voice token response from server
@@ -59,7 +60,7 @@ export interface FetchVoiceTokenOptions {
  * Get the server URL from environment
  */
 function getServerUrl(): string {
-  return import.meta.env.VITE_API_URL ?? 'https://api.happy.engineering';
+  return getApiBaseUrl();
 }
 
 /**

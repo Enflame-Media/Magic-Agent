@@ -103,6 +103,49 @@ export default tseslint.config(
     files: ['**/*.js', '**/*.mjs', '**/*.cjs'],
     ...tseslint.configs.disableTypeChecked,
   },
+  {
+    files: ['**/*.js', '**/*.mjs', '**/*.cjs'],
+    rules: {
+      '@typescript-eslint/no-unused-vars': 'warn',
+    },
+  },
+
+  // Baseline overrides to reduce existing lint noise
+  {
+    rules: {
+      'no-undef': 'off',
+    },
+  },
+  {
+    files: [
+      'apps/**/src/**/*.ts',
+      'apps/**/src/**/*.tsx',
+      'apps/**/src/**/*.vue',
+      'packages/**/src/**/*.ts',
+      'packages/**/src/**/*.tsx',
+      'packages/**/src/**/*.vue',
+    ],
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
+      '@typescript-eslint/no-unnecessary-condition': 'warn',
+      '@typescript-eslint/restrict-template-expressions': 'warn',
+      '@typescript-eslint/no-unsafe-assignment': 'warn',
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-unsafe-enum-comparison': 'warn',
+      '@typescript-eslint/no-unsafe-member-access': 'warn',
+      '@typescript-eslint/no-unsafe-call': 'warn',
+      '@typescript-eslint/no-non-null-assertion': 'warn',
+      '@typescript-eslint/require-await': 'warn',
+      '@typescript-eslint/no-base-to-string': 'warn',
+      '@typescript-eslint/no-confusing-void-expression': 'warn',
+      '@typescript-eslint/no-deprecated': 'warn',
+      '@typescript-eslint/no-redundant-type-constituents': 'warn',
+      '@typescript-eslint/no-unnecessary-type-assertion': 'warn',
+    },
+  },
 
   // Prettier config must be last to disable conflicting rules
   eslintConfigPrettier

@@ -39,6 +39,7 @@ import { ref, computed, type Ref, type ComputedRef } from 'vue';
 import { storeToRefs } from 'pinia';
 import { z } from 'zod';
 import { useAuthStore } from '@/stores/auth';
+import { getApiBaseUrl } from '@/services/apiBase';
 import type { UserProfile, RelationshipStatus } from '@happy-vue/protocol';
 import { UserProfileSchema } from '@happy-vue/protocol';
 import { toast } from 'vue-sonner';
@@ -48,7 +49,7 @@ import { toast } from 'vue-sonner';
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** API server URL from environment */
-const API_URL = import.meta.env.VITE_HAPPY_SERVER_URL || 'https://api.happy.engineering';
+const API_URL = getApiBaseUrl();
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Response Schemas
