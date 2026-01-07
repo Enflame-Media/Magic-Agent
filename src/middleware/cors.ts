@@ -46,6 +46,8 @@ export const cors = (): MiddlewareHandler => {
                 // Primary production and development domains
                 'https://happy.enflamemedia.com',
                 'https://happy-dev.enflamemedia.com',
+                'https://happy-vue.enflamemedia.com',
+                'https://happy-vue-dev.enflamemedia.com',
                 // Reserved future domains
                 'https://happy.app',
                 'https://www.happy.app',
