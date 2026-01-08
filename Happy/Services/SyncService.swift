@@ -242,6 +242,7 @@ enum SyncError: LocalizedError {
     case encryptionKeyMissing
     case decryptionFailed(String)
     case sendFailed(String)
+    case sessionRevivalFailed(sessionId: String, reason: String)
 
     var errorDescription: String? {
         switch self {
@@ -253,6 +254,8 @@ enum SyncError: LocalizedError {
             return "Failed to decrypt message: \(reason)"
         case .sendFailed(let reason):
             return "Failed to send message: \(reason)"
+        case .sessionRevivalFailed(let sessionId, let reason):
+            return "Session \(sessionId) could not be restored: \(reason)"
         }
     }
 }

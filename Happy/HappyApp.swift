@@ -20,6 +20,9 @@ struct HappyApp: App {
     /// Shared purchase service for the app.
     @State private var purchaseService = PurchaseService.shared
 
+    /// Shared session revival manager for handling revival errors.
+    @State private var sessionRevivalManager = SessionRevivalManager.shared
+
     /// Whether the QR scanner sheet is shown.
     @State private var showingQRScanner = false
 
@@ -33,6 +36,8 @@ struct HappyApp: App {
             ContentView()
                 .environment(authService)
                 .environment(purchaseService)
+                .environment(sessionRevivalManager)
+                .sessionRevivalAlert()
                 .sheet(isPresented: $showingQRScanner) {
                     QRScannerView { qrData in
                         handleQRScan(qrData)

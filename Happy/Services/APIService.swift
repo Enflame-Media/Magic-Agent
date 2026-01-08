@@ -160,6 +160,27 @@ actor APIService {
         return response.messages
     }
 
+    /// Archive a session.
+    ///
+    /// Archiving a session marks it as inactive and removes it from the active sessions list.
+    /// This is useful for cleaning up sessions that can no longer be revived.
+    ///
+    /// - Parameters:
+    ///   - sessionId: The session ID to archive.
+    ///   - reason: The reason for archiving (e.g., revival failed).
+    func archiveSession(sessionId: String, reason: SessionArchiveReason) async throws {
+        struct ArchiveRequest: Encodable {
+            let reason: String
+        }
+
+        struct ArchiveResponse: Decodable {
+            let success: Bool
+        }
+
+        let request = ArchiveRequest(reason: reason.rawValue)
+        let _: ArchiveResponse = try await post("/v1/sessions/\(sessionId)/archive", body: request)
+    }
+
     // MARK: - Authentication Endpoints
 
     /// Validate the current authentication token.
@@ -263,6 +284,7 @@ enum APIError: LocalizedError {
     case rateLimited
     case serverError(statusCode: Int)
     case networkError(Error)
+    case sessionRevivalFailed(sessionId: String, reason: String)
 
     var errorDescription: String? {
         switch self {
@@ -288,6 +310,8 @@ enum APIError: LocalizedError {
             return "Server error (\(statusCode)). Please try again later."
         case .networkError(let error):
             return "Network error: \(error.localizedDescription)"
+        case .sessionRevivalFailed(let sessionId, let reason):
+            return "Session \(sessionId) could not be restored: \(reason)"
         }
     }
 }
