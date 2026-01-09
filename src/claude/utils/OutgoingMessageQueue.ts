@@ -179,6 +179,7 @@ export class OutgoingMessageQueue extends EventEmitter {
     
     /**
      * Flush all messages immediately (for cleanup)
+     * Fix #13: Wrapped processQueueInternal in try-catch to handle errors gracefully during cleanup
      */
     async flush(): Promise<void> {
         await this.lock.inLock(async () => {
@@ -194,7 +195,15 @@ export class OutgoingMessageQueue extends EventEmitter {
             }
             
             // Process everything - use internal method since we already have the lock
-            this.processQueueInternal();
+            // Wrap in try-catch to handle errors gracefully during cleanup
+            try {
+                this.processQueueInternal();
+            } catch (error) {
+                // Log but don't throw - we're in cleanup mode
+                logger.warn('[QUEUE] Error during flush:', error);
+                // Clear the queue to prevent memory leaks
+                this.queue = [];
+            }
         });
     }
     

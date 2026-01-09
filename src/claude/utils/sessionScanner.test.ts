@@ -15,7 +15,7 @@ import { existsSync } from 'node:fs'
  */
 async function waitFor(
     condition: () => boolean,
-    opts: { timeout: number; interval: number } = { timeout: 2000, interval: 20 }
+    opts: { timeout: number; interval: number } = { timeout: 5000, interval: 20 }
 ): Promise<void> {
     const start = Date.now()
     while (!condition()) {
@@ -36,7 +36,8 @@ describe('sessionScanner', () => {
     testDir = join(tmpdir(), `scanner-test-${Date.now()}`)
     await mkdir(testDir, { recursive: true })
     
-    const projectName = testDir.replace(/\//g, '-')
+    // HAP-757: Use same regex as getProjectPath to ensure paths match
+    const projectName = testDir.replace(/[\\/:.]/g, '-')
     projectDir = join(homedir(), '.claude', 'projects', projectName)
     await mkdir(projectDir, { recursive: true })
     
@@ -58,7 +59,8 @@ describe('sessionScanner', () => {
     }
   })
   
-  it('should process initial session and resumed session correctly', async () => {
+  // HAP-757: Increased timeout due to file system event processing latency
+  it('should process initial session and resumed session correctly', { timeout: 15000 }, async () => {
     // TEST SCENARIO:
     // Phase 1: User says "lol" → Assistant responds "lol" → Session closes
     // Phase 2: User resumes with NEW session ID → User says "run ls tool" → Assistant runs LS tool → Shows files

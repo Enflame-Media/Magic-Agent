@@ -7,6 +7,20 @@ import { SocketDisconnectedError } from "@/api/socketUtils";
 
 export async function claudeLocalLauncher(session: Session): Promise<'switch' | 'exit'> {
 
+    // Fix #5: Handle session deletion event - exit gracefully when session is archived remotely
+    let sessionDeleted = false;
+    const onSessionDeleted = (deletedSessionId: string) => {
+        if (deletedSessionId === session.client.sessionId) {
+            logger.warn('[local] Session was deleted/archived remotely - exiting gracefully');
+            sessionDeleted = true;
+            // Trigger abort to exit the launcher
+            if (!processAbortController.signal.aborted) {
+                processAbortController.abort();
+            }
+        }
+    };
+    session.client.on('sessionDeleted', onSessionDeleted);
+
     // Create scanner
     const scanner = await createSessionScanner({
         sessionId: session.sessionId,
@@ -29,8 +43,14 @@ export async function claudeLocalLauncher(session: Session): Promise<'switch' | 
     
     // Register callback to notify scanner when session ID is found via hook
     // This is important for --continue/--resume where session ID is not known upfront
+    // Fix #12: Add error handling to prevent scanner errors from crashing the session
     const scannerSessionCallback = (sessionId: string) => {
-        scanner.onNewSession(sessionId);
+        try {
+            scanner.onNewSession(sessionId);
+        } catch (error) {
+            logger.debug('[local] Error in scanner callback:', error);
+            // Don't re-throw - scanner errors shouldn't crash the session
+        }
     };
     session.addSessionFoundCallback(scannerSessionCallback);
 
@@ -38,6 +58,8 @@ export async function claudeLocalLauncher(session: Session): Promise<'switch' | 
     // Handle abort
     let exitReason: 'switch' | 'exit' | null = null;
     const processAbortController = new AbortController();
+    // Fix #9: Track whether handlers have been registered to avoid cleanup issues
+    let handlersRegistered = false;
     let exitFuture = new Future<void>();
     try {
         async function abort() {
@@ -79,8 +101,10 @@ export async function claudeLocalLauncher(session: Session): Promise<'switch' | 
         }
 
         // When to abort
+        // Fix #9: Track registration state to ensure proper cleanup
         session.client.rpcHandlerManager.registerHandler('abort', doAbort); // Abort current process, clean queue and switch to remote mode
         session.client.rpcHandlerManager.registerHandler('switch', doSwitch); // When user wants to switch to remote mode
+        handlersRegistered = true;
         session.queue.setOnMessage((_message: string, _mode) => {
             // Switch to remote mode when message received
             doSwitch().catch((error) => {
@@ -91,6 +115,11 @@ export async function claudeLocalLauncher(session: Session): Promise<'switch' | 
         // Exit if there are messages in the queue
         if (session.queue.size() > 0) {
             return 'switch';
+        }
+
+        // Fix #5: Check if session was already deleted before starting
+        if (sessionDeleted) {
+            return 'exit';
         }
 
         // Handle session start
@@ -128,7 +157,12 @@ export async function claudeLocalLauncher(session: Session): Promise<'switch' | 
 
                 // Normal exit
                 if (!exitReason) {
-                    exitReason = 'exit';
+                    // Fix #5: Check if exit was due to session deletion
+                    if (sessionDeleted) {
+                        exitReason = 'exit';
+                    } else {
+                        exitReason = 'exit';
+                    }
                     break;
                 }
             } catch (e) {
@@ -166,13 +200,18 @@ export async function claudeLocalLauncher(session: Session): Promise<'switch' | 
         // Resolve future
         exitFuture.resolve(undefined);
 
-        // Set handlers to no-op
-        session.client.rpcHandlerManager.registerHandler('abort', async () => { });
-        session.client.rpcHandlerManager.registerHandler('switch', async () => { });
+        // Fix #9: Only reset handlers if they were registered
+        if (handlersRegistered) {
+            session.client.rpcHandlerManager.registerHandler('abort', async () => { });
+            session.client.rpcHandlerManager.registerHandler('switch', async () => { });
+        }
         session.queue.setOnMessage(null);
         
         // Remove session found callback
         session.removeSessionFoundCallback(scannerSessionCallback);
+
+        // Fix #5: Remove session deleted listener
+        session.client.off('sessionDeleted', onSessionDeleted);
 
         // Cleanup
         await scanner.cleanup();

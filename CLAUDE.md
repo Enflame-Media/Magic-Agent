@@ -1,16 +1,18 @@
 # Happy CLI - Development Guidelines
 
-> **📍 Part of the Happy monorepo** — See root [`CLAUDE.md`](../CLAUDE.md) for overall architecture and cross-project guidelines.
+> **📍 Part of the Happy monorepo** — See root [`CLAUDE.md`](../../CLAUDE.md) for overall architecture and cross-project guidelines.
 
 ---
 
 ## Project Overview
 
-Happy CLI (`handy-cli`) is a command-line tool that wraps Claude Code to enable remote control and session sharing. It's part of a three-component system:
+**Happy CLI** (`happy-coder`) is a command-line tool that wraps Claude Code to enable remote control and session sharing with end-to-end encryption. It's part of the Happy ecosystem:
 
-1. **handy-cli** (this project) - CLI wrapper for Claude Code
-2. **handy** - React Native mobile client
-3. **handy-server** - Node.js server with Prisma (hosted at https://api.happy-servers.com/)
+- **happy-cli** (this project) - CLI wrapper for Claude Code
+- **happy-app** (`apps/web/react/`) - React Native mobile/web client
+- **happy-server** (`apps/server/docker/`) - Fastify backend API server
+- **happy-server-workers** (`apps/server/workers/`) - Cloudflare Workers edge functions
+- **happy-macos** (`apps/macos/`) - Native macOS client (Swift)
 
 ## Code Style Preferences
 
@@ -174,7 +176,7 @@ User interface components.
 
 ## Security Considerations
 
-- Private keys stored in `~/.handy/access.key` with restricted permissions
+- Private keys stored in `~/.happy/access.key` with restricted permissions
 - All communications encrypted using TweetNaCl
 - Challenge-response authentication prevents replay attacks
 - Session isolation through unique session IDs
@@ -441,7 +443,7 @@ Lines 7-8: New messages from current interaction
 {"parentUuid":"...","sessionId":"1433467f-ff14-4292-b5b2-2aac77a808f0","message":{"role":"user","content":"what file did we just see?"},...}
 ```
 
-## Implications for handy-cli
+## Implications for Happy CLI
 
 When using --resume:
 1. Must handle new session ID in responses

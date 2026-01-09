@@ -38,6 +38,12 @@ export interface ApiSessionClientEvents {
      * @see HAP-352 for type schema alignment
      */
     sessionDeleted: (sessionId: string) => void;
+    /**
+     * Emitted when decryption fails for an incoming message.
+     * This indicates potential data loss - the message from the sender was not processed.
+     * @see Fix #2 - User notification for decryption failures
+     */
+    decryptionFailed: (details: { context: string, sessionId: string }) => void;
 }
 
 /**
@@ -77,6 +83,8 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
     private usageLimitsPollingInterval: ReturnType<typeof setInterval> | null = null;
     /** Whether usage limits polling is enabled @see HAP-730 */
     private usageLimitsPollingEnabled = false;
+    /** In-flight usage limits fetch promise for graceful shutdown @see Fix #6 */
+    private pendingUsageLimitsFetch: Promise<void> | null = null;
 
     /**
      * Returns whether the socket is currently connected.
@@ -228,6 +236,8 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
 
                     if (body === null) {
                         logger.debug('[SOCKET] [UPDATE] [ERROR] Failed to decrypt message - skipping');
+                        logger.warn('[Happy] Failed to decrypt incoming message - message may have been lost');
+                        this.emit('decryptionFailed', { context: 'new message', sessionId: this.sessionId });
                         return;
                     }
 
@@ -261,6 +271,8 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
                                 const decryptedMetadata = decrypt<Metadata>(this.encryptionKey, this.encryptionVariant, decodeBase64(data.body.metadata.value));
                                 if (decryptedMetadata === null) {
                                     logger.debug('[SOCKET] [UPDATE] [ERROR] Failed to decrypt metadata - skipping update');
+                                    logger.warn('[Happy] Failed to decrypt metadata update - message may have been lost');
+                                    this.emit('decryptionFailed', { context: 'metadata update', sessionId: this.sessionId });
                                     return;
                                 }
                                 this.metadata = decryptedMetadata;
@@ -276,6 +288,8 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
                                     const decryptedAgentState = decrypt<AgentState>(this.encryptionKey, this.encryptionVariant, decodeBase64(data.body.agentState.value));
                                     if (decryptedAgentState === null) {
                                         logger.debug('[SOCKET] [UPDATE] [ERROR] Failed to decrypt agent state - skipping update');
+                                        logger.warn('[Happy] Failed to decrypt agent state update - message may have been lost');
+                                        this.emit('decryptionFailed', { context: 'agent state update', sessionId: this.sessionId });
                                         return;
                                     }
                                     this.agentState = decryptedAgentState;
@@ -1042,15 +1056,19 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
         this.usageLimitsPollingEnabled = true;
         logger.debug('[UsageLimits] Starting usage limits polling');
 
-        // Fetch immediately on start
-        this.fetchAndSendUsageLimits().catch(error => {
+        // Fetch immediately on start (track promise for graceful shutdown)
+        this.pendingUsageLimitsFetch = this.fetchAndSendUsageLimits().catch(error => {
             logger.debug('[UsageLimits] Initial fetch failed:', error);
+        }).finally(() => {
+            this.pendingUsageLimitsFetch = null;
         });
 
-        // Then poll every 60 seconds
+        // Then poll every 60 seconds (track promise for graceful shutdown)
         this.usageLimitsPollingInterval = setInterval(() => {
-            this.fetchAndSendUsageLimits().catch(error => {
+            this.pendingUsageLimitsFetch = this.fetchAndSendUsageLimits().catch(error => {
                 logger.debug('[UsageLimits] Polling fetch failed:', error);
+            }).finally(() => {
+                this.pendingUsageLimitsFetch = null;
             });
         }, USAGE_LIMITS_POLL_INTERVAL_MS);
     }
@@ -1075,8 +1093,10 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
 
     /**
      * Fetch usage limits from Anthropic API and send to server.
+     * Stores the promise so it can be awaited during graceful shutdown.
      *
      * @see HAP-730 - Implement usage limits fetcher in happy-cli
+     * @see Fix #6 - Await in-progress fetch before closing
      */
     private async fetchAndSendUsageLimits(): Promise<void> {
         if (!this.socket.connected) {
@@ -1108,8 +1128,16 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
     async close() {
         logger.debug('[API] socket.close() called');
 
-        // Stop usage limits polling
+        // Stop usage limits polling and await any in-flight fetch (Fix #6)
         this.stopUsageLimitsPolling();
+        if (this.pendingUsageLimitsFetch) {
+            try {
+                await this.pendingUsageLimitsFetch;
+            } catch {
+                // Ignore errors during shutdown
+            }
+            this.pendingUsageLimitsFetch = null;
+        }
 
         // Cancel all pending RPC requests before closing
         this.rpcHandlerManager.cancelAllPendingRequests();

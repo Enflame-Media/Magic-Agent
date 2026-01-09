@@ -28,6 +28,20 @@ interface PermissionsField {
 export async function claudeRemoteLauncher(session: Session): Promise<'switch' | 'exit'> {
     logger.debug('[claudeRemoteLauncher] Starting remote launcher');
 
+    // Fix #5: Handle session deletion event - exit gracefully when session is archived remotely
+    let sessionDeleted = false;
+    const onSessionDeleted = (deletedSessionId: string) => {
+        if (deletedSessionId === session.client.sessionId) {
+            logger.warn('[remote] Session was deleted/archived remotely - exiting gracefully');
+            sessionDeleted = true;
+            // Trigger abort to exit the launcher
+            abort().catch((error) => {
+                logger.debug('[remote] Error during session deletion abort:', error);
+            });
+        }
+    };
+    session.client.on('sessionDeleted', onSessionDeleted);
+
     // Check if we have a TTY for UI rendering
     const hasTTY = process.stdout.isTTY && process.stdin.isTTY;
     logger.debug(`[claudeRemoteLauncher] TTY available: ${hasTTY}`);
@@ -321,6 +335,12 @@ export async function claudeRemoteLauncher(session: Session): Promise<'switch' |
         let lastReadyTime = 0;
 
         while (!exitReason) {
+            // Fix #5: Check if session was already deleted before starting
+            if (sessionDeleted) {
+                exitReason = 'exit';
+                break;
+            }
+
             logger.debug('[remote]: launch');
             messageBuffer.addMessage('═'.repeat(40), 'status');
 
@@ -520,6 +540,9 @@ export async function claudeRemoteLauncher(session: Session): Promise<'switch' |
 
         // Clean up permission handler
         permissionHandler.reset();
+
+        // Fix #5: Remove session deleted listener
+        session.client.off('sessionDeleted', onSessionDeleted);
 
         // Reset Terminal
         process.stdin.off('data', abort);

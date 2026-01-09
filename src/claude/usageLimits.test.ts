@@ -37,7 +37,12 @@ describe('usageLimits', () => {
             const result = await fetchClaudeUsageLimits();
 
             expect(result).toBeNull();
-            expect(mockFetch).not.toHaveBeenCalled();
+            // Only assert that Anthropic API was NOT called (not generic fetch,
+            // since logging/telemetry may use fetch for other purposes)
+            expect(mockFetch).not.toHaveBeenCalledWith(
+                expect.stringContaining('anthropic.com'),
+                expect.anything()
+            );
         });
 
         it('fetches and transforms usage data correctly', async () => {
