@@ -8,8 +8,8 @@ const workspaceRoot = path.resolve(__dirname, "..");
 
 // Watch the shared @happy packages for changes
 config.watchFolders = [
-    path.resolve(workspaceRoot, "packages/@happy/protocol"),
-    path.resolve(workspaceRoot, "packages/@happy/errors"),
+    path.resolve(workspaceRoot, "packages/schema/protocol"),
+    path.resolve(workspaceRoot, "packages/schema/errors"),
 ];
 
 // Ensure Metro can resolve modules from the monorepo root

@@ -1,6 +1,10 @@
-# CLAUDE.md
+# Happy App (React Native) - Development Guidelines
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+> **📍 Part of the Happy monorepo** — See root [`CLAUDE.md`](../../../CLAUDE.md) for overall architecture and cross-project guidelines.
+
+---
+
+This file provides guidance to Claude Code when working with the Happy React Native mobile/web application.
 
 ## Commands
 
