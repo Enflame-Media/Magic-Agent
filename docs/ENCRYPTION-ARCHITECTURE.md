@@ -21,7 +21,7 @@ Happy uses a **zero-knowledge architecture** where the server cannot decrypt use
 │         │          │              │              │          │               │
 │         ▼          ▼              ▼              ▼          ▼               │
 │  ┌─────────────┐ ┌─────────────┐ ┌──────────────┐ ┌─────────────┐          │
-│  │ AES-256-GCM │ │ happy-macos │ │ TweetNaCl    │ │ AES-256-GCM │          │
+│  │ AES-256-GCM │ │ apps/macos  │ │ TweetNaCl    │ │ AES-256-GCM │          │
 │  │ + Key Ver.  │ │ (CryptoKit) │ │ secretbox    │ │ + SecretBox │          │
 │  │ + Legacy    │ │ AES-256-GCM │ │ (svr secrets)│ │ (legacy)    │          │
 │  └─────────────┘ └─────────────┘ └──────────────┘ └─────────────┘          │
@@ -75,7 +75,7 @@ The server stores encrypted blobs and **cannot decrypt them**.
 
 ## Algorithm Choices by Component
 
-### CLI (`happy-cli/src/api/encryption.ts`)
+### CLI (`apps/cli/src/api/encryption.ts`)
 
 The CLI uses **AES-256-GCM** as the primary algorithm with legacy TweetNaCl support.
 
@@ -104,7 +104,7 @@ encryptLegacy(data, secret)  // XSalsa20-Poly1305
 [version:1][keyVersion:2][nonce:12][ciphertext:N][authTag:16]
 ```
 
-### macOS (`happy-macos/Happy/Services/EncryptionService.swift`)
+### macOS (`apps/macos/Happy/Services/EncryptionService.swift`)
 
 The macOS app uses **AES-256-GCM** via CryptoKit, matching the primary E2E format.
 
@@ -129,7 +129,7 @@ let decrypted = try EncryptionService.decrypt(encrypted, with: symmetricKey)
 
 **Note**: The macOS app does NOT support the legacy secretbox format (XSalsa20-Poly1305) as it only needs to interoperate with modern encrypted data created by happy-cli and happy-app.
 
-### App (`happy-app/sources/sync/encryption/`)
+### App (`apps/web/react/sources/sync/encryption/`)
 
 The App supports both legacy and modern encryption for interoperability.
 
@@ -156,7 +156,7 @@ const contentDataKey = await deriveKey(masterSecret, 'Happy EnCoder', ['content'
 const contentKeyPair = sodium.crypto_box_seed_keypair(contentDataKey);
 ```
 
-### Server Workers (`happy-server-workers/src/lib/encryption.ts`)
+### Server Workers (`apps/server/workers/src/lib/encryption.ts`)
 
 The server uses **TweetNaCl secretbox only** for server-side secrets.
 
@@ -347,19 +347,19 @@ const decrypted = manager.decrypt(encrypted);
 ## Related Files
 
 ### CLI
-- `happy-cli/src/api/encryption.ts` - Main encryption module
-- `happy-cli/src/api/auth.ts` - Authentication signatures
+- `apps/cli/src/api/encryption.ts` - Main encryption module
+- `apps/cli/src/api/auth.ts` - Authentication signatures
 
 ### App
-- `happy-app/sources/sync/encryption/encryption.ts` - Main encryption class
-- `happy-app/sources/sync/encryption/encryptor.ts` - Encryptor implementations
-- `happy-app/sources/sync/encryption/encryptionCache.ts` - Caching layer
-- `happy-app/sources/sync/encryption/sessionEncryption.ts` - Session-specific
-- `happy-app/sources/sync/encryption/machineEncryption.ts` - Machine-specific
+- `apps/web/react/sources/sync/encryption/encryption.ts` - Main encryption class
+- `apps/web/react/sources/sync/encryption/encryptor.ts` - Encryptor implementations
+- `apps/web/react/sources/sync/encryption/encryptionCache.ts` - Caching layer
+- `apps/web/react/sources/sync/encryption/sessionEncryption.ts` - Session-specific
+- `apps/web/react/sources/sync/encryption/machineEncryption.ts` - Machine-specific
 
 ### Server Workers
-- `happy-server-workers/src/lib/encryption.ts` - Server-side encryption
-- `happy-server-workers/docs/SECRETS.md` - Secret management
+- `apps/server/workers/src/lib/encryption.ts` - Server-side encryption
+- `apps/server/workers/docs/SECRETS.md` - Secret management
 
 ## FAQ
 
@@ -384,7 +384,7 @@ Only server-side secrets (AI tokens) would be exposed. User data remains protect
 3. Update `HANDY_MASTER_SECRET` in production
 4. Clear key cache
 
-See `happy-server/docs/SECRET-ROTATION.md` for detailed procedures.
+See `apps/server/docker/docs/SECRET-ROTATION.md` for detailed procedures.
 
 ### Why is the server encryption separate from E2E?
 

@@ -19,7 +19,7 @@ Shared Zod schemas and TypeScript types for the Happy sync protocol.
 import { ApiUpdateSchema, ApiEphemeralUpdateSchema } from '@happy/protocol';
 ```
 
-See [packages/@happy/protocol/README.md](packages/@happy/protocol/README.md) for detailed documentation.
+See [packages/schema/protocol/README.md](packages/schema/protocol/README.md) for detailed documentation.
 
 ## Repository Structure
 
@@ -71,10 +71,10 @@ The repository uses GitHub Actions for continuous integration. Every PR triggers
 
 | Check | Projects | Description |
 |-------|----------|-------------|
-| **Type Check** | happy-cli, happy-app, happy-server-workers | TypeScript compilation |
-| **Lint** | happy-cli, happy-app, happy-server-workers | ESLint/OxLint validation |
-| **Tests** | happy-server-workers | Vitest test suite |
-| **Build** | happy-cli, happy-server-workers | Production build verification |
+| **Type Check** | apps/cli, apps/web/react, apps/server/workers | TypeScript compilation |
+| **Lint** | apps/cli, apps/web/react, apps/server/workers | ESLint/OxLint validation |
+| **Tests** | apps/server/workers | Vitest test suite |
+| **Build** | apps/cli, apps/server/workers | Production build verification |
 
 ### Branch Protection
 
@@ -92,9 +92,9 @@ Security updates are automated via Dependabot:
 | Repository | Description |
 |------------|-------------|
 | [happy](https://github.com/Enflame-Media/happy) | React Native mobile/web app |
-| happy-cli | Node.js CLI wrapper |
-| happy-server | Fastify backend server |
-| happy-server-workers | Cloudflare Workers edge functions |
+| apps/cli | Node.js CLI wrapper |
+| apps/server/docker | Fastify backend server |
+| apps/server/workers | Cloudflare Workers edge functions |
 
 ## License
 

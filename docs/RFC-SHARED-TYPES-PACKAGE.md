@@ -45,7 +45,7 @@ This RFC recommends implementing a **yarn workspaces-based shared package** (`@h
 
 ### 1.2 Detailed File Analysis
 
-#### happy-app/sources/sync/apiTypes.ts (248 lines)
+#### apps/web/react/sources/sync/apiTypes.ts (248 lines)
 
 Primary Zod schemas for client-side validation:
 
@@ -72,7 +72,7 @@ ApiEphemeralMachineActivityUpdateSchema - Machine activity
 ApiEphemeralUpdateSchema  - Union of ephemeral updates
 ```
 
-#### happy-cli/src/api/types.ts (570 lines)
+#### apps/cli/src/api/types.ts (570 lines)
 
 CLI-specific schemas (many duplicates of app):
 
@@ -104,7 +104,7 @@ Metadata, AgentState, MessageContent, UserMessageSchema
 EphemeralActivityUpdate, EphemeralUsageUpdate, EphemeralMachineActivityUpdate
 ```
 
-#### happy-server-workers/src/durable-objects/types.ts (664 lines)
+#### apps/server/workers/src/durable-objects/types.ts (664 lines)
 
 Workers-specific WebSocket types + duplicated protocol types:
 
@@ -128,7 +128,7 @@ Protocol Types (DUPLICATED - should be shared):
 
 **Critical Finding**: `UpdateEvent` uses `sessionId` while app expects `sid`. This is the root cause of the bug!
 
-#### happy-server/sources/app/events/eventRouter.ts (623 lines)
+#### apps/server/docker/sources/app/events/eventRouter.ts (623 lines)
 
 Server event routing + duplicated types:
 
@@ -152,7 +152,7 @@ Builder Functions (server-specific, keep local):
 - etc.
 ```
 
-#### happy-app/sources/sync/storageTypes.ts (189 lines)
+#### apps/web/react/sources/sync/storageTypes.ts (189 lines)
 
 Client-side storage types:
 
@@ -172,7 +172,7 @@ Interfaces:
 - GitStatus
 ```
 
-#### happy-server/sources/storage/types.ts (101 lines)
+#### apps/server/docker/sources/storage/types.ts (101 lines)
 
 Prisma JSON type augmentation:
 
@@ -241,7 +241,7 @@ PrismaJson namespace:
 
 ### 2.1 Option A: Yarn Workspaces
 
-**Implementation**: Create `packages/@happy/protocol/` with shared Zod schemas, referenced via `"@happy/protocol": "workspace:*"` in each project.
+**Implementation**: Create `packages/schema/protocol/` with shared Zod schemas, referenced via `"@happy/protocol": "workspace:*"` in each project.
 
 | Aspect | Assessment |
 |--------|------------|
@@ -406,7 +406,7 @@ packages/
 ### 4.2 Core Types for PoC (Priority 1)
 
 ```typescript
-// packages/@happy/protocol/src/updates/index.ts
+// packages/schema/protocol/src/updates/index.ts
 
 import { z } from 'zod';
 
@@ -441,7 +441,7 @@ export type ApiUpdate = z.infer<typeof ApiUpdateSchema>;
 ### 4.3 Build Configuration
 
 ```typescript
-// packages/@happy/protocol/tsup.config.ts
+// packages/schema/protocol/tsup.config.ts
 import { defineConfig } from 'tsup';
 
 export default defineConfig({
@@ -456,7 +456,7 @@ export default defineConfig({
 ```
 
 ```json
-// packages/@happy/protocol/package.json
+// packages/schema/protocol/package.json
 {
     "name": "@happy/protocol",
     "version": "0.0.1",
@@ -489,7 +489,7 @@ export default defineConfig({
 ### 4.4 Metro Configuration (React Native)
 
 ```javascript
-// happy-app/metro.config.js
+// apps/web/react/metro.config.js
 const { getDefaultConfig } = require('expo/metro-config');
 const path = require('path');
 
@@ -499,7 +499,7 @@ const config = getDefaultConfig(__dirname);
 const workspaceRoot = path.resolve(__dirname, '..');
 config.watchFolders = [
     ...(config.watchFolders || []),
-    path.resolve(workspaceRoot, 'packages/@happy/protocol'),
+    path.resolve(workspaceRoot, 'packages/schema/protocol'),
 ];
 
 // Resolve workspace packages
@@ -518,7 +518,7 @@ module.exports = config;
 {
     "private": true,
     "workspaces": [
-        "packages/@happy/*",
+        "packages/schema/*",
         "happy-cli",
         "happy-server",
         "happy-server-workers",
@@ -533,7 +533,7 @@ module.exports = config;
 
 ### Phase 1: Create Package (1-2 days)
 
-1. Create `packages/@happy/protocol/` directory structure
+1. Create `packages/schema/protocol/` directory structure
 2. Add root `package.json` with workspaces config
 3. Implement core update schemas (copy from happy-app, standardize field names)
 4. Implement ephemeral schemas
@@ -545,7 +545,7 @@ module.exports = config;
 
 ### Phase 2: Integrate happy-app (1 day)
 
-1. Add `"@happy/protocol": "workspace:*"` to happy-app/package.json
+1. Add `"@happy/protocol": "workspace:*"` to apps/web/react/package.json
 2. Update Metro config for workspace resolution
 3. Replace imports in `sources/sync/apiTypes.ts`:
    ```typescript
@@ -562,7 +562,7 @@ module.exports = config;
 
 ### Phase 3: Integrate happy-cli (1 day)
 
-1. Add `"@happy/protocol": "workspace:*"` to happy-cli/package.json
+1. Add `"@happy/protocol": "workspace:*"` to apps/cli/package.json
 2. Replace imports in `src/api/types.ts`
 3. Remove duplicated schema definitions
 4. Run `yarn typecheck` and `yarn test`
@@ -571,7 +571,7 @@ module.exports = config;
 
 ### Phase 4: Integrate happy-server-workers (1 day)
 
-1. Add `"@happy/protocol": "workspace:*"` to happy-server-workers/package.json
+1. Add `"@happy/protocol": "workspace:*"` to apps/server/workers/package.json
 2. Update `src/durable-objects/types.ts`:
    - Import shared types from `@happy/protocol`
    - Keep Workers-specific types (WebSocket infrastructure) local
@@ -583,7 +583,7 @@ module.exports = config;
 
 ### Phase 5: Integrate happy-server (1 day)
 
-1. Add `"@happy/protocol": "workspace:*"` to happy-server/package.json
+1. Add `"@happy/protocol": "workspace:*"` to apps/server/docker/package.json
 2. Verify CommonJS import works: `const { ApiUpdateSchema } = require('@happy/protocol')`
 3. Update `sources/app/events/eventRouter.ts`:
    - Import shared types
@@ -625,8 +625,8 @@ module.exports = config;
 - Shorter field name is acceptable for protocol types
 
 **Migration**:
-- Update `happy-server-workers/src/durable-objects/types.ts` to use `sid`
-- Update `happy-server/sources/app/events/eventRouter.ts` to use `sid`
+- Update `apps/server/workers/src/durable-objects/types.ts` to use `sid`
+- Update `apps/server/docker/sources/app/events/eventRouter.ts` to use `sid`
 
 ### 6.2 Zod Version
 

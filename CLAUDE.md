@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Happy** is a mobile and web client for Claude Code and Codex, enabling remote control and session sharing across devices with end-to-end encryption. This is a TypeScript monorepo containing six projects and shared packages.
+**Happy** is a mobile and web client for Claude Code and Codex, enabling remote control and session sharing across devices with end-to-end encryption. This is a TypeScript/Swift monorepo containing multiple applications and shared packages.
 
 ## Project Documentation
 
@@ -16,20 +16,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 | Project | Directory | Description | Documentation |
 |---------|-----------|-------------|---------------|
-| **happy-cli** | [`/happy-cli/`](./happy-cli/) | Node.js CLI wrapper for Claude Code | [`happy-cli/CLAUDE.md`](./happy-cli/CLAUDE.md) |
-| **happy-app** | [`/happy-app/`](./happy-app/) | React Native mobile/web client (Expo) | [`happy-app/CLAUDE.md`](./happy-app/CLAUDE.md) |
-| **happy-server** | [`/happy-server/`](./happy-server/) | Fastify backend API server | [`happy-server/CLAUDE.md`](./happy-server/CLAUDE.md) |
-| **happy-server-workers** | [`/happy-server-workers/`](./happy-server-workers/) | Cloudflare Workers edge functions | [`happy-server-workers/CLAUDE.md`](./happy-server-workers/CLAUDE.md) |
-| **happy-admin** | [`/happy-admin/`](./happy-admin/) | Admin dashboard Vue.js SPA (frontend-only) | [`happy-admin/CLAUDE.md`](./happy-admin/CLAUDE.md) |
-| **happy-admin-api** | [`/happy-admin-api/`](./happy-admin-api/) | Admin dashboard API (Hono + Cloudflare Workers) | [`happy-admin-api/CLAUDE.md`](./happy-admin-api/CLAUDE.md) |
+| **happy-cli** | [`/apps/cli/`](./apps/cli/) | Node.js CLI wrapper for Claude Code | [`apps/cli/CLAUDE.md`](./apps/cli/CLAUDE.md) |
+| **happy-app** | [`/apps/web/react/`](./apps/web/react/) | React Native mobile/web client (Expo) | [`apps/web/react/CLAUDE.md`](./apps/web/react/CLAUDE.md) |
+| **happy-vue** | [`/apps/web/vue/`](./apps/web/vue/) | Vue.js web client (migration in progress) | [`apps/web/vue/CLAUDE.md`](./apps/web/vue/CLAUDE.md) |
+| **happy-server** | [`/apps/server/docker/`](./apps/server/docker/) | Fastify backend API server | [`apps/server/docker/CLAUDE.md`](./apps/server/docker/CLAUDE.md) |
+| **happy-server-workers** | [`/apps/server/workers/`](./apps/server/workers/) | Cloudflare Workers edge functions | [`apps/server/workers/CLAUDE.md`](./apps/server/workers/CLAUDE.md) |
+| **happy-admin** | [`/apps/admin/web/`](./apps/admin/web/) | Admin dashboard Vue.js SPA (frontend-only) | [`apps/admin/web/CLAUDE.md`](./apps/admin/web/CLAUDE.md) |
+| **happy-admin-api** | [`/apps/admin/api/`](./apps/admin/api/) | Admin dashboard API (Hono + Cloudflare Workers) | [`apps/admin/api/CLAUDE.md`](./apps/admin/api/CLAUDE.md) |
+| **happy-macos** | [`/apps/macos/`](./apps/macos/) | Native macOS client (Swift/SwiftUI) | [`apps/macos/CLAUDE.md`](./apps/macos/CLAUDE.md) |
+| **happy-ios** | [`/apps/mobile/ios/`](./apps/mobile/ios/) | Native iOS client (planned) | [`apps/mobile/ios/CLAUDE.md`](./apps/mobile/ios/CLAUDE.md) |
+| **happy-android** | [`/apps/mobile/android/`](./apps/mobile/android/) | Native Android client (planned) | [`apps/mobile/android/CLAUDE.md`](./apps/mobile/android/CLAUDE.md) |
 
 ### Shared Packages
 
 | Package | Directory | Description | Documentation |
 |---------|-----------|-------------|---------------|
-| **@happy/protocol** | [`packages/@happy/protocol/`](./packages/@happy/protocol/) | Shared Zod schemas for API types | [`packages/@happy/protocol/CLAUDE.md`](./packages/@happy/protocol/CLAUDE.md) |
-| **@happy/errors** | [`packages/@happy/errors/`](./packages/@happy/errors/) | Unified error handling (AppError) | [`packages/@happy/errors/CLAUDE.md`](./packages/@happy/errors/CLAUDE.md) |
-| **@happy/lint-rules** | [`packages/@happy/lint-rules/`](./packages/@happy/lint-rules/) | Custom oxlint/ESLint rules | [`packages/@happy/lint-rules/CLAUDE.md`](./packages/@happy/lint-rules/CLAUDE.md) |
+| **@happy/protocol** | [`packages/schema/protocol/`](./packages/schema/protocol/) | Shared Zod schemas for API types | [`packages/schema/protocol/CLAUDE.md`](./packages/schema/protocol/CLAUDE.md) |
+| **@happy/errors** | [`packages/schema/errors/`](./packages/schema/errors/) | Unified error handling (AppError) | [`packages/schema/errors/CLAUDE.md`](./packages/schema/errors/CLAUDE.md) |
+| **@happy/lint-rules** | [`dev/lint-rules/`](./dev/lint-rules/) | Custom oxlint/ESLint rules | [`dev/lint-rules/CLAUDE.md`](./dev/lint-rules/CLAUDE.md) |
 
 ### Additional Documentation
 
@@ -38,52 +42,66 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | Encryption Architecture | [`docs/ENCRYPTION-ARCHITECTURE.md`](./docs/ENCRYPTION-ARCHITECTURE.md) | E2E encryption design |
 | Error Codes | [`docs/errors/`](./docs/errors/) | CLI error code documentation |
 | Shared Types RFC | [`docs/RFC-SHARED-TYPES-PACKAGE.md`](./docs/RFC-SHARED-TYPES-PACKAGE.md) | Design decision for @happy/protocol |
+| API Versioning | [`docs/API-VERSIONING.md`](./docs/API-VERSIONING.md) | API versioning strategy |
 
 ## Monorepo Structure
 
 ```
 /happy/
 ├── CLAUDE.md               # ← You are here (root documentation)
-├── packages/               # Shared packages (tracked in happy-shared repo)
-│   └── @happy/
-│       ├── protocol/       # Shared Zod schemas for API updates/events
+├── packages/               # Shared packages
+│   └── schema/
+│       ├── protocol/       # @happy/protocol - Zod schemas for API types
 │       │   └── CLAUDE.md   # Protocol package guidelines
-│       └── errors/         # Unified error handling
+│       └── errors/         # @happy/errors - Unified error handling
 │           └── CLAUDE.md   # Errors package guidelines
-├── happy-cli/              # Node.js CLI (ESM)
-│   ├── src/                # TypeScript sources
-│   ├── bin/                # Executable scripts
-│   ├── package.json
-│   └── CLAUDE.md           # CLI-specific guidelines ★
-├── happy-server/           # Fastify server (CommonJS)
-│   ├── sources/            # TypeScript sources (note: not 'src')
-│   ├── prisma/             # Database schema
-│   ├── package.json
-│   └── CLAUDE.md           # Server-specific guidelines ★
-├── happy-server-workers/   # Cloudflare Workers (ESM)
-│   ├── src/                # TypeScript sources
-│   ├── wrangler.toml       # Cloudflare config
-│   ├── package.json
-│   └── CLAUDE.md           # Workers-specific guidelines ★
-├── happy-app/              # Expo React Native (ESM)
-│   ├── sources/            # TypeScript sources (note: not 'src')
-│   ├── app/                # Expo Router screens
-│   ├── package.json
-│   └── CLAUDE.md           # App-specific guidelines ★
-├── happy-admin/            # Admin Dashboard Frontend (Vue.js SPA)
-│   ├── src/worker/         # Minimal worker (static serving)
-│   ├── src/app/            # Vue.js SPA
-│   ├── wrangler.toml       # Cloudflare config
-│   ├── package.json
-│   └── CLAUDE.md           # Frontend-specific guidelines ★
-├── happy-admin-api/        # Admin Dashboard API (Hono + Cloudflare Workers)
-│   ├── src/                # TypeScript sources
-│   ├── migrations/         # D1 migrations
-│   ├── wrangler.toml       # Cloudflare config
-│   ├── package.json
-│   └── CLAUDE.md           # API-specific guidelines ★
+├── dev/
+│   └── lint-rules/         # @happy/lint-rules - Custom oxlint/ESLint rules
+│       └── CLAUDE.md       # Lint rules guidelines
+├── apps/
+│   ├── cli/                # Node.js CLI wrapper (ESM)
+│   │   ├── src/            # TypeScript sources
+│   │   │   └── daemon/     # Daemon subsystem (has own CLAUDE.md)
+│   │   ├── bin/            # Executable scripts
+│   │   └── CLAUDE.md       # CLI-specific guidelines ★
+│   ├── web/
+│   │   ├── react/          # Expo React Native (ESM)
+│   │   │   ├── sources/    # TypeScript sources (note: not 'src')
+│   │   │   └── CLAUDE.md   # App-specific guidelines ★
+│   │   └── vue/            # Vue.js web client (migration)
+│   │       ├── apps/       # Vue applications
+│   │       ├── packages/   # Vue workspace packages
+│   │       └── CLAUDE.md   # Vue-specific guidelines ★
+│   ├── server/
+│   │   ├── docker/         # Fastify server (CommonJS)
+│   │   │   ├── sources/    # TypeScript sources (note: not 'src')
+│   │   │   ├── prisma/     # Database schema
+│   │   │   └── CLAUDE.md   # Server-specific guidelines ★
+│   │   └── workers/        # Cloudflare Workers (ESM)
+│   │       ├── src/        # TypeScript sources
+│   │       ├── drizzle/    # D1 migrations
+│   │       └── CLAUDE.md   # Workers-specific guidelines ★
+│   ├── admin/
+│   │   ├── web/            # Admin Dashboard (Vue.js SPA)
+│   │   │   ├── src/        # Vue.js application
+│   │   │   └── CLAUDE.md   # Dashboard guidelines ★
+│   │   └── api/            # Admin API (Hono + Workers)
+│   │       ├── src/        # TypeScript sources
+│   │       ├── migrations/ # D1 migrations
+│   │       └── CLAUDE.md   # API guidelines ★
+│   ├── macos/              # Native macOS client (Swift/SwiftUI)
+│   │   ├── Happy/          # Swift sources
+│   │   ├── Happy.xcodeproj # Xcode project
+│   │   └── CLAUDE.md       # macOS-specific guidelines ★
+│   └── mobile/
+│       ├── ios/            # Native iOS client (planned)
+│       │   └── CLAUDE.md   # iOS guidelines ★
+│       └── android/        # Native Android client (planned)
+│           └── CLAUDE.md   # Android guidelines ★
 ├── docs/                   # Cross-project documentation
-│   └── ENCRYPTION-ARCHITECTURE.md
+│   ├── ENCRYPTION-ARCHITECTURE.md
+│   ├── API-VERSIONING.md
+│   └── errors/             # CLI error code documentation
 ├── package.json            # Root workspaces config
 └── yarn.lock               # Shared lockfile
 ```
@@ -99,11 +117,11 @@ All projects use **yarn** (not npm). The monorepo uses **yarn workspaces** confi
 
 ## Shared Packages
 
-Shared packages live in `packages/@happy/` and are tracked in the `happy-shared` GitHub repository (separate from individual project repos). Each package has its own [`CLAUDE.md`](#shared-packages) with detailed development guidelines.
+Shared packages live in `packages/schema/` and are tracked in the `happy-shared` GitHub repository (separate from individual project repos). Each package has its own [`CLAUDE.md`](#shared-packages) with detailed development guidelines.
 
 ### @happy/protocol
 
-> **Full documentation**: [`packages/@happy/protocol/CLAUDE.md`](./packages/@happy/protocol/CLAUDE.md)
+> **Full documentation**: [`packages/schema/protocol/CLAUDE.md`](./packages/schema/protocol/CLAUDE.md)
 
 The `@happy/protocol` package provides shared Zod schemas for:
 - **API Updates**: Session, machine, message, artifact, account schemas
@@ -122,7 +140,7 @@ yarn workspace @happy/protocol typecheck
 
 ### @happy/errors
 
-> **Full documentation**: [`packages/@happy/errors/CLAUDE.md`](./packages/@happy/errors/CLAUDE.md)
+> **Full documentation**: [`packages/schema/errors/CLAUDE.md`](./packages/schema/errors/CLAUDE.md)
 
 The `@happy/errors` package provides unified error handling:
 - **AppError class**: Standardized error structure with error codes
@@ -141,7 +159,7 @@ yarn workspace @happy/errors typecheck
 
 ### @happy/lint-rules
 
-> **Full documentation**: [`packages/@happy/lint-rules/CLAUDE.md`](./packages/@happy/lint-rules/CLAUDE.md)
+> **Full documentation**: [`dev/lint-rules/CLAUDE.md`](./dev/lint-rules/CLAUDE.md)
 
 The `@happy/lint-rules` package provides custom linting rules for oxlint and ESLint:
 - **happy/github-casing**: Enforces "GitHub" casing in PascalCase identifiers (HAP-502)
@@ -180,12 +198,14 @@ The monorepo uses **multiple git repositories**:
 | Repository | Tracks | GitHub |
 |------------|--------|--------|
 | `happy-shared` | Root configs, `packages/`, docs | [Enflame-Media/happy-shared](https://github.com/Enflame-Media/happy-shared) |
-| `happy-app` | Mobile/web app code | [Enflame-Media/happy](https://github.com/Enflame-Media/happy) |
-| `happy-cli` | CLI wrapper code | Individual repo |
-| `happy-server` | Backend server code | Individual repo |
-| `happy-server-workers` | Cloudflare Workers | Individual repo |
-| `happy-admin` | Admin dashboard frontend (Vue.js) | Individual repo |
-| `happy-admin-api` | Admin dashboard API (Hono) | Individual repo |
+| `apps/web/react` | React Native mobile/web app | [Enflame-Media/happy](https://github.com/Enflame-Media/happy) |
+| `apps/web/vue` | Vue.js web client | Individual repo |
+| `apps/cli` | CLI wrapper code | Individual repo |
+| `apps/server/docker` | Backend server code | Individual repo |
+| `apps/server/workers` | Cloudflare Workers | Individual repo |
+| `apps/admin/web` | Admin dashboard frontend | Individual repo |
+| `apps/admin/api` | Admin dashboard API | Individual repo |
+| `apps/macos` | macOS native client | Individual repo |
 
 Each project directory has its own `.git/` - they are independent repositories.
 
@@ -197,16 +217,32 @@ Navigate to the project directory and follow its specific `CLAUDE.md`:
 
 ```bash
 # CLI development
-cd happy-cli
+cd apps/cli
 yarn build && yarn test
 
-# Server development
-cd happy-server
+# Server (Docker/Fastify) development
+cd apps/server/docker
 yarn dev  # Uses .env.dev
 
-# Mobile app development
-cd happy-app
+# Server (Workers) development
+cd apps/server/workers
+yarn dev  # Uses .dev.vars
+
+# React Native app development
+cd apps/web/react
 yarn start
+
+# Vue.js app development
+cd apps/web/vue
+yarn dev:web
+
+# Admin dashboard development
+cd apps/admin/web && yarn dev
+cd apps/admin/api && yarn dev  # Different ports
+
+# macOS app development
+cd apps/macos
+open Happy.xcodeproj  # Opens in Xcode
 ```
 
 ### Cross-Project Changes
@@ -214,12 +250,12 @@ yarn start
 When changes span multiple projects:
 
 1. **Protocol/API changes**: Update in this order:
-   - `happy-server` - Update API endpoints/types first
-   - `happy-cli` - Update API client to match
-   - `happy-app` - Update sync logic to match
+   - `apps/server/docker` - Update API endpoints/types first
+   - `apps/cli` - Update API client to match
+   - `apps/web/react` - Update sync logic to match
 
 2. **Type definitions**: Use `@happy/protocol` for shared types. Project-specific types remain in:
-   - Shared: `packages/@happy/protocol/` (Zod schemas for API updates/events)
+   - Shared: `packages/schema/protocol/` (Zod schemas for API updates/events)
    - Server: `sources/app/api/types.ts`
    - CLI: `src/api/types.ts`
    - App: `sources/sync/types.ts`
@@ -243,7 +279,7 @@ When changes span multiple projects:
 ### Data Flow
 ```
 ┌─────────────┐         ┌──────────────┐         ┌─────────────┐
-│  happy-cli  │◄──────► │ happy-server │◄──────► │  happy-app  │
+│  apps/cli   │◄──────► │ apps/server/docker │◄──────► │  apps/web/react  │
 │  (Node.js)  │ encrypt │  (Fastify)   │ encrypt │ (React Native)│
 │             │  WSS    │              │  WSS    │             │
 └─────────────┘         └──────────────┘         └─────────────┘
@@ -258,47 +294,62 @@ When changes span multiple projects:
 ### Building All Projects
 ```bash
 # From root
-cd happy-cli && yarn build
-cd ../happy-server && yarn build
-cd ../happy-app && yarn typecheck
+cd apps/cli && yarn build
+cd ../server/docker && yarn build
+cd ../../web/react && yarn typecheck
 ```
 
 ### Running Tests
 ```bash
 # CLI tests (includes integration tests)
-cd happy-cli && yarn test
+cd apps/cli && yarn test
 
 # Server tests
-cd happy-server && yarn test
+cd apps/server/docker && yarn test
 
 # App tests
-cd happy-app && yarn test
+cd apps/web/react && yarn test
 ```
 
 ### Local Development with All Components
 ```bash
 # Terminal 1: Start server locally
-cd happy-server
+cd apps/server/docker
 yarn dev
 
 # Terminal 2: Run CLI with local server
-cd happy-cli
+cd apps/cli
 yarn dev:local-server
 
 # Terminal 3: Run mobile app with local server
-cd happy-app
+cd apps/web/react
 yarn start:local-server
 ```
 
 ## Important Notes
 
-- **Path aliases**: All three projects use `@/*` to import from their respective source directories
-- **Source directories**: CLI uses `src/`, server and app use `sources/`
-- **Module systems**: CLI uses ESM, server uses CommonJS, app uses ESM (via Expo)
-- **TypeScript**: All projects use strict mode
-- **Encryption**: End-to-end encryption using TweetNaCl (NaCl Box) - server never sees plaintext
-- **Database**: Server uses Prisma with PostgreSQL (never modify schema without migrations)
-- **Environment variables**: Each project has its own `.env` file structure (see Environment & Secrets section below)
+- **Path aliases**: TypeScript projects use `@/*` to import from their respective source directories
+- **Source directories**:
+  - CLI: `src/`
+  - Server (Docker): `sources/`
+  - Server (Workers): `src/`
+  - React Native: `sources/`
+  - Vue.js: `src/`
+  - Admin: `src/`
+- **Module systems**:
+  - CLI: ESM
+  - Server (Docker): CommonJS
+  - Server (Workers): ESM
+  - React Native: ESM (via Expo)
+  - Vue.js: ESM
+  - Admin: ESM
+  - macOS: Swift
+- **TypeScript**: All TypeScript projects use strict mode
+- **Encryption**: End-to-end encryption using AES-256-GCM (clients) and TweetNaCl secretbox (server) - server never sees plaintext user data
+- **Database**:
+  - Server (Docker): Prisma with PostgreSQL
+  - Server (Workers): Drizzle with D1 (SQLite)
+- **Environment variables**: Each project has its own `.env` or `.dev.vars` file structure (see Environment & Secrets section)
 
 ## Code Style Conventions
 
@@ -334,13 +385,13 @@ Each project follows a consistent pattern for environment files:
 
 ### Project-Specific Variables
 
-#### happy-cli
+#### apps/cli
 - `HAPPY_SERVER_URL` - API server URL
 - `HAPPY_WEBAPP_URL` - Web application URL
 - `HAPPY_HOME_DIR` - Local data directory (~/.happy)
 - `DEBUG` - Enable verbose logging
 
-#### happy-server
+#### apps/server/docker
 - `DATABASE_URL` - PostgreSQL connection string (required)
 - `REDIS_URL` - Redis connection for pub/sub (required)
 - `HAPPY_MASTER_SECRET` - Master encryption key (required, replaces deprecated `HANDY_MASTER_SECRET`)
@@ -348,20 +399,20 @@ Each project follows a consistent pattern for environment files:
 - `ELEVENLABS_API_KEY` - Voice synthesis (optional)
 - `GITHUB_*` - GitHub OAuth integration (optional)
 
-#### happy-app
+#### apps/web/react
 - `EXPO_PUBLIC_HAPPY_SERVER_URL` - API server URL (baked into app at build time)
 
-#### happy-server-workers (Cloudflare)
+#### apps/server/workers (Cloudflare)
 - Uses `.dev.vars` for local development (gitignored)
 - Production secrets via `wrangler secret put`
 - Bindings (D1, R2, Durable Objects) in `wrangler.toml`
 
-#### happy-admin (Cloudflare - Frontend)
+#### apps/admin/web (Cloudflare - Frontend)
 - Frontend-only worker, no secrets required
 - Serves Vue.js SPA via [site] bucket
-- API calls go to happy-admin-api
+- API calls go to apps/admin/api
 
-#### happy-admin-api (Cloudflare - API)
+#### apps/admin/api (Cloudflare - API)
 - Uses `.dev.vars` for local development (gitignored)
 - `BETTER_AUTH_SECRET` - Session signing secret
 - Uses main happy D1 databases (happy-dev, happy-prod)
@@ -372,7 +423,7 @@ Each project follows a consistent pattern for environment files:
 Use the provided script to generate cryptographic secrets:
 
 ```bash
-cd happy-server
+cd apps/server/docker
 ./scripts/generate-secrets.sh
 ./scripts/generate-secrets.sh --env production
 ```
@@ -384,10 +435,10 @@ This generates:
 
 ### Cloudflare Secrets (Workers)
 
-For `happy-server-workers`, production secrets are managed via Wrangler:
+For `apps/server/workers`, production secrets are managed via Wrangler:
 
 ```bash
-cd happy-server-workers
+cd apps/server/workers
 
 # Set a secret
 wrangler secret put HAPPY_MASTER_SECRET --env prod
@@ -409,7 +460,7 @@ Optional:
 
 ### Secret Rotation
 
-See `happy-server/docs/SECRET-ROTATION.md` for detailed procedures on rotating secrets, including:
+See `apps/server/docker/docs/SECRET-ROTATION.md` for detailed procedures on rotating secrets, including:
 - Impact assessment for each secret type
 - Step-by-step rotation procedures
 - Emergency rotation checklist
@@ -432,11 +483,41 @@ See `happy-server/docs/SECRET-ROTATION.md` for detailed procedures on rotating s
 
 ## Project Dependencies
 
-- **happy-cli** depends on: Claude Code (globally installed, not bundled)
-- **happy-server** depends on: Nothing (standalone)
-- **happy-app** depends on: Nothing (standalone)
+### Runtime Dependencies
 
-All three communicate via the HTTP/WebSocket API defined by happy-server.
+- **apps/cli** depends on: Claude Code (globally installed, not bundled)
+- **apps/server/docker** depends on: PostgreSQL, Redis, S3-compatible storage
+- **apps/server/workers** depends on: Cloudflare D1, R2
+- **apps/web/react** depends on: Nothing (standalone app)
+- **apps/web/vue** depends on: Nothing (standalone app)
+- **apps/admin/web** depends on: apps/admin/api
+- **apps/admin/api** depends on: Cloudflare D1
+- **apps/macos** depends on: Nothing (standalone app)
+
+### Internal Package Dependencies
+
+All TypeScript projects can consume shared packages:
+- `@happy/protocol` - API type definitions (Zod schemas)
+- `@happy/errors` - Error handling utilities
+- `@happy/lint-rules` - Linting rules (devDependency)
+
+### Communication
+
+```
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│  apps/cli   │────│   server/   │────│ apps/web/   │
+│  (Node.js)  │    │   docker    │    │   react     │
+└─────────────┘    │  or workers │    └─────────────┘
+       │           └─────────────┘           │
+       │                  │                  │
+       ▼                  │                  ▼
+  Claude Code             │           Mobile/Web UI
+                          │
+                    ┌─────────────┐
+                    │ apps/macos  │
+                    │  (Swift)    │
+                    └─────────────┘
+```
 
 ## When Working Across Projects
 

@@ -4,24 +4,46 @@
   "description": "Happy monorepo - Mobile and web client for Claude Code and Codex",
   "packageManager": "yarn@4.12.0",
   "workspaces": [
-    "packages/@happy/*",
-    "happy-cli",
-    "happy-server-workers",
-    "happy-app",
-    "happy-admin",
-    "happy-admin-api"
+    "packages/schema/*",
+    "dev/lint-rules",
+    "apps/cli",
+    "apps/server/workers",
+    "apps/web/react",
+    "apps/web/vue",
+    "apps/admin/web",
+    "apps/admin/api",
+    "apps/macos",
+    "apps/mobile/ios",
+    "apps/mobile/android"
   ],
   "scripts": {
     "postinstall": "yarn workspace @happy/errors build && yarn workspace @happy/protocol build",
+    "build": "turbo run build",
     "build:errors": "yarn workspace @happy/errors build",
     "build:protocol": "yarn workspace @happy/protocol build",
+    "typecheck": "turbo run typecheck",
     "typecheck:errors": "yarn workspace @happy/errors typecheck",
     "typecheck:protocol": "yarn workspace @happy/protocol typecheck",
+    "lint": "turbo run lint",
+    "lint:fix": "turbo run lint:fix",
+    "format": "turbo run format",
+    "format:check": "turbo run format:check",
+    "format:root": "oxfmt .",
+    "test": "turbo run test",
+    "test:watch": "turbo run test:watch",
+    "dev": "turbo run dev",
+    "clean": "turbo run clean",
     "schema:extract": "yarn workspace @happy/protocol schema:extract",
     "schema:compare": "tsx scripts/compare-schemas.ts",
     "ncu:all": "find . -name package.json -not -path '*/node_modules/*' -execdir ncu -u \\;",
-    "deploy:stack:pro": "yarn install && cd happy-cli && yarn build && cd ../happy-app && yarn deploy:workers:pro && cd ../happy-server-workers && yarn deploy:prod",
-    "deploy:stack:dev": "yarn install && cd happy-cli && yarn build && cd ../happy-app && yarn deploy:workers:dev && cd ../happy-server-workers && yarn deploy:dev"
+    "deploy:stack:pro": "turbo run deploy:prod --filter=happy-server-workers --filter=happy",
+    "deploy:stack:dev": "turbo run deploy:dev --filter=happy-server-workers --filter=happy"
+  },
+  "devDependencies": {
+    "oxfmt": "^0.23.0",
+    "oxlint": "^1.36.0",
+    "tsx": "^4.20.1",
+    "turbo": "^2.5.3"
   },
   "engines": {
     "node": ">=18.0.0"

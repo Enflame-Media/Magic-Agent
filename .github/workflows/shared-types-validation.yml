@@ -61,15 +61,15 @@ jobs:
         run: yarn typecheck:protocol
 
       - name: Type check happy-cli
-        working-directory: happy-cli
+        working-directory: apps/cli
         run: yarn typecheck
 
       - name: Type check happy-app
-        working-directory: happy-app
+        working-directory: apps/web/react
         run: yarn typecheck
 
       - name: Type check happy-server-workers
-        working-directory: happy-server-workers
+        working-directory: apps/server/workers
         run: yarn typecheck
 
       - name: Summary
@@ -79,7 +79,7 @@ jobs:
           echo "All 4 consumer projects type-check successfully against @happy/protocol." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Projects Validated" >> $GITHUB_STEP_SUMMARY
-          echo "- happy-cli" >> $GITHUB_STEP_SUMMARY
-          echo "- happy-app" >> $GITHUB_STEP_SUMMARY
-          echo "- happy-server" >> $GITHUB_STEP_SUMMARY
-          echo "- happy-server-workers" >> $GITHUB_STEP_SUMMARY
+          echo "- happy-cli (apps/cli)" >> $GITHUB_STEP_SUMMARY
+          echo "- happy-app (apps/web/react)" >> $GITHUB_STEP_SUMMARY
+          echo "- happy-server (apps/server/docker)" >> $GITHUB_STEP_SUMMARY
+          echo "- happy-server-workers (apps/server/workers)" >> $GITHUB_STEP_SUMMARY

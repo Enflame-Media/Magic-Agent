@@ -39,7 +39,7 @@ yarn generate:swift:dry-run  # Preview without writing
 
 ## Swift Type Generation
 
-The package includes a script to generate Swift `Codable` types from Zod schemas for the `happy-macos` native app.
+The package includes a script to generate Swift `Codable` types from Zod schemas for the `apps/macos` native app.
 
 ### How It Works
 
@@ -49,7 +49,7 @@ The package includes a script to generate Swift `Codable` types from Zod schemas
 ### Generated Output
 
 ```
-happy-macos/Happy/Generated/
+apps/macos/Happy/Generated/
 └── HappyProtocol.swift    # All API types as Swift Codable structs
 ```
 
@@ -72,7 +72,7 @@ When adding a new schema that needs Swift support:
 1. Add the Zod schema to the appropriate module
 2. Add it to `scripts/generate-swift.ts` in the `schemasToGenerate` object
 3. Run `yarn generate:swift` to regenerate
-4. Commit the updated `HappyProtocol.swift` to happy-macos
+4. Commit the updated `HappyProtocol.swift` to apps/macos
 
 See HAP-687 for implementation details.
 

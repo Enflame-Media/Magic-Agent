@@ -11,7 +11,7 @@
  *   yarn schema:extract --stdout  # Print to stdout (for piping)
  *
  * Output:
- *   - packages/@happy/protocol/protocol-schemas.json
+ *   - packages/schema/protocol/protocol-schemas.json
  *
  * @see HAP-565 - Add cross-project schema drift detection to CI
  * @see HAP-695 - Migrate to Zod 4 native JSON Schema

@@ -18,16 +18,16 @@ on:
     branches: [main]
     paths:
       # Only run when app code changes
-      - 'happy-app/**'
-      - 'packages/@happy/**'
-      - '!happy-app/**/*.md'
-      - '!happy-app/**/*.test.ts'
-      - '!happy-app/**/*.test.tsx'
+      - 'apps/web/react/**'
+      - 'packages/schema/**'
+      - '!apps/web/react/**/*.md'
+      - '!apps/web/react/**/*.test.ts'
+      - '!apps/web/react/**/*.test.tsx'
   push:
     branches: [main]
     paths:
-      - 'happy-app/**'
-      - 'packages/@happy/**'
+      - 'apps/web/react/**'
+      - 'packages/schema/**'
 
 permissions:
   contents: read
@@ -89,7 +89,7 @@ jobs:
 
       # Build the web bundle
       - name: Build web bundle
-        working-directory: happy-app
+        working-directory: apps/web/react
         run: yarn build:web:dev
         env:
           NODE_ENV: production
@@ -98,7 +98,7 @@ jobs:
       # Analyze current bundle and report to Analytics Engine (HAP-564)
       - name: Analyze bundle size
         id: analyze
-        working-directory: happy-app
+        working-directory: apps/web/react
         env:
           # Analytics Engine reporting (HAP-564)
           # These are optional - if not configured, reporting is skipped gracefully
@@ -108,9 +108,9 @@ jobs:
           GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           # Run analysis with baseline if available
-          if [ -f "../.bundle-baseline.json" ]; then
-            yarn analyze:bundle --baseline ../.bundle-baseline.json --output ./bundle-report.json --format json
-            yarn analyze:bundle --baseline ../.bundle-baseline.json --output ./bundle-report.md --format github
+          if [ -f "../../../.bundle-baseline.json" ]; then
+            yarn analyze:bundle --baseline ../../../.bundle-baseline.json --output ./bundle-report.json --format json
+            yarn analyze:bundle --baseline ../../../.bundle-baseline.json --output ./bundle-report.md --format github
           else
             yarn analyze:bundle --output ./bundle-report.json --format json
             yarn analyze:bundle --output ./bundle-report.md --format github
@@ -128,7 +128,7 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const reportPath = 'happy-app/bundle-report.md';
+            const reportPath = 'apps/web/react/bundle-report.md';
 
             if (!fs.existsSync(reportPath)) {
               console.log('No bundle report found, skipping comment');
@@ -179,8 +179,8 @@ jobs:
         with:
           name: bundle-stats
           path: |
-            happy-app/bundle-report.json
-            happy-app/bundle-report.md
+            apps/web/react/bundle-report.json
+            apps/web/react/bundle-report.md
           retention-days: 7
 
   # Job to update baseline on main branch merges
@@ -223,14 +223,14 @@ jobs:
         run: yarn workspace @happy/protocol build
 
       - name: Build web bundle
-        working-directory: happy-app
+        working-directory: apps/web/react
         run: yarn build:web:dev
         env:
           NODE_ENV: production
           APP_ENV: development
 
       - name: Generate baseline stats and report to Analytics Engine
-        working-directory: happy-app
+        working-directory: apps/web/react
         env:
           # Analytics Engine reporting (HAP-564)
           HAPPY_API_URL: ${{ secrets.HAPPY_API_URL }}

@@ -1,4 +1,8 @@
-# @happy/lint-rules
+# @happy/lint-rules - Development Guidelines
+
+> **📍 Part of the Happy monorepo** — See root [`CLAUDE.md`](../../CLAUDE.md) for overall architecture and cross-project guidelines.
+
+---
 
 Custom oxlint/ESLint rules for the Happy monorepo.
 
@@ -105,7 +109,7 @@ export default [
 ### Package Structure
 
 ```
-packages/@happy/lint-rules/
+dev/lint-rules/
 ├── src/
 │   ├── index.js                   # Plugin entry point
 │   └── rules/

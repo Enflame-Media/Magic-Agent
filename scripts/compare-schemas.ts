@@ -18,7 +18,7 @@
  *
  * Prerequisites:
  *   - yarn workspace @happy/protocol schema:extract (generates protocol-schemas.json)
- *   - yarn workspace happy-server openapi:generate (generates openapi.json)
+ *   - cd apps/server/docker && yarn openapi:generate (generates openapi.json)
  *   - oasdiff (optional, for breaking change detection)
  *
  * Exit codes:
@@ -38,8 +38,8 @@ const __dirname = dirname(__filename);
 const ROOT_DIR = resolve(__dirname, '..');
 
 // Configuration
-const PROTOCOL_SCHEMAS_PATH = resolve(ROOT_DIR, 'packages/@happy/protocol/protocol-schemas.json');
-const OPENAPI_SPEC_PATH = resolve(ROOT_DIR, 'happy-server/openapi.json');
+const PROTOCOL_SCHEMAS_PATH = resolve(ROOT_DIR, 'packages/schema/protocol/protocol-schemas.json');
+const OPENAPI_SPEC_PATH = resolve(ROOT_DIR, 'apps/server/docker/openapi.json');
 const DIFF_OUTPUT_PATH = resolve(ROOT_DIR, 'schema-diff.md');
 
 // Types
@@ -400,7 +400,7 @@ async function main(): Promise<void> {
 
     if (!existsSync(OPENAPI_SPEC_PATH)) {
         console.error(`❌ OpenAPI spec not found: ${OPENAPI_SPEC_PATH}`);
-        console.error('   Run: yarn workspace happy-server openapi:generate');
+        console.error('   Run: cd apps/server/docker && yarn openapi:generate');
         process.exit(1);
     }
 

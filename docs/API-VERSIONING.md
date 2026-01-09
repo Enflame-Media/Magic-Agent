@@ -73,7 +73,7 @@ The OpenAPI specification is automatically generated from route schemas using `@
 
 ```bash
 # Generate OpenAPI spec
-cd happy-server
+cd apps/server/docker
 yarn openapi:generate        # Creates openapi.json
 yarn openapi:generate:yaml   # Creates openapi.yaml
 ```
@@ -84,7 +84,7 @@ yarn openapi:generate:yaml   # Creates openapi.yaml
 |--------|-------------|
 | Runtime (JSON) | `GET /documentation/json` |
 | Runtime (YAML) | `GET /documentation/yaml` |
-| Generated file | `happy-server/openapi.json` |
+| Generated file | `apps/server/docker/openapi.json` |
 | CI Artifact | Download from GitHub Actions |
 
 ### CI Validation
@@ -122,7 +122,7 @@ Schema drift occurs when the server's API schemas diverge from what clients expe
 yarn schema:extract
 
 # Generate OpenAPI spec (if not already done)
-cd happy-server && yarn openapi:generate && cd ..
+cd apps/server/docker && yarn openapi:generate && cd ../../..
 
 # Compare schemas
 yarn schema:compare
@@ -326,7 +326,7 @@ app.addHook('onRequest', (request, reply, done) => {
 
 - [Encryption Architecture](./ENCRYPTION-ARCHITECTURE.md) - E2E encryption design
 - [RFC: Shared Types Package](./RFC-SHARED-TYPES-PACKAGE.md) - @happy/protocol design
-- [@happy/protocol CLAUDE.md](../packages/@happy/protocol/CLAUDE.md) - Protocol package guidelines
+- [@happy/protocol CLAUDE.md](../packages/schema/protocol/CLAUDE.md) - Protocol package guidelines
 
 ## Changelog
 

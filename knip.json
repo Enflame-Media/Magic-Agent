@@ -5,12 +5,12 @@
     "type": true
   },
   "workspaces": {
-    "packages/@happy/protocol": {
+    "packages/schema/protocol": {
       "entry": ["src/index.ts"],
       "project": ["src/**/*.ts"],
       "ignoreDependencies": ["zod"]
     },
-    "happy-app": {
+    "apps/web/react": {
       "expo": {
         "config": ["app.json", "app.config.js"],
         "production": ["sources/app/**/*.{ts,tsx}"]
@@ -97,7 +97,7 @@
       ],
       "ignoreUnresolved": ["metro-minify-terser"]
     },
-    "happy-cli": {
+    "apps/cli": {
       "entry": [
         "src/index.ts",
         "src/lib.ts",
@@ -148,7 +148,7 @@
       "ignoreBinaries": ["knip", "oxlint", "pkgroll", "release-it", "tsc", "tsx", "vitest"],
       "ignoreFiles": ["pkgroll.config.js"]
     },
-    "happy-server": {
+    "apps/server/docker": {
       "entry": ["sources/main.ts", "prisma.config.ts", "vitest.config.ts"],
       "project": ["sources/**/*.ts"],
       "ignore": ["sources/**/*.test.ts", "sources/**/*.spec.ts"],
@@ -193,7 +193,7 @@
       ],
       "ignoreBinaries": ["lsof", "prisma", "tsc", "tsx", "vitest"]
     },
-    "happy-server-workers": {
+    "apps/server/workers": {
       "entry": [
         "src/index.ts",
         "src/durable-objects/**/*.ts",

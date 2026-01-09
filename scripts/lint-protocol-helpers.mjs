@@ -74,7 +74,7 @@ const SKIP_DIRS = new Set([
 // Files/directories that are allowed to use direct access
 const ALLOWED_PATHS = [
     // The @happy/protocol package itself - helpers need direct access
-    'packages/@happy/protocol',
+    'packages/schema/protocol',
     // Test files can have mock objects with direct construction
     '.test.ts',
     '.spec.ts',

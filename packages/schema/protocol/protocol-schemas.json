@@ -1,0 +1,4105 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "@happy/protocol schemas",
+  "description": "JSON Schema representation of @happy/protocol Zod schemas for drift detection",
+  "_metadata": {
+    "generatedAt": "2026-01-01T12:07:59.760Z",
+    "packageVersion": "0.0.1",
+    "schemaCount": 31,
+    "categories": [
+      "common",
+      "updates",
+      "ephemeral",
+      "payloads"
+    ]
+  },
+  "schemas": {
+    "common": {
+      "GitHubProfile": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "login": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "avatar_url": {
+            "type": "string",
+            "maxLength": 2048
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "bio": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "login"
+        ],
+        "additionalProperties": false
+      },
+      "ImageRef": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          },
+          "url": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
+          },
+          "width": {
+            "type": "number"
+          },
+          "height": {
+            "type": "number"
+          },
+          "thumbhash": {
+            "type": "string",
+            "maxLength": 256
+          }
+        },
+        "required": [
+          "path",
+          "url"
+        ],
+        "additionalProperties": false
+      },
+      "RelationshipStatus": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "string",
+        "enum": [
+          "none",
+          "requested",
+          "pending",
+          "friend",
+          "rejected"
+        ]
+      },
+      "UserProfile": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "firstName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "lastName": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "avatar": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1024
+                  },
+                  "url": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2048
+                  },
+                  "width": {
+                    "type": "number"
+                  },
+                  "height": {
+                    "type": "number"
+                  },
+                  "thumbhash": {
+                    "type": "string",
+                    "maxLength": 256
+                  }
+                },
+                "required": [
+                  "path",
+                  "url"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "username": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "bio": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "none",
+              "requested",
+              "pending",
+              "friend",
+              "rejected"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "firstName",
+          "lastName",
+          "avatar",
+          "username",
+          "bio",
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "FeedBody": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "friend_request"
+              },
+              "uid": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              }
+            },
+            "required": [
+              "kind",
+              "uid"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "friend_accepted"
+              },
+              "uid": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              }
+            },
+            "required": [
+              "kind",
+              "uid"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "text"
+              },
+              "text": {
+                "type": "string",
+                "maxLength": 4096
+              }
+            },
+            "required": [
+              "kind",
+              "text"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "EncryptedContent": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "t": {
+            "type": "string",
+            "const": "encrypted"
+          },
+          "c": {
+            "type": "string",
+            "maxLength": 1000000
+          }
+        },
+        "required": [
+          "t",
+          "c"
+        ],
+        "additionalProperties": false
+      },
+      "VersionedValue": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "number"
+          },
+          "value": {
+            "type": "string",
+            "maxLength": 500000
+          }
+        },
+        "required": [
+          "version",
+          "value"
+        ],
+        "additionalProperties": false
+      },
+      "NullableVersionedValue": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "number"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "version",
+          "value"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "updates": {
+      "ApiUpdate": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "t": {
+                "type": "string",
+                "const": "new-message"
+              },
+              "sid": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "message": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "seq": {
+                    "type": "number"
+                  },
+                  "localId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 128
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "content": {
+                    "type": "object",
+                    "properties": {
+                      "t": {
+                        "type": "string",
+                        "const": "encrypted"
+                      },
+                      "c": {
+                        "type": "string",
+                        "maxLength": 1000000
+                      }
+                    },
+                    "required": [
+                      "t",
+                      "c"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "createdAt": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "id",
+                  "seq",
+                  "content",
+                  "createdAt"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "t",
+              "sid",
+              "message"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "t": {
+                "type": "string",
+                "const": "new-session"
+              },
+              "sid": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "seq": {
+                "type": "number"
+              },
+              "metadata": {
+                "type": "string",
+                "maxLength": 500000
+              },
+              "metadataVersion": {
+                "type": "number"
+              },
+              "agentState": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 500000
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "agentStateVersion": {
+                "type": "number"
+              },
+              "dataEncryptionKey": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 256
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "active": {
+                "type": "boolean"
+              },
+              "activeAt": {
+                "type": "number"
+              },
+              "createdAt": {
+                "type": "number"
+              },
+              "updatedAt": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "t",
+              "sid",
+              "seq",
+              "metadata",
+              "metadataVersion",
+              "agentState",
+              "agentStateVersion",
+              "dataEncryptionKey",
+              "active",
+              "activeAt",
+              "createdAt",
+              "updatedAt"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "t": {
+                "type": "string",
+                "const": "delete-session"
+              },
+              "sid": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              }
+            },
+            "required": [
+              "t",
+              "sid"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "t": {
+                "type": "string",
+                "const": "update-session"
+              },
+              "sid": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "agentState": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "version": {
+                        "type": "number"
+                      },
+                      "value": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 500000
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "version",
+                      "value"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "metadata": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "version": {
+                        "type": "number"
+                      },
+                      "value": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 500000
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "version",
+                      "value"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "t",
+              "sid"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "t": {
+                "type": "string",
+                "const": "update-account"
+              },
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "settings": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "version": {
+                        "type": "number"
+                      },
+                      "value": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 500000
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "version",
+                      "value"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "firstName": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "lastName": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "avatar": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "path": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 1024
+                      },
+                      "url": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 2048
+                      },
+                      "width": {
+                        "type": "number"
+                      },
+                      "height": {
+                        "type": "number"
+                      },
+                      "thumbhash": {
+                        "type": "string",
+                        "maxLength": 256
+                      }
+                    },
+                    "required": [
+                      "path",
+                      "url"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "github": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "number"
+                      },
+                      "login": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 64
+                      },
+                      "name": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 128
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "avatar_url": {
+                        "type": "string",
+                        "maxLength": 2048
+                      },
+                      "email": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 128
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "bio": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 500
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "login"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "t",
+              "id"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "t": {
+                "type": "string",
+                "const": "update-machine"
+              },
+              "machineId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "metadata": {
+                "type": "object",
+                "properties": {
+                  "version": {
+                    "type": "number"
+                  },
+                  "value": {
+                    "type": "string",
+                    "maxLength": 500000
+                  }
+                },
+                "required": [
+                  "version",
+                  "value"
+                ],
+                "additionalProperties": false
+              },
+              "daemonState": {
+                "type": "object",
+                "properties": {
+                  "version": {
+                    "type": "number"
+                  },
+                  "value": {
+                    "type": "string",
+                    "maxLength": 500000
+                  }
+                },
+                "required": [
+                  "version",
+                  "value"
+                ],
+                "additionalProperties": false
+              },
+              "active": {
+                "type": "boolean"
+              },
+              "activeAt": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "t",
+              "machineId"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "t": {
+                "type": "string",
+                "const": "new-machine"
+              },
+              "machineId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "seq": {
+                "type": "number"
+              },
+              "metadata": {
+                "type": "string",
+                "maxLength": 500000
+              },
+              "metadataVersion": {
+                "type": "number"
+              },
+              "daemonState": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 500000
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "daemonStateVersion": {
+                "type": "number"
+              },
+              "dataEncryptionKey": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 256
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "active": {
+                "type": "boolean"
+              },
+              "activeAt": {
+                "type": "number"
+              },
+              "createdAt": {
+                "type": "number"
+              },
+              "updatedAt": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "t",
+              "machineId",
+              "seq",
+              "metadata",
+              "metadataVersion",
+              "daemonState",
+              "daemonStateVersion",
+              "dataEncryptionKey",
+              "active",
+              "activeAt",
+              "createdAt",
+              "updatedAt"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "t": {
+                "type": "string",
+                "const": "new-artifact"
+              },
+              "artifactId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "header": {
+                "type": "string",
+                "maxLength": 500000
+              },
+              "headerVersion": {
+                "type": "number"
+              },
+              "body": {
+                "type": "string",
+                "maxLength": 1000000
+              },
+              "bodyVersion": {
+                "type": "number"
+              },
+              "dataEncryptionKey": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "seq": {
+                "type": "number"
+              },
+              "createdAt": {
+                "type": "number"
+              },
+              "updatedAt": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "t",
+              "artifactId",
+              "header",
+              "headerVersion",
+              "dataEncryptionKey",
+              "seq",
+              "createdAt",
+              "updatedAt"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "t": {
+                "type": "string",
+                "const": "update-artifact"
+              },
+              "artifactId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "header": {
+                "type": "object",
+                "properties": {
+                  "version": {
+                    "type": "number"
+                  },
+                  "value": {
+                    "type": "string",
+                    "maxLength": 500000
+                  }
+                },
+                "required": [
+                  "version",
+                  "value"
+                ],
+                "additionalProperties": false
+              },
+              "body": {
+                "type": "object",
+                "properties": {
+                  "version": {
+                    "type": "number"
+                  },
+                  "value": {
+                    "type": "string",
+                    "maxLength": 500000
+                  }
+                },
+                "required": [
+                  "version",
+                  "value"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "t",
+              "artifactId"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "t": {
+                "type": "string",
+                "const": "delete-artifact"
+              },
+              "artifactId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              }
+            },
+            "required": [
+              "t",
+              "artifactId"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "t": {
+                "type": "string",
+                "const": "relationship-updated"
+              },
+              "fromUserId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "toUserId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "requested",
+                  "pending",
+                  "friend",
+                  "rejected"
+                ]
+              },
+              "action": {
+                "type": "string",
+                "enum": [
+                  "created",
+                  "updated",
+                  "deleted"
+                ]
+              },
+              "fromUser": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "firstName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "lastName": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 128
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "avatar": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "path": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 1024
+                          },
+                          "url": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 2048
+                          },
+                          "width": {
+                            "type": "number"
+                          },
+                          "height": {
+                            "type": "number"
+                          },
+                          "thumbhash": {
+                            "type": "string",
+                            "maxLength": 256
+                          }
+                        },
+                        "required": [
+                          "path",
+                          "url"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "username": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "bio": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "none",
+                      "requested",
+                      "pending",
+                      "friend",
+                      "rejected"
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "firstName",
+                  "lastName",
+                  "avatar",
+                  "username",
+                  "bio",
+                  "status"
+                ],
+                "additionalProperties": false
+              },
+              "toUser": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "firstName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "lastName": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 128
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "avatar": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "path": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 1024
+                          },
+                          "url": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 2048
+                          },
+                          "width": {
+                            "type": "number"
+                          },
+                          "height": {
+                            "type": "number"
+                          },
+                          "thumbhash": {
+                            "type": "string",
+                            "maxLength": 256
+                          }
+                        },
+                        "required": [
+                          "path",
+                          "url"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "username": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "bio": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "none",
+                      "requested",
+                      "pending",
+                      "friend",
+                      "rejected"
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "firstName",
+                  "lastName",
+                  "avatar",
+                  "username",
+                  "bio",
+                  "status"
+                ],
+                "additionalProperties": false
+              },
+              "timestamp": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "t",
+              "fromUserId",
+              "toUserId",
+              "status",
+              "action",
+              "timestamp"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "t": {
+                "type": "string",
+                "const": "new-feed-post"
+              },
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "body": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "friend_request"
+                      },
+                      "uid": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "uid"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "friend_accepted"
+                      },
+                      "uid": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "uid"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "text"
+                      },
+                      "text": {
+                        "type": "string",
+                        "maxLength": 4096
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "text"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              "cursor": {
+                "type": "string",
+                "maxLength": 256
+              },
+              "createdAt": {
+                "type": "number"
+              },
+              "repeatKey": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "counter": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "t",
+              "id",
+              "body",
+              "cursor",
+              "createdAt",
+              "repeatKey",
+              "counter"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "t": {
+                "type": "string",
+                "const": "kv-batch-update"
+              },
+              "changes": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "key": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 256
+                    },
+                    "value": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 65536
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "version": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "key",
+                    "value",
+                    "version"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "t",
+              "changes"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "ApiMessage": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "seq": {
+            "type": "number"
+          },
+          "localId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "content": {
+            "type": "object",
+            "properties": {
+              "t": {
+                "type": "string",
+                "const": "encrypted"
+              },
+              "c": {
+                "type": "string",
+                "maxLength": 1000000
+              }
+            },
+            "required": [
+              "t",
+              "c"
+            ],
+            "additionalProperties": false
+          },
+          "createdAt": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "seq",
+          "content",
+          "createdAt"
+        ],
+        "additionalProperties": false
+      },
+      "ApiUpdateNewMessage": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "t": {
+            "type": "string",
+            "const": "new-message"
+          },
+          "sid": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "message": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "seq": {
+                "type": "number"
+              },
+              "localId": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "content": {
+                "type": "object",
+                "properties": {
+                  "t": {
+                    "type": "string",
+                    "const": "encrypted"
+                  },
+                  "c": {
+                    "type": "string",
+                    "maxLength": 1000000
+                  }
+                },
+                "required": [
+                  "t",
+                  "c"
+                ],
+                "additionalProperties": false
+              },
+              "createdAt": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "id",
+              "seq",
+              "content",
+              "createdAt"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "t",
+          "sid",
+          "message"
+        ],
+        "additionalProperties": false
+      },
+      "ApiDeleteSession": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "t": {
+            "type": "string",
+            "const": "delete-session"
+          },
+          "sid": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "t",
+          "sid"
+        ],
+        "additionalProperties": false
+      },
+      "ApiUpdateNewSession": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "t": {
+            "type": "string",
+            "const": "new-session"
+          },
+          "sid": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "seq": {
+            "type": "number"
+          },
+          "metadata": {
+            "type": "string",
+            "maxLength": 500000
+          },
+          "metadataVersion": {
+            "type": "number"
+          },
+          "agentState": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "agentStateVersion": {
+            "type": "number"
+          },
+          "dataEncryptionKey": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 256
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "activeAt": {
+            "type": "number"
+          },
+          "createdAt": {
+            "type": "number"
+          },
+          "updatedAt": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "t",
+          "sid",
+          "seq",
+          "metadata",
+          "metadataVersion",
+          "agentState",
+          "agentStateVersion",
+          "dataEncryptionKey",
+          "active",
+          "activeAt",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "ApiUpdateSessionState": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "t": {
+            "type": "string",
+            "const": "update-session"
+          },
+          "sid": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "agentState": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "version": {
+                    "type": "number"
+                  },
+                  "value": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "version",
+                  "value"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "version": {
+                    "type": "number"
+                  },
+                  "value": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "version",
+                  "value"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "t",
+          "sid"
+        ],
+        "additionalProperties": false
+      },
+      "ApiNewMachine": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "t": {
+            "type": "string",
+            "const": "new-machine"
+          },
+          "machineId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "seq": {
+            "type": "number"
+          },
+          "metadata": {
+            "type": "string",
+            "maxLength": 500000
+          },
+          "metadataVersion": {
+            "type": "number"
+          },
+          "daemonState": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "daemonStateVersion": {
+            "type": "number"
+          },
+          "dataEncryptionKey": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 256
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "activeAt": {
+            "type": "number"
+          },
+          "createdAt": {
+            "type": "number"
+          },
+          "updatedAt": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "t",
+          "machineId",
+          "seq",
+          "metadata",
+          "metadataVersion",
+          "daemonState",
+          "daemonStateVersion",
+          "dataEncryptionKey",
+          "active",
+          "activeAt",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "ApiUpdateMachineState": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "t": {
+            "type": "string",
+            "const": "update-machine"
+          },
+          "machineId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "version": {
+                "type": "number"
+              },
+              "value": {
+                "type": "string",
+                "maxLength": 500000
+              }
+            },
+            "required": [
+              "version",
+              "value"
+            ],
+            "additionalProperties": false
+          },
+          "daemonState": {
+            "type": "object",
+            "properties": {
+              "version": {
+                "type": "number"
+              },
+              "value": {
+                "type": "string",
+                "maxLength": 500000
+              }
+            },
+            "required": [
+              "version",
+              "value"
+            ],
+            "additionalProperties": false
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "activeAt": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "t",
+          "machineId"
+        ],
+        "additionalProperties": false
+      },
+      "ApiNewArtifact": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "t": {
+            "type": "string",
+            "const": "new-artifact"
+          },
+          "artifactId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "header": {
+            "type": "string",
+            "maxLength": 500000
+          },
+          "headerVersion": {
+            "type": "number"
+          },
+          "body": {
+            "type": "string",
+            "maxLength": 1000000
+          },
+          "bodyVersion": {
+            "type": "number"
+          },
+          "dataEncryptionKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "seq": {
+            "type": "number"
+          },
+          "createdAt": {
+            "type": "number"
+          },
+          "updatedAt": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "t",
+          "artifactId",
+          "header",
+          "headerVersion",
+          "dataEncryptionKey",
+          "seq",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "ApiUpdateArtifact": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "t": {
+            "type": "string",
+            "const": "update-artifact"
+          },
+          "artifactId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "header": {
+            "type": "object",
+            "properties": {
+              "version": {
+                "type": "number"
+              },
+              "value": {
+                "type": "string",
+                "maxLength": 500000
+              }
+            },
+            "required": [
+              "version",
+              "value"
+            ],
+            "additionalProperties": false
+          },
+          "body": {
+            "type": "object",
+            "properties": {
+              "version": {
+                "type": "number"
+              },
+              "value": {
+                "type": "string",
+                "maxLength": 500000
+              }
+            },
+            "required": [
+              "version",
+              "value"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "t",
+          "artifactId"
+        ],
+        "additionalProperties": false
+      },
+      "ApiDeleteArtifact": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "t": {
+            "type": "string",
+            "const": "delete-artifact"
+          },
+          "artifactId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "t",
+          "artifactId"
+        ],
+        "additionalProperties": false
+      },
+      "ApiUpdateAccount": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "t": {
+            "type": "string",
+            "const": "update-account"
+          },
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "settings": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "version": {
+                    "type": "number"
+                  },
+                  "value": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "version",
+                  "value"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "firstName": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lastName": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "avatar": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1024
+                  },
+                  "url": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2048
+                  },
+                  "width": {
+                    "type": "number"
+                  },
+                  "height": {
+                    "type": "number"
+                  },
+                  "thumbhash": {
+                    "type": "string",
+                    "maxLength": 256
+                  }
+                },
+                "required": [
+                  "path",
+                  "url"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "github": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "number"
+                  },
+                  "login": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "name": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 128
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "avatar_url": {
+                    "type": "string",
+                    "maxLength": 2048
+                  },
+                  "email": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 128
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "bio": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "login"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "t",
+          "id"
+        ],
+        "additionalProperties": false
+      },
+      "ApiRelationshipUpdated": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "t": {
+            "type": "string",
+            "const": "relationship-updated"
+          },
+          "fromUserId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "toUserId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "none",
+              "requested",
+              "pending",
+              "friend",
+              "rejected"
+            ]
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "created",
+              "updated",
+              "deleted"
+            ]
+          },
+          "fromUser": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "firstName": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "lastName": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "avatar": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "path": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 1024
+                      },
+                      "url": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 2048
+                      },
+                      "width": {
+                        "type": "number"
+                      },
+                      "height": {
+                        "type": "number"
+                      },
+                      "thumbhash": {
+                        "type": "string",
+                        "maxLength": 256
+                      }
+                    },
+                    "required": [
+                      "path",
+                      "url"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "username": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "bio": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "requested",
+                  "pending",
+                  "friend",
+                  "rejected"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "firstName",
+              "lastName",
+              "avatar",
+              "username",
+              "bio",
+              "status"
+            ],
+            "additionalProperties": false
+          },
+          "toUser": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "firstName": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "lastName": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "avatar": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "path": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 1024
+                      },
+                      "url": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 2048
+                      },
+                      "width": {
+                        "type": "number"
+                      },
+                      "height": {
+                        "type": "number"
+                      },
+                      "thumbhash": {
+                        "type": "string",
+                        "maxLength": 256
+                      }
+                    },
+                    "required": [
+                      "path",
+                      "url"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "username": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "bio": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "requested",
+                  "pending",
+                  "friend",
+                  "rejected"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "firstName",
+              "lastName",
+              "avatar",
+              "username",
+              "bio",
+              "status"
+            ],
+            "additionalProperties": false
+          },
+          "timestamp": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "t",
+          "fromUserId",
+          "toUserId",
+          "status",
+          "action",
+          "timestamp"
+        ],
+        "additionalProperties": false
+      },
+      "ApiNewFeedPost": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "t": {
+            "type": "string",
+            "const": "new-feed-post"
+          },
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "body": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "friend_request"
+                  },
+                  "uid": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  }
+                },
+                "required": [
+                  "kind",
+                  "uid"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "friend_accepted"
+                  },
+                  "uid": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  }
+                },
+                "required": [
+                  "kind",
+                  "uid"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "text"
+                  },
+                  "text": {
+                    "type": "string",
+                    "maxLength": 4096
+                  }
+                },
+                "required": [
+                  "kind",
+                  "text"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "cursor": {
+            "type": "string",
+            "maxLength": 256
+          },
+          "createdAt": {
+            "type": "number"
+          },
+          "repeatKey": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "counter": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "t",
+          "id",
+          "body",
+          "cursor",
+          "createdAt",
+          "repeatKey",
+          "counter"
+        ],
+        "additionalProperties": false
+      },
+      "ApiKvBatchUpdate": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "t": {
+            "type": "string",
+            "const": "kv-batch-update"
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                },
+                "value": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 65536
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "version": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "key",
+                "value",
+                "version"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "t",
+          "changes"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "ephemeral": {
+      "ApiEphemeralUpdate": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "activity"
+              },
+              "sid": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "active": {
+                "type": "boolean"
+              },
+              "activeAt": {
+                "type": "number"
+              },
+              "thinking": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "type",
+              "sid",
+              "active",
+              "activeAt",
+              "thinking"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "usage"
+              },
+              "sid": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "key": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "timestamp": {
+                "type": "number"
+              },
+              "tokens": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                "additionalProperties": {
+                  "type": "number"
+                }
+              },
+              "cost": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                "additionalProperties": {
+                  "type": "number"
+                }
+              }
+            },
+            "required": [
+              "type",
+              "sid",
+              "key",
+              "timestamp",
+              "tokens",
+              "cost"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "machine-activity"
+              },
+              "machineId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "active": {
+                "type": "boolean"
+              },
+              "activeAt": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "type",
+              "machineId",
+              "active",
+              "activeAt"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "machine-status"
+              },
+              "machineId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "online": {
+                "type": "boolean"
+              },
+              "timestamp": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "type",
+              "machineId",
+              "online",
+              "timestamp"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "ApiEphemeralActivityUpdate": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "activity"
+          },
+          "sid": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "activeAt": {
+            "type": "number"
+          },
+          "thinking": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "type",
+          "sid",
+          "active",
+          "activeAt",
+          "thinking"
+        ],
+        "additionalProperties": false
+      },
+      "ApiEphemeralUsageUpdate": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "usage"
+          },
+          "sid": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "timestamp": {
+            "type": "number"
+          },
+          "tokens": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "additionalProperties": {
+              "type": "number"
+            }
+          },
+          "cost": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "additionalProperties": {
+              "type": "number"
+            }
+          }
+        },
+        "required": [
+          "type",
+          "sid",
+          "key",
+          "timestamp",
+          "tokens",
+          "cost"
+        ],
+        "additionalProperties": false
+      },
+      "ApiEphemeralMachineActivityUpdate": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "machine-activity"
+          },
+          "machineId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "activeAt": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "type",
+          "machineId",
+          "active",
+          "activeAt"
+        ],
+        "additionalProperties": false
+      },
+      "ApiEphemeralMachineStatusUpdate": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "machine-status"
+          },
+          "machineId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "online": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "type",
+          "machineId",
+          "online",
+          "timestamp"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "payloads": {
+      "ApiUpdateContainer": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "seq": {
+            "type": "number"
+          },
+          "body": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "t": {
+                    "type": "string",
+                    "const": "new-message"
+                  },
+                  "sid": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "message": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128
+                      },
+                      "seq": {
+                        "type": "number"
+                      },
+                      "localId": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 128
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "content": {
+                        "type": "object",
+                        "properties": {
+                          "t": {
+                            "type": "string",
+                            "const": "encrypted"
+                          },
+                          "c": {
+                            "type": "string",
+                            "maxLength": 1000000
+                          }
+                        },
+                        "required": [
+                          "t",
+                          "c"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "createdAt": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "seq",
+                      "content",
+                      "createdAt"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "t",
+                  "sid",
+                  "message"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "t": {
+                    "type": "string",
+                    "const": "new-session"
+                  },
+                  "sid": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "seq": {
+                    "type": "number"
+                  },
+                  "metadata": {
+                    "type": "string",
+                    "maxLength": 500000
+                  },
+                  "metadataVersion": {
+                    "type": "number"
+                  },
+                  "agentState": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "agentStateVersion": {
+                    "type": "number"
+                  },
+                  "dataEncryptionKey": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 256
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "active": {
+                    "type": "boolean"
+                  },
+                  "activeAt": {
+                    "type": "number"
+                  },
+                  "createdAt": {
+                    "type": "number"
+                  },
+                  "updatedAt": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "t",
+                  "sid",
+                  "seq",
+                  "metadata",
+                  "metadataVersion",
+                  "agentState",
+                  "agentStateVersion",
+                  "dataEncryptionKey",
+                  "active",
+                  "activeAt",
+                  "createdAt",
+                  "updatedAt"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "t": {
+                    "type": "string",
+                    "const": "delete-session"
+                  },
+                  "sid": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  }
+                },
+                "required": [
+                  "t",
+                  "sid"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "t": {
+                    "type": "string",
+                    "const": "update-session"
+                  },
+                  "sid": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "agentState": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "version": {
+                            "type": "number"
+                          },
+                          "value": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 500000
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "version",
+                          "value"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "metadata": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "version": {
+                            "type": "number"
+                          },
+                          "value": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 500000
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "version",
+                          "value"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "t",
+                  "sid"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "t": {
+                    "type": "string",
+                    "const": "update-account"
+                  },
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "settings": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "version": {
+                            "type": "number"
+                          },
+                          "value": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 500000
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "version",
+                          "value"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "firstName": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 128
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "lastName": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 128
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "avatar": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "path": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 1024
+                          },
+                          "url": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 2048
+                          },
+                          "width": {
+                            "type": "number"
+                          },
+                          "height": {
+                            "type": "number"
+                          },
+                          "thumbhash": {
+                            "type": "string",
+                            "maxLength": 256
+                          }
+                        },
+                        "required": [
+                          "path",
+                          "url"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "github": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "number"
+                          },
+                          "login": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 64
+                          },
+                          "name": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 128
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "avatar_url": {
+                            "type": "string",
+                            "maxLength": 2048
+                          },
+                          "email": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 128
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "bio": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 500
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "login"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "t",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "t": {
+                    "type": "string",
+                    "const": "update-machine"
+                  },
+                  "machineId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "metadata": {
+                    "type": "object",
+                    "properties": {
+                      "version": {
+                        "type": "number"
+                      },
+                      "value": {
+                        "type": "string",
+                        "maxLength": 500000
+                      }
+                    },
+                    "required": [
+                      "version",
+                      "value"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "daemonState": {
+                    "type": "object",
+                    "properties": {
+                      "version": {
+                        "type": "number"
+                      },
+                      "value": {
+                        "type": "string",
+                        "maxLength": 500000
+                      }
+                    },
+                    "required": [
+                      "version",
+                      "value"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "active": {
+                    "type": "boolean"
+                  },
+                  "activeAt": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "t",
+                  "machineId"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "t": {
+                    "type": "string",
+                    "const": "new-machine"
+                  },
+                  "machineId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "seq": {
+                    "type": "number"
+                  },
+                  "metadata": {
+                    "type": "string",
+                    "maxLength": 500000
+                  },
+                  "metadataVersion": {
+                    "type": "number"
+                  },
+                  "daemonState": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "daemonStateVersion": {
+                    "type": "number"
+                  },
+                  "dataEncryptionKey": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 256
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "active": {
+                    "type": "boolean"
+                  },
+                  "activeAt": {
+                    "type": "number"
+                  },
+                  "createdAt": {
+                    "type": "number"
+                  },
+                  "updatedAt": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "t",
+                  "machineId",
+                  "seq",
+                  "metadata",
+                  "metadataVersion",
+                  "daemonState",
+                  "daemonStateVersion",
+                  "dataEncryptionKey",
+                  "active",
+                  "activeAt",
+                  "createdAt",
+                  "updatedAt"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "t": {
+                    "type": "string",
+                    "const": "new-artifact"
+                  },
+                  "artifactId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "header": {
+                    "type": "string",
+                    "maxLength": 500000
+                  },
+                  "headerVersion": {
+                    "type": "number"
+                  },
+                  "body": {
+                    "type": "string",
+                    "maxLength": 1000000
+                  },
+                  "bodyVersion": {
+                    "type": "number"
+                  },
+                  "dataEncryptionKey": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 256
+                  },
+                  "seq": {
+                    "type": "number"
+                  },
+                  "createdAt": {
+                    "type": "number"
+                  },
+                  "updatedAt": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "t",
+                  "artifactId",
+                  "header",
+                  "headerVersion",
+                  "dataEncryptionKey",
+                  "seq",
+                  "createdAt",
+                  "updatedAt"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "t": {
+                    "type": "string",
+                    "const": "update-artifact"
+                  },
+                  "artifactId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "header": {
+                    "type": "object",
+                    "properties": {
+                      "version": {
+                        "type": "number"
+                      },
+                      "value": {
+                        "type": "string",
+                        "maxLength": 500000
+                      }
+                    },
+                    "required": [
+                      "version",
+                      "value"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "body": {
+                    "type": "object",
+                    "properties": {
+                      "version": {
+                        "type": "number"
+                      },
+                      "value": {
+                        "type": "string",
+                        "maxLength": 500000
+                      }
+                    },
+                    "required": [
+                      "version",
+                      "value"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "t",
+                  "artifactId"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "t": {
+                    "type": "string",
+                    "const": "delete-artifact"
+                  },
+                  "artifactId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  }
+                },
+                "required": [
+                  "t",
+                  "artifactId"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "t": {
+                    "type": "string",
+                    "const": "relationship-updated"
+                  },
+                  "fromUserId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "toUserId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "none",
+                      "requested",
+                      "pending",
+                      "friend",
+                      "rejected"
+                    ]
+                  },
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "created",
+                      "updated",
+                      "deleted"
+                    ]
+                  },
+                  "fromUser": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128
+                      },
+                      "firstName": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128
+                      },
+                      "lastName": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 128
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "avatar": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 1024
+                              },
+                              "url": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 2048
+                              },
+                              "width": {
+                                "type": "number"
+                              },
+                              "height": {
+                                "type": "number"
+                              },
+                              "thumbhash": {
+                                "type": "string",
+                                "maxLength": 256
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "url"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "username": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 64
+                      },
+                      "bio": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 500
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "none",
+                          "requested",
+                          "pending",
+                          "friend",
+                          "rejected"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "firstName",
+                      "lastName",
+                      "avatar",
+                      "username",
+                      "bio",
+                      "status"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "toUser": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128
+                      },
+                      "firstName": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128
+                      },
+                      "lastName": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 128
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "avatar": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 1024
+                              },
+                              "url": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 2048
+                              },
+                              "width": {
+                                "type": "number"
+                              },
+                              "height": {
+                                "type": "number"
+                              },
+                              "thumbhash": {
+                                "type": "string",
+                                "maxLength": 256
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "url"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "username": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 64
+                      },
+                      "bio": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 500
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "none",
+                          "requested",
+                          "pending",
+                          "friend",
+                          "rejected"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "firstName",
+                      "lastName",
+                      "avatar",
+                      "username",
+                      "bio",
+                      "status"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "timestamp": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "t",
+                  "fromUserId",
+                  "toUserId",
+                  "status",
+                  "action",
+                  "timestamp"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "t": {
+                    "type": "string",
+                    "const": "new-feed-post"
+                  },
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "body": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "const": "friend_request"
+                          },
+                          "uid": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 128
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "uid"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "const": "friend_accepted"
+                          },
+                          "uid": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 128
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "uid"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "const": "text"
+                          },
+                          "text": {
+                            "type": "string",
+                            "maxLength": 4096
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "text"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ]
+                  },
+                  "cursor": {
+                    "type": "string",
+                    "maxLength": 256
+                  },
+                  "createdAt": {
+                    "type": "number"
+                  },
+                  "repeatKey": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 128
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "counter": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "t",
+                  "id",
+                  "body",
+                  "cursor",
+                  "createdAt",
+                  "repeatKey",
+                  "counter"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "t": {
+                    "type": "string",
+                    "const": "kv-batch-update"
+                  },
+                  "changes": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "key": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 256
+                        },
+                        "value": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 65536
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "version": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "key",
+                        "value",
+                        "version"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "t",
+                  "changes"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "seq",
+          "body",
+          "createdAt"
+        ],
+        "additionalProperties": false
+      },
+      "UpdatePayload": {
+        "error": "Failed to convert: Transforms cannot be represented in JSON Schema"
+      },
+      "EphemeralPayload": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "activity"
+              },
+              "sid": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "active": {
+                "type": "boolean"
+              },
+              "activeAt": {
+                "type": "number"
+              },
+              "thinking": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "type",
+              "sid",
+              "active",
+              "activeAt",
+              "thinking"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "usage"
+              },
+              "sid": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "key": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "timestamp": {
+                "type": "number"
+              },
+              "tokens": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                "additionalProperties": {
+                  "type": "number"
+                }
+              },
+              "cost": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                "additionalProperties": {
+                  "type": "number"
+                }
+              }
+            },
+            "required": [
+              "type",
+              "sid",
+              "key",
+              "timestamp",
+              "tokens",
+              "cost"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "machine-activity"
+              },
+              "machineId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "active": {
+                "type": "boolean"
+              },
+              "activeAt": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "type",
+              "machineId",
+              "active",
+              "activeAt"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "machine-status"
+              },
+              "machineId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "online": {
+                "type": "boolean"
+              },
+              "timestamp": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "type",
+              "machineId",
+              "online",
+              "timestamp"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
+    }
+  }
+}

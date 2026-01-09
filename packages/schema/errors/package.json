@@ -29,8 +29,12 @@
         "vitest": "^4.0.16"
     },
     "scripts": {
-        "build": "npx tsup",
-        "typecheck": "npx tsc --noEmit",
+        "build": "tsup",
+        "typecheck": "tsc --noEmit",
+        "lint": "oxlint --config ../../oxlint.json src/",
+        "lint:fix": "oxlint --config ../../oxlint.json --fix src/",
+        "format": "oxfmt src/",
+        "format:check": "oxfmt --check src/",
         "test": "vitest run",
         "test:watch": "vitest",
         "clean": "rm -rf dist"

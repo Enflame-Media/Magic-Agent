@@ -256,7 +256,7 @@ const updateTypes: ApiUpdateType[] = [
 ## Building
 
 ```bash
-# From packages/@happy/protocol
+# From packages/schema/protocol
 yarn build        # Build ESM + CJS output
 yarn typecheck    # Type check without emitting
 yarn clean        # Remove dist folder

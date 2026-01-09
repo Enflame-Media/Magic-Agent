@@ -8,11 +8,11 @@
  * 2. Convert JSON Schema to Swift using quicktype
  *
  * Usage:
- *   yarn generate:swift           # Generate to happy-macos/Happy/Generated/
+ *   yarn generate:swift           # Generate to apps/macos/Happy/Generated/
  *   yarn generate:swift --dry-run # Preview without writing files
  *
  * Output:
- *   - happy-macos/Happy/Generated/HappyProtocol.swift
+ *   - apps/macos/Happy/Generated/HappyProtocol.swift
  *
  * @see HAP-687 - Set up Zod to Swift type generation for happy-macos
  */
@@ -273,8 +273,8 @@ async function main(): Promise<void> {
     // Step 3: Add header and write file
     const fullContent = generateHeader() + swiftCode;
 
-    // Calculate output path (from packages/@happy/protocol/scripts to happy-macos/Happy/Generated)
-    const outputDir = resolve(__dirname, '..', '..', '..', '..', 'happy-macos', 'Happy', 'Generated');
+    // Calculate output path (from packages/schema/protocol/scripts to apps/macos/Happy/Generated)
+    const outputDir = resolve(__dirname, '..', '..', '..', '..', 'apps', 'macos', 'Happy', 'Generated');
     const outputPath = join(outputDir, 'HappyProtocol.swift');
 
     if (dryRun) {
