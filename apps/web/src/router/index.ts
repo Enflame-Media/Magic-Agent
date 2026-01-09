@@ -137,6 +137,12 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/settings/usage',
+      name: 'settings-usage',
+      component: () => import('@/views/settings/UsageView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/settings/features',
       name: 'settings-features',
       component: () => import('@/views/settings/FeaturesView.vue'),
@@ -151,6 +157,12 @@ const router = createRouter({
     {
       path: '/settings/voice',
       name: 'settings-voice',
+      component: () => import('@/views/settings/VoiceView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/settings/voice/language',
+      name: 'settings-voice-language',
       component: () => import('@/views/settings/VoiceView.vue'),
       meta: { requiresAuth: true },
     },

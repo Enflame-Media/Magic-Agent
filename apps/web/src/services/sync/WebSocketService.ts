@@ -1,8 +1,8 @@
 /**
  * WebSocket Service
  *
- * Native WebSocket implementation for real-time sync with happy-server-workers.
- * This is a port of happy-app/sources/sync/apiSocket.ts adapted for Vue.js.
+ * Native WebSocket implementation for real-time sync with apps/server/workers.
+ * This is a port of apps/web/react/sources/sync/apiSocket.ts adapted for Vue.js.
  *
  * CRITICAL: Uses native WebSocket API, NOT Socket.io.
  * Socket.io is incompatible with Cloudflare Workers WebSocket backend.
@@ -13,7 +13,7 @@
  * - Request-response pattern via ackId
  * - Event-driven message handling
  *
- * @see happy-app/sources/sync/apiSocket.ts - Reference implementation
+ * @see apps/web/react/sources/sync/apiSocket.ts - Reference implementation
  * @see HAP-671 - This implementation issue
  */
 
@@ -25,7 +25,7 @@ import { useSyncStore } from '@/stores/sync';
 
 /**
  * Message format for native WebSocket protocol.
- * Matches the format used by happy-server-workers ConnectionManager.
+ * Matches the format used by apps/server/workers ConnectionManager.
  */
 interface HappyMessage {
     event: string;

@@ -7,7 +7,7 @@
  * - Appearance: Theme, display preferences
  * - About: Version, links, legal
  *
- * Follows the same structure as happy-app/sources/components/SettingsView.tsx
+ * Follows the same structure as apps/web/react/sources/components/SettingsView.tsx
  */
 
 import { computed } from 'vue';
@@ -60,7 +60,11 @@ function navigateToNotifications() {
 }
 
 function navigateToVoice() {
-  router.push('/settings/voice');
+  router.push('/settings/voice/language');
+}
+
+function navigateToUsage() {
+  router.push('/settings/usage');
 }
 
 function navigateToFeatures() {
@@ -507,6 +511,43 @@ function openGitHub() {
                 <div class="text-left">
                   <p class="font-medium">Features</p>
                   <p class="text-sm text-muted-foreground">Experimental toggles</p>
+                </div>
+              </div>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5 text-muted-foreground"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+            <button
+              class="w-full flex items-center justify-between p-4 hover:bg-accent transition-colors border-b"
+              @click="navigateToUsage"
+            >
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-sky-500/10 flex items-center justify-center">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-5 w-5 text-sky-500"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M3 3v18h18M7 15l3-3 4 4 6-6"
+                    />
+                  </svg>
+                </div>
+                <div class="text-left">
+                  <p class="font-medium">Usage</p>
+                  <p class="text-sm text-muted-foreground">Plan limits and metrics</p>
                 </div>
               </div>
               <svg

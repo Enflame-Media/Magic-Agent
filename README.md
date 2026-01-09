@@ -1,6 +1,6 @@
 # Happy Vue
 
-Vue.js + NativeScript monorepo for the Happy mobile and web client.
+Vue.js workspace for the Happy web client.
 
 > **Happy** is a mobile and web client for Claude Code and Codex, enabling remote control and session sharing across devices with end-to-end encryption.
 
@@ -9,8 +9,7 @@ Vue.js + NativeScript monorepo for the Happy mobile and web client.
 ```
 happy-vue/
 ├── apps/
-│   ├── web/           # Vue.js + Vite web application (Phase 1)
-│   └── mobile/        # NativeScript-Vue mobile application (Phase 2)
+│   └── web/           # Vue.js + Vite web application
 ├── packages/
 │   ├── shared/        # Shared composables and utilities
 │   └── protocol/      # Port of @happy/protocol (Zod schemas)
@@ -27,9 +26,6 @@ happy-vue/
 
 - **Node.js**: 20+ LTS
 - **Yarn**: v4 (via Corepack: `corepack enable`)
-- For mobile development:
-  - **Android**: Android Studio + Android SDK
-  - **iOS**: Xcode (macOS only)
 
 ## Getting Started
 
@@ -42,9 +38,6 @@ yarn install
 
 # Run web development server
 yarn dev:web
-
-# Run mobile development
-yarn dev:mobile
 
 # Type check all packages
 yarn typecheck
@@ -63,17 +56,9 @@ Vue.js + Vite web application. Features:
 - Responsive design
 - Shared codebase with mobile
 
-### `@happy-vue/mobile`
-
-NativeScript-Vue mobile application. Features:
-
-- Native iOS and Android
-- Shared business logic with web
-- Native UI components
-
 ### `@happy-vue/shared`
 
-Shared utilities and composables used by both apps:
+Shared utilities and composables used by the web app:
 
 - Vue composables
 - Utility functions
@@ -95,9 +80,8 @@ This repository is part of the Vue.js migration from React Native.
 | ----- | ------------------------- | ----------- |
 | 0     | Monorepo setup            | ✅ Complete |
 | 1     | Web app implementation    | 🔜 Planned  |
-| 2     | Mobile app implementation | 🔜 Planned  |
-| 3     | Integration testing       | 🔜 Planned  |
-| 4     | Production deployment     | 🔜 Planned  |
+| 2     | Integration testing       | 🔜 Planned  |
+| 3     | Production deployment     | 🔜 Planned  |
 
 See [HAP-660](https://linear.app/enflame-media/issue/HAP-660) for the migration epic.
 

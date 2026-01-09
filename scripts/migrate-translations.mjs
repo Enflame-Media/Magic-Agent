@@ -21,7 +21,7 @@ import { execSync } from 'child_process';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Source and output paths
-const SOURCE_PATH = path.resolve(__dirname, '../../happy-app/sources/text/translations');
+const SOURCE_PATH = path.resolve(__dirname, '../../react/sources/text/translations');
 const OUTPUT_PATH = path.resolve(__dirname, '../apps/web/src/i18n/locales');
 
 // Languages to migrate (excluding English which is handled separately)

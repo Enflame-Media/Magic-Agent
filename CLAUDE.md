@@ -1,10 +1,14 @@
-# CLAUDE.md
+# Happy Vue - Development Guidelines
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+> **📍 Part of the Happy monorepo** — See root [`CLAUDE.md`](../../../CLAUDE.md) for overall architecture and cross-project guidelines.
+
+---
+
+This file provides guidance to Claude Code when working with the Happy Vue.js web client.
 
 ## Project Overview
 
-**Happy Vue** is a Vue.js + NativeScript monorepo for the Happy mobile and web client. This is part of the migration from React Native to a hybrid Vue.js architecture.
+**Happy Vue** is a Vue.js workspace for the Happy web client. This is part of the migration from React Native to a Vue.js architecture.
 
 ## Architecture
 
@@ -13,8 +17,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```
 happy-vue/
 ├── apps/
-│   ├── web/           # Vue.js + Vite (Phase 1)
-│   └── mobile/        # NativeScript-Vue (Phase 2)
+│   └── web/           # Vue.js + Vite
 ├── packages/
 │   ├── shared/        # Shared composables, utilities
 │   └── protocol/      # Port of @happy/protocol
@@ -28,7 +31,6 @@ happy-vue/
 All packages use the `@happy-vue/` scope:
 
 - `@happy-vue/web` - Web application
-- `@happy-vue/mobile` - Mobile application
 - `@happy-vue/shared` - Shared utilities
 - `@happy-vue/protocol` - Protocol types
 
@@ -82,12 +84,10 @@ Standard path alias pattern across all packages:
 ```bash
 # Development
 yarn dev:web          # Start web dev server
-yarn dev:mobile       # Start mobile dev
 
 # Building
 yarn build            # Build all packages
 yarn build:web        # Build web only
-yarn build:mobile     # Build mobile only
 
 # Quality
 yarn typecheck        # Type check all packages
@@ -122,18 +122,10 @@ API types come from `@happy-vue/protocol`:
 import { ApiUpdateSchema, type ApiUpdate } from '@happy-vue/protocol';
 ```
 
-## NativeScript Specifics
-
-When working on the mobile app:
-
-- `nodeLinker: node-modules` is set in `.yarnrc.yml` for NativeScript compatibility
-- Platform-specific code uses `.android.ts` / `.ios.ts` suffixes
-- Native views are in `App_Resources/`
-
 ## Related Documentation
 
 - Root monorepo: `../CLAUDE.md`
-- Protocol package: `../packages/@happy/protocol/CLAUDE.md`
+- Protocol package: `../../../packages/schema/protocol/CLAUDE.md`
 - Migration epic: [HAP-660](https://linear.app/enflame-media/issue/HAP-660)
 
 ## Migration Context
@@ -144,6 +136,5 @@ This repository is being built as part of the Vue.js migration:
 | ----- | -------------- | ------- |
 | 0     | Monorepo setup | HAP-661 |
 | 1     | Web app        | TBD     |
-| 2     | Mobile app     | TBD     |
 
-Reference the original React Native app at `../happy-app/` for implementation details.
+Reference the original React Native app at `../react/` for implementation details.

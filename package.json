@@ -4,17 +4,15 @@
   "private": true,
   "type": "module",
   "packageManager": "yarn@4.12.0",
-  "description": "Happy Vue.js monorepo - Web and mobile client for Claude Code remote control",
+  "description": "Happy Vue.js workspace - Web client for Claude Code remote control",
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
   "scripts": {
     "dev:web": "yarn workspace @happy-vue/web dev",
-    "dev:mobile": "yarn workspace @happy-vue/mobile dev",
     "build": "yarn workspaces foreach -A run build",
     "build:web": "yarn workspace @happy-vue/web build",
-    "build:mobile": "yarn workspace @happy-vue/mobile build",
     "typecheck": "yarn workspaces foreach -A run typecheck",
     "lint": "eslint . && oxlint .",
     "lint:eslint": "eslint .",
@@ -42,7 +40,6 @@
   "keywords": [
     "happy",
     "vue",
-    "nativescript",
     "monorepo",
     "claude-code"
   ],

@@ -2,7 +2,7 @@
  * Global CSS for Happy Vue.js Web Application
  *
  * Uses Tailwind CSS v4 with ShadCN-Vue CSS variables.
- * Colors are mapped from the Happy app theme (happy-app/sources/theme.ts).
+ * Colors are mapped from the Happy app theme (apps/web/react/sources/theme.ts).
  */
 
 @import 'tailwindcss';
