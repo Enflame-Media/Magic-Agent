@@ -11,6 +11,11 @@
  * - Source types (mobile, cli)
  * - Platform variations (ios, android, web)
  * - Optional fields (messageRawObject, platform)
+ * - Token authentication (HAP-818):
+ *   - 401 when DEV_LOGGING_TOKEN is set but header is missing
+ *   - 401 when DEV_LOGGING_TOKEN is set but header value does not match
+ *   - 200 when DEV_LOGGING_TOKEN is set and header matches
+ *   - Backward compatibility when DEV_LOGGING_TOKEN is not configured
  *
  * @module __tests__/dev.spec
  */
@@ -64,10 +69,25 @@ vi.mock('@/db/client', () => ({
 import { app } from '@/index';
 
 /**
+ * Options for creating a test environment
+ */
+interface TestEnvOptions {
+    /** Enable the debug logging endpoint */
+    enableDebugLogging?: boolean;
+    /** Set the DEV_LOGGING_TOKEN for token authentication (HAP-818) */
+    devLoggingToken?: string;
+}
+
+/**
  * Create mock environment for Hono app.request()
  * This provides the env object as the third parameter to app.request()
  */
-function createTestEnv(enableDebugLogging: boolean = false) {
+function createTestEnv(options: TestEnvOptions | boolean = false) {
+    // Support legacy boolean signature for backward compatibility
+    const opts: TestEnvOptions = typeof options === 'boolean'
+        ? { enableDebugLogging: options }
+        : options;
+
     return {
         ENVIRONMENT: 'development' as const,
         HAPPY_MASTER_SECRET: 'test-secret-for-vitest-tests',
@@ -75,7 +95,9 @@ function createTestEnv(enableDebugLogging: boolean = false) {
         UPLOADS: createMockR2(),
         CONNECTION_MANAGER: createMockDurableObjectNamespace(),
         // Key environment variable for dev routes
-        DANGEROUSLY_LOG_TO_SERVER_FOR_AI_AUTO_DEBUGGING: enableDebugLogging ? 'true' : undefined,
+        DANGEROUSLY_LOG_TO_SERVER_FOR_AI_AUTO_DEBUGGING: opts.enableDebugLogging ? 'true' : undefined,
+        // Token authentication for dev logging (HAP-818)
+        DEV_LOGGING_TOKEN: opts.devLoggingToken,
     };
 }
 
@@ -1034,6 +1056,159 @@ describe('Dev Routes', () => {
 
                 expect(mobileRes.status).toBe(200);
                 expect(cliRes.status).toBe(200);
+            });
+        });
+
+        // ============================================================================
+        // Token Authentication Tests (HAP-818)
+        // ============================================================================
+        describe('token authentication (HAP-818)', () => {
+            const TEST_TOKEN = 'test-dev-logging-token-secret-12345';
+
+            it('should return 401 when DEV_LOGGING_TOKEN is set but header is missing', async () => {
+                const testEnv = createTestEnv({
+                    enableDebugLogging: true,
+                    devLoggingToken: TEST_TOKEN,
+                });
+
+                const res = await app.request(
+                    '/logs-combined-from-cli-and-mobile-for-simple-ai-debugging',
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: jsonBody(validLogData),
+                    },
+                    testEnv
+                );
+
+                expect(res.status).toBe(401);
+                const body = await res.json();
+                expect(body).toHaveProperty('error', 'Unauthorized');
+            });
+
+            it('should return 401 when DEV_LOGGING_TOKEN is set but header value does not match', async () => {
+                const testEnv = createTestEnv({
+                    enableDebugLogging: true,
+                    devLoggingToken: TEST_TOKEN,
+                });
+
+                const res = await app.request(
+                    '/logs-combined-from-cli-and-mobile-for-simple-ai-debugging',
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Dev-Logging-Token': 'wrong-token-value',
+                        },
+                        body: jsonBody(validLogData),
+                    },
+                    testEnv
+                );
+
+                expect(res.status).toBe(401);
+                const body = await res.json();
+                expect(body).toHaveProperty('error', 'Unauthorized');
+            });
+
+            it('should accept request when DEV_LOGGING_TOKEN is set and header matches', async () => {
+                const testEnv = createTestEnv({
+                    enableDebugLogging: true,
+                    devLoggingToken: TEST_TOKEN,
+                });
+
+                const res = await app.request(
+                    '/logs-combined-from-cli-and-mobile-for-simple-ai-debugging',
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Dev-Logging-Token': TEST_TOKEN,
+                        },
+                        body: jsonBody(validLogData),
+                    },
+                    testEnv
+                );
+
+                const body = await expectOk<{ success: true }>(res);
+                expect(body).toEqual({ success: true });
+
+                // Verify the log was actually recorded
+                expect(consoleInfoSpy).toHaveBeenCalledTimes(1);
+            });
+
+            it('should allow request without token when DEV_LOGGING_TOKEN is not configured (backward compatibility)', async () => {
+                // Create environment with debug logging enabled but NO token configured
+                const testEnv = createTestEnv({
+                    enableDebugLogging: true,
+                    // devLoggingToken is not set - backward compatibility mode
+                });
+
+                const res = await app.request(
+                    '/logs-combined-from-cli-and-mobile-for-simple-ai-debugging',
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        // No X-Dev-Logging-Token header
+                        body: jsonBody(validLogData),
+                    },
+                    testEnv
+                );
+
+                const body = await expectOk<{ success: true }>(res);
+                expect(body).toEqual({ success: true });
+
+                // Verify the log was actually recorded
+                expect(consoleInfoSpy).toHaveBeenCalledTimes(1);
+            });
+
+            it('should reject empty token header when DEV_LOGGING_TOKEN is configured', async () => {
+                const testEnv = createTestEnv({
+                    enableDebugLogging: true,
+                    devLoggingToken: TEST_TOKEN,
+                });
+
+                const res = await app.request(
+                    '/logs-combined-from-cli-and-mobile-for-simple-ai-debugging',
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Dev-Logging-Token': '',
+                        },
+                        body: jsonBody(validLogData),
+                    },
+                    testEnv
+                );
+
+                expect(res.status).toBe(401);
+                const body = await res.json();
+                expect(body).toHaveProperty('error', 'Unauthorized');
+            });
+
+            it('should verify 403 takes precedence over 401 when debug logging is disabled', async () => {
+                // Debug logging disabled but token configured
+                const testEnv = createTestEnv({
+                    enableDebugLogging: false,
+                    devLoggingToken: TEST_TOKEN,
+                });
+
+                const res = await app.request(
+                    '/logs-combined-from-cli-and-mobile-for-simple-ai-debugging',
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Dev-Logging-Token': TEST_TOKEN,
+                        },
+                        body: jsonBody(validLogData),
+                    },
+                    testEnv
+                );
+
+                // Should get 403 (disabled) rather than proceeding to token check
+                expect(res.status).toBe(403);
+                const body = await res.json();
+                expect(body).toHaveProperty('error', 'Debug logging is disabled');
             });
         });
 
