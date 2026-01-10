@@ -2,13 +2,17 @@
  * Tests for rate limiting utility
  *
  * @see HAP-409 - Add rate limiting to WebSocket ticket endpoint
+ * @see HAP-620 - SECURITY: Rate Limiting Silently Bypassed When KV Missing
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
     checkRateLimit,
     getRateLimitStatus,
     resetRateLimit,
+    resetFallbackWarning,
+    clearFallbackStore,
+    getFallbackStoreSize,
     TICKET_RATE_LIMIT,
     type RateLimitConfig,
 } from './rate-limit';
@@ -333,6 +337,157 @@ describe('rate-limit', () => {
             // 11th request should be rejected
             const result = await checkRateLimit(mockKV, 'ticket', 'user1', TICKET_RATE_LIMIT);
             expect(result.allowed).toBe(false);
+        });
+    });
+
+    /**
+     * HAP-620: Fallback Memory-Based Rate Limiting Tests
+     *
+     * When KV is not configured (undefined), the rate limiter should fall back
+     * to per-isolate memory-based rate limiting for better-than-nothing protection.
+     */
+    describe('fallback memory-based rate limiting (HAP-620)', () => {
+        const testConfig: RateLimitConfig = {
+            maxRequests: 3,
+            windowMs: 60_000,
+            expirationTtl: 120,
+        };
+
+        beforeEach(() => {
+            clearFallbackStore();
+            resetFallbackWarning();
+            vi.spyOn(console, 'warn').mockImplementation(() => {});
+        });
+
+        afterEach(() => {
+            vi.restoreAllMocks();
+        });
+
+        it('should use fallback when KV is undefined', async () => {
+            const result = await checkRateLimit(undefined, 'test', 'user1', testConfig);
+
+            expect(result.allowed).toBe(true);
+            expect(result.count).toBe(1);
+            expect(result.limit).toBe(3);
+        });
+
+        it('should log warning once when using fallback', async () => {
+            await checkRateLimit(undefined, 'test', 'user1', testConfig);
+            await checkRateLimit(undefined, 'test', 'user1', testConfig);
+            await checkRateLimit(undefined, 'test', 'user2', testConfig);
+
+            // Warning should only be logged once per Worker instance
+            expect(console.warn).toHaveBeenCalledTimes(1);
+            expect(console.warn).toHaveBeenCalledWith(
+                expect.stringContaining('RATE_LIMIT_KV not configured')
+            );
+        });
+
+        it('should enforce rate limits with fallback', async () => {
+            // Make 3 requests to reach the limit
+            await checkRateLimit(undefined, 'test', 'user1', testConfig);
+            await checkRateLimit(undefined, 'test', 'user1', testConfig);
+            await checkRateLimit(undefined, 'test', 'user1', testConfig);
+
+            // 4th request should be rejected
+            const result = await checkRateLimit(undefined, 'test', 'user1', testConfig);
+
+            expect(result.allowed).toBe(false);
+            expect(result.count).toBe(3);
+            expect(result.remaining).toBe(0);
+        });
+
+        it('should track different users separately in fallback', async () => {
+            // User1 exhausts limit
+            await checkRateLimit(undefined, 'test', 'user1', testConfig);
+            await checkRateLimit(undefined, 'test', 'user1', testConfig);
+            await checkRateLimit(undefined, 'test', 'user1', testConfig);
+
+            const user1Result = await checkRateLimit(undefined, 'test', 'user1', testConfig);
+            expect(user1Result.allowed).toBe(false);
+
+            // User2 should still be allowed
+            const user2Result = await checkRateLimit(undefined, 'test', 'user2', testConfig);
+            expect(user2Result.allowed).toBe(true);
+            expect(user2Result.count).toBe(1);
+        });
+
+        it('should track different prefixes separately in fallback', async () => {
+            const ticketResult = await checkRateLimit(undefined, 'ticket', 'user1', testConfig);
+            const authResult = await checkRateLimit(undefined, 'auth', 'user1', testConfig);
+
+            expect(ticketResult.count).toBe(1);
+            expect(authResult.count).toBe(1);
+        });
+
+        it('should return correct remaining count in fallback', async () => {
+            const result1 = await checkRateLimit(undefined, 'test', 'user1', testConfig);
+            const result2 = await checkRateLimit(undefined, 'test', 'user1', testConfig);
+            const result3 = await checkRateLimit(undefined, 'test', 'user1', testConfig);
+
+            expect(result1.remaining).toBe(2);
+            expect(result2.remaining).toBe(1);
+            expect(result3.remaining).toBe(0);
+        });
+
+        it('should provide retryAfter in fallback', async () => {
+            const result = await checkRateLimit(undefined, 'test', 'user1', testConfig);
+
+            expect(result.retryAfter).toBeGreaterThan(0);
+            expect(result.retryAfter).toBeLessThanOrEqual(60);
+        });
+
+        it('should store entries in fallback store', async () => {
+            expect(getFallbackStoreSize()).toBe(0);
+
+            await checkRateLimit(undefined, 'test', 'user1', testConfig);
+            await checkRateLimit(undefined, 'test', 'user2', testConfig);
+
+            expect(getFallbackStoreSize()).toBe(2);
+        });
+
+        it('should clear fallback store', async () => {
+            await checkRateLimit(undefined, 'test', 'user1', testConfig);
+            expect(getFallbackStoreSize()).toBe(1);
+
+            clearFallbackStore();
+            expect(getFallbackStoreSize()).toBe(0);
+        });
+
+        describe('getRateLimitStatus with fallback', () => {
+            it('should return zero count for new users', async () => {
+                const status = await getRateLimitStatus(undefined, 'test', 'newuser', testConfig);
+
+                expect(status.count).toBe(0);
+                expect(status.remaining).toBe(3);
+                expect(status.limit).toBe(3);
+            });
+
+            it('should return current count from fallback store', async () => {
+                await checkRateLimit(undefined, 'test', 'user1', testConfig);
+                await checkRateLimit(undefined, 'test', 'user1', testConfig);
+
+                const status = await getRateLimitStatus(undefined, 'test', 'user1', testConfig);
+
+                expect(status.count).toBe(2);
+                expect(status.remaining).toBe(1);
+            });
+        });
+
+        describe('resetRateLimit with fallback', () => {
+            it('should reset fallback store entry', async () => {
+                await checkRateLimit(undefined, 'test', 'user1', testConfig);
+                await checkRateLimit(undefined, 'test', 'user1', testConfig);
+
+                const statusBefore = await getRateLimitStatus(undefined, 'test', 'user1', testConfig);
+                expect(statusBefore.count).toBe(2);
+
+                await resetRateLimit(undefined, 'test', 'user1', testConfig);
+
+                // After reset, count should be 1 (from the new request)
+                const result = await checkRateLimit(undefined, 'test', 'user1', testConfig);
+                expect(result.count).toBe(1);
+            });
         });
     });
 });

@@ -55,6 +55,14 @@ const BotDetectedErrorSchema = z.object({
 });
 
 /**
+ * OpenAPI schema for service unavailable response
+ */
+const ServiceUnavailableSchema = z.object({
+    error: z.literal('Service temporarily unavailable'),
+    code: z.literal('RATE_LIMIT_UNAVAILABLE'),
+});
+
+/**
  * Environment bindings for auth routes
  */
 interface Env {
@@ -67,6 +75,23 @@ interface Env {
     RATE_LIMIT_KV?: KVNamespace;
     /** Fingerprint.js Pro Server API key for device verification */
     FINGERPRINT_API_KEY?: string;
+    /** Current deployment environment */
+    ENVIRONMENT?: 'development' | 'staging' | 'production';
+}
+
+/**
+ * Check if we should fail closed when rate limiting is unavailable (HAP-620)
+ *
+ * In production, we fail closed (503) when RATE_LIMIT_KV is not configured
+ * to prevent security bypass. In development/staging, we continue with
+ * fallback memory-based rate limiting and log a warning.
+ *
+ * @param env - Environment bindings
+ * @returns true if we should fail closed
+ */
+function shouldFailClosedForRateLimiting(env: Env): boolean {
+    // In production, KV is required for security-critical auth endpoints
+    return env.ENVIRONMENT === 'production' && !env.RATE_LIMIT_KV;
 }
 
 /**
@@ -198,6 +223,14 @@ const directAuthRoute = createRoute({
             },
             description: 'Too Many Requests - rate limit exceeded (5 per minute)',
         },
+        503: {
+            content: {
+                'application/json': {
+                    schema: ServiceUnavailableSchema,
+                },
+            },
+            description: 'Service Unavailable - rate limiting not configured in production (HAP-620)',
+        },
     },
     tags: ['Authentication'],
     summary: 'Direct public key authentication',
@@ -208,30 +241,41 @@ const directAuthRoute = createRoute({
 authRoutes.openapi(directAuthRoute, async (c) => {
     const { publicKey, challenge, signature, fingerprintRequestId } = c.req.valid('json');
 
-    // Check rate limit (HAP-453)
-    // Rate limiting is applied before crypto operations to prevent DoS via expensive signature verification
-    if (c.env.RATE_LIMIT_KV) {
-        const rateLimitResult = await checkRateLimit(
-            c.env.RATE_LIMIT_KV,
-            'auth',
-            publicKey, // Use publicKey as identifier (base64, already unique per client)
-            AUTH_RATE_LIMIT
+    // HAP-620: Fail closed in production when rate limiting is unavailable
+    if (shouldFailClosedForRateLimiting(c.env)) {
+        console.error('[Auth] CRITICAL: RATE_LIMIT_KV not configured in production');
+        return c.json(
+            {
+                error: 'Service temporarily unavailable' as const,
+                code: 'RATE_LIMIT_UNAVAILABLE' as const,
+            },
+            503
         );
+    }
 
-        if (!rateLimitResult.allowed) {
-            return c.json(
-                {
-                    error: 'Rate limit exceeded' as const,
-                    retryAfter: rateLimitResult.retryAfter,
-                },
-                429,
-                {
-                    'Retry-After': String(rateLimitResult.retryAfter),
-                    'X-RateLimit-Limit': String(rateLimitResult.limit),
-                    'X-RateLimit-Remaining': '0',
-                }
-            );
-        }
+    // Check rate limit (HAP-453, HAP-620)
+    // Rate limiting is applied before crypto operations to prevent DoS via expensive signature verification
+    // When KV is not configured, falls back to per-isolate memory-based rate limiting
+    const rateLimitResult = await checkRateLimit(
+        c.env.RATE_LIMIT_KV,
+        'auth',
+        publicKey, // Use publicKey as identifier (base64, already unique per client)
+        AUTH_RATE_LIMIT
+    );
+
+    if (!rateLimitResult.allowed) {
+        return c.json(
+            {
+                error: 'Rate limit exceeded' as const,
+                retryAfter: rateLimitResult.retryAfter,
+            },
+            429,
+            {
+                'Retry-After': String(rateLimitResult.retryAfter),
+                'X-RateLimit-Limit': String(rateLimitResult.limit),
+                'X-RateLimit-Remaining': '0',
+            }
+        );
     }
 
     // Verify device using Fingerprint.js (HAP-788)
@@ -367,6 +411,14 @@ const terminalAuthRequestRoute = createRoute({
             },
             description: 'Too Many Requests - rate limit exceeded (5 per minute)',
         },
+        503: {
+            content: {
+                'application/json': {
+                    schema: ServiceUnavailableSchema,
+                },
+            },
+            description: 'Service Unavailable - rate limiting not configured in production (HAP-620)',
+        },
     },
     tags: ['Authentication'],
     summary: 'Initiate terminal pairing',
@@ -377,29 +429,39 @@ const terminalAuthRequestRoute = createRoute({
 authRoutes.openapi(terminalAuthRequestRoute, async (c) => {
     const { publicKey, supportsV2, fingerprintRequestId } = c.req.valid('json');
 
-    // Check rate limit (HAP-453)
-    if (c.env.RATE_LIMIT_KV) {
-        const rateLimitResult = await checkRateLimit(
-            c.env.RATE_LIMIT_KV,
-            'auth-request',
-            publicKey,
-            AUTH_RATE_LIMIT
+    // HAP-620: Fail closed in production when rate limiting is unavailable
+    if (shouldFailClosedForRateLimiting(c.env)) {
+        console.error('[Auth] CRITICAL: RATE_LIMIT_KV not configured in production');
+        return c.json(
+            {
+                error: 'Service temporarily unavailable' as const,
+                code: 'RATE_LIMIT_UNAVAILABLE' as const,
+            },
+            503
         );
+    }
 
-        if (!rateLimitResult.allowed) {
-            return c.json(
-                {
-                    error: 'Rate limit exceeded' as const,
-                    retryAfter: rateLimitResult.retryAfter,
-                },
-                429,
-                {
-                    'Retry-After': String(rateLimitResult.retryAfter),
-                    'X-RateLimit-Limit': String(rateLimitResult.limit),
-                    'X-RateLimit-Remaining': '0',
-                }
-            );
-        }
+    // Check rate limit (HAP-453, HAP-620)
+    const rateLimitResult = await checkRateLimit(
+        c.env.RATE_LIMIT_KV,
+        'auth-request',
+        publicKey,
+        AUTH_RATE_LIMIT
+    );
+
+    if (!rateLimitResult.allowed) {
+        return c.json(
+            {
+                error: 'Rate limit exceeded' as const,
+                retryAfter: rateLimitResult.retryAfter,
+            },
+            429,
+            {
+                'Retry-After': String(rateLimitResult.retryAfter),
+                'X-RateLimit-Limit': String(rateLimitResult.limit),
+                'X-RateLimit-Remaining': '0',
+            }
+        );
     }
 
     // Verify device using Fingerprint.js (HAP-788)
@@ -671,6 +733,14 @@ const accountAuthRequestRoute = createRoute({
             },
             description: 'Too Many Requests - rate limit exceeded (5 per minute)',
         },
+        503: {
+            content: {
+                'application/json': {
+                    schema: ServiceUnavailableSchema,
+                },
+            },
+            description: 'Service Unavailable - rate limiting not configured in production (HAP-620)',
+        },
     },
     tags: ['Authentication'],
     summary: 'Initiate account pairing',
@@ -680,29 +750,39 @@ const accountAuthRequestRoute = createRoute({
 authRoutes.openapi(accountAuthRequestRoute, async (c) => {
     const { publicKey, fingerprintRequestId } = c.req.valid('json');
 
-    // Check rate limit (HAP-453)
-    if (c.env.RATE_LIMIT_KV) {
-        const rateLimitResult = await checkRateLimit(
-            c.env.RATE_LIMIT_KV,
-            'auth-account-request',
-            publicKey,
-            AUTH_RATE_LIMIT
+    // HAP-620: Fail closed in production when rate limiting is unavailable
+    if (shouldFailClosedForRateLimiting(c.env)) {
+        console.error('[Auth] CRITICAL: RATE_LIMIT_KV not configured in production');
+        return c.json(
+            {
+                error: 'Service temporarily unavailable' as const,
+                code: 'RATE_LIMIT_UNAVAILABLE' as const,
+            },
+            503
         );
+    }
 
-        if (!rateLimitResult.allowed) {
-            return c.json(
-                {
-                    error: 'Rate limit exceeded' as const,
-                    retryAfter: rateLimitResult.retryAfter,
-                },
-                429,
-                {
-                    'Retry-After': String(rateLimitResult.retryAfter),
-                    'X-RateLimit-Limit': String(rateLimitResult.limit),
-                    'X-RateLimit-Remaining': '0',
-                }
-            );
-        }
+    // Check rate limit (HAP-453, HAP-620)
+    const rateLimitResult = await checkRateLimit(
+        c.env.RATE_LIMIT_KV,
+        'auth-account-request',
+        publicKey,
+        AUTH_RATE_LIMIT
+    );
+
+    if (!rateLimitResult.allowed) {
+        return c.json(
+            {
+                error: 'Rate limit exceeded' as const,
+                retryAfter: rateLimitResult.retryAfter,
+            },
+            429,
+            {
+                'Retry-After': String(rateLimitResult.retryAfter),
+                'X-RateLimit-Limit': String(rateLimitResult.limit),
+                'X-RateLimit-Remaining': '0',
+            }
+        );
     }
 
     // Verify device using Fingerprint.js (HAP-788)

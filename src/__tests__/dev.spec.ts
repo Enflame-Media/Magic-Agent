@@ -918,6 +918,126 @@ describe('Dev Routes', () => {
         });
 
         // ============================================================================
+        // Rate Limiting Tests (HAP-819)
+        // ============================================================================
+        describe('rate limiting (HAP-819)', () => {
+            it('should allow requests within rate limit', async () => {
+                const enabledEnv = createTestEnv(true);
+
+                const res = await app.request(
+                    '/logs-combined-from-cli-and-mobile-for-simple-ai-debugging',
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'CF-Connecting-IP': '192.168.1.100',
+                        },
+                        body: jsonBody(validLogData),
+                    },
+                    enabledEnv
+                );
+
+                const body = await expectOk<{ success: true }>(res);
+                expect(body).toEqual({ success: true });
+            });
+
+            it('should use CF-Connecting-IP for rate limit identifier', async () => {
+                const enabledEnv = createTestEnv(true);
+
+                // Make request with specific IP
+                const res = await app.request(
+                    '/logs-combined-from-cli-and-mobile-for-simple-ai-debugging',
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'CF-Connecting-IP': '10.0.0.1',
+                        },
+                        body: jsonBody(validLogData),
+                    },
+                    enabledEnv
+                );
+
+                const body = await expectOk<{ success: true }>(res);
+                expect(body).toEqual({ success: true });
+            });
+
+            it('should fallback to X-Forwarded-For when CF-Connecting-IP is missing', async () => {
+                const enabledEnv = createTestEnv(true);
+
+                const res = await app.request(
+                    '/logs-combined-from-cli-and-mobile-for-simple-ai-debugging',
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Forwarded-For': '203.0.113.50, 198.51.100.178',
+                        },
+                        body: jsonBody(validLogData),
+                    },
+                    enabledEnv
+                );
+
+                const body = await expectOk<{ success: true }>(res);
+                expect(body).toEqual({ success: true });
+            });
+
+            it('should use "unknown" when no IP headers are present', async () => {
+                const enabledEnv = createTestEnv(true);
+
+                const res = await app.request(
+                    '/logs-combined-from-cli-and-mobile-for-simple-ai-debugging',
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: jsonBody(validLogData),
+                    },
+                    enabledEnv
+                );
+
+                const body = await expectOk<{ success: true }>(res);
+                expect(body).toEqual({ success: true });
+            });
+
+            it('should track rate limits separately for different sources', async () => {
+                const enabledEnv = createTestEnv(true);
+
+                // Request from mobile
+                const mobileRes = await app.request(
+                    '/logs-combined-from-cli-and-mobile-for-simple-ai-debugging',
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'CF-Connecting-IP': '192.168.1.1',
+                        },
+                        body: jsonBody({ ...validLogData, source: 'mobile' as const }),
+                    },
+                    enabledEnv
+                );
+
+                // Request from CLI (same IP, different source)
+                const cliRes = await app.request(
+                    '/logs-combined-from-cli-and-mobile-for-simple-ai-debugging',
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'CF-Connecting-IP': '192.168.1.1',
+                        },
+                        body: jsonBody({ ...validLogData, source: 'cli' as const }),
+                    },
+                    enabledEnv
+                );
+
+                expect(mobileRes.status).toBe(200);
+                expect(cliRes.status).toBe(200);
+            });
+        });
+
+        // ============================================================================
         // Edge Cases
         // ============================================================================
         describe('edge cases', () => {

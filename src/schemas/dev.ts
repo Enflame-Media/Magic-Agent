@@ -52,3 +52,28 @@ export const DevLogDisabledSchema = z
         error: z.literal('Debug logging is disabled'),
     })
     .openapi('DevLogDisabled');
+
+/**
+ * Error response when auth token is invalid or missing
+ */
+export const DevLogUnauthorizedSchema = z
+    .object({
+        error: z.literal('Unauthorized'),
+    })
+    .openapi('DevLogUnauthorized');
+
+/**
+ * Error response when rate limit is exceeded (HAP-819)
+ */
+export const DevLogRateLimitSchema = z
+    .object({
+        error: z.string().openapi({
+            description: 'Rate limit exceeded message',
+            example: 'Rate limit exceeded',
+        }),
+        retryAfter: z.number().openapi({
+            description: 'Seconds until the rate limit resets',
+            example: 60,
+        }),
+    })
+    .openapi('DevLogRateLimit');

@@ -48,6 +48,13 @@ export interface Env {
     TOKEN_CACHE?: KVNamespace;
 
     /**
+     * KV namespace for rate limiting (HAP-453, HAP-620)
+     * Required in production for security-critical auth endpoints.
+     * In development, falls back to per-isolate memory-based rate limiting.
+     */
+    RATE_LIMIT_KV?: KVNamespace;
+
+    /**
      * Analytics Engine dataset for sync metrics (HAP-546)
      * Used to store sync performance metrics for analysis
      * @optional - metrics are silently dropped if not configured
@@ -57,6 +64,9 @@ export interface Env {
 
 // Track whether deprecation warning has been logged (per Worker instance)
 let deprecationWarningLogged = false;
+
+// Track whether rate limit KV warning has been logged (HAP-620)
+let rateLimitKvWarningLogged = false;
 
 /**
  * Get the master secret from environment with backward compatibility.
@@ -111,6 +121,13 @@ export function resetDeprecationWarning(): void {
 }
 
 /**
+ * Reset rate limit KV warning state (for testing only)
+ */
+export function resetRateLimitKvWarning(): void {
+    rateLimitKvWarningLogged = false;
+}
+
+/**
  * Type guard to validate environment configuration.
  * Provides clear, actionable error messages for missing required variables.
  * Integrated in worker initialization via middleware (HAP-523).
@@ -147,6 +164,20 @@ export function validateEnv(env: Partial<Env>): env is Env {
             'Create a D1 database with: wrangler d1 create happy-dev. ' +
             'See wrangler.toml and Cloudflare D1 documentation for setup.'
         );
+    }
+
+    // HAP-620: Warn about missing RATE_LIMIT_KV in production
+    // In production, auth endpoints will return 503 if RATE_LIMIT_KV is not configured
+    if (env.ENVIRONMENT === 'production' && !env.RATE_LIMIT_KV && !rateLimitKvWarningLogged) {
+        console.warn(
+            '[Config] WARNING: RATE_LIMIT_KV is not configured in production. ' +
+            'Authentication endpoints will return 503 Service Unavailable to prevent rate limit bypass. ' +
+            'Configure a KV namespace binding in wrangler.toml: ' +
+            '[[kv_namespaces]] binding = "RATE_LIMIT_KV" id = "your-kv-id". ' +
+            'Create a KV namespace with: wrangler kv:namespace create RATE_LIMIT_KV. ' +
+            'See HAP-620 for security implications.'
+        );
+        rateLimitKvWarningLogged = true;
     }
 
     return true;

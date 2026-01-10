@@ -6,6 +6,7 @@ import { timing, addServerTiming } from '@/middleware/timing';
 import { requestIdMiddleware } from '@/middleware/requestId';
 import { errorHandler } from '@/middleware/error';
 import { bodySizeLimits } from '@/middleware/bodySize';
+import { securityHeadersMiddleware } from '@/middleware/securityHeaders';
 import { initAuth, cleanupExpiredTokens } from '@/lib/auth';
 import { cleanupEmptyArchivedSessions } from '@/lib/sessionCleanup';
 import { getMasterSecret, validateEnv } from '@/config/env';
@@ -155,12 +156,26 @@ const app = new OpenAPIHono<{ Bindings: Env }>();
 
 /*
  * Global Middleware
- * Applied in order: timing → requestId → logging → CORS → body size → env validation → auth initialization → routes → error handling
+ * Applied in order: timing → requestId → logging → CORS → security headers → body size → env validation → auth initialization → routes → error handling
  */
 app.use('*', timing());
 app.use('*', requestIdMiddleware());
 app.use('*', logger());
 app.use('*', cors());
+
+/*
+ * Security Headers Middleware (HAP-627)
+ *
+ * Adds standard security headers to all responses:
+ * - Content-Security-Policy: Prevents XSS and data injection
+ * - X-Frame-Options: Prevents clickjacking
+ * - X-Content-Type-Options: Prevents MIME sniffing
+ * - Strict-Transport-Security: Enforces HTTPS (production only)
+ * - X-XSS-Protection: Legacy XSS protection
+ * - Referrer-Policy: Controls referrer leakage
+ * - Permissions-Policy: Restricts browser features
+ */
+app.use('*', securityHeadersMiddleware());
 
 /*
  * Body size limiting (HAP-629)

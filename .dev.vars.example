@@ -48,6 +48,11 @@ HAPPY_MASTER_SECRET=your-32-byte-hex-secret-here
 # Default: * in development
 # CORS_ORIGINS=http://localhost:3000,http://localhost:8081
 
+# Dev logging token for authenticating CLI/mobile log submissions
+# When set, clients must include X-Dev-Logging-Token header
+# Generate with: openssl rand -hex 32
+# DEV_LOGGING_TOKEN=
+
 # ============================================================
 # TEST SECRETS (for running tests locally)
 # ============================================================
