@@ -178,11 +178,25 @@ class Logger {
   constructor(
     public readonly logFilePath = getSessionLogPath()
   ) {
-    // Remote logging enabled only when explicitly set with server URL
+    // Remote logging requires explicit opt-in via DEBUG=1 (HAP-829)
+    // This is a safety measure to prevent accidental data exposure.
+    // All three conditions must be met:
+    // 1. DANGEROUSLY_LOG_TO_SERVER_FOR_AI_AUTO_DEBUGGING is set
+    // 2. HAPPY_SERVER_URL is set
+    // 3. DEBUG=1 is explicitly set (explicit opt-in)
     if (process.env.DANGEROUSLY_LOG_TO_SERVER_FOR_AI_AUTO_DEBUGGING
-      && process.env.HAPPY_SERVER_URL) {
+      && process.env.HAPPY_SERVER_URL
+      && process.env.DEBUG) {
       this.dangerouslyUnencryptedServerLoggingUrl = process.env.HAPPY_SERVER_URL
       console.error(chalk.yellow('[REMOTE LOGGING] Sending logs to server for AI debugging'))
+      console.error(chalk.yellow('[REMOTE LOGGING] WARNING: This sends unencrypted session data to the server!'))
+    } else if (process.env.DANGEROUSLY_LOG_TO_SERVER_FOR_AI_AUTO_DEBUGGING
+      && process.env.HAPPY_SERVER_URL
+      && !process.env.DEBUG) {
+      // User attempted to enable remote logging without DEBUG - show explicit warning
+      console.error(chalk.red('[REMOTE LOGGING BLOCKED] Remote logging requires DEBUG=1 to be set explicitly.'))
+      console.error(chalk.red('[REMOTE LOGGING BLOCKED] This is a safety measure to prevent accidental data exposure.'))
+      console.error(chalk.yellow('To enable remote logging, run with: DEBUG=1 ./bin/happy.mjs ...'))
     }
 
     // Attempt to initialize log directory
@@ -718,11 +732,20 @@ class Logger {
 
   private async sendToRemoteServer(level: string, message: string, ...args: unknown[]): Promise<void> {
     if (!this.dangerouslyUnencryptedServerLoggingUrl) return
-    
+
     try {
+      // Build headers - always include Content-Type
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+
+      // Include dev logging token if configured for authentication
+      const devLoggingToken = process.env.DEV_LOGGING_TOKEN
+      if (devLoggingToken) {
+        headers['X-Dev-Logging-Token'] = devLoggingToken
+      }
+
       await fetch(this.dangerouslyUnencryptedServerLoggingUrl + '/logs-combined-from-cli-and-mobile-for-simple-ai-debugging', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           timestamp: new Date().toISOString(),
           level,

@@ -9,17 +9,13 @@ import type { DirResult } from 'tmp';
 /**
  * Possible session status values returned by get-session-status RPC.
  *
- * Current implementation only returns 'active' or 'unknown' because
- * distinguishing 'stopped' from 'never existed' requires historical
- * tracking which is not yet implemented.
+ * - 'active': Session is currently running on this machine
+ * - 'stopped': Session previously ran on this machine but has ended
+ * - 'unknown': Session was never active on this machine (or history expired)
  *
- * @see HAP-642 - Original implementation
- * @see run.ts:620 - Comment explaining why 'stopped' isn't currently returned
- *
- * TODO: Return 'stopped' when historical session tracking is implemented.
- *       This will require persisting session state to disk/database so we
- *       can distinguish between "session existed and stopped" vs "session
- *       never existed on this machine".
+ * @see HAP-642 - Original implementation (active/unknown only)
+ * @see HAP-811 - Added 'stopped' status via historical tracking
+ * @see stoppedSessionsHistory.ts - Persistence for stopped session tracking
  */
 export type SessionStatus = 'active' | 'stopped' | 'unknown';
 

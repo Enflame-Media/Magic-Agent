@@ -34,6 +34,7 @@ import { addBreadcrumb, setTag, trackMetric, shutdownTelemetry } from '@/telemet
 import { isValidSessionId, normalizeSessionId, InvalidSessionIdError } from '@/claude/utils/sessionValidation';
 import { claudeCheckSession } from '@/claude/utils/claudeCheckSession';
 import type { GetSessionStatusResponse } from './types';
+import { recordStoppedSession, cleanupExpiredEntries, getStoppedSessionTimestamp } from './stoppedSessionsHistory';
 
 // Version cache for package.json (HAP-354)
 // Eliminates repetitive disk I/O during heartbeat checks
@@ -656,12 +657,21 @@ export async function startDaemon(): Promise<void> {
       }
 
       // Session not found in active sessions
-      // We can't distinguish between "stopped" and "never existed" without historical tracking
-      // Return "unknown" to indicate the session is not currently active
+      // HAP-811: Check stopped sessions history to distinguish 'stopped' from 'unknown'
+      const stoppedAt = getStoppedSessionTimestamp(normalizedId);
+      if (stoppedAt !== undefined) {
+        return {
+          status: 'stopped',
+          sessionId: normalizedId,
+          message: `Session stopped at ${new Date(stoppedAt).toISOString()}`
+        };
+      }
+
+      // Session not in history - truly unknown (never existed on this machine)
       return {
         status: 'unknown',
         sessionId: normalizedId,
-        message: 'Session is not active on this machine. It may have stopped, been archived, or never existed.'
+        message: 'Session was never active on this machine or has been archived.'
       };
     };
 
@@ -748,8 +758,17 @@ export async function startDaemon(): Promise<void> {
     const onChildExited = (pid: number) => {
       logger.debug(`[DAEMON RUN] Removing exited process PID ${pid} from tracking`);
 
-      // Clean up Codex temp directory if it exists (contains auth.json with sensitive token)
+      // Get session before removing from tracking
       const session = pidToTrackedSession.get(pid);
+
+      // HAP-811: Record stopped session in history for status tracking
+      // This allows getSessionStatus to return 'stopped' instead of 'unknown'
+      if (session?.happySessionId) {
+        recordStoppedSession(session.happySessionId);
+        logger.debug(`[DAEMON RUN] Recorded stopped session ${session.happySessionId} for PID ${pid}`);
+      }
+
+      // Clean up Codex temp directory if it exists (contains auth.json with sensitive token)
       if (session?.codexTempDir) {
         try {
           session.codexTempDir.removeCallback();
@@ -889,6 +908,13 @@ export async function startDaemon(): Promise<void> {
             logger.debug(`[DAEMON RUN] Removing stale session PID ${pid}`);
             onChildExited(pid);
           }
+        }
+
+        // HAP-811: Clean up expired stopped session history entries
+        // This prevents unbounded disk usage from historical tracking
+        const expiredEntriesRemoved = cleanupExpiredEntries();
+        if (expiredEntriesRemoved > 0) {
+          logger.debug(`[DAEMON RUN] Cleaned up ${expiredEntriesRemoved} expired stopped session history entries`);
         }
 
         // Check if daemon needs update

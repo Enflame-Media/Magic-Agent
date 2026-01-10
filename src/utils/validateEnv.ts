@@ -166,13 +166,16 @@ export function checkEnv(): ValidationResult {
     }
   }
 
-  // Check for dangerous debug options in what looks like production
+  // Remote logging requires explicit DEBUG opt-in (HAP-829)
+  // This prevents accidental data exposure from misconfigured environments
   if (
     process.env.DANGEROUSLY_LOG_TO_SERVER_FOR_AI_AUTO_DEBUGGING &&
     !process.env.DEBUG
   ) {
     warnings.push(
-      'DANGEROUSLY_LOG_TO_SERVER_FOR_AI_AUTO_DEBUGGING is set without DEBUG mode - this may expose sensitive data'
+      'Remote logging blocked: DANGEROUSLY_LOG_TO_SERVER_FOR_AI_AUTO_DEBUGGING requires DEBUG=1 to be set explicitly. ' +
+      'This is a safety measure to prevent accidental data exposure. ' +
+      'To enable remote logging, set DEBUG=1 in your environment.'
     )
   }
 

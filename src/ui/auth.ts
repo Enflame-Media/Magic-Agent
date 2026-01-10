@@ -33,8 +33,8 @@ async function doAuth(options?: { signal?: AbortSignal }): Promise<Credentials |
 
     // Create a new authentication request
     try {
-        console.log(`[AUTH DEBUG] Sending auth request to: ${configuration.serverUrl}/v1/auth/request`);
-        console.log(`[AUTH DEBUG] Public key: ${encodeBase64(keypair.publicKey).substring(0, 20)}...`);
+        logger.debug(`[AUTH] Sending auth request to: ${configuration.serverUrl}/v1/auth/request`);
+        logger.debug(`[AUTH] Public key: ${encodeBase64(keypair.publicKey).substring(0, 20)}...`);
         await axios.post(
             `${configuration.serverUrl}/v1/auth/request`,
             {
@@ -49,7 +49,7 @@ async function doAuth(options?: { signal?: AbortSignal }): Promise<Credentials |
                 }
             }
         );
-        console.log(`[AUTH DEBUG] Auth request sent successfully`);
+        logger.debug('[AUTH] Auth request sent successfully');
     } catch (error) {
         // Handle cancellation with a clean error message
         if (axios.isCancel(error)) {

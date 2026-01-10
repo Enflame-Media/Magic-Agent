@@ -46,6 +46,14 @@ import { initializeTelemetry, showTelemetryNoticeIfNeeded, trackMetric, setTag, 
   const args = process.argv.slice(2)
   const subcommand = args[0]
 
+  // HAP-861: Parse --verbose early, before command routing
+  // This ensures DEBUG is set for ALL commands including subcommands
+  // (Previously --verbose was only parsed after executeCommand(), meaning
+  // 'happy daemon start --verbose' didn't enable debug logging)
+  if (args.includes('--verbose')) {
+    process.env.DEBUG = '1'
+  }
+
   // Track startup timing and set initial tags for observability (HAP-522)
   // This runs after telemetry init to ensure sender is ready
   trackMetric('startup_time', Date.now() - startupStart, {
