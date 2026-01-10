@@ -186,12 +186,15 @@ export default function RootLayout() {
     const [initState, setInitState] = React.useState<{ credentials: AuthCredentials | null } | null>(null);
     const [debugInfo, setDebugInfo] = React.useState<string>('Starting...');
     React.useEffect(() => {
-        // UNMISSABLE DEBUG MARKER - if you don't see this, the build is stale!
-        console.warn('🚀🚀🚀 HAPPY APP INIT v2 - ' + new Date().toISOString() + ' 🚀🚀🚀');
-        // Also try alert for absolute certainty
-        if (Platform.OS === 'web' && typeof window !== 'undefined') {
-            (window as any).__HAPPY_DEBUG__ = (window as any).__HAPPY_DEBUG__ || [];
-            (window as any).__HAPPY_DEBUG__.push('Init started: ' + new Date().toISOString());
+        // HAP-835: Debug markers gated to dev builds only
+        if (__DEV__) {
+            // UNMISSABLE DEBUG MARKER - if you don't see this, the build is stale!
+            console.warn('🚀🚀🚀 HAPPY APP INIT v2 - ' + new Date().toISOString() + ' 🚀🚀🚀');
+            // Also try alert for absolute certainty
+            if (Platform.OS === 'web' && typeof window !== 'undefined') {
+                (window as any).__HAPPY_DEBUG__ = (window as any).__HAPPY_DEBUG__ || [];
+                (window as any).__HAPPY_DEBUG__.push('Init started: ' + new Date().toISOString());
+            }
         }
         (async () => {
             logger.debug('[_layout] Init sequence starting...');
@@ -279,23 +282,30 @@ export default function RootLayout() {
     useResourceMonitoring();
 
     //
-    // Not inited - show debug info while loading
+    // Not inited - show loading state (debug info only in dev builds)
+    // HAP-835: Debug UI gated to dev builds only
     //
 
     if (!initState) {
-        return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1a1a2e', padding: 20 }}>
-                <Text style={{ color: '#00ff00', fontSize: 18, fontFamily: 'monospace', textAlign: 'center' }}>
-                    🔧 DEBUG MODE 🔧
-                </Text>
-                <Text style={{ color: '#ffffff', fontSize: 14, fontFamily: 'monospace', marginTop: 20, textAlign: 'center' }}>
-                    {debugInfo}
-                </Text>
-                <Text style={{ color: '#888888', fontSize: 12, fontFamily: 'monospace', marginTop: 20, textAlign: 'center' }}>
-                    If stuck here, check browser console (F12)
-                </Text>
-            </View>
-        );
+        // In production, show a minimal loading state that matches the app theme
+        // In dev, show detailed debug info for troubleshooting
+        if (__DEV__) {
+            return (
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1a1a2e', padding: 20 }}>
+                    <Text style={{ color: '#00ff00', fontSize: 18, fontFamily: 'monospace', textAlign: 'center' }}>
+                        DEBUG MODE
+                    </Text>
+                    <Text style={{ color: '#ffffff', fontSize: 14, fontFamily: 'monospace', marginTop: 20, textAlign: 'center' }}>
+                        {debugInfo}
+                    </Text>
+                    <Text style={{ color: '#888888', fontSize: 12, fontFamily: 'monospace', marginTop: 20, textAlign: 'center' }}>
+                        If stuck here, check browser console (F12)
+                    </Text>
+                </View>
+            );
+        }
+        // Production: minimal loading state - splash screen handles the visual
+        return null;
     }
 
     //
