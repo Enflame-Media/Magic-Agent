@@ -19,7 +19,7 @@
  * @see HAP-769 - Implement Share Session UI for happy-vue web app
  */
 
-import { ref, computed, watch, onMounted } from 'vue';
+import { computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Share2, Loader2 } from 'lucide-vue-next';
 import {

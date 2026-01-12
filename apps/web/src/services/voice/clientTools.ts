@@ -13,6 +13,9 @@ import { z } from 'zod';
 import { useVoiceStore } from '@/stores/voice';
 import { useSessionsStore } from '@/stores/sessions';
 import { VOICE_CONFIG } from './config';
+import { sendSessionMessage } from '@/services/sync/messages';
+import { sessionAllow, sessionDeny } from '@/services/sync/ops';
+import { decryptAgentState } from '@/services/encryption/sessionDecryption';
 
 /**
  * Message schema for validation
@@ -48,6 +51,7 @@ export const voiceClientTools = {
 
         const message = parsed.data.message;
         const voiceStore = useVoiceStore();
+        const sessionsStore = useSessionsStore();
         const sessionId = voiceStore.activeSessionId;
 
         if (!sessionId) {
@@ -55,15 +59,24 @@ export const voiceClientTools = {
             return 'error (no active session)';
         }
 
+        const session = sessionsStore.sessions.get(sessionId);
+        if (!session) {
+            console.error('[Voice] Session not found');
+            return 'error (session not found)';
+        }
+
         if (VOICE_CONFIG.ENABLE_DEBUG_LOGGING) {
             console.log('[Voice] messageClaudeCode called with:', message);
             console.log('[Voice] Sending message to session:', sessionId);
         }
 
-        // TODO: Integrate with sync service when available
-        // sync.sendMessage(sessionId, message);
-
-        return "sent [DO NOT say anything else, simply say 'sent']";
+        try {
+            await sendSessionMessage(session, message);
+            return "sent [DO NOT say anything else, simply say 'sent']";
+        } catch (error) {
+            console.error('[Voice] Failed to send message:', error);
+            return 'error (failed to send message)';
+        }
     },
 
     /**
@@ -97,26 +110,44 @@ export const voiceClientTools = {
         // Get the current session to check for permission requests
         const session = sessionsStore.sessions.get(sessionId);
 
-        // Note: agentState is encrypted in the store, would need decryption
-        // For now, we check if session exists
         if (!session) {
             console.error('[Voice] Session not found');
             return 'error (session not found)';
         }
 
-        // Simplified - real implementation would decrypt and parse agentState
-        const requestId = 'pending-request';
-
         try {
-            // TODO: Integrate with session operations when available
-            // if (decision === 'allow') {
-            //     await sessionAllow(sessionId, requestId);
-            // } else {
-            //     await sessionDeny(sessionId, requestId);
-            // }
+            // Decrypt agent state to find pending permission requests
+            const agentState = await decryptAgentState(session);
+
+            if (!agentState?.requests || Object.keys(agentState.requests).length === 0) {
+                if (VOICE_CONFIG.ENABLE_DEBUG_LOGGING) {
+                    console.log('[Voice] No pending permission requests');
+                }
+                return 'error (no pending permission request)';
+            }
+
+            // Get the first pending permission request
+            const requestIds = Object.keys(agentState.requests);
+            const requestId = requestIds[0];
+
+            if (!requestId) {
+                return 'error (no pending permission request)';
+            }
 
             if (VOICE_CONFIG.ENABLE_DEBUG_LOGGING) {
-                console.log(`[Voice] Would ${decision} permission request:`, requestId);
+                const request = agentState.requests[requestId];
+                console.log(`[Voice] Processing permission for tool: ${request?.tool}, id: ${requestId}`);
+            }
+
+            // Execute the permission decision
+            if (decision === 'allow') {
+                await sessionAllow(sessionId, requestId);
+            } else {
+                await sessionDeny(sessionId, requestId);
+            }
+
+            if (VOICE_CONFIG.ENABLE_DEBUG_LOGGING) {
+                console.log(`[Voice] Successfully ${decision}ed permission request:`, requestId);
             }
 
             return "done [DO NOT say anything else, simply say 'done']";

@@ -51,7 +51,6 @@ import {
   SessionShareEntrySchema,
   SessionShareUrlConfigSchema,
   SessionShareInvitationSchema,
-  type SessionShareSettings,
   type SessionShareEntry,
   type SessionShareUrlConfig,
   type SessionShareInvitation,
@@ -345,7 +344,7 @@ export function useSessionSharing(sessionId: Ref<string>): UseSessionSharingRetu
 
     // Optimistic update
     const oldShares = [...shares.value];
-    shares.value = shares.value.map((s) =>
+    shares.value = shares.value.map((s: SessionShareEntry) =>
       s.id === shareId ? { ...s, permission } : s
     );
 
@@ -373,7 +372,7 @@ export function useSessionSharing(sessionId: Ref<string>): UseSessionSharingRetu
 
       if (parsed.success) {
         // Update with server response
-        shares.value = shares.value.map((s) =>
+        shares.value = shares.value.map((s: SessionShareEntry) =>
           s.id === shareId ? parsed.data.share : s
         );
       }
@@ -401,7 +400,7 @@ export function useSessionSharing(sessionId: Ref<string>): UseSessionSharingRetu
 
     // Optimistic update
     const oldShares = [...shares.value];
-    shares.value = shares.value.filter((s) => s.id !== shareId);
+    shares.value = shares.value.filter((s: SessionShareEntry) => s.id !== shareId);
 
     try {
       const response = await fetch(
@@ -572,7 +571,7 @@ export function useSessionSharing(sessionId: Ref<string>): UseSessionSharingRetu
 
     // Optimistic update
     const oldInvitations = [...invitations.value];
-    invitations.value = invitations.value.filter((i) => i.id !== invitationId);
+    invitations.value = invitations.value.filter((i: SessionShareInvitation) => i.id !== invitationId);
 
     try {
       const response = await fetch(

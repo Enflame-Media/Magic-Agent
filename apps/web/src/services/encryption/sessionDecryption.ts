@@ -152,3 +152,58 @@ export async function encryptSessionMessage(
     return null;
   }
 }
+
+/**
+ * Pending permission request from agent state
+ */
+export interface AgentStateRequest {
+  tool: string;
+  arguments: unknown;
+  createdAt?: number;
+}
+
+/**
+ * Agent state structure (decrypted)
+ */
+export interface AgentState {
+  controlledByUser?: boolean;
+  requests?: Record<string, AgentStateRequest>;
+  completedRequests?: Record<string, AgentStateRequest & {
+    permissions?: {
+      date?: number;
+      result?: 'approved' | 'denied' | 'canceled';
+      mode?: string;
+      reason?: string;
+      allowedTools?: string[];
+      decision?: 'approved' | 'approved_for_session' | 'denied' | 'abort';
+    };
+  }>;
+}
+
+/**
+ * Decrypt and parse session agent state
+ */
+export async function decryptAgentState(
+  session: Session
+): Promise<AgentState | null> {
+  if (!session.agentState) {
+    return null;
+  }
+
+  const decryptor = await getSessionCrypto(session);
+  if (!decryptor) {
+    return null;
+  }
+
+  try {
+    const encryptedData = decodeBase64(session.agentState);
+    const decrypted = await decryptor.decrypt([encryptedData]);
+    const payload = decrypted[0];
+    if (!payload || typeof payload !== 'object') {
+      return null;
+    }
+    return payload as AgentState;
+  } catch {
+    return null;
+  }
+}

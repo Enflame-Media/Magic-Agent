@@ -10,7 +10,7 @@
 
 import { ref, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { Link, Copy, Lock, Eye, EyeOff, Loader2 } from 'lucide-vue-next';
+import { Link, Copy, Lock, Eye, EyeOff } from 'lucide-vue-next';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';

@@ -30,3 +30,6 @@ export {
     removeArtifactKey,
     clearArtifactKeys,
 } from './artifactSync';
+export { sendSessionMessage } from './messages';
+export { sessionRPC } from './rpc';
+export { sessionAllow, sessionDeny } from './ops';
