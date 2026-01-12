@@ -183,7 +183,7 @@ const cacheHitsRoute = createRoute({
     path: '/cache-hits',
     tags: ['Metrics'],
     summary: 'Get profile cache hit rate',
-    description: 'Returns the cache hit/miss ratio for profile lookups in the last 24 hours. Note: Currently estimates cache usage from sync mode distribution.',
+    description: 'Returns the cache hit/miss ratio for profile lookups in the last 24 hours. HAP-808: Uses explicit cache status field (blob4) for accurate metrics, with backward compatibility fallback to sync mode heuristic for legacy data.',
     responses: {
         200: {
             description: 'Cache hit rate retrieved successfully',
@@ -522,25 +522,35 @@ metricsRoutes.openapi(timeseriesRoute, async (c) => {
  * Returns profile cache hit rate
  *
  * @remarks
- * HAP-638: Cache hit/miss tracking is NOT currently implemented in the ingestion layer.
- * The blob3 field contains sessionId, not cache status.
+ * HAP-808: Cache hit/miss tracking is now implemented via blob4 (cacheStatus).
+ * The query uses explicit cache status field for accurate metrics.
  *
- * This endpoint currently returns mock data until cache tracking is added to:
- * - happy-server-workers/src/routes/analytics.ts (ingestion)
- * - Or a separate cache metrics endpoint is created
+ * Field mappings:
+ * - blob1: sync type ('profile')
+ * - blob4: cacheStatus ('hit' | 'miss')
  *
- * TODO: Implement cache hit tracking in happy-app sync logic and ingest to Analytics Engine
+ * For backward compatibility with older data that lacks blob4:
+ * - Falls back to blob2='cached' heuristic if blob4 is empty
  */
 metricsRoutes.openapi(cacheHitsRoute, async (c) => {
-    // HAP-638: Cache hit tracking is not implemented in ingestion
-    // blob3 contains sessionId, not 'hit'/'miss' values
-    // For now, we can estimate cache usage from sync mode = 'cached'
+    // HAP-808: Query using explicit cache status field (blob4)
+    // Uses COALESCE to handle backward compatibility:
+    // - If blob4 has 'hit'/'miss', use that directly
+    // - If blob4 is empty (legacy data), fall back to blob2='cached' heuristic
     const result = await queryAnalyticsEngine(
         c.env,
         `
         SELECT
-            SUM(CASE WHEN blob2 = 'cached' THEN 1 ELSE 0 END) as hits,
-            SUM(CASE WHEN blob2 != 'cached' THEN 1 ELSE 0 END) as misses
+            SUM(CASE
+                WHEN blob4 = 'hit' THEN 1
+                WHEN blob4 = '' AND blob2 = 'cached' THEN 1
+                ELSE 0
+            END) as hits,
+            SUM(CASE
+                WHEN blob4 = 'miss' THEN 1
+                WHEN blob4 = '' AND blob2 != 'cached' THEN 1
+                ELSE 0
+            END) as misses
         FROM sync_metrics_${c.env.ENVIRONMENT === 'production' ? 'prod' : 'dev'}
         WHERE timestamp > NOW() - INTERVAL '24' HOUR
           AND blob1 = 'profile'
