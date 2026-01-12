@@ -69,3 +69,37 @@ export const UnauthorizedErrorSchema = z
         error: z.literal('Unauthorized'),
     })
     .openapi('UnauthorizedError');
+
+// ============================================================================
+// Voice Access Schemas (Lightweight subscription check - HAP-816)
+// ============================================================================
+
+/**
+ * Query parameters for voice access check
+ */
+export const VoiceAccessQuerySchema = z
+    .object({
+        revenueCatPublicKey: z.string().optional().openapi({
+            description:
+                'RevenueCat public key for subscription verification (required in production)',
+            example: 'appl_XYZ789',
+        }),
+    })
+    .openapi('VoiceAccessQuery');
+
+/**
+ * Response for voice access check
+ */
+export const VoiceAccessResponseSchema = z
+    .object({
+        allowed: z.boolean().openapi({
+            description: 'Whether the user has voice access',
+            example: true,
+        }),
+        reason: z.string().optional().openapi({
+            description:
+                'Reason for denied access (only present when allowed is false)',
+            example: 'subscription_required',
+        }),
+    })
+    .openapi('VoiceAccessResponse');

@@ -1132,4 +1132,158 @@ describe('Voice Routes', () => {
             });
         });
     });
+
+    // ============================================================================
+    // GET /v1/voice/access - Lightweight Subscription Check (HAP-816)
+    // ============================================================================
+
+    describe('GET /v1/voice/access - Lightweight Subscription Check (HAP-816)', () => {
+        describe('Authentication', () => {
+            it('should require authentication (401 without token)', async () => {
+                const res = await unauthRequest('/v1/voice/access', {
+                    method: 'GET',
+                });
+
+                expect(res.status).toBe(401);
+                const body = await res.json() as { error: string };
+                expect(body.error).toBeDefined();
+            });
+
+            it('should reject invalid token (401)', async () => {
+                const res = await authRequest(
+                    '/v1/voice/access',
+                    { method: 'GET' },
+                    createTestEnv(),
+                    'invalid-token'
+                );
+
+                expect(res.status).toBe(401);
+            });
+        });
+
+        describe('Development Mode', () => {
+            it('should always allow in development mode', async () => {
+                const env = createTestEnv({ ENVIRONMENT: 'development' });
+
+                const res = await authRequest('/v1/voice/access', { method: 'GET' }, env);
+
+                expect(res.status).toBe(200);
+                const body = await res.json() as { allowed: boolean };
+                expect(body.allowed).toBe(true);
+            });
+
+            it('should always allow in staging mode', async () => {
+                const env = createTestEnv({ ENVIRONMENT: 'staging' });
+
+                const res = await authRequest('/v1/voice/access', { method: 'GET' }, env);
+
+                expect(res.status).toBe(200);
+                const body = await res.json() as { allowed: boolean };
+                expect(body.allowed).toBe(true);
+            });
+        });
+
+        describe('Production Mode', () => {
+            it('should require revenueCatPublicKey in production', async () => {
+                const env = createTestEnv({ ENVIRONMENT: 'production' });
+
+                const res = await authRequest('/v1/voice/access', { method: 'GET' }, env);
+
+                expect(res.status).toBe(200);
+                const body = await res.json() as { allowed: boolean; reason?: string };
+                expect(body.allowed).toBe(false);
+                expect(body.reason).toBe('revenuecat_key_required');
+            });
+
+            it('should allow access with valid subscription', async () => {
+                // Mock RevenueCat success
+                globalThis.fetch = vi.fn().mockResolvedValueOnce({
+                    ok: true,
+                    json: async () => ({
+                        subscriber: {
+                            entitlements: {
+                                active: {
+                                    pro: { product_identifier: 'pro_monthly' },
+                                },
+                            },
+                        },
+                    }),
+                });
+
+                const env = createTestEnv({ ENVIRONMENT: 'production' });
+                const res = await authRequest(
+                    '/v1/voice/access?revenueCatPublicKey=test-key',
+                    { method: 'GET' },
+                    env
+                );
+
+                expect(res.status).toBe(200);
+                const body = await res.json() as { allowed: boolean };
+                expect(body.allowed).toBe(true);
+            });
+
+            it('should deny access without active subscription', async () => {
+                // Mock RevenueCat without pro entitlement
+                globalThis.fetch = vi.fn().mockResolvedValueOnce({
+                    ok: true,
+                    json: async () => ({
+                        subscriber: {
+                            entitlements: {
+                                active: {},
+                            },
+                        },
+                    }),
+                });
+
+                const env = createTestEnv({ ENVIRONMENT: 'production' });
+                const res = await authRequest(
+                    '/v1/voice/access?revenueCatPublicKey=test-key',
+                    { method: 'GET' },
+                    env
+                );
+
+                expect(res.status).toBe(200);
+                const body = await res.json() as { allowed: boolean; reason?: string };
+                expect(body.allowed).toBe(false);
+                expect(body.reason).toBe('subscription_required');
+            });
+
+            it('should handle RevenueCat API error gracefully', async () => {
+                // Mock RevenueCat failure
+                globalThis.fetch = vi.fn().mockResolvedValueOnce({
+                    ok: false,
+                    status: 500,
+                });
+
+                const env = createTestEnv({ ENVIRONMENT: 'production' });
+                const res = await authRequest(
+                    '/v1/voice/access?revenueCatPublicKey=test-key',
+                    { method: 'GET' },
+                    env
+                );
+
+                expect(res.status).toBe(200);
+                const body = await res.json() as { allowed: boolean; reason?: string };
+                expect(body.allowed).toBe(false);
+                expect(body.reason).toBe('subscription_check_failed');
+            });
+
+            it('should handle RevenueCat network error gracefully', async () => {
+                // Mock network error
+                globalThis.fetch = vi.fn().mockRejectedValueOnce(new Error('Network error'));
+
+                const env = createTestEnv({ ENVIRONMENT: 'production' });
+                const res = await authRequest(
+                    '/v1/voice/access?revenueCatPublicKey=test-key',
+                    { method: 'GET' },
+                    env
+                );
+
+                expect(res.status).toBe(200);
+                const body = await res.json() as { allowed: boolean; reason?: string };
+                expect(body.allowed).toBe(false);
+                expect(body.reason).toBe('subscription_check_error');
+            });
+        });
+    });
 });

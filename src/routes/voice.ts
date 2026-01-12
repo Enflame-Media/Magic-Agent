@@ -7,6 +7,8 @@ import {
     VoiceTokenDeniedSchema,
     VoiceTokenErrorSchema,
     UnauthorizedErrorSchema,
+    VoiceAccessQuerySchema,
+    VoiceAccessResponseSchema,
 } from '@/schemas/voice';
 
 /**
@@ -28,6 +30,7 @@ interface Env {
  * Voice routes module
  *
  * Implements ElevenLabs voice integration:
+ * - GET /v1/voice/access - Lightweight subscription check (HAP-816)
  * - POST /v1/voice/token - Get ElevenLabs conversation token
  *
  * All routes require authentication. In production, also requires RevenueCat
@@ -37,6 +40,121 @@ const voiceRoutes = new OpenAPIHono<{ Bindings: Env }>();
 
 // Apply auth middleware to all voice routes
 voiceRoutes.use('/v1/voice/*', authMiddleware());
+
+// ============================================================================
+// GET /v1/voice/access - Lightweight Subscription Check (HAP-816)
+// ============================================================================
+
+const voiceAccessRoute = createRoute({
+    method: 'get',
+    path: '/v1/voice/access',
+    request: {
+        query: VoiceAccessQuerySchema,
+    },
+    responses: {
+        200: {
+            content: {
+                'application/json': {
+                    schema: VoiceAccessResponseSchema,
+                },
+            },
+            description: 'Voice access check response',
+        },
+        401: {
+            content: {
+                'application/json': {
+                    schema: UnauthorizedErrorSchema,
+                },
+            },
+            description: 'Unauthorized',
+        },
+    },
+    tags: ['Voice'],
+    summary: 'Check voice access without fetching a token',
+    description:
+        'Lightweight check for voice feature access. Does not consume ElevenLabs token quota. Use this to gate UI elements before starting a voice session.',
+});
+
+// @ts-expect-error - OpenAPI handler type inference doesn't carry Variables from middleware
+voiceRoutes.openapi(voiceAccessRoute, async (c) => {
+    const userId = (
+        c as unknown as Context<{ Bindings: Env; Variables: AuthVariables }>
+    ).get('userId');
+    const { revenueCatPublicKey } = c.req.valid('query');
+
+    const isDevelopment =
+        c.env.ENVIRONMENT === 'development' || c.env.ENVIRONMENT === 'staging';
+
+    // In development/staging, always allow
+    if (isDevelopment) {
+        return c.json({
+            allowed: true,
+        });
+    }
+
+    // Production requires RevenueCat key for subscription verification
+    if (!revenueCatPublicKey) {
+        return c.json({
+            allowed: false,
+            reason: 'revenuecat_key_required',
+        });
+    }
+
+    // Check subscription with RevenueCat
+    try {
+        const response = await fetch(
+            `https://api.revenuecat.com/v1/subscribers/${userId}`,
+            {
+                method: 'GET',
+                headers: {
+                    Authorization: `Bearer ${revenueCatPublicKey}`,
+                    'Content-Type': 'application/json',
+                },
+            }
+        );
+
+        if (!response.ok) {
+            console.warn(
+                `RevenueCat check failed for user ${userId}: ${response.status}`
+            );
+            return c.json({
+                allowed: false,
+                reason: 'subscription_check_failed',
+            });
+        }
+
+        const data = (await response.json()) as {
+            subscriber?: {
+                entitlements?: {
+                    active?: {
+                        pro?: unknown;
+                    };
+                };
+            };
+        };
+        const proEntitlement = data.subscriber?.entitlements?.active?.pro;
+
+        if (!proEntitlement) {
+            return c.json({
+                allowed: false,
+                reason: 'subscription_required',
+            });
+        }
+
+        return c.json({
+            allowed: true,
+        });
+    } catch (error) {
+        console.error(
+            `RevenueCat verification error for user ${userId}:`,
+            error
+        );
+        return c.json({
+            allowed: false,
+            reason: 'subscription_check_error',
+        });
+    }
+});
 
 // ============================================================================
 // POST /v1/voice/token - Get ElevenLabs Conversation Token
