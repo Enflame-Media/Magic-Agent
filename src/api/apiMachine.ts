@@ -324,6 +324,18 @@ export class ApiMachineClient {
         if (this.isRevivalCooldownActive()) {
             const remainingMs = this.revivalCooldownUntil - Date.now();
             logger.debug(`[API MACHINE] [REVIVAL] Global cooldown active, ${remainingMs}ms remaining. Rejecting revival for ${sessionId.substring(0, 8)}...`);
+
+            // HAP-784: Notify mobile app about cooldown state
+            if (this.socket?.connected) {
+                this.socket.emitClient('session-revival-paused', {
+                    reason: 'circuit_breaker',
+                    remainingMs,
+                    resumesAt: this.revivalCooldownUntil,
+                    machineId: this.machine.id
+                });
+                logger.debug(`[API MACHINE] [REVIVAL] Broadcast session-revival-paused event`);
+            }
+
             return {
                 revived: false,
                 originalSessionId: sessionId,

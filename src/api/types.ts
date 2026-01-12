@@ -159,6 +159,23 @@ export interface ClientToServerEvents {
     machineId: string
   }) => void
   /**
+   * Session revival paused event - emitted when revival is blocked due to circuit breaker cooldown.
+   * Mobile app should display appropriate UI (countdown, retry button disabled, etc.)
+   * and clear state when cooldown expires or on 'session-revived' event.
+   *
+   * @see HAP-784 - Notify mobile app when session revival is paused due to cooldown
+   */
+  'session-revival-paused': (data: {
+    /** Reason for the cooldown (currently only 'circuit_breaker') */
+    reason: 'circuit_breaker'
+    /** Remaining time until cooldown expires (milliseconds) */
+    remainingMs: number
+    /** Timestamp when cooldown will expire (Date.now() + remainingMs) */
+    resumesAt: number
+    /** Machine ID this event originated from */
+    machineId: string
+  }) => void
+  /**
    * Usage limits update event - emitted periodically with usage limit data from Anthropic API.
    * Server Durable Object caches these limits for retrieval via GET /v1/usage/limits.
    *

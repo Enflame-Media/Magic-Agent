@@ -495,4 +495,133 @@ describe('ApiMachineClient Circuit Breaker', () => {
             );
         });
     });
+
+    /**
+     * Tests for session-revival-paused WebSocket event emission
+     * @see HAP-784 - Notify mobile app when session revival is paused due to cooldown
+     */
+    describe('Mobile notification on cooldown (HAP-784)', () => {
+        let mockSocket: {
+            connected: boolean;
+            emitClient: ReturnType<typeof vi.fn>;
+        };
+
+        beforeEach(() => {
+            // Create a mock socket and attach it to the client
+            mockSocket = {
+                connected: true,
+                emitClient: vi.fn(),
+            };
+
+            // Inject the mock socket into the client
+            const clientAny = client as unknown as {
+                socket: typeof mockSocket;
+            };
+            clientAny.socket = mockSocket;
+        });
+
+        it('should emit session-revival-paused when cooldown is active', async () => {
+            const clientAny = client as unknown as {
+                recordRevivalFailure: () => void;
+                COOLDOWN_FAILURE_THRESHOLD: number;
+                revivalCooldownUntil: number;
+                tryReviveSession: (sessionId: string, directory: string) => Promise<{ revived: boolean; error?: string; originalSessionId: string }>;
+            };
+
+            // Trigger cooldown
+            for (let i = 0; i < clientAny.COOLDOWN_FAILURE_THRESHOLD; i++) {
+                clientAny.recordRevivalFailure();
+            }
+
+            // Attempt revival when cooldown is active
+            await clientAny.tryReviveSession(testSessionId, testDirectory);
+
+            // Should have emitted session-revival-paused event
+            expect(mockSocket.emitClient).toHaveBeenCalledWith('session-revival-paused', {
+                reason: 'circuit_breaker',
+                remainingMs: expect.any(Number),
+                resumesAt: clientAny.revivalCooldownUntil,
+                machineId: 'test-machine-id',
+            });
+        });
+
+        it('should include correct remainingMs in event payload', async () => {
+            const clientAny = client as unknown as {
+                recordRevivalFailure: () => void;
+                COOLDOWN_FAILURE_THRESHOLD: number;
+                COOLDOWN_DURATION_MS: number;
+                revivalCooldownUntil: number;
+                tryReviveSession: (sessionId: string, directory: string) => Promise<{ revived: boolean; error?: string; originalSessionId: string }>;
+            };
+
+            // Trigger cooldown
+            for (let i = 0; i < clientAny.COOLDOWN_FAILURE_THRESHOLD; i++) {
+                clientAny.recordRevivalFailure();
+            }
+
+            // Advance time by 10 seconds
+            vi.advanceTimersByTime(10000);
+
+            // Attempt revival
+            await clientAny.tryReviveSession(testSessionId, testDirectory);
+
+            // Verify the event was emitted
+            expect(mockSocket.emitClient).toHaveBeenCalledWith(
+                'session-revival-paused',
+                expect.objectContaining({
+                    reason: 'circuit_breaker',
+                    // remainingMs should be approximately COOLDOWN_DURATION_MS - 10000
+                    remainingMs: expect.any(Number),
+                })
+            );
+
+            // Extract the actual remainingMs from the call
+            const call = mockSocket.emitClient.mock.calls.find(
+                (c: unknown[]) => c[0] === 'session-revival-paused'
+            );
+            const payload = call?.[1] as { remainingMs: number } | undefined;
+            expect(payload?.remainingMs).toBeLessThan(clientAny.COOLDOWN_DURATION_MS);
+            expect(payload?.remainingMs).toBeGreaterThan(0);
+        });
+
+        it('should not emit event when socket is not connected', async () => {
+            const clientAny = client as unknown as {
+                recordRevivalFailure: () => void;
+                COOLDOWN_FAILURE_THRESHOLD: number;
+                tryReviveSession: (sessionId: string, directory: string) => Promise<{ revived: boolean; error?: string; originalSessionId: string }>;
+            };
+
+            // Set socket as disconnected
+            mockSocket.connected = false;
+
+            // Trigger cooldown
+            for (let i = 0; i < clientAny.COOLDOWN_FAILURE_THRESHOLD; i++) {
+                clientAny.recordRevivalFailure();
+            }
+
+            // Attempt revival
+            await clientAny.tryReviveSession(testSessionId, testDirectory);
+
+            // Should NOT have emitted the event
+            expect(mockSocket.emitClient).not.toHaveBeenCalledWith(
+                'session-revival-paused',
+                expect.anything()
+            );
+        });
+
+        it('should not emit event when cooldown is not active', async () => {
+            const clientAny = client as unknown as {
+                tryReviveSession: (sessionId: string, directory: string) => Promise<{ revived: boolean; error?: string; originalSessionId: string }>;
+            };
+
+            // Attempt revival without triggering cooldown
+            await clientAny.tryReviveSession(testSessionId, testDirectory);
+
+            // Should NOT have emitted session-revival-paused event
+            expect(mockSocket.emitClient).not.toHaveBeenCalledWith(
+                'session-revival-paused',
+                expect.anything()
+            );
+        });
+    });
 });
