@@ -1,16 +1,15 @@
 import * as React from 'react';
-import { ActivityIndicator, View, Text, ScrollView } from 'react-native';
+import { ActivityIndicator } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Item } from '@/components/Item';
 import { ItemGroup } from '@/components/ItemGroup';
 import { ItemList } from '@/components/ItemList';
 import { Switch } from '@/components/Switch';
 import { Modal } from '@/modal';
-import { useUnistyles, StyleSheet } from 'react-native-unistyles';
+import { useUnistyles } from 'react-native-unistyles';
 import { useLocalSettingMutable } from '@/sync/storage';
 import {
     setRemoteLoggingEnabled,
-    isRemoteLoggingEnabled,
     getRemoteLoggingStatus,
     getLogBufferStats,
     getLogBuffer,
@@ -31,7 +30,6 @@ function RemoteLoggingScreen() {
     // Local state for status display
     const [status, setStatus] = React.useState(getRemoteLoggingStatus());
     const [bufferStats, setBufferStats] = React.useState(getLogBufferStats());
-    const [refreshKey, setRefreshKey] = React.useState(0);
 
     // Sync the local setting with the runtime toggle
     React.useEffect(() => {
@@ -61,7 +59,6 @@ function RemoteLoggingScreen() {
         if (confirmed) {
             clearLogBuffer();
             setBufferStats(getLogBufferStats());
-            setRefreshKey(prev => prev + 1);
         }
     };
 

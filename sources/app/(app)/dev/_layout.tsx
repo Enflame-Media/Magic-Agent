@@ -167,6 +167,12 @@ export default function DevLayout() {
                     headerTitle: 'Input Styles',
                 }}
             />
+            <Stack.Screen
+                name="remote-logging"
+                options={{
+                    headerTitle: 'Remote Logging',
+                }}
+            />
         </Stack>
     );
 }

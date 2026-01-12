@@ -21,7 +21,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 const originalEnv = { ...process.env };
 
 /**
- * Helper to find a fetch call containing a specific message pattern
+ * Helper to find a fetch call containing a specific message pattern.
+ * Supports both legacy single-log format and HAP-840 batch format.
  */
 function findFetchCallWithMessage(
     mockFn: ReturnType<typeof vi.fn>,
@@ -33,10 +34,33 @@ function findFetchCallWithMessage(
         }
         try {
             const body = JSON.parse(call[1].body);
+
+            // HAP-840: Check batch format first
+            if (body.batch && Array.isArray(body.batch)) {
+                for (const entry of body.batch) {
+                    const matches =
+                        typeof pattern === 'string'
+                            ? entry.message?.includes(pattern)
+                            : pattern.test(entry.message || '');
+                    if (matches) {
+                        // Return a synthetic call with the matched entry as body for test compatibility
+                        return [
+                            call[0],
+                            {
+                                method: call[1].method,
+                                headers: call[1].headers,
+                                body: JSON.stringify(entry),
+                            },
+                        ];
+                    }
+                }
+            }
+
+            // Legacy single-log format
             const matches =
                 typeof pattern === 'string'
-                    ? body.message.includes(pattern)
-                    : pattern.test(body.message);
+                    ? body.message?.includes(pattern)
+                    : pattern.test(body.message || '');
             if (matches) {
                 return call as [
                     string,
@@ -92,6 +116,9 @@ describe('remoteLogger', () => {
 
         // Clear all mocks
         vi.clearAllMocks();
+
+        // HAP-840: Restore real timers if fake timers were used
+        vi.useRealTimers();
     });
 
     describe('gating behavior', () => {
@@ -157,9 +184,9 @@ describe('remoteLogger', () => {
 
             monkeyPatchConsoleForRemoteLoggingForFasterAiAutoDebuggingOnlyInLocalBuilds();
 
-            // Should have logged about missing URL
+            // HAP-842: With runtime toggle, missing URL results in buffering-only mode
             expect(consoleLogSpy).toHaveBeenCalledWith(
-                '[RemoteLogger] No server URL provided, remote logging disabled'
+                '[RemoteLogger] Initialized (buffering only, remote sending disabled - enable via dev settings)'
             );
         });
 
@@ -178,10 +205,13 @@ describe('remoteLogger', () => {
 
             monkeyPatchConsoleForRemoteLoggingForFasterAiAutoDebuggingOnlyInLocalBuilds();
 
-            // Should have initialized successfully
+            // Should have initialized successfully (HAP-840 added batched mode info)
             expect(consoleLogSpy).toHaveBeenCalledWith(
                 '[RemoteLogger] Initialized with server:',
-                'http://localhost:3000'
+                'http://localhost:3000',
+                '(batched mode, interval:',
+                expect.any(Number),
+                'ms)'
             );
         });
 
@@ -200,10 +230,13 @@ describe('remoteLogger', () => {
 
             monkeyPatchConsoleForRemoteLoggingForFasterAiAutoDebuggingOnlyInLocalBuilds();
 
-            // Should have initialized successfully
+            // Should have initialized successfully (HAP-840 added batched mode info)
             expect(consoleLogSpy).toHaveBeenCalledWith(
                 '[RemoteLogger] Initialized with server:',
-                'http://127.0.0.1:3000'
+                'http://127.0.0.1:3000',
+                '(batched mode, interval:',
+                expect.any(Number),
+                'ms)'
             );
         });
 
@@ -222,10 +255,13 @@ describe('remoteLogger', () => {
 
             monkeyPatchConsoleForRemoteLoggingForFasterAiAutoDebuggingOnlyInLocalBuilds();
 
-            // Should have initialized successfully
+            // Should have initialized successfully (HAP-840 added batched mode info)
             expect(consoleLogSpy).toHaveBeenCalledWith(
                 '[RemoteLogger] Initialized with server:',
-                'http://10.0.0.1:3000'
+                'http://10.0.0.1:3000',
+                '(batched mode, interval:',
+                expect.any(Number),
+                'ms)'
             );
         });
 
@@ -244,10 +280,13 @@ describe('remoteLogger', () => {
 
             monkeyPatchConsoleForRemoteLoggingForFasterAiAutoDebuggingOnlyInLocalBuilds();
 
-            // Should have initialized successfully
+            // Should have initialized successfully (HAP-840 added batched mode info)
             expect(consoleLogSpy).toHaveBeenCalledWith(
                 '[RemoteLogger] Initialized with server:',
-                'http://192.168.1.100:3000'
+                'http://192.168.1.100:3000',
+                '(batched mode, interval:',
+                expect.any(Number),
+                'ms)'
             );
         });
 
@@ -266,10 +305,13 @@ describe('remoteLogger', () => {
 
             monkeyPatchConsoleForRemoteLoggingForFasterAiAutoDebuggingOnlyInLocalBuilds();
 
-            // Should have initialized successfully
+            // Should have initialized successfully (HAP-840 added batched mode info)
             expect(consoleLogSpy).toHaveBeenCalledWith(
                 '[RemoteLogger] Initialized with server:',
-                'http://172.16.0.1:3000'
+                'http://172.16.0.1:3000',
+                '(batched mode, interval:',
+                expect.any(Number),
+                'ms)'
             );
         });
 
@@ -361,6 +403,9 @@ describe('remoteLogger', () => {
         });
 
         it('sends logs to remote server with correct format', async () => {
+            // HAP-840: Use fake timers to control batch interval
+            vi.useFakeTimers();
+
             const { monkeyPatchConsoleForRemoteLoggingForFasterAiAutoDebuggingOnlyInLocalBuilds } =
                 await import('../remoteLogger');
 
@@ -371,8 +416,8 @@ describe('remoteLogger', () => {
 
             console.log('UNIQUE_TEST_LOG_MESSAGE_12345');
 
-            // Wait for async sendLog to complete
-            await new Promise((resolve) => setTimeout(resolve, 50));
+            // HAP-840: Advance timers past the batch interval (1000ms)
+            await vi.advanceTimersByTimeAsync(1100);
 
             expect(mockFetchWithTimeout).toHaveBeenCalled();
 
@@ -399,6 +444,9 @@ describe('remoteLogger', () => {
         });
 
         it('handles multiple arguments in log messages', async () => {
+            // HAP-840: Use fake timers to control batch interval
+            vi.useFakeTimers();
+
             const { monkeyPatchConsoleForRemoteLoggingForFasterAiAutoDebuggingOnlyInLocalBuilds } =
                 await import('../remoteLogger');
 
@@ -407,8 +455,8 @@ describe('remoteLogger', () => {
 
             console.log('MULTI_ARG_first', 'second', 12345);
 
-            // Wait for async sendLog to complete
-            await new Promise((resolve) => setTimeout(resolve, 50));
+            // HAP-840: Advance timers past the batch interval (1000ms)
+            await vi.advanceTimersByTimeAsync(1100);
 
             const call = findFetchCallWithMessage(mockFetchWithTimeout, 'MULTI_ARG_first');
 
@@ -454,6 +502,9 @@ describe('remoteLogger', () => {
         });
 
         it('redacts JWT tokens in log messages before sending', async () => {
+            // HAP-840: Use fake timers to control batch interval
+            vi.useFakeTimers();
+
             const { monkeyPatchConsoleForRemoteLoggingForFasterAiAutoDebuggingOnlyInLocalBuilds } =
                 await import('../remoteLogger');
 
@@ -464,8 +515,8 @@ describe('remoteLogger', () => {
                 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U';
             console.log('JWT_TOKEN_TEST:', jwt);
 
-            // Wait for async sendLog to complete
-            await new Promise((resolve) => setTimeout(resolve, 50));
+            // HAP-840: Advance timers past the batch interval (1000ms)
+            await vi.advanceTimersByTimeAsync(1100);
 
             const call = findFetchCallWithMessage(mockFetchWithTimeout, 'JWT_TOKEN_TEST');
 
@@ -476,6 +527,9 @@ describe('remoteLogger', () => {
         });
 
         it('redacts long alphanumeric strings (tokens) before sending', async () => {
+            // HAP-840: Use fake timers to control batch interval
+            vi.useFakeTimers();
+
             const { monkeyPatchConsoleForRemoteLoggingForFasterAiAutoDebuggingOnlyInLocalBuilds } =
                 await import('../remoteLogger');
 
@@ -485,8 +539,8 @@ describe('remoteLogger', () => {
             const longToken = 'a'.repeat(50);
             console.log('LONG_TOKEN_TEST:', longToken);
 
-            // Wait for async sendLog to complete
-            await new Promise((resolve) => setTimeout(resolve, 50));
+            // HAP-840: Advance timers past the batch interval (1000ms)
+            await vi.advanceTimersByTimeAsync(1100);
 
             const call = findFetchCallWithMessage(mockFetchWithTimeout, 'LONG_TOKEN_TEST');
 
@@ -497,6 +551,9 @@ describe('remoteLogger', () => {
         });
 
         it('redacts sensitive object fields before sending', async () => {
+            // HAP-840: Use fake timers to control batch interval
+            vi.useFakeTimers();
+
             const { monkeyPatchConsoleForRemoteLoggingForFasterAiAutoDebuggingOnlyInLocalBuilds } =
                 await import('../remoteLogger');
 
@@ -505,8 +562,8 @@ describe('remoteLogger', () => {
 
             console.log('OBJECT_FIELD_TEST:', { token: 'secret123', name: 'visible' });
 
-            // Wait for async sendLog to complete
-            await new Promise((resolve) => setTimeout(resolve, 50));
+            // HAP-840: Advance timers past the batch interval (1000ms)
+            await vi.advanceTimersByTimeAsync(1100);
 
             const call = findFetchCallWithMessage(mockFetchWithTimeout, 'OBJECT_FIELD_TEST');
 
@@ -518,6 +575,9 @@ describe('remoteLogger', () => {
         });
 
         it('redacts Bearer tokens before sending', async () => {
+            // HAP-840: Use fake timers to control batch interval
+            vi.useFakeTimers();
+
             const { monkeyPatchConsoleForRemoteLoggingForFasterAiAutoDebuggingOnlyInLocalBuilds } =
                 await import('../remoteLogger');
 
@@ -528,8 +588,8 @@ describe('remoteLogger', () => {
                 'BEARER_TEST: Auth Bearer sk_live_12345678901234567890123456789012345678901234567890'
             );
 
-            // Wait for async sendLog to complete
-            await new Promise((resolve) => setTimeout(resolve, 50));
+            // HAP-840: Advance timers past the batch interval (1000ms)
+            await vi.advanceTimersByTimeAsync(1100);
 
             const call = findFetchCallWithMessage(mockFetchWithTimeout, 'BEARER_TEST');
 
@@ -703,6 +763,9 @@ describe('remoteLogger', () => {
         });
 
         it('serializes objects to JSON in message field', async () => {
+            // HAP-840: Use fake timers to control batch interval
+            vi.useFakeTimers();
+
             const { monkeyPatchConsoleForRemoteLoggingForFasterAiAutoDebuggingOnlyInLocalBuilds } =
                 await import('../remoteLogger');
 
@@ -712,8 +775,8 @@ describe('remoteLogger', () => {
             const data = { itemName: 'testValue', count: 42 };
             console.log('SERIALIZE_OBJ_TEST:', data);
 
-            // Wait for async sendLog to complete
-            await new Promise((resolve) => setTimeout(resolve, 50));
+            // HAP-840: Advance timers past the batch interval (1000ms)
+            await vi.advanceTimersByTimeAsync(1100);
 
             const call = findFetchCallWithMessage(mockFetchWithTimeout, 'SERIALIZE_OBJ_TEST');
 
@@ -724,6 +787,9 @@ describe('remoteLogger', () => {
         });
 
         it('includes raw object in messageRawObject field', async () => {
+            // HAP-840: Use fake timers to control batch interval
+            vi.useFakeTimers();
+
             const { monkeyPatchConsoleForRemoteLoggingForFasterAiAutoDebuggingOnlyInLocalBuilds } =
                 await import('../remoteLogger');
 
@@ -733,8 +799,8 @@ describe('remoteLogger', () => {
             const data = { itemName: 'testValue', count: 42 };
             console.log('RAW_OBJECT_TEST:', data);
 
-            // Wait for async sendLog to complete
-            await new Promise((resolve) => setTimeout(resolve, 50));
+            // HAP-840: Advance timers past the batch interval (1000ms)
+            await vi.advanceTimersByTimeAsync(1100);
 
             const call = findFetchCallWithMessage(mockFetchWithTimeout, 'RAW_OBJECT_TEST');
 
@@ -745,6 +811,9 @@ describe('remoteLogger', () => {
         });
 
         it('converts non-string primitives to strings', async () => {
+            // HAP-840: Use fake timers to control batch interval
+            vi.useFakeTimers();
+
             const { monkeyPatchConsoleForRemoteLoggingForFasterAiAutoDebuggingOnlyInLocalBuilds } =
                 await import('../remoteLogger');
 
@@ -753,8 +822,8 @@ describe('remoteLogger', () => {
 
             console.log('PRIMITIVE_TEST:', 12345, true, null, undefined);
 
-            // Wait for async sendLog to complete
-            await new Promise((resolve) => setTimeout(resolve, 50));
+            // HAP-840: Advance timers past the batch interval (1000ms)
+            await vi.advanceTimersByTimeAsync(1100);
 
             const call = findFetchCallWithMessage(mockFetchWithTimeout, 'PRIMITIVE_TEST');
 
@@ -767,6 +836,9 @@ describe('remoteLogger', () => {
         });
 
         it('includes platform metadata in log entries', async () => {
+            // HAP-840: Use fake timers to control batch interval
+            vi.useFakeTimers();
+
             const { monkeyPatchConsoleForRemoteLoggingForFasterAiAutoDebuggingOnlyInLocalBuilds } =
                 await import('../remoteLogger');
 
@@ -775,8 +847,8 @@ describe('remoteLogger', () => {
 
             console.log('METADATA_TEST_unique');
 
-            // Wait for async sendLog to complete
-            await new Promise((resolve) => setTimeout(resolve, 50));
+            // HAP-840: Advance timers past the batch interval (1000ms)
+            await vi.advanceTimersByTimeAsync(1100);
 
             const call = findFetchCallWithMessage(mockFetchWithTimeout, 'METADATA_TEST_unique');
 
@@ -787,6 +859,9 @@ describe('remoteLogger', () => {
         });
 
         it('includes ISO timestamp in log entries', async () => {
+            // HAP-840: Use fake timers to control batch interval
+            vi.useFakeTimers();
+
             const { monkeyPatchConsoleForRemoteLoggingForFasterAiAutoDebuggingOnlyInLocalBuilds } =
                 await import('../remoteLogger');
 
@@ -795,8 +870,8 @@ describe('remoteLogger', () => {
 
             console.log('TIMESTAMP_TEST_unique');
 
-            // Wait for async sendLog to complete
-            await new Promise((resolve) => setTimeout(resolve, 50));
+            // HAP-840: Advance timers past the batch interval (1000ms)
+            await vi.advanceTimersByTimeAsync(1100);
 
             const call = findFetchCallWithMessage(mockFetchWithTimeout, 'TIMESTAMP_TEST_unique');
 
@@ -821,6 +896,9 @@ describe('remoteLogger', () => {
         it.each(['log', 'info', 'warn', 'error', 'debug'] as const)(
             'sends %s level logs to remote server',
             async (level) => {
+                // HAP-840: Use fake timers to control batch interval
+                vi.useFakeTimers();
+
                 const {
                     monkeyPatchConsoleForRemoteLoggingForFasterAiAutoDebuggingOnlyInLocalBuilds,
                 } = await import('../remoteLogger');
@@ -831,8 +909,8 @@ describe('remoteLogger', () => {
                 const uniqueMessage = `LEVEL_${level.toUpperCase()}_TEST_${Date.now()}`;
                 console[level](uniqueMessage);
 
-                // Wait for async sendLog to complete
-                await new Promise((resolve) => setTimeout(resolve, 50));
+                // HAP-840: Advance timers past the batch interval (1000ms)
+                await vi.advanceTimersByTimeAsync(1100);
 
                 const call = findFetchCallWithMessage(mockFetchWithTimeout, uniqueMessage);
 
