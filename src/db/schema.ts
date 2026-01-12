@@ -240,3 +240,75 @@ export const usageReports = sqliteTable(
     index("UsageReport_sessionId_idx").on(table.sessionId),
   ]
 );
+
+// ============================================================================
+// Admin Audit Log Table (HAP-804)
+// Persists admin actions for compliance and incident response.
+// ============================================================================
+
+/**
+ * Admin Audit Logs - Tracks sensitive admin operations
+ *
+ * Currently tracks:
+ * - Role changes (admin/user promotions/demotions)
+ *
+ * Future extensions may include:
+ * - User bans/unbans
+ * - Bulk operations
+ * - Permission changes
+ */
+export const adminAuditLogs = sqliteTable(
+    "admin_audit_logs",
+    {
+        id: text("id").primaryKey(),
+        /**
+         * Type of action performed
+         * @example "role_change", "user_ban", "bulk_delete"
+         */
+        action: text("action").notNull(),
+        /**
+         * User ID of the admin who performed the action
+         */
+        actorId: text("actor_id").notNull(),
+        /**
+         * Email of the admin who performed the action (denormalized for queryability)
+         */
+        actorEmail: text("actor_email").notNull(),
+        /**
+         * User ID of the target (for actions on other users)
+         */
+        targetId: text("target_id"),
+        /**
+         * Email of the target user (denormalized for queryability)
+         */
+        targetEmail: text("target_email"),
+        /**
+         * Previous value (e.g., old role)
+         */
+        previousValue: text("previous_value"),
+        /**
+         * New value (e.g., new role)
+         */
+        newValue: text("new_value"),
+        /**
+         * Request metadata as JSON (IP, user-agent, request ID)
+         */
+        metadata: text("metadata", { mode: "json" }).$type<{
+            ipAddress?: string | null;
+            userAgent?: string | null;
+            requestId?: string;
+        }>(),
+        /**
+         * When the action was performed
+         */
+        createdAt: integer("created_at", { mode: "timestamp_ms" })
+            .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+            .notNull(),
+    },
+    (table) => [
+        index("admin_audit_logs_actor_id_idx").on(table.actorId),
+        index("admin_audit_logs_target_id_idx").on(table.targetId),
+        index("admin_audit_logs_action_idx").on(table.action),
+        index("admin_audit_logs_created_at_idx").on(table.createdAt),
+    ]
+);

@@ -242,9 +242,31 @@ adminRoutes.post('/users/:id/role', async (c) => {
         .set({ role, updatedAt: new Date() })
         .where(eq(schema.users.id, id));
 
-    // Audit log (console for MVP, TODO: persistent audit log table)
+    // Persist audit log record (HAP-804)
+    const auditId = crypto.randomUUID();
+    const requestId = c.get('requestId');
+    const ipAddress = c.req.header('CF-Connecting-IP') ?? c.req.header('X-Forwarded-For') ?? null;
+    const userAgent = c.req.header('User-Agent') ?? null;
+
+    await db.insert(schema.adminAuditLogs).values({
+        id: auditId,
+        action: 'role_change',
+        actorId: currentUser?.id ?? 'unknown',
+        actorEmail: currentUser?.email ?? 'unknown',
+        targetId: id,
+        targetEmail: targetUser.email,
+        previousValue: targetUser.role ?? null,
+        newValue: role,
+        metadata: {
+            ipAddress,
+            userAgent,
+            requestId,
+        },
+    });
+
+    // Console log retained for observability (non-blocking)
     console.log(
-        `[Admin Audit] User ${currentUser?.email} changed role of ${targetUser.email} (${id}) from "${targetUser.role ?? 'null'}" to "${role}"`
+        `[Admin Audit] User ${currentUser?.email} changed role of ${targetUser.email} (${id}) from "${targetUser.role ?? 'null'}" to "${role}" [audit:${auditId}]`
     );
 
     return c.json({
