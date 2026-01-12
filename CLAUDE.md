@@ -271,9 +271,10 @@ class SessionViewModel: ObservableObject {
 | Sessions List | ✅ | NavigationSplitView with sidebar |
 | Session Detail | ✅ | Message display with tool uses |
 | Settings | ✅ | Tabbed preferences via Settings scene |
-| Menu Commands | ✅ | File, Session, Connection, Subscription menus |
-| Keyboard Shortcuts | ✅ | ⌘R refresh, ⌘N scan, ⇧⌘U upgrade, etc. |
+| Menu Commands | ✅ | File, Session, Artifacts, Connection, Subscription menus |
+| Keyboard Shortcuts | ✅ | ⌘R refresh, ⌘N scan, ⇧⌘A artifacts, ⇧⌘U upgrade, etc. |
 | In-App Purchases | ✅ | RevenueCat SDK integration (HAP-707) |
+| Artifacts Browser | ✅ | File tree, QuickLook, drag-and-drop (HAP-704) |
 
 ### In-App Purchases (HAP-707)
 
@@ -304,8 +305,34 @@ The app includes RevenueCat integration for subscription management:
 **Conditional Compilation:**
 The code uses `#if canImport(RevenueCat)` for graceful fallback when SDK is not installed, enabling development without the SDK.
 
+### Artifacts Browser (HAP-704)
+
+The app includes a native artifact browser for viewing files generated during Claude Code sessions:
+
+**Key Components:**
+- `Artifact.swift` - Model with file tree structures and type inference
+- `ArtifactViewModel.swift` - Observable view model with decryption integration
+- `ArtifactBrowser.swift` - Main view with OutlineGroup file tree
+- `ArtifactDetailView.swift` - Detail view with QuickLook and syntax highlighting
+
+**Features:**
+- Native file tree navigation using OutlineGroup
+- QuickLook integration for file preview
+- Basic syntax highlighting for code files
+- Drag and drop to Finder
+- Image viewer with checkerboard background
+- Copy to clipboard functionality
+- Save to file via NSSavePanel
+- Encrypted artifact decryption
+
+**Keyboard Shortcuts:**
+- ⇧⌘A - Show Artifacts
+- ⌘R - Refresh (in artifact browser)
+- Space - QuickLook preview
+- ⇧⌘C - Copy to clipboard
+- ⌘S - Save to file
+
 ### Next Steps (Phase 4)
 
 - Voice features integration
-- Artifacts display
 - Push notifications

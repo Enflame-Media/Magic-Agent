@@ -181,6 +181,28 @@ actor APIService {
         let _: ArchiveResponse = try await post("/v1/sessions/\(sessionId)/archive", body: request)
     }
 
+    // MARK: - Artifact Endpoints
+
+    /// Fetch all artifacts for a session.
+    /// - Parameter sessionId: The session ID.
+    /// - Returns: Response containing array of encrypted artifacts.
+    func fetchArtifacts(sessionId: String) async throws -> ArtifactsResponse {
+        return try await fetch("/v1/sessions/\(sessionId)/artifacts")
+    }
+
+    /// Fetch all artifacts for the current user (across all sessions).
+    /// - Returns: Response containing array of encrypted artifacts.
+    func fetchAllArtifacts() async throws -> ArtifactsResponse {
+        return try await fetch("/v1/artifacts")
+    }
+
+    /// Fetch the body content for a specific artifact.
+    /// - Parameter artifactId: The artifact ID.
+    /// - Returns: Response containing the encrypted artifact body.
+    func fetchArtifactBody(artifactId: String) async throws -> ArtifactBodyResponse {
+        return try await fetch("/v1/artifacts/\(artifactId)/body")
+    }
+
     // MARK: - Authentication Endpoints
 
     /// Validate the current authentication token.

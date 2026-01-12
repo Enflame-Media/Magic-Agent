@@ -41,6 +41,9 @@ struct MainView: View {
                 Label("Sessions", systemImage: "terminal")
                     .tag(SidebarSection.sessions)
 
+                Label("Artifacts", systemImage: "doc.text.magnifyingglass")
+                    .tag(SidebarSection.artifacts)
+
                 Label {
                     HStack {
                         Text("Friends")
@@ -74,6 +77,8 @@ struct MainView: View {
         switch selectedSection {
         case .sessions:
             SessionsView()
+        case .artifacts:
+            ArtifactBrowser()
         case .friends:
             FriendsView()
         }
@@ -87,6 +92,14 @@ struct MainView: View {
             .receive(on: DispatchQueue.main)
             .sink { _ in
                 selectedSection = .friends
+            }
+            .store(in: &cancellables)
+
+        // Handle show artifacts notification (from keyboard shortcut)
+        NotificationCenter.default.publisher(for: .showArtifacts)
+            .receive(on: DispatchQueue.main)
+            .sink { _ in
+                selectedSection = .artifacts
             }
             .store(in: &cancellables)
     }
@@ -105,6 +118,7 @@ struct MainView: View {
 /// Sections available in the main sidebar.
 enum SidebarSection: String, Hashable, CaseIterable {
     case sessions
+    case artifacts
     case friends
 }
 

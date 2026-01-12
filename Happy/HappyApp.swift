@@ -87,6 +87,20 @@ struct HappyApp: App {
                 .keyboardShortcut("e", modifiers: [.command, .shift])
             }
 
+            // Artifacts menu
+            CommandMenu("Artifacts") {
+                Button("Show Artifacts") {
+                    NotificationCenter.default.post(name: .showArtifacts, object: nil)
+                }
+                .keyboardShortcut("a", modifiers: [.command, .shift])
+
+                Divider()
+
+                Button("Refresh Artifacts") {
+                    NotificationCenter.default.post(name: .refreshArtifacts, object: nil)
+                }
+            }
+
             // Friends menu
             CommandMenu("Friends") {
                 Button("Show Friends") {
@@ -253,6 +267,10 @@ extension Notification.Name {
     static let addFriend = Notification.Name("addFriend")
     static let refreshFriends = Notification.Name("refreshFriends")
     static let showFriends = Notification.Name("showFriends")
+
+    // Artifacts notifications
+    static let showArtifacts = Notification.Name("showArtifacts")
+    static let refreshArtifacts = Notification.Name("refreshArtifacts")
 
     // Subscription notifications
     static let showPaywall = Notification.Name("showPaywall")
