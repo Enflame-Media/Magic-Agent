@@ -10,6 +10,7 @@
  * - Scrollable message list
  * - Loading and error states
  * - Back navigation
+ * - Share session functionality
  */
 
 import { computed, ref, onMounted, watch } from 'vue';
@@ -18,10 +19,11 @@ import { useSessionsStore } from '@/stores/sessions';
 import { useMessagesStore } from '@/stores/messages';
 import { useAuthStore } from '@/stores/auth';
 import { useMachinesStore, isMachineOnline } from '@/stores/machines';
-import { AgentInput, ChatList } from '@/components/app';
+import { AgentInput, ChatList, VoiceStatusBar, VoiceButton } from '@/components/app';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ShareSessionModal } from '@/components/app/sharing';
 import { fetchSessionMessages } from '@/services/sessions';
 import { decryptMessageContent, decryptSessionMetadata } from '@/services/encryption/sessionDecryption';
 import { normalizeDecryptedMessage } from '@/services/messages/normalize';
@@ -64,6 +66,7 @@ const decryptedMetadata = ref<SessionMetadata | null>(null);
 const decryptedContentById = ref<Map<string, string>>(new Map());
 const messageInput = ref('');
 const isSending = ref(false);
+const isShareModalOpen = ref(false);
 
 async function refreshMetadata(): Promise<void> {
   if (!session.value) {
@@ -347,6 +350,10 @@ function navigateToSettings() {
   router.push('/settings');
 }
 
+function openShareModal() {
+  isShareModalOpen.value = true;
+}
+
 async function handleSendMessage(): Promise<void> {
   if (!session.value || !session.value.active) {
     toast.error('Session is not active');
@@ -419,6 +426,32 @@ async function handleOptionPress(option: { title: string }): Promise<void> {
         </div>
       </button>
 
+      <!-- Voice button -->
+      <VoiceButton
+        v-if="session?.active"
+        :session-id="sessionId"
+        size="icon"
+        variant="ghost"
+      />
+
+      <!-- Share button -->
+      <Button variant="ghost" size="icon" @click="openShareModal" title="Share session">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-5 w-5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+          />
+        </svg>
+      </Button>
+
       <!-- Info button -->
       <Button variant="ghost" size="icon" @click="navigateToInfo">
         <svg
@@ -439,7 +472,9 @@ async function handleOptionPress(option: { title: string }): Promise<void> {
     </header>
 
     <!-- Content -->
-    <ScrollArea class="flex-1 min-h-0">
+    <ScrollArea class="flex-1 min-h-0 relative">
+      <!-- Floating voice status bar -->
+      <VoiceStatusBar variant="floating" />
       <!-- Loading state -->
       <template v-if="isLoading">
         <div class="p-4 space-y-4">
@@ -537,5 +572,11 @@ async function handleOptionPress(option: { title: string }): Promise<void> {
         View-only mode. Use the CLI to send messages.
       </p>
     </div>
+
+    <!-- Share Session Modal -->
+    <ShareSessionModal
+      v-model:open="isShareModalOpen"
+      :session-id="sessionId"
+    />
   </div>
 </template>
