@@ -20,6 +20,7 @@
  */
 
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 import { getServerUrl } from '@/sync/serverConfig';
 import { logger } from '@/utils/logger';
 
@@ -74,42 +75,74 @@ export interface CertificatePinConfig {
 /**
  * Known Happy API domains and their certificate pins.
  *
- * NOTE: Update these hashes when certificates are rotated!
+ * HAP-858: Certificate Chain Information (as of January 2026)
+ * ============================================================
+ * Cloudflare transitioned from DigiCert/Cloudflare Inc ECC CA-3 to Google Trust Services (GTS)
+ * certificates in 2024. The old Cloudflare Inc ECC CA-3 expired December 31, 2024.
  *
- * To get hashes for a domain:
- * 1. Run: echo | openssl s_client -servername happy-api.enflamemedia.com -connect happy-api.enflamemedia.com:443 2>/dev/null | openssl x509 -pubkey -noout | openssl pkey -pubin -outform DER | openssl dgst -sha256 -binary | openssl enc -base64
- * 2. Also get the intermediate CA hash for backup
- * 3. Update the hashes below and deploy via OTA
+ * Current certificate chain for happy-api.enflamemedia.com:
+ * 1. Leaf certificate (rotated automatically by Cloudflare every ~90 days)
+ * 2. Intermediate: GTS CA 1P5 (Google Trust Services) - ECDSA P-256
+ * 3. Root: GTS Root R1 (Google Trust Services) - RSA 4096, valid until June 22, 2036
+ *
+ * Pinning Strategy:
+ * - Pin to root CAs (GTS Root R1, GTS Root R4) for maximum stability
+ * - Include GlobalSign Root R4 as additional backup (cross-signed with GTS)
+ * - Avoid pinning leaf certificates as they rotate frequently
+ *
+ * NOTE: Update these hashes when Google Trust Services certificates change!
+ *
+ * To extract certificate hashes for a domain, run:
+ *   yarn extract-cert-pins
+ *
+ * Or manually:
+ *   echo | openssl s_client -servername <hostname> -connect <hostname>:443 -showcerts 2>/dev/null | \
+ *     openssl x509 -pubkey -noout | openssl pkey -pubin -outform DER | openssl dgst -sha256 -binary | openssl enc -base64
+ *
+ * Or use https://www.ssllabs.com/ssltest/ to get the SPKI hashes.
+ *
+ * @see https://developers.cloudflare.com/ssl/reference/certificate-authorities/
+ * @see https://pki.goog/repository/ - Google Trust Services certificates
  */
 const HAPPY_API_PINS: Record<string, CertificatePinConfig> = {
     // Production API (happy-api.enflamemedia.com)
-    // Cloudflare SSL certificates - using Cloudflare's intermediate CA pins
-    // These are stable across certificate rotations since Cloudflare uses consistent CAs
+    // Cloudflare SSL certificates - using Google Trust Services (GTS) CA pins
+    // GTS root certificates are stable and valid until 2036
     'happy-api.enflamemedia.com': {
         includeSubdomains: false,
         publicKeyHashes: [
-            // Cloudflare Inc ECC CA-3 (intermediate CA - stable across rotations)
-            'Wh1tM1z4+1jgkP1e8pL6I9V3L6hN4q7N6g1v0P5R8xY=',
-            // DigiCert Global Root CA (root CA - very stable)
-            'r/mIkG3eEpVdm+u/ko/cwxzOMo1bk4TyHIlByibiA5E=',
-            // PLACEHOLDER: Add actual leaf certificate hash after extracting
-            // 'YOUR_LEAF_CERT_HASH_HERE=',
+            // GTS Root R1 (Google Trust Services root CA)
+            // RSA 4096, valid until June 22, 2036
+            // SHA-256 Fingerprint: D947432ABDE7B7FA90FC2E6B59101B1280E0E1C7E4E40FA3C6887FFF57A7F4CF
+            // SPKI pin extracted from https://pki.goog/repo/certs/gtsr1.pem
+            'hxqRlPTu1bMS/0DITB1SSu0vd4u/8l8TjPgfaAp63Gc=',
+            // GTS Root R4 (Google Trust Services root CA - ECC)
+            // ECC P-384, valid until June 22, 2036
+            // Used for ECDSA certificates
+            // SPKI pin extracted from https://pki.goog/repo/certs/gtsr4.pem
+            'uyJLOJQLNtPvt+gLa9F/6xaRCKrIHZWGxJpR18qYNGE=',
+            // GlobalSign Root R4 (cross-signed backup)
+            // ECC P-256, valid until January 19, 2038
+            // Cross-signed with GTS for older device compatibility
+            'CLOmM1/OXvSPjw5UOYbAf9GKOxImEp9hhku9W90fHMk=',
         ],
         // Set expiration to allow graceful degradation if pins become stale
-        // This should be updated when new certificates are pinned
-        expirationDate: '2026-12-31',
+        // GTS Root R1 valid until 2036, so this is conservative
+        expirationDate: '2027-12-31',
     },
     // Development API (happy-api-dev.enflamemedia.com)
-    // Using same Cloudflare CA pins since both are behind Cloudflare
+    // Using same GTS CA pins since both are behind Cloudflare
     'happy-api-dev.enflamemedia.com': {
         includeSubdomains: false,
         publicKeyHashes: [
-            // Cloudflare Inc ECC CA-3 (intermediate CA)
-            'Wh1tM1z4+1jgkP1e8pL6I9V3L6hN4q7N6g1v0P5R8xY=',
-            // DigiCert Global Root CA (root CA)
-            'r/mIkG3eEpVdm+u/ko/cwxzOMo1bk4TyHIlByibiA5E=',
+            // GTS Root R1 (Google Trust Services root CA)
+            'hxqRlPTu1bMS/0DITB1SSu0vd4u/8l8TjPgfaAp63Gc=',
+            // GTS Root R4 (Google Trust Services root CA - ECC)
+            'uyJLOJQLNtPvt+gLa9F/6xaRCKrIHZWGxJpR18qYNGE=',
+            // GlobalSign Root R4 (cross-signed backup)
+            'CLOmM1/OXvSPjw5UOYbAf9GKOxImEp9hhku9W90fHMk=',
         ],
-        expirationDate: '2026-12-31',
+        expirationDate: '2027-12-31',
     },
 };
 
@@ -150,6 +183,60 @@ let isPinningInitialized = false;
 let pinningErrorListener: { remove: () => void } | null = null;
 
 /**
+ * Track consecutive failures per domain for alerting thresholds.
+ * HAP-860: Used to detect persistent issues vs transient failures.
+ */
+const consecutiveFailures: Map<string, number> = new Map();
+
+/**
+ * Get app version for analytics tracking.
+ */
+function getAppVersion(): string {
+    return Constants.expoConfig?.version ?? 'unknown';
+}
+
+/**
+ * Get OS version for analytics tracking.
+ */
+function getOsVersion(): string {
+    const version = Platform.Version;
+    if (typeof version === 'string') {
+        return version;
+    }
+    if (typeof version === 'number') {
+        return String(version);
+    }
+    return 'unknown';
+}
+
+/**
+ * Check if pin expiration is approaching and emit warning.
+ * HAP-860: Proactive alerting for pin expiration.
+ */
+function checkPinExpiration(hostname: string, expirationDate?: string): void {
+    if (!expirationDate) return;
+
+    try {
+        const expiration = new Date(expirationDate);
+        const now = new Date();
+        const daysUntilExpiration = Math.floor(
+            (expiration.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+        );
+
+        // Warn if expiration is within 30 days
+        if (daysUntilExpiration <= 30 && daysUntilExpiration > 0) {
+            logger.warn(`[CertPinning] Pins for ${hostname} expire in ${daysUntilExpiration} days`);
+            // TODO HAP-860: Add trackCertPinningExpirationWarning(hostname, daysUntilExpiration);
+        } else if (daysUntilExpiration <= 0) {
+            logger.error(`[CertPinning] Pins for ${hostname} have EXPIRED! Pinning may be disabled.`);
+            // TODO HAP-860: Add trackCertPinningExpirationWarning(hostname, daysUntilExpiration);
+        }
+    } catch {
+        logger.warn(`[CertPinning] Failed to parse expiration date: ${expirationDate}`);
+    }
+}
+
+/**
  * Initialize SSL certificate pinning for Happy API connections.
  *
  * This should be called early in the app lifecycle, before any API requests.
@@ -168,6 +255,7 @@ export async function initializeCertificatePinning(): Promise<void> {
     // Only initialize on native platforms (iOS/Android)
     if (Platform.OS === 'web') {
         logger.debug('[CertPinning] Skipping - not supported on web platform');
+        // TODO HAP-860: Add trackCertPinningBypassed({ hostname: 'unknown', reason: 'unsupported_platform' });
         return;
     }
 
@@ -183,6 +271,7 @@ export async function initializeCertificatePinning(): Promise<void> {
 
     if (hostname && shouldBypassPinning(hostname)) {
         logger.debug(`[CertPinning] Bypassing for local development: ${hostname}`);
+        // TODO HAP-860: Add trackCertPinningBypassed({ hostname, reason: 'local_development' });
         isPinningInitialized = true;
         return;
     }
@@ -201,9 +290,10 @@ export async function initializeCertificatePinning(): Promise<void> {
         try {
             // eslint-disable-next-line @typescript-eslint/no-var-requires
             sslPinning = require('react-native-ssl-public-key-pinning') as SslPinningModule;
-        } catch (importError) {
+        } catch {
             logger.warn('[CertPinning] SSL pinning module not available - skipping initialization');
             logger.debug('[CertPinning] Install with: npx expo install react-native-ssl-public-key-pinning');
+            // TODO HAP-860: Add trackCertPinningBypassed({ hostname: hostname || 'unknown', reason: 'module_unavailable' });
             isPinningInitialized = true;
             return;
         }
@@ -211,6 +301,7 @@ export async function initializeCertificatePinning(): Promise<void> {
         // Check if the native module is available
         if (!sslPinning.isSslPinningAvailable()) {
             logger.warn('[CertPinning] Native SSL pinning module not available');
+            // TODO HAP-860: Add trackCertPinningBypassed({ hostname: hostname || 'unknown', reason: 'module_unavailable' });
             isPinningInitialized = true;
             return;
         }
@@ -220,24 +311,40 @@ export async function initializeCertificatePinning(): Promise<void> {
 
         // Add pins for the configured server
         if (hostname && HAPPY_API_PINS[hostname]) {
+            const domainPins = HAPPY_API_PINS[hostname];
             pinConfig[hostname] = {
-                includeSubdomains: HAPPY_API_PINS[hostname].includeSubdomains,
-                publicKeyHashes: HAPPY_API_PINS[hostname].publicKeyHashes,
+                includeSubdomains: domainPins.includeSubdomains,
+                publicKeyHashes: domainPins.publicKeyHashes,
             };
             logger.debug(`[CertPinning] Configuring pins for: ${hostname}`);
+
+            // HAP-860: Check for pin expiration
+            checkPinExpiration(hostname, domainPins.expirationDate);
         } else {
             // If we don't have pins for this hostname, skip initialization
             // This handles custom server configurations
             logger.warn(`[CertPinning] No pins configured for hostname: ${hostname}`);
+            // TODO HAP-860: Add trackCertPinningBypassed({ hostname: hostname || 'unknown', reason: 'no_pins_configured' });
             isPinningInitialized = true;
             return;
         }
 
-        // Set up error listener for pin validation failures
+        // HAP-860: Set up error listener for pin validation failures with analytics
         pinningErrorListener = sslPinning.addSslPinningErrorListener((error) => {
+            // Increment consecutive failure count for this domain
+            const currentCount = consecutiveFailures.get(error.serverHostname) || 0;
+            const newCount = currentCount + 1;
+            consecutiveFailures.set(error.serverHostname, newCount);
+
             logger.error(`[CertPinning] Pin validation failed for ${error.serverHostname}: ${error.message}`);
-            // In production, we might want to report this to analytics
-            // This could indicate a MITM attack or certificate rotation issue
+            logger.error(`[CertPinning] Consecutive failures: ${newCount}`);
+
+            // TODO HAP-860: Add trackCertPinningFailure tracking here
+
+            // HAP-860: Alert if we exceed threshold (10 consecutive failures)
+            if (newCount >= 10) {
+                logger.error(`[CertPinning] ALERT: ${error.serverHostname} has ${newCount} consecutive pin failures!`);
+            }
         });
 
         // Initialize the pinning configuration
@@ -245,6 +352,8 @@ export async function initializeCertificatePinning(): Promise<void> {
 
         isPinningInitialized = true;
         logger.debug('[CertPinning] Successfully initialized');
+
+        // TODO HAP-860: Add trackCertPinningInitialized tracking here
     } catch (error) {
         // Log the error but don't throw - we don't want to break the app
         // if pinning fails to initialize
@@ -322,4 +431,55 @@ export async function updatePinsForHost(
         isPinningInitialized = false;
         await initializeCertificatePinning();
     }
+}
+
+/**
+ * Reset consecutive failure count for a hostname.
+ *
+ * HAP-860: Call this when a successful request is made to reset
+ * the failure tracking. This helps distinguish between transient
+ * issues and persistent problems.
+ *
+ * @param hostname - The hostname to reset failures for
+ */
+export function resetConsecutiveFailures(hostname: string): void {
+    consecutiveFailures.set(hostname, 0);
+}
+
+/**
+ * Get the current consecutive failure count for a hostname.
+ *
+ * HAP-860: Useful for monitoring and debugging.
+ *
+ * @param hostname - The hostname to check
+ * @returns The number of consecutive failures, or 0 if none
+ */
+export function getConsecutiveFailures(hostname: string): number {
+    return consecutiveFailures.get(hostname) || 0;
+}
+
+/**
+ * Get certificate pinning monitoring metrics.
+ *
+ * HAP-860: Returns current state for dashboard/debugging.
+ *
+ * @returns Object containing pinning status and metrics
+ */
+export function getCertPinningMetrics(): {
+    isActive: boolean;
+    configuredDomains: string[];
+    consecutiveFailures: Record<string, number>;
+    platform: string;
+} {
+    const failures: Record<string, number> = {};
+    consecutiveFailures.forEach((count, hostname) => {
+        failures[hostname] = count;
+    });
+
+    return {
+        isActive: isPinningInitialized && Platform.OS !== 'web',
+        configuredDomains: Object.keys(HAPPY_API_PINS),
+        consecutiveFailures: failures,
+        platform: Platform.OS,
+    };
 }

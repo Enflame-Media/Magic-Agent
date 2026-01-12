@@ -32,9 +32,22 @@ The app uses `react-native-ssl-public-key-pinning` to pin the SPKI (Subject Publ
 
 Each domain has multiple pins for certificate rotation resilience:
 
-1. **Leaf Certificate Pin**: The actual server certificate (primary)
-2. **Intermediate CA Pin**: Cloudflare's intermediate CA (backup)
-3. **Root CA Pin**: DigiCert root CA (emergency fallback)
+1. **GTS Root R1**: Google Trust Services root CA (RSA 4096, valid until 2036)
+2. **GTS Root R4**: Google Trust Services root CA (ECC P-384, valid until 2036)
+3. **GlobalSign Root R4**: Cross-signed backup (ECC P-256, valid until 2038)
+
+### Certificate Chain (HAP-858)
+
+As of January 2026, Cloudflare uses Google Trust Services (GTS) certificates:
+
+```
+Leaf Certificate (rotates every ~90 days)
+    └── GTS CA 1P5 (Intermediate - ECDSA P-256)
+        └── GTS Root R1 (Root - RSA 4096, valid until 2036)
+```
+
+**Note**: The previous Cloudflare Inc ECC CA-3 intermediate certificate expired December 31, 2024.
+Pinning now uses GTS root certificates for maximum stability.
 
 ## Development Setup
 
@@ -73,21 +86,29 @@ The Expo network inspector interferes with certificate pinning. The `expo-build-
 
 ## Certificate Rotation
 
+### Extracting Certificate Hashes
+
+Use the provided script to extract current certificate hashes:
+
+```bash
+# From apps/web/react directory
+yarn extract-cert-pins
+```
+
+Or manually:
+```bash
+echo | openssl s_client -servername <hostname> -connect <hostname>:443 | \
+  openssl x509 -pubkey -noout | \
+  openssl pkey -pubin -outform DER | \
+  openssl dgst -sha256 -binary | \
+  openssl enc -base64
+```
+
 ### Before Rotation
 
-1. **Extract new certificate hash** using:
-   ```bash
-   echo | openssl s_client -servername <hostname> -connect <hostname>:443 | \
-     openssl x509 -pubkey -noout | \
-     openssl pkey -pubin -outform DER | \
-     openssl dgst -sha256 -binary | \
-     openssl enc -base64
-   ```
-
+1. **Extract new certificate hash** using `yarn extract-cert-pins`
 2. **Add new hash as backup pin** in `sources/utils/certificatePinning.ts`
-
 3. **Deploy via OTA** (Expo Updates) - no App Store release needed
-
 4. **Wait for user adoption** (~1-2 weeks)
 
 ### After Rotation
@@ -95,6 +116,15 @@ The Expo network inspector interferes with certificate pinning. The `expo-build-
 1. **Remove old certificate hash** from primary position
 2. **Move new hash to primary** position
 3. **Deploy via OTA**
+
+### Root CA Rotation (Rare)
+
+Since we pin to root CAs (GTS Root R1/R4, GlobalSign Root R4), rotation is rare:
+- GTS Root R1 valid until June 22, 2036
+- GTS Root R4 valid until June 22, 2036
+- GlobalSign Root R4 valid until January 19, 2038
+
+When Google Trust Services introduces new root CAs, update pins before the transition.
 
 ### Emergency Recovery
 
@@ -153,6 +183,7 @@ TODO: Add analytics event for pin failures to detect:
 |------|---------|
 | `sources/utils/certificatePinning.ts` | Main pinning module |
 | `sources/utils/certificatePinning.test.ts` | Unit tests |
+| `sources/scripts/extractCertPins.ts` | Script to extract certificate hashes |
 | `app.config.js` | expo-build-properties config |
 
 ## References
