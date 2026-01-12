@@ -1,4 +1,5 @@
 import { log } from "@/utils/log";
+import { createSafeError } from "@happy/errors";
 import { Fastify } from "../types";
 
 // Type guard to check if an error has Fastify error properties
@@ -62,11 +63,33 @@ export function enableErrorHandlers(app: Fastify) {
                 statusCode
             });
         } else {
-            // Client errors - can expose more details
+            // Client errors (4xx) - sanitize to prevent information leakage
+            // HAP-647: Use createSafeError for consistent sanitization
+            const isDevelopment = process.env.NODE_ENV === 'development';
+            const safeError = createSafeError(error, {
+                requestId: request.correlationId,
+                isDevelopment,
+                logger: (reqId, message, stack, context) => {
+                    // Already logged above with comprehensive context
+                    // Additional structured logging for 4xx client errors
+                    log({
+                        module: 'fastify-4xx-error',
+                        level: 'warn',
+                        correlationId: reqId,
+                        message,
+                        context
+                    }, `Client error details: ${message}`);
+                }
+            });
+
             return reply.code(statusCode).send({
-                error: errorProps.name || 'Error',
-                message: errorProps.message,
-                statusCode
+                error: safeError.error,
+                message: safeError.error,
+                statusCode,
+                requestId: request.correlationId,
+                timestamp: safeError.timestamp,
+                ...(safeError.code && { code: safeError.code }),
+                ...(safeError.canTryAgain && { canTryAgain: true })
             });
         }
     });
