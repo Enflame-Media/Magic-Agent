@@ -19,20 +19,23 @@
  * ```
  */
 
-// Note: When @elevenlabs/elevenlabs-js is installed, uncomment this import:
-// import { Conversation } from '@elevenlabs/elevenlabs-js';
-import type { VoiceSession, VoiceSessionConfig, VoiceEventCallbacks } from './types';
+import { Conversation, type Mode, type DisconnectionDetails } from '@11labs/client';
+import type { VoiceSession, VoiceSessionConfig, VoiceEventCallbacks, VoiceMode } from './types';
 import { ELEVENLABS_CONFIG, VOICE_CONFIG, getElevenLabsLanguageCode } from './config';
 import { useVoiceStore } from '@/stores/voice';
-
-// Placeholder type until SDK is installed
-type Conversation = unknown;
 
 /**
  * Global conversation instance
  * Managed by the VoiceService singleton
  */
 let conversationInstance: Conversation | null = null;
+
+/**
+ * Convert SDK mode to our VoiceMode type
+ */
+function convertMode(sdkMode: Mode): VoiceMode {
+    return sdkMode === 'speaking' ? 'speaking' : 'listening';
+}
 
 /**
  * Voice Service Implementation
@@ -100,11 +103,7 @@ class VoiceServiceImpl implements VoiceSession {
                 console.log('[Voice] Language:', language);
             }
 
-            // Note: The actual ElevenLabs SDK integration would go here.
-            // For now, we're setting up the structure for when the SDK is installed.
-            // The Conversation class from @elevenlabs/elevenlabs-js would be used.
-
-            // Simulated connection for structure (replace with actual SDK call)
+            // Connect to ElevenLabs Conversational AI via WebRTC
             await this.connectToElevenLabs(config, agentId, language);
 
             store.setStatus('connected');
@@ -126,51 +125,61 @@ class VoiceServiceImpl implements VoiceSession {
     private async connectToElevenLabs(
         config: VoiceSessionConfig,
         agentId: string,
-        _language: string
+        language: string
     ): Promise<void> {
-        // Note: store would be used when SDK is integrated
-        // const store = useVoiceStore();
+        const store = useVoiceStore();
 
-        // In a real implementation, this would use the ElevenLabs Conversation class:
-        //
-        // conversationInstance = new Conversation({
-        //     agentId,
-        //     requiresAuth: !!config.token,
-        //     audioInterface: new DefaultAudioInterface(),
-        //     callbackAgentResponse: (text) => {
-        //         this.callbacks.onAgentResponse?.({ text, isFinal: true });
-        //     },
-        //     callbackUserTranscript: (text) => {
-        //         this.callbacks.onUserTranscript?.({ text, isFinal: true });
-        //     },
-        //     callbackLatencyMeasurement: (latencyMs) => {
-        //         this.callbacks.onLatency?.({ latencyMs });
-        //     }
-        // });
-        //
-        // await conversationInstance.startSession({
-        //     dynamicVariables: {
-        //         sessionId: config.sessionId,
-        //         initialConversationContext: config.initialContext ?? ''
-        //     },
-        //     overrides: {
-        //         agent: { language }
-        //     }
-        // });
-
-        // For now, simulate the connection structure
-        // This will be replaced when the SDK is installed
-        if (VOICE_CONFIG.ENABLE_DEBUG_LOGGING) {
-            console.log('[Voice] Would connect to ElevenLabs with:', {
-                agentId,
+        conversationInstance = await Conversation.startSession({
+            agentId,
+            connectionType: ELEVENLABS_CONFIG.CONNECTION_TYPE,
+            dynamicVariables: {
                 sessionId: config.sessionId,
-                language: _language,
-                hasToken: !!config.token,
-            });
-        }
+                initialConversationContext: config.initialContext ?? '',
+            },
+            overrides: {
+                agent: {
+                    language: language as 'en' | 'es' | 'ru' | 'pl' | 'pt' | 'zh',
+                },
+            },
+            onConnect: ({ conversationId }) => {
+                if (VOICE_CONFIG.ENABLE_DEBUG_LOGGING) {
+                    console.log('[Voice] Connected with conversation ID:', conversationId);
+                }
+                store.setConversationId(conversationId);
+                this._callbacks.onConnect?.();
+            },
+            onDisconnect: (details: DisconnectionDetails) => {
+                if (VOICE_CONFIG.ENABLE_DEBUG_LOGGING) {
+                    console.log('[Voice] Disconnected:', details.reason);
+                }
+                store.setStatus('disconnected');
+                this._callbacks.onDisconnect?.();
+            },
+            onError: (message: string, context?: unknown) => {
+                console.error('[Voice] Error:', message, context);
+                store.setError(message);
+                this._callbacks.onError?.(new Error(message));
+            },
+            onModeChange: ({ mode }) => {
+                const voiceMode = convertMode(mode);
+                if (VOICE_CONFIG.ENABLE_DEBUG_LOGGING) {
+                    console.log('[Voice] Mode changed to:', voiceMode);
+                }
+                store.setMode(voiceMode);
+                this._callbacks.onModeChange?.(voiceMode);
+            },
+            onMessage: ({ message, source }) => {
+                if (source === 'ai') {
+                    this._callbacks.onAgentResponse?.({ text: message, isFinal: true });
+                } else {
+                    this._callbacks.onUserTranscript?.({ text: message, isFinal: true });
+                }
+            },
+        });
 
-        // Store would track the conversation ID once connected
-        // store.setConversationId(conversationInstance.getConversationId());
+        if (VOICE_CONFIG.ENABLE_DEBUG_LOGGING) {
+            console.log('[Voice] Session started with ID:', conversationInstance.getId());
+        }
     }
 
     /**
@@ -181,7 +190,7 @@ class VoiceServiceImpl implements VoiceSession {
 
         try {
             if (conversationInstance) {
-                // await conversationInstance.endSession();
+                await conversationInstance.endSession();
                 conversationInstance = null;
             }
 
@@ -208,7 +217,7 @@ class VoiceServiceImpl implements VoiceSession {
             console.log('[Voice] Sending text message:', message);
         }
 
-        // conversationInstance.sendUserMessage(message);
+        conversationInstance.sendUserMessage(message);
     }
 
     /**
@@ -227,7 +236,7 @@ class VoiceServiceImpl implements VoiceSession {
             console.log('[Voice] Sending contextual update:', update);
         }
 
-        // conversationInstance.sendContextualUpdate(update);
+        conversationInstance.sendContextualUpdate(update);
     }
 
     /**
@@ -255,8 +264,7 @@ class VoiceServiceImpl implements VoiceSession {
      * Get the current conversation ID
      */
     getConversationId(): string | null {
-        // return conversationInstance?.getConversationId() ?? null;
-        return null;
+        return conversationInstance?.getId() ?? null;
     }
 }
 
