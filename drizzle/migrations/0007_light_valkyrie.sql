@@ -1,0 +1,1 @@
+CREATE INDEX `SessionShareInvitation_status_expiresAt_idx` ON `SessionShareInvitation` (`status`,`expiresAt`);

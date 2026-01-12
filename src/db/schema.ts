@@ -935,6 +935,14 @@ export const sessionShareInvitations = sqliteTable(
             'SessionShareInvitation_status_check',
             sql`status IN ('pending', 'accepted', 'expired', 'revoked')`
         ),
+        /**
+         * Composite index for efficient expired invitation cleanup (HAP-824)
+         * Supports the batch cleanup query that finds pending invitations past expiration.
+         */
+        statusExpiresIdx: index('SessionShareInvitation_status_expiresAt_idx').on(
+            table.status,
+            table.expiresAt
+        ),
     })
 );
 
