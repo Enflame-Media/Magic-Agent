@@ -19,7 +19,7 @@ import { initialWindowMetrics, SafeAreaProvider, useSafeAreaInsets } from 'react
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SidebarNavigator } from '@/components/SidebarNavigator';
 import sodium from '@/encryption/libsodium.lib';
-import { View, Platform, Text } from 'react-native';
+import { View, Platform, Text, ActivityIndicator } from 'react-native';
 import { ModalProvider } from '@/modal';
 import { ToastProvider } from '@/toast';
 import { PostHogProvider } from 'posthog-react-native';
@@ -34,10 +34,11 @@ import { CommandPaletteProvider } from '@/components/CommandPalette/CommandPalet
 import { StatusBarProvider } from '@/components/StatusBarProvider';
 // import * as SystemUI from 'expo-system-ui';
 import { monkeyPatchConsoleForRemoteLoggingForFasterAiAutoDebuggingOnlyInLocalBuilds } from '@/utils/remoteLogger';
-import { useUnistyles } from 'react-native-unistyles';
+import { useUnistyles, StyleSheet } from 'react-native-unistyles';
 import { AsyncLock } from '@/utils/lock';
 import { initializeCertificatePinning } from '@/utils/certificatePinning';
 import * as Notifications from 'expo-notifications';
+import { t } from '@/text';
 
 // Configure notification handler for foreground notifications
 // This allows notifications to be shown even when the app is in the foreground
@@ -121,7 +122,7 @@ async function loadFonts() {
                 'IBMPlexSans-Italic': require('@/assets/fonts/IBMPlexSans-Italic.ttf'),
                 'IBMPlexSans-SemiBold': require('@/assets/fonts/IBMPlexSans-SemiBold.ttf'),
 
-                // IBM Plex Mono family  
+                // IBM Plex Mono family
                 'IBMPlexMono-Regular': require('@/assets/fonts/IBMPlexMono-Regular.ttf'),
                 'IBMPlexMono-Italic': require('@/assets/fonts/IBMPlexMono-Italic.ttf'),
                 'IBMPlexMono-SemiBold': require('@/assets/fonts/IBMPlexMono-SemiBold.ttf'),
@@ -143,7 +144,7 @@ async function loadFonts() {
                         'IBMPlexSans-Italic': require('@/assets/fonts/IBMPlexSans-Italic.ttf'),
                         'IBMPlexSans-SemiBold': require('@/assets/fonts/IBMPlexSans-SemiBold.ttf'),
 
-                        // IBM Plex Mono family  
+                        // IBM Plex Mono family
                         'IBMPlexMono-Regular': require('@/assets/fonts/IBMPlexMono-Regular.ttf'),
                         'IBMPlexMono-Italic': require('@/assets/fonts/IBMPlexMono-Italic.ttf'),
                         'IBMPlexMono-SemiBold': require('@/assets/fonts/IBMPlexMono-SemiBold.ttf'),
@@ -182,14 +183,14 @@ export default function RootLayout() {
 
     //
     // Init sequence
+    // HAP-834: Debug screen removed - logger.debug() is still used for dev console troubleshooting
     //
     const [initState, setInitState] = React.useState<{ credentials: AuthCredentials | null } | null>(null);
-    const [debugInfo, setDebugInfo] = React.useState<string>('Starting...');
     React.useEffect(() => {
         // HAP-835: Debug markers gated to dev builds only
         if (__DEV__) {
             // UNMISSABLE DEBUG MARKER - if you don't see this, the build is stale!
-            console.warn('🚀🚀🚀 HAPPY APP INIT v2 - ' + new Date().toISOString() + ' 🚀🚀🚀');
+            console.warn('HAPPY APP INIT v2 - ' + new Date().toISOString());
             // Also try alert for absolute certainty
             if (Platform.OS === 'web' && typeof window !== 'undefined') {
                 (window as any).__HAPPY_DEBUG__ = (window as any).__HAPPY_DEBUG__ || [];
@@ -198,27 +199,20 @@ export default function RootLayout() {
         }
         (async () => {
             logger.debug('[_layout] Init sequence starting...');
-            setDebugInfo('Init starting...');
             try {
                 logger.debug('[_layout] Loading fonts...');
-                setDebugInfo('Loading fonts...');
                 await loadFonts();
                 logger.debug('[_layout] Fonts loaded, initializing certificate pinning...');
-                setDebugInfo('Fonts loaded, initializing security...');
                 // HAP-624: Initialize certificate pinning before any API calls
                 // This protects against MITM attacks on all subsequent network requests
                 await initializeCertificatePinning();
                 logger.debug('[_layout] Certificate pinning initialized, waiting for sodium...');
-                setDebugInfo('Security initialized, waiting for sodium...');
                 await sodium.ready;
                 logger.debug('[_layout] Sodium ready, getting credentials...');
-                setDebugInfo('Sodium ready, getting credentials...');
                 const credentials = await TokenStorage.getCredentials();
                 logger.debug('[_layout] Credentials:', credentials ? 'found' : 'not found');
-                setDebugInfo('Credentials: ' + (credentials ? 'found' : 'not found'));
                 if (credentials) {
                     logger.debug('[_layout] Calling syncRestore...');
-                    setDebugInfo('Calling syncRestore...');
                     // Add timeout to prevent infinite hang - sync will continue in background
                     const INIT_TIMEOUT_MS = 15000;
                     try {
@@ -229,16 +223,15 @@ export default function RootLayout() {
                             ),
                         ]);
                         logger.debug('[_layout] syncRestore completed');
-                        setDebugInfo('syncRestore completed');
                     } catch (syncError) {
+                        // HAP-834: Never show loading error to user, just retry silently
+                        // Errors are still logged to console for debugging
                         console.warn('[_layout] syncRestore failed/timed out:', syncError);
-                        setDebugInfo('syncRestore failed: ' + String(syncError));
 
                         // If token is invalid, clear credentials and start fresh
                         const errorMessage = String(syncError);
                         if (errorMessage.includes('Invalid token') || errorMessage.includes('401') || errorMessage.includes('Unauthorized')) {
                             console.warn('[_layout] Invalid token detected, clearing credentials...');
-                            setDebugInfo('Invalid token - clearing credentials...');
                             await TokenStorage.removeCredentials();
                             // Set credentials to null to show login screen
                             setInitState({ credentials: null });
@@ -255,13 +248,11 @@ export default function RootLayout() {
                 }
 
                 logger.debug('[_layout] Setting init state...');
-                setDebugInfo('Setting init state...');
                 setInitState({ credentials });
                 logger.debug('[_layout] Init complete!');
-                setDebugInfo('Init complete!');
             } catch (error) {
+                // HAP-834: Never show loading error to user, always continue gracefully
                 logger.error('[_layout] Error initializing:', error);
-                setDebugInfo('ERROR: ' + String(error));
                 // Still try to show the app even if init fails
                 logger.debug('[_layout] Attempting to show app despite error...');
                 setInitState({ credentials: null });
@@ -287,30 +278,23 @@ export default function RootLayout() {
     useResourceMonitoring();
 
     //
-    // Not inited - show loading state (debug info only in dev builds)
-    // HAP-835: Debug UI gated to dev builds only
+    // Not inited - show user-friendly loading state
+    // HAP-834: Replaced debug screen with production-quality loading UI
+    // Splash screen remains visible until init completes, but this provides a fallback
     //
 
     if (!initState) {
-        // In production, show a minimal loading state that matches the app theme
-        // In dev, show detailed debug info for troubleshooting
-        if (__DEV__) {
-            return (
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1a1a2e', padding: 20 }}>
-                    <Text style={{ color: '#00ff00', fontSize: 18, fontFamily: 'monospace', textAlign: 'center' }}>
-                        DEBUG MODE
-                    </Text>
-                    <Text style={{ color: '#ffffff', fontSize: 14, fontFamily: 'monospace', marginTop: 20, textAlign: 'center' }}>
-                        {debugInfo}
-                    </Text>
-                    <Text style={{ color: '#888888', fontSize: 12, fontFamily: 'monospace', marginTop: 20, textAlign: 'center' }}>
-                        If stuck here, check browser console (F12)
-                    </Text>
-                </View>
-            );
-        }
-        // Production: minimal loading state - splash screen handles the visual
-        return null;
+        // HAP-834: User-friendly loading view with theme support
+        // The splash screen stays visible during init, but we render a proper fallback
+        // that matches the app theme in case the splash is not available
+        return (
+            <View style={loadingStyles.container}>
+                <ActivityIndicator size="large" color={theme.colors.primary} />
+                <Text style={[loadingStyles.text, { color: theme.colors.textSecondary }]}>
+                    {t('common.loading')}
+                </Text>
+            </View>
+        );
     }
 
     //
@@ -358,3 +342,17 @@ export default function RootLayout() {
         </>
     );
 }
+
+// HAP-834: User-friendly loading styles
+const loadingStyles = StyleSheet.create((theme) => ({
+    container: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: theme.colors.groupped.background,
+    },
+    text: {
+        marginTop: 16,
+        fontSize: 16,
+    },
+}))
