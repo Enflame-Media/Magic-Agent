@@ -76,6 +76,8 @@ interface TestEnvOptions {
     enableDebugLogging?: boolean;
     /** Set the DEV_LOGGING_TOKEN for token authentication (HAP-818) */
     devLoggingToken?: string;
+    /** Set the ENVIRONMENT for environment guardrails (HAP-821) */
+    environment?: 'development' | 'staging' | 'production';
 }
 
 /**
@@ -89,7 +91,8 @@ function createTestEnv(options: TestEnvOptions | boolean = false) {
         : options;
 
     return {
-        ENVIRONMENT: 'development' as const,
+        // HAP-821: Default to 'development' for backward compatibility with existing tests
+        ENVIRONMENT: opts.environment ?? ('development' as const),
         HAPPY_MASTER_SECRET: 'test-secret-for-vitest-tests',
         DB: {} as D1Database, // Placeholder - actual DB calls are intercepted by getDb mock
         UPLOADS: createMockR2(),
@@ -177,6 +180,158 @@ describe('Dev Routes', () => {
 
                 expect(res.status).toBe(403);
                 const body = await res.json();
+                expect(body).toHaveProperty('error', 'Debug logging is disabled');
+            });
+        });
+
+        // ============================================================================
+        // Tests for PRODUCTION ENVIRONMENT BLOCKING (HAP-821)
+        // ============================================================================
+        describe('production environment blocking (HAP-821)', () => {
+            it('should return 403 in production even when debug logging flag is enabled', async () => {
+                const testEnv = createTestEnv({
+                    enableDebugLogging: true,
+                    environment: 'production',
+                });
+
+                const res = await app.request(
+                    '/logs-combined-from-cli-and-mobile-for-simple-ai-debugging',
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: jsonBody(validLogData),
+                    },
+                    testEnv
+                );
+
+                const body = await expectStatus<{ error: string }>(res, 403);
+                expect(body).toHaveProperty('error', 'Debug logging is not available in production');
+            });
+
+            it('should return 403 in production with correct token and all flags enabled', async () => {
+                const testEnv = createTestEnv({
+                    enableDebugLogging: true,
+                    devLoggingToken: 'valid-token',
+                    environment: 'production',
+                });
+
+                const res = await app.request(
+                    '/logs-combined-from-cli-and-mobile-for-simple-ai-debugging',
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Dev-Logging-Token': 'valid-token',
+                        },
+                        body: jsonBody(validLogData),
+                    },
+                    testEnv
+                );
+
+                const body = await expectStatus<{ error: string }>(res, 403);
+                expect(body).toHaveProperty('error', 'Debug logging is not available in production');
+            });
+
+            it('should return 403 when ENVIRONMENT is undefined (defaults to production for safety)', async () => {
+                // Create environment with undefined ENVIRONMENT
+                const testEnv = {
+                    ...createTestEnv({
+                        enableDebugLogging: true,
+                    }),
+                    ENVIRONMENT: undefined,
+                };
+
+                const res = await app.request(
+                    '/logs-combined-from-cli-and-mobile-for-simple-ai-debugging',
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: jsonBody(validLogData),
+                    },
+                    testEnv
+                );
+
+                const body = await expectStatus<{ error: string }>(res, 403);
+                expect(body).toHaveProperty('error', 'Debug logging is not available in production');
+            });
+
+            it('should allow logging in development environment when flag is enabled', async () => {
+                const testEnv = createTestEnv({
+                    enableDebugLogging: true,
+                    environment: 'development',
+                });
+
+                const res = await app.request(
+                    '/logs-combined-from-cli-and-mobile-for-simple-ai-debugging',
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: jsonBody(validLogData),
+                    },
+                    testEnv
+                );
+
+                const body = await expectOk<{ success: true }>(res);
+                expect(body).toEqual({ success: true });
+            });
+
+            it('should allow logging in staging environment when flag is enabled', async () => {
+                const testEnv = createTestEnv({
+                    enableDebugLogging: true,
+                    environment: 'staging',
+                });
+
+                const res = await app.request(
+                    '/logs-combined-from-cli-and-mobile-for-simple-ai-debugging',
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: jsonBody(validLogData),
+                    },
+                    testEnv
+                );
+
+                const body = await expectOk<{ success: true }>(res);
+                expect(body).toEqual({ success: true });
+            });
+
+            it('should still require debug logging flag in development environment', async () => {
+                const testEnv = createTestEnv({
+                    enableDebugLogging: false,
+                    environment: 'development',
+                });
+
+                const res = await app.request(
+                    '/logs-combined-from-cli-and-mobile-for-simple-ai-debugging',
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: jsonBody(validLogData),
+                    },
+                    testEnv
+                );
+
+                const body = await expectStatus<{ error: string }>(res, 403);
+                expect(body).toHaveProperty('error', 'Debug logging is disabled');
+            });
+
+            it('should still require debug logging flag in staging environment', async () => {
+                const testEnv = createTestEnv({
+                    enableDebugLogging: false,
+                    environment: 'staging',
+                });
+
+                const res = await app.request(
+                    '/logs-combined-from-cli-and-mobile-for-simple-ai-debugging',
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: jsonBody(validLogData),
+                    },
+                    testEnv
+                );
+
+                const body = await expectStatus<{ error: string }>(res, 403);
                 expect(body).toHaveProperty('error', 'Debug logging is disabled');
             });
         });

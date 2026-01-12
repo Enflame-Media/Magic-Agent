@@ -5,6 +5,9 @@ import {
     DevLogDisabledSchema,
     DevLogUnauthorizedSchema,
     DevLogRateLimitSchema,
+    DevLogEnvironmentBlockedSchema,
+    DevLogPayloadTooLargeSchema,
+    DEV_LOG_SIZE_LIMITS,
 } from '@/schemas/dev';
 import { checkRateLimit, type RateLimitConfig } from '@/lib/rate-limit';
 
@@ -13,6 +16,11 @@ import { checkRateLimit, type RateLimitConfig } from '@/lib/rate-limit';
  */
 interface Env {
     DB: D1Database;
+    /**
+     * Current deployment environment
+     * Used to enforce production guardrails (HAP-821)
+     */
+    ENVIRONMENT?: 'development' | 'staging' | 'production';
     /**
      * Enable debug logging endpoint
      * Set via wrangler secret or .dev.vars
@@ -45,6 +53,13 @@ const DEV_LOG_RATE_LIMIT: RateLimitConfig = {
 };
 
 /**
+ * Maximum total request body size for dev logging (HAP-820)
+ * This is a conservative limit that accounts for JSON overhead.
+ * Individual field limits are enforced by Zod schema.
+ */
+const MAX_REQUEST_BODY_SIZE = 200 * 1024; // 200KB total body size
+
+/**
  * Dev routes module
  *
  * Implements development/debugging endpoints:
@@ -53,6 +68,30 @@ const DEV_LOG_RATE_LIMIT: RateLimitConfig = {
  * These endpoints are gated behind environment variables for security.
  */
 const devRoutes = new OpenAPIHono<{ Bindings: Env }>();
+
+/**
+ * Middleware to check request body size before Zod validation (HAP-820)
+ * Returns 413 if Content-Length exceeds MAX_REQUEST_BODY_SIZE
+ */
+devRoutes.use('/logs-combined-from-cli-and-mobile-for-simple-ai-debugging', async (c, next) => {
+    // Check Content-Length header if present (HAP-820)
+    const contentLength = c.req.header('Content-Length');
+    if (contentLength) {
+        const size = parseInt(contentLength, 10);
+        if (!isNaN(size) && size > MAX_REQUEST_BODY_SIZE) {
+            return c.json(
+                {
+                    error: `Payload too large: request body exceeds ${MAX_REQUEST_BODY_SIZE} bytes limit`,
+                    maxMessageLength: DEV_LOG_SIZE_LIMITS.MAX_MESSAGE_LENGTH,
+                    maxRawObjectSize: DEV_LOG_SIZE_LIMITS.MAX_RAW_OBJECT_SIZE,
+                },
+                413
+            );
+        }
+    }
+    // Pass through to the next handler
+    return next();
+});
 
 // ============================================================================
 // POST /logs-combined-from-cli-and-mobile-for-simple-ai-debugging
@@ -90,10 +129,18 @@ const combinedLoggingRoute = createRoute({
         403: {
             content: {
                 'application/json': {
-                    schema: DevLogDisabledSchema,
+                    schema: DevLogDisabledSchema.or(DevLogEnvironmentBlockedSchema),
                 },
             },
-            description: 'Debug logging is disabled',
+            description: 'Debug logging is disabled or blocked in production (HAP-821)',
+        },
+        413: {
+            content: {
+                'application/json': {
+                    schema: DevLogPayloadTooLargeSchema,
+                },
+            },
+            description: 'Payload too large - message or messageRawObject exceeds size limits (HAP-820)',
         },
         429: {
             content: {
@@ -121,12 +168,19 @@ const combinedLoggingRoute = createRoute({
     tags: ['Development'],
     summary: 'Combined debug logging',
     description:
-        'Receives log entries from mobile and CLI clients for debugging. Only enabled when DANGEROUSLY_LOG_TO_SERVER_FOR_AI_AUTO_DEBUGGING is set. Requires X-Dev-Logging-Token header for authentication. Rate limited to 60 requests per minute per source/IP.',
+        `Receives log entries from mobile and CLI clients for debugging. IMPORTANT: This endpoint is disabled in production environments regardless of any configuration flags (HAP-821). In development/staging, requires DANGEROUSLY_LOG_TO_SERVER_FOR_AI_AUTO_DEBUGGING to be set. Optionally requires X-Dev-Logging-Token header for authentication. Rate limited to 60 requests per minute per source/IP. Payload limits: message max ${DEV_LOG_SIZE_LIMITS.MAX_MESSAGE_LENGTH} bytes, messageRawObject max ${DEV_LOG_SIZE_LIMITS.MAX_RAW_OBJECT_SIZE} bytes when serialized (HAP-820).`,
 });
 
 // @ts-expect-error - OpenAPI handler type doesn't infer all status code combinations correctly
 devRoutes.openapi(combinedLoggingRoute, async (c) => {
-    // Check if debug logging is enabled
+    // HAP-821: Block dev logging in production regardless of env flag
+    // This is a hard security guardrail that cannot be bypassed by configuration
+    const environment = c.env.ENVIRONMENT ?? 'production'; // Default to production for safety
+    if (environment === 'production') {
+        return c.json({ error: 'Debug logging is not available in production' as const }, 403);
+    }
+
+    // Check if debug logging is enabled (only applies to development/staging)
     if (!c.env.DANGEROUSLY_LOG_TO_SERVER_FOR_AI_AUTO_DEBUGGING) {
         return c.json({ error: 'Debug logging is disabled' as const }, 403);
     }

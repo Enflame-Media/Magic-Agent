@@ -5,6 +5,17 @@ import { z } from '@hono/zod-openapi';
 // ============================================================================
 
 /**
+ * Maximum size limits for dev logging payloads (HAP-820)
+ * These limits prevent oversized payloads from consuming bandwidth and storage.
+ */
+export const DEV_LOG_SIZE_LIMITS = {
+    /** Maximum length for the message string (~50KB) */
+    MAX_MESSAGE_LENGTH: 50 * 1024, // 50KB
+    /** Maximum serialized size for messageRawObject (~100KB) */
+    MAX_RAW_OBJECT_SIZE: 100 * 1024, // 100KB
+} as const;
+
+/**
  * Request body for combined logging endpoint
  */
 export const DevLogRequestSchema = z
@@ -17,13 +28,36 @@ export const DevLogRequestSchema = z
             description: 'Log level (error, warn, info, debug)',
             example: 'info',
         }),
-        message: z.string().openapi({
-            description: 'Log message',
-            example: 'User action completed',
-        }),
-        messageRawObject: z.any().optional().openapi({
-            description: 'Optional raw object for detailed logging',
-        }),
+        message: z
+            .string()
+            .max(DEV_LOG_SIZE_LIMITS.MAX_MESSAGE_LENGTH, {
+                message: `Message exceeds maximum length of ${DEV_LOG_SIZE_LIMITS.MAX_MESSAGE_LENGTH} bytes`,
+            })
+            .openapi({
+                description: `Log message (max ${DEV_LOG_SIZE_LIMITS.MAX_MESSAGE_LENGTH} bytes)`,
+                example: 'User action completed',
+            }),
+        messageRawObject: z
+            .any()
+            .optional()
+            .refine(
+                (value) => {
+                    if (value === undefined || value === null) return true;
+                    try {
+                        const serialized = JSON.stringify(value);
+                        return serialized.length <= DEV_LOG_SIZE_LIMITS.MAX_RAW_OBJECT_SIZE;
+                    } catch {
+                        // If serialization fails, reject the value
+                        return false;
+                    }
+                },
+                {
+                    message: `messageRawObject exceeds maximum serialized size of ${DEV_LOG_SIZE_LIMITS.MAX_RAW_OBJECT_SIZE} bytes`,
+                }
+            )
+            .openapi({
+                description: `Optional raw object for detailed logging (max ${DEV_LOG_SIZE_LIMITS.MAX_RAW_OBJECT_SIZE} bytes when serialized)`,
+            }),
         source: z.enum(['mobile', 'cli']).openapi({
             description: 'Source of the log (mobile app or CLI)',
             example: 'mobile',
@@ -77,3 +111,32 @@ export const DevLogRateLimitSchema = z
         }),
     })
     .openapi('DevLogRateLimit');
+
+/**
+ * Error response when endpoint is blocked in production environment (HAP-821)
+ */
+export const DevLogEnvironmentBlockedSchema = z
+    .object({
+        error: z.literal('Debug logging is not available in production'),
+    })
+    .openapi('DevLogEnvironmentBlocked');
+
+/**
+ * Error response when payload is too large (HAP-820)
+ */
+export const DevLogPayloadTooLargeSchema = z
+    .object({
+        error: z.string().openapi({
+            description: 'Payload too large error message',
+            example: 'Payload too large: message exceeds 51200 bytes limit',
+        }),
+        maxMessageLength: z.number().openapi({
+            description: 'Maximum allowed message length in bytes',
+            example: 51200,
+        }),
+        maxRawObjectSize: z.number().openapi({
+            description: 'Maximum allowed messageRawObject size in bytes',
+            example: 102400,
+        }),
+    })
+    .openapi('DevLogPayloadTooLarge');
