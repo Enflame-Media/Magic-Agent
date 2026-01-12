@@ -194,6 +194,85 @@ function getSensitiveKeys(): string[] {
 }
 
 /**
+ * Regex patterns for detecting secrets in string content (HAP-831).
+ * Each pattern has a name for debugging and a regex to match.
+ * Patterns are designed to be conservative to avoid over-redaction.
+ */
+const SECRET_STRING_PATTERNS: ReadonlyArray<{ name: string; pattern: RegExp }> = [
+  // JWT tokens (three base64url segments separated by dots)
+  // Format: header.payload.signature where each is base64url encoded
+  { name: 'jwt', pattern: /\beyJ[A-Za-z0-9_-]*\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/g },
+
+  // Bearer tokens in headers (Authorization: Bearer <token>)
+  { name: 'bearer', pattern: /\bBearer\s+[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)*\b/gi },
+
+  // API keys with common prefixes (sk_, pk_, api_, key_)
+  // Matches patterns like sk_live_abc123, pk_test_xyz789
+  { name: 'api_key_prefixed', pattern: /\b(?:sk|pk|api|key)_[a-zA-Z0-9_-]{16,}\b/gi },
+
+  // GitHub tokens (ghp_, gho_, ghu_, ghs_, ghr_)
+  { name: 'github_token', pattern: /\b(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{30,}\b/g },
+
+  // npm tokens (npm_)
+  { name: 'npm_token', pattern: /\bnpm_[A-Za-z0-9]{30,}\b/g },
+
+  // AWS keys (AKIA, ASIA for access keys) - 16+ characters after prefix
+  { name: 'aws_key', pattern: /\b(?:AKIA|ASIA)[A-Z0-9]{16,}\b/g },
+
+  // Generic secret assignments (secret=, token=, password=, apikey=, api_key=, auth=)
+  // Matches key=value pairs where key suggests a secret
+  { name: 'secret_assignment', pattern: /\b(?:secret|token|password|apikey|api_key|auth|credential|private_key)=[^\s&"']+/gi },
+
+  // Anthropic API keys (sk-ant-)
+  { name: 'anthropic_key', pattern: /\bsk-ant-[A-Za-z0-9_-]{30,}\b/g },
+
+  // OpenAI API keys (sk-)
+  { name: 'openai_key', pattern: /\bsk-[A-Za-z0-9]{40,}\b/g },
+
+  // Slack tokens (xoxb-, xoxp-, xoxa-, xoxr-)
+  { name: 'slack_token', pattern: /\bxox[bpar]-[A-Za-z0-9-]+\b/g },
+
+  // Discord tokens (various formats)
+  { name: 'discord_token', pattern: /\b[MN][A-Za-z0-9]{23,}\.[A-Za-z0-9_-]{6}\.[A-Za-z0-9_-]{27,}\b/g },
+
+  // Base64-encoded strings that look like secrets (long base64 strings often used for API keys)
+  // Only match if it's clearly a base64 string (ends with = or ==)
+  // This is intentionally conservative to avoid false positives
+  // Note: The slash character doesn't need escaping in a character class, but we use a non-word-boundary match at the end
+  { name: 'base64_secret', pattern: /[A-Za-z0-9+\/]{40,}={1,2}/g },
+]
+
+/**
+ * Redacts secrets from string content using pattern matching (HAP-831).
+ * This function scans strings for common secret patterns (JWTs, API keys, tokens)
+ * and replaces them with [REDACTED] markers.
+ *
+ * Used for remote logging where strings are passed through unchanged by sanitizeForLogging().
+ *
+ * @param content - The string content to scan for secrets
+ * @returns The string with detected secrets redacted
+ *
+ * @example
+ * redactSecretsInString('Token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U')
+ * // Returns: 'Token: [REDACTED:jwt]'
+ */
+export function redactSecretsInString(content: string): string {
+  if (!content || typeof content !== 'string') {
+    return content
+  }
+
+  let result = content
+
+  for (const { name, pattern } of SECRET_STRING_PATTERNS) {
+    // Reset regex lastIndex since we're reusing the pattern
+    pattern.lastIndex = 0
+    result = result.replace(pattern, `[REDACTED:${name}]`)
+  }
+
+  return result
+}
+
+/**
  * Sanitizes data for logging by redacting sensitive fields.
  * Recursively processes objects and arrays, replacing values of sensitive keys with '[REDACTED]'.
  * Handles circular references safely.
@@ -883,14 +962,20 @@ class Logger {
   /**
    * Queues a log entry for batched remote submission (HAP-833)
    * Triggers immediate flush if batch size threshold is reached
+   *
+   * Security note (HAP-831): Both string messages and stringified args are scanned
+   * for common secret patterns (JWTs, API keys, tokens) and redacted before sending
+   * to the remote server. Object args continue to use sanitizeForLogging() for
+   * field-based redaction.
    */
   private queueRemoteLogEntry(level: string, message: string, ...args: unknown[]): void {
     if (!this.dangerouslyUnencryptedServerLoggingUrl) return
 
     // Build the full message including all args
-    const fullMessage = `${message} ${args.map(a =>
-      typeof a === 'object' ? JSON.stringify(sanitizeForLogging(a), null, 2) : String(a)
-    ).join(' ')}`
+    // HAP-831: Apply string-based secret redaction to the message and string args
+    const fullMessage = redactSecretsInString(`${message} ${args.map(a =>
+      typeof a === 'object' ? JSON.stringify(sanitizeForLogging(a), null, 2) : redactSecretsInString(String(a))
+    ).join(' ')}`)
 
     // Build messageRawObject from args if any exist
     let messageRawObject: unknown = undefined

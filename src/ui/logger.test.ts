@@ -1,13 +1,14 @@
 /**
  * Tests for Logger directory creation resilience (HAP-129)
  * Tests for sanitizeForLogging() function (HAP-200)
+ * Tests for redactSecretsInString() function (HAP-831)
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mkdirSync, existsSync, rmSync, writeFileSync, chmodSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { sanitizeForLogging } from './logger'
+import { sanitizeForLogging, redactSecretsInString } from './logger'
 
 describe('Logger directory creation resilience', () => {
   let testDir: string
@@ -743,5 +744,304 @@ describe('chalk color detection for CI environments', () => {
     // When CI is not set, logger should not modify chalk.level
     // (it might be 0 if TTY is not available, but logger shouldn't change it)
     expect(chalk.level).toBe(originalLevel)
+  })
+})
+
+/**
+ * Tests for redactSecretsInString() function (HAP-831)
+ *
+ * This security-critical function scans string content for common secret patterns
+ * (JWTs, API keys, tokens) and redacts them before remote logging.
+ */
+describe('redactSecretsInString', () => {
+  describe('JWT tokens', () => {
+    it('should redact valid JWT tokens', () => {
+      const jwt = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c'
+      const result = redactSecretsInString(`Token: ${jwt}`)
+      expect(result).toBe('Token: [REDACTED:jwt]')
+    })
+
+    it('should redact JWT tokens in log messages', () => {
+      const input = 'Authentication failed for token eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U'
+      const result = redactSecretsInString(input)
+      expect(result).toBe('Authentication failed for token [REDACTED:jwt]')
+    })
+
+    it('should redact multiple JWT tokens', () => {
+      const jwt1 = 'eyJhbGciOiJIUzI1NiJ9.eyJpZCI6MX0.abc123'
+      const jwt2 = 'eyJhbGciOiJSUzI1NiJ9.eyJpZCI6Mn0.xyz789'
+      const result = redactSecretsInString(`First: ${jwt1}, Second: ${jwt2}`)
+      expect(result).toBe('First: [REDACTED:jwt], Second: [REDACTED:jwt]')
+    })
+  })
+
+  describe('Bearer tokens', () => {
+    it('should redact Bearer tokens in headers', () => {
+      const result = redactSecretsInString('Authorization: Bearer abc123xyz789')
+      expect(result).toBe('Authorization: [REDACTED:bearer]')
+    })
+
+    it('should redact Bearer tokens case-insensitively', () => {
+      const result = redactSecretsInString('Auth header: bearer mytoken123')
+      expect(result).toBe('Auth header: [REDACTED:bearer]')
+    })
+
+    it('should redact Bearer with JWT tokens', () => {
+      const result = redactSecretsInString('Header: Bearer eyJhbGciOiJIUzI1NiJ9.eyJpZCI6MX0.abc123')
+      // Bearer pattern matches first, then JWT pattern on remaining
+      expect(result).toContain('[REDACTED:')
+    })
+  })
+
+  describe('API keys with common prefixes', () => {
+    it('should redact sk_ prefixed keys', () => {
+      const result = redactSecretsInString('API Key: sk_live_abcdef1234567890123456')
+      expect(result).toBe('API Key: [REDACTED:api_key_prefixed]')
+    })
+
+    it('should redact pk_ prefixed keys', () => {
+      const result = redactSecretsInString('Public Key: pk_test_xyz7890123456789012345')
+      expect(result).toBe('Public Key: [REDACTED:api_key_prefixed]')
+    })
+
+    it('should redact api_ prefixed keys', () => {
+      const result = redactSecretsInString('Config: api_key_production_12345678901234567890')
+      expect(result).toBe('Config: [REDACTED:api_key_prefixed]')
+    })
+
+    it('should redact key_ prefixed keys', () => {
+      const result = redactSecretsInString('Key: key_secret_abcdef123456789012345')
+      expect(result).toBe('Key: [REDACTED:api_key_prefixed]')
+    })
+
+    it('should not redact short keys (under 16 chars)', () => {
+      // Pattern requires 16+ chars after prefix
+      const result = redactSecretsInString('Short: sk_short')
+      expect(result).toBe('Short: sk_short')
+    })
+  })
+
+  describe('GitHub tokens', () => {
+    it('should redact ghp_ tokens (personal access tokens)', () => {
+      const token = 'ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+      const result = redactSecretsInString(`GitHub Token: ${token}`)
+      expect(result).toBe('GitHub Token: [REDACTED:github_token]')
+    })
+
+    it('should redact gho_ tokens (OAuth access tokens)', () => {
+      const token = 'gho_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+      const result = redactSecretsInString(`Token: ${token}`)
+      expect(result).toBe('Token: [REDACTED:github_token]')
+    })
+
+    it('should redact ghu_ tokens (user-to-server tokens)', () => {
+      const token = 'ghu_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+      const result = redactSecretsInString(`Token: ${token}`)
+      expect(result).toBe('Token: [REDACTED:github_token]')
+    })
+
+    it('should redact ghs_ tokens (server-to-server tokens)', () => {
+      const token = 'ghs_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+      const result = redactSecretsInString(`Token: ${token}`)
+      expect(result).toBe('Token: [REDACTED:github_token]')
+    })
+
+    it('should redact ghr_ tokens (refresh tokens)', () => {
+      const token = 'ghr_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+      const result = redactSecretsInString(`Token: ${token}`)
+      expect(result).toBe('Token: [REDACTED:github_token]')
+    })
+  })
+
+  describe('npm tokens', () => {
+    it('should redact npm tokens', () => {
+      const token = 'npm_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+      const result = redactSecretsInString(`NPM Token: ${token}`)
+      expect(result).toBe('NPM Token: [REDACTED:npm_token]')
+    })
+  })
+
+  describe('AWS keys', () => {
+    it('should redact AKIA prefixed AWS access keys', () => {
+      const result = redactSecretsInString('AWS Key: AKIAIOSFODNN7EXAMPLE')
+      expect(result).toBe('AWS Key: [REDACTED:aws_key]')
+    })
+
+    it('should redact ASIA prefixed AWS temporary keys', () => {
+      const result = redactSecretsInString('AWS Temp Key: ASIAZX123456789012345')
+      expect(result).toBe('AWS Temp Key: [REDACTED:aws_key]')
+    })
+  })
+
+  describe('secret assignments (key=value)', () => {
+    it('should redact secret= assignments', () => {
+      const result = redactSecretsInString('Config: secret=mySecretValue123')
+      expect(result).toBe('Config: [REDACTED:secret_assignment]')
+    })
+
+    it('should redact token= assignments', () => {
+      const result = redactSecretsInString('Setting: token=abc123xyz')
+      expect(result).toBe('Setting: [REDACTED:secret_assignment]')
+    })
+
+    it('should redact password= assignments', () => {
+      const result = redactSecretsInString('Connection: password=hunter2')
+      expect(result).toBe('Connection: [REDACTED:secret_assignment]')
+    })
+
+    it('should redact apikey= assignments', () => {
+      const result = redactSecretsInString('API: apikey=key123456')
+      expect(result).toBe('API: [REDACTED:secret_assignment]')
+    })
+
+    it('should redact api_key= assignments', () => {
+      const result = redactSecretsInString('Config: api_key=myapikey123')
+      expect(result).toBe('Config: [REDACTED:secret_assignment]')
+    })
+
+    it('should redact auth= assignments', () => {
+      const result = redactSecretsInString('Headers: auth=authtoken123')
+      expect(result).toBe('Headers: [REDACTED:secret_assignment]')
+    })
+
+    it('should redact credential= assignments', () => {
+      const result = redactSecretsInString('Auth: credential=cred123')
+      expect(result).toBe('Auth: [REDACTED:secret_assignment]')
+    })
+
+    it('should redact private_key= assignments', () => {
+      const result = redactSecretsInString('SSH: private_key=-----BEGIN')
+      expect(result).toBe('SSH: [REDACTED:secret_assignment]')
+    })
+
+    it('should handle assignments case-insensitively', () => {
+      const result = redactSecretsInString('Config: SECRET=myvalue PASSWORD=pass123')
+      expect(result).toBe('Config: [REDACTED:secret_assignment] [REDACTED:secret_assignment]')
+    })
+  })
+
+  describe('Anthropic API keys', () => {
+    it('should redact sk-ant- prefixed keys', () => {
+      const token = 'sk-ant-api01-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+      const result = redactSecretsInString(`Anthropic Key: ${token}`)
+      expect(result).toBe('Anthropic Key: [REDACTED:anthropic_key]')
+    })
+  })
+
+  describe('OpenAI API keys', () => {
+    it('should redact sk- prefixed keys (40+ chars)', () => {
+      const token = 'sk-1234567890123456789012345678901234567890'
+      const result = redactSecretsInString(`OpenAI Key: ${token}`)
+      expect(result).toBe('OpenAI Key: [REDACTED:openai_key]')
+    })
+
+    it('should not redact short sk- strings', () => {
+      // Pattern requires 40+ chars
+      const result = redactSecretsInString('Short: sk-shortkey')
+      expect(result).toBe('Short: sk-shortkey')
+    })
+  })
+
+  describe('Slack tokens', () => {
+    it('should redact xoxb- tokens (bot tokens)', () => {
+      const result = redactSecretsInString('Slack Bot: xoxb-123456789012-1234567890123-abcdefghijklmnopqrstuvwx')
+      expect(result).toBe('Slack Bot: [REDACTED:slack_token]')
+    })
+
+    it('should redact xoxp- tokens (user tokens)', () => {
+      const result = redactSecretsInString('Slack User: xoxp-123456789012-1234567890123')
+      expect(result).toBe('Slack User: [REDACTED:slack_token]')
+    })
+
+    it('should redact xoxa- tokens (app tokens)', () => {
+      const result = redactSecretsInString('Slack App: xoxa-2-123456789012')
+      expect(result).toBe('Slack App: [REDACTED:slack_token]')
+    })
+
+    it('should redact xoxr- tokens (refresh tokens)', () => {
+      const result = redactSecretsInString('Slack Refresh: xoxr-123456789012')
+      expect(result).toBe('Slack Refresh: [REDACTED:slack_token]')
+    })
+  })
+
+  describe('base64 secrets', () => {
+    it('should redact long base64 strings ending with =', () => {
+      const base64 = 'YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXoxMjM0NTY3ODkw='
+      const result = redactSecretsInString(`Encoded: ${base64}`)
+      expect(result).toBe('Encoded: [REDACTED:base64_secret]')
+    })
+
+    it('should redact base64 strings ending with ==', () => {
+      const base64 = 'YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXoxMjM0NTY3OA=='
+      const result = redactSecretsInString(`Encoded: ${base64}`)
+      expect(result).toBe('Encoded: [REDACTED:base64_secret]')
+    })
+
+    it('should not redact short base64 strings', () => {
+      const result = redactSecretsInString('Short: YWJjZGVm==')
+      expect(result).toBe('Short: YWJjZGVm==')
+    })
+  })
+
+  describe('edge cases and safety', () => {
+    it('should handle empty strings', () => {
+      expect(redactSecretsInString('')).toBe('')
+    })
+
+    it('should handle null-ish values safely', () => {
+      // TypeScript would prevent null, but test runtime safety
+      expect(redactSecretsInString(null as unknown as string)).toBe(null)
+      expect(redactSecretsInString(undefined as unknown as string)).toBe(undefined)
+    })
+
+    it('should handle strings without secrets unchanged', () => {
+      const normal = 'This is a normal log message with no secrets'
+      expect(redactSecretsInString(normal)).toBe(normal)
+    })
+
+    it('should handle multi-line strings', () => {
+      const multiline = `Line 1: secret=hidden
+Line 2: token=abc123
+Line 3: normal text`
+      const result = redactSecretsInString(multiline)
+      expect(result).toContain('[REDACTED:secret_assignment]')
+      expect(result).toContain('Line 3: normal text')
+    })
+
+    it('should redact multiple different secret types in one string', () => {
+      const mixed = 'JWT: eyJhbGciOiJIUzI1NiJ9.eyJpZCI6MX0.abc123, API: sk_live_abcdef1234567890123456, Secret: password=hunter2'
+      const result = redactSecretsInString(mixed)
+      expect(result).toContain('[REDACTED:jwt]')
+      expect(result).toContain('[REDACTED:api_key_prefixed]')
+      expect(result).toContain('[REDACTED:secret_assignment]')
+    })
+
+    it('should not break on special regex characters in surrounding text', () => {
+      const input = 'Config (*.json): secret=value [test]'
+      const result = redactSecretsInString(input)
+      expect(result).toBe('Config (*.json): [REDACTED:secret_assignment] [test]')
+    })
+
+    it('should handle URL-like strings with secrets', () => {
+      const url = 'https://api.example.com?token=abc123xyz&other=value'
+      const result = redactSecretsInString(url)
+      expect(result).toContain('[REDACTED:secret_assignment]')
+      expect(result).toContain('other=value')
+    })
+  })
+
+  describe('performance considerations', () => {
+    it('should handle moderately long strings correctly', () => {
+      // Generate a moderately long string (10KB) to test correctness
+      // Note: Performance timing tests are unreliable in different environments (CI, NAS, etc.)
+      const longString = 'x'.repeat(5 * 1024) + ' secret=hidden ' + 'y'.repeat(5 * 1024)
+      const result = redactSecretsInString(longString)
+
+      // Verify correct redaction
+      expect(result).toContain('[REDACTED:secret_assignment]')
+      // Verify the surrounding content is preserved
+      expect(result).toMatch(/^x+/)
+      expect(result).toMatch(/y+$/)
+    })
   })
 })
