@@ -23,6 +23,13 @@ export interface SyncMetricPayload {
     type: 'messages' | 'profile' | 'artifacts';
     // HAP-648: Added 'older' mode for lazy loading older messages
     mode: 'full' | 'incremental' | 'cached' | 'older';
+    /**
+     * HAP-808: Explicit cache status for accurate cache hit rate tracking.
+     * - 'hit': Data was served from cache (e.g., HTTP 304 response)
+     * - 'miss': Data was fetched from server (new data received)
+     * Optional for backward compatibility.
+     */
+    cacheStatus?: 'hit' | 'miss';
     bytesReceived: number;
     itemsReceived: number;
     itemsSkipped: number;
