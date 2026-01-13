@@ -983,11 +983,12 @@ class Logger {
       messageRawObject = args.length === 1 ? sanitizeForLogging(args[0]) : args.map(a => sanitizeForLogging(a))
     }
 
+    // HAP-832: Apply truncation to prevent oversized remote log payloads
     const entry: RemoteLogEntry = {
       timestamp: new Date().toISOString(),
       level,
-      message: fullMessage,
-      messageRawObject,
+      message: truncateMessageForRemote(fullMessage),
+      messageRawObject: truncateRawObjectForRemote(messageRawObject),
       source: 'cli',
       platform: process.platform
     }
