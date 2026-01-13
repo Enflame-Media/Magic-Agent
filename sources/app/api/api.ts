@@ -20,6 +20,7 @@ import { enableErrorHandlers } from "./utils/enableErrorHandlers";
 import { enableAuthentication } from "./utils/enableAuthentication";
 import { enableCorrelationId } from "./utils/enableCorrelationId";
 import { enableRateLimiting } from "./utils/enableRateLimiting";
+import { enableSecurityHeaders } from "./utils/enableSecurityHeaders";
 import { userRoutes } from "./routes/userRoutes";
 import { feedRoutes } from "./routes/feedRoutes";
 import { kvRoutes } from "./routes/kvRoutes";
@@ -60,6 +61,7 @@ export async function startApi() {
 
     // Enable features
     enableCorrelationId(typed);  // Must be first to set correlationId for other hooks
+    enableSecurityHeaders(typed);  // Security headers early in the chain (HAP-627)
     enableMonitoring(typed);
     enableErrorHandlers(typed);
     enableAuthentication(typed);

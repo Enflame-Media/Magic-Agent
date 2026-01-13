@@ -38,6 +38,11 @@ model Account {
     /// [ImageRef]
     avatar    Json?
 
+    // Privacy settings (HAP-727, HAP-768)
+    showOnlineStatus          Boolean @default(true)
+    profileVisibility         String  @default("public") // "public" | "friends-only"
+    friendRequestPermission   String  @default("anyone") // "anyone" | "friends-of-friends" | "none"
+
     Session             Session[]
     AccountPushToken    AccountPushToken[]
     TerminalAuthRequest TerminalAuthRequest[]

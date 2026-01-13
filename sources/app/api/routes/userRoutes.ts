@@ -56,9 +56,13 @@ export async function userRoutes(app: Fastify) {
         });
         const status: RelationshipStatus = relationship?.status || RelationshipStatus.none;
 
+        // HAP-786: Enforce profileVisibility privacy setting
+        // If profile is "friends-only" and viewer is not a friend, return restricted profile
+        const isPrivate = user.profileVisibility === 'friends-only' && status !== RelationshipStatus.friend;
+
         // Build user profile
         return reply.send({
-            user: buildUserProfile(user, status)
+            user: buildUserProfile(user, status, null, isPrivate)
         });
     });
 
@@ -107,7 +111,9 @@ export async function userRoutes(app: Fastify) {
                 }
             });
             const status: RelationshipStatus = relationship?.status || RelationshipStatus.none;
-            return buildUserProfile(user, status);
+            // HAP-786: Enforce profileVisibility privacy setting
+            const isPrivate = user.profileVisibility === 'friends-only' && status !== RelationshipStatus.friend;
+            return buildUserProfile(user, status, null, isPrivate);
         }));
 
         return reply.send({
@@ -195,5 +201,7 @@ const UserProfileSchema = z.object({
     }).nullable(),
     username: z.string(),
     bio: z.string().nullable(),
-    status: RelationshipStatusSchema
+    status: RelationshipStatusSchema,
+    friendshipDate: z.string().nullable().optional(),
+    isPrivate: z.boolean().optional()
 });

@@ -1,6 +1,6 @@
 import { onShutdown } from "@/utils/shutdown";
 import { Fastify } from "./types";
-import { buildMachineActivityEphemeral, ClientConnection, eventRouter } from "@/app/events/eventRouter";
+import { buildMachineActivityEphemeral, buildMachineStatusEphemeral, ClientConnection, eventRouter } from "@/app/events/eventRouter";
 import { Server, Socket } from "socket.io";
 import { log } from "@/utils/log";
 import { auth } from "@/app/auth/auth";
@@ -117,7 +117,14 @@ export function startSocket(app: Fastify) {
                 where: { id: machineId!, accountId: userId },
                 data: { active: true, lastActiveAt: now }
             });
-            // Broadcast daemon online
+            // Broadcast machine-status (online/offline state for UI)
+            const machineStatus = buildMachineStatusEphemeral(machineId!, true);
+            eventRouter.emitEphemeral({
+                userId,
+                payload: machineStatus,
+                recipientFilter: { type: 'user-scoped-only' }
+            });
+            // Also broadcast machine-activity (for activity tracking)
             const machineActivity = buildMachineActivityEphemeral(machineId!, true, now.getTime());
             eventRouter.emitEphemeral({
                 userId,
@@ -149,7 +156,14 @@ export function startSocket(app: Fastify) {
                     where: { id: connection.machineId, accountId: userId },
                     data: { active: false, lastActiveAt: now }
                 });
-                // Broadcast daemon offline
+                // Broadcast machine-status (online/offline state for UI)
+                const machineStatus = buildMachineStatusEphemeral(connection.machineId, false);
+                eventRouter.emitEphemeral({
+                    userId,
+                    payload: machineStatus,
+                    recipientFilter: { type: 'user-scoped-only' }
+                });
+                // Also broadcast machine-activity (for activity tracking)
                 const machineActivity = buildMachineActivityEphemeral(connection.machineId, false, now.getTime());
                 eventRouter.emitEphemeral({
                     userId,

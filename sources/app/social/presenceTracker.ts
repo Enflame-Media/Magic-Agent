@@ -137,11 +137,17 @@ class PresenceTracker {
      */
     private async broadcastStatusToFriends(userId: string, isOnline: boolean): Promise<void> {
         try {
-            // TODO: Check user's privacy settings before broadcasting
-            // const settings = await getUserPrivacySettings(userId);
-            // if (!settings.showOnlineStatus) {
-            //     return;
-            // }
+            // Check user's privacy settings before broadcasting
+            // Users with showOnlineStatus=false should appear offline to all friends
+            const user = await db.account.findUnique({
+                where: { id: userId },
+                select: { showOnlineStatus: true }
+            });
+
+            if (!user?.showOnlineStatus) {
+                log({ module: 'presence', userId }, 'User has hidden online status, skipping broadcast');
+                return;
+            }
 
             // Get user's friends (bidirectional - they must also be my friend)
             const friends = await db.userRelationship.findMany({

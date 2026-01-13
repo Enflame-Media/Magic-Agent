@@ -90,7 +90,7 @@ echo ""
 # Cloudflare Workers specific
 echo -e "${GREEN}CLOUDFLARE WORKERS COMMANDS:${NC}"
 echo ""
-echo "# Set production secrets (run from happy-server-workers/):"
+echo "# Set production secrets (run from apps/server/workers/):"
 echo -e "${YELLOW}wrangler secret put HANDY_MASTER_SECRET --env prod${NC}"
 echo -e "${YELLOW}wrangler secret put ELEVENLABS_API_KEY --env prod${NC}"
 echo -e "${YELLOW}wrangler secret put GITHUB_WEBHOOK_SECRET --env prod${NC}"

@@ -21,10 +21,14 @@ export async function friendList(ctx: Context): Promise<UserProfile[]> {
         }
     });
 
-    // Build UserProfile objects
+    // Build UserProfile objects with friendship date (updatedAt is when status changed to 'friend')
     const profiles: UserProfile[] = [];
     for (const relationship of relationships) {
-        profiles.push(buildUserProfile(relationship.toUser, relationship.status));
+        // Only include friendshipDate for actual friends (status = friend means accepted)
+        const friendshipDate = relationship.status === RelationshipStatus.friend
+            ? relationship.updatedAt
+            : null;
+        profiles.push(buildUserProfile(relationship.toUser, relationship.status, friendshipDate));
     }
 
     return profiles;

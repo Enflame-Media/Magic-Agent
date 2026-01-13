@@ -15,7 +15,7 @@
  *   yarn openapi:generate --stdout  # Print to stdout (for piping)
  *
  * Output:
- *   - happy-server/openapi.json (or openapi.yaml)
+ *   - apps/server/docker/openapi.json (or openapi.yaml)
  *
  * @see HAP-568 - Enhance generate-openapi.ts to include all server routes
  * @see HAP-565 - Schema drift detection depends on this output

@@ -1,4 +1,8 @@
-# Handy Server - Development Guidelines
+# Happy Server (Docker) - Development Guidelines
+
+> **📍 Part of the Happy monorepo** — See root [`CLAUDE.md`](../../../CLAUDE.md) for overall architecture and cross-project guidelines.
+
+---
 
 This document contains the development guidelines and instructions for the Happy Server project. This guide OVERRIDES any default behaviors and MUST be followed exactly.
 
