@@ -7,8 +7,12 @@
  * Events handled:
  * - 'update': Persistent state changes (sessions, messages, machines, etc.)
  * - 'ephemeral': Real-time status updates (typing, usage, machine status)
+ * - 'error': Error events including session revival failures (HAP-750)
+ * - 'session-revival-paused': Circuit breaker cooldown notifications (HAP-869)
+ * - 'session-revived': Session revival success notifications (HAP-869)
  *
  * @see HAP-671 - WebSocket sync engine implementation
+ * @see HAP-869 - Session revival cooldown UI
  */
 
 import {
@@ -453,6 +457,99 @@ function handleError(data: unknown): void {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Session Revival Paused Handler (HAP-869)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Expected structure of session-revival-paused WebSocket event.
+ * Emitted by CLI when circuit breaker cooldown is active.
+ *
+ * @see HAP-784 - CLI circuit breaker implementation
+ * @see HAP-869 - Vue.js handling implementation
+ */
+interface SessionRevivalPausedData {
+    /** Reason for the pause (currently only 'circuit_breaker') */
+    reason: 'circuit_breaker';
+    /** Remaining cooldown time in milliseconds */
+    remainingMs: number;
+    /** Unix timestamp when cooldown will expire */
+    resumesAt: number;
+    /** Machine ID this event originated from */
+    machineId: string;
+}
+
+/**
+ * Expected structure of session-revived WebSocket event.
+ * Emitted when a session is successfully revived.
+ */
+interface SessionRevivedData {
+    /** Original session ID that was revived */
+    originalSessionId: string;
+    /** New session ID after revival */
+    newSessionId: string;
+    /** Machine ID this event originated from */
+    machineId: string;
+}
+
+/**
+ * Handle session-revival-paused events from the WebSocket connection.
+ * Dispatches to the useRevivalCooldown composable via CustomEvent.
+ *
+ * @see HAP-869 - Vue.js circuit breaker cooldown UI
+ */
+function handleSessionRevivalPaused(data: unknown): void {
+    const payload = data as SessionRevivalPausedData | null | undefined;
+
+    if (!payload) {
+        console.warn('[sync] Received empty session-revival-paused event');
+        return;
+    }
+
+    // Validate required fields
+    if (
+        payload.reason !== 'circuit_breaker' ||
+        typeof payload.remainingMs !== 'number' ||
+        typeof payload.resumesAt !== 'number' ||
+        typeof payload.machineId !== 'string'
+    ) {
+        console.warn('[sync] Invalid session-revival-paused payload:', payload);
+        return;
+    }
+
+    console.debug('[sync] Session revival paused:', payload.machineId, payload.remainingMs, 'ms');
+
+    // Dispatch to useRevivalCooldown composable via CustomEvent
+    // This follows the same pattern as friend-status (HAP-716) and session-revival-error (HAP-750)
+    window.dispatchEvent(new CustomEvent('session-revival-paused', { detail: payload }));
+}
+
+/**
+ * Handle session-revived events from the WebSocket connection.
+ * Dispatches to the useRevivalCooldown composable to clear cooldown state.
+ *
+ * @see HAP-869 - Vue.js circuit breaker cooldown UI
+ */
+function handleSessionRevived(data: unknown): void {
+    const payload = data as SessionRevivedData | null | undefined;
+
+    if (!payload) {
+        console.warn('[sync] Received empty session-revived event');
+        return;
+    }
+
+    // Validate required fields
+    if (typeof payload.machineId !== 'string') {
+        console.warn('[sync] Invalid session-revived payload:', payload);
+        return;
+    }
+
+    console.debug('[sync] Session revived:', payload.machineId);
+
+    // Dispatch to useRevivalCooldown composable via CustomEvent
+    window.dispatchEvent(new CustomEvent('session-revived', { detail: payload }));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Handler Setup
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -491,8 +588,11 @@ export function setupSyncHandlers(): () => void {
     const unsubEphemeral = wsService.onMessage('ephemeral', handleEphemeral);
     // HAP-750: Register error handler for session revival failures
     const unsubError = wsService.onMessage('error', handleError);
+    // HAP-869: Register handlers for session revival cooldown events
+    const unsubRevivalPaused = wsService.onMessage('session-revival-paused', handleSessionRevivalPaused);
+    const unsubRevived = wsService.onMessage('session-revived', handleSessionRevived);
 
-    cleanupFunctions = [unsubUpdate, unsubEphemeral, unsubError];
+    cleanupFunctions = [unsubUpdate, unsubEphemeral, unsubError, unsubRevivalPaused, unsubRevived];
 
     // Return cleanup function
     return () => {
