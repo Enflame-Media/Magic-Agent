@@ -122,10 +122,59 @@ API types come from `@happy-vue/protocol`:
 import { ApiUpdateSchema, type ApiUpdate } from '@happy-vue/protocol';
 ```
 
+## Testing
+
+### Unit Tests
+
+```bash
+# Run unit tests
+yarn workspace @happy-vue/web test
+
+# Run tests with coverage
+yarn workspace @happy-vue/web test:coverage
+
+# Run tests in watch mode
+yarn workspace @happy-vue/web test:watch
+```
+
+### E2E Tests (Playwright)
+
+```bash
+# Run all E2E tests
+yarn workspace @happy-vue/web test:e2e
+
+# Run with UI
+yarn workspace @happy-vue/web test:e2e:ui
+
+# Run specific browser
+yarn workspace @happy-vue/web test:e2e:chromium
+```
+
+### Visual Regression Testing
+
+Visual regression tests use **Percy** (cloud-based) integrated with Playwright. Percy manages baselines in the cloud, not locally.
+
+```bash
+# Run visual tests locally (without Percy upload)
+yarn workspace @happy-vue/web test:e2e:visual:local
+
+# Run with Percy (requires PERCY_TOKEN)
+export PERCY_TOKEN=your_token_here
+yarn workspace @happy-vue/web test:e2e:visual
+```
+
+**Baseline Management:**
+- First Percy run automatically creates initial baselines
+- Baselines are reviewed and approved via [Percy Dashboard](https://percy.io)
+- No local snapshot files are committed to the repository
+
+For detailed visual regression testing documentation, see [`docs/VISUAL-REGRESSION-TESTING.md`](./docs/VISUAL-REGRESSION-TESTING.md).
+
 ## Related Documentation
 
 - Root monorepo: `../CLAUDE.md`
 - Protocol package: `../../../packages/schema/protocol/CLAUDE.md`
+- Visual regression testing: [`docs/VISUAL-REGRESSION-TESTING.md`](./docs/VISUAL-REGRESSION-TESTING.md)
 - Migration epic: [HAP-660](https://linear.app/enflame-media/issue/HAP-660)
 
 ## Migration Context
