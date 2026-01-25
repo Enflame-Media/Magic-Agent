@@ -1,0 +1,54 @@
+# PWA Screenshot Generator - Cloudflare Workers Browser Rendering
+#
+# This worker generates PWA screenshots for the Happy Vue.js web application
+# using Cloudflare's Browser Rendering capabilities.
+#
+# Usage:
+#   1. Deploy: yarn workspace @happy-vue/web generate:pwa-screenshots:deploy
+#   2. Generate: curl "https://pwa-screenshots-dev.enflamemedia.com/generate?env=dev"
+#   3. Screenshots are stored in R2 and served from public/screenshots/
+#
+# @see HAP-923 - Create PWA screenshot assets for install prompt
+
+name = "happy-pwa-screenshots"
+main = "src/index.ts"
+compatibility_date = "2026-01-01"
+compatibility_flags = ["nodejs_compat_v2"]
+account_id = "81f483e6767ea3194467ecef42840f79"
+
+#############################
+# Development Environment
+#############################
+[env.development]
+name = "happy-pwa-screenshots-dev"
+workers_dev = true
+
+[env.development.browser]
+binding = "MYBROWSER"
+
+[env.development.vars]
+ENVIRONMENT = "development"
+TARGET_URL = "https://happy-vue.enflamemedia.com"
+
+# R2 bucket for storing generated screenshots
+[[env.development.r2_buckets]]
+binding = "SCREENSHOTS_BUCKET"
+bucket_name = "happy-pwa-screenshots-dev"
+
+#############################
+# Production Environment
+#############################
+[env.production]
+name = "happy-pwa-screenshots"
+workers_dev = false
+
+[env.production.browser]
+binding = "MYBROWSER"
+
+[env.production.vars]
+ENVIRONMENT = "production"
+TARGET_URL = "https://happy-vue.enflamemedia.com"
+
+[[env.production.r2_buckets]]
+binding = "SCREENSHOTS_BUCKET"
+bucket_name = "happy-pwa-screenshots"
