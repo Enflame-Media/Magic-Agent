@@ -1,0 +1,203 @@
+# Mutation Testing Workflow for Happy Server Workers
+# Validates test quality using Stryker Mutator
+#
+# Features:
+# - Runs on PRs targeting main when workers/src changes
+# - Manual trigger via workflow_dispatch
+# - Incremental mode with cached results
+# - Uploads HTML report as artifact
+# - Advisory only (does not block PRs)
+#
+# Note: Mutation testing is CPU-intensive. Full runs can take 30+ minutes.
+# Incremental mode significantly reduces time for unchanged code.
+#
+# Security: This workflow uses only safe inputs (boolean workflow_dispatch,
+# hashFiles, runner.os, github.sha). No untrusted user input is used in shell commands.
+
+name: Mutation Testing
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/server/workers/src/**'
+      - 'apps/server/workers/stryker.config.mjs'
+      - '!apps/server/workers/src/**/*.md'
+  workflow_dispatch:
+    inputs:
+      full_run:
+        description: 'Run full mutation testing (ignore cache)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: mutation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mutation-test:
+    name: Mutation Testing (Workers)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: apps/server/workers
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Enable Corepack (for Yarn 4)
+        run: corepack enable
+
+      - name: Get yarn cache directory
+        id: yarn-cache-dir
+        run: echo "dir=$(yarn config get cacheFolder)" >> "$GITHUB_OUTPUT"
+        working-directory: .
+
+      - name: Cache yarn dependencies
+        uses: actions/cache@v5
+        with:
+          path: |
+            ${{ steps.yarn-cache-dir.outputs.dir }}
+            .yarn/install-state.gz
+          key: ${{ runner.os }}-yarn-${{ hashFiles('yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+
+      - name: Restore Stryker incremental cache
+        if: ${{ !inputs.full_run }}
+        uses: actions/cache/restore@v5
+        with:
+          path: apps/server/workers/reports/mutation/stryker-incremental.json
+          key: stryker-workers-${{ runner.os }}-${{ hashFiles('apps/server/workers/src/**/*.ts') }}
+          restore-keys: |
+            stryker-workers-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: yarn install --immutable
+        working-directory: .
+
+      - name: Build shared packages
+        run: |
+          yarn workspace @happy/errors build
+          yarn workspace @happy/protocol build
+        working-directory: .
+
+      - name: Run mutation tests
+        env:
+          FULL_RUN: ${{ inputs.full_run }}
+        run: |
+          if [ "$FULL_RUN" = "true" ]; then
+            yarn mutate
+          else
+            yarn mutate:incremental
+          fi
+        continue-on-error: true
+
+      - name: Save Stryker incremental cache
+        if: always()
+        uses: actions/cache/save@v5
+        with:
+          path: apps/server/workers/reports/mutation/stryker-incremental.json
+          key: stryker-workers-${{ runner.os }}-${{ hashFiles('apps/server/workers/src/**/*.ts') }}-${{ github.sha }}
+
+      - name: Upload mutation report
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: mutation-report-workers
+          path: |
+            apps/server/workers/reports/mutation/html/
+            apps/server/workers/reports/mutation/mutation.json
+          retention-days: 14
+
+      - name: Post mutation score summary
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const reportPath = 'apps/server/workers/reports/mutation/mutation.json';
+
+            let body = '## Mutation Testing Report\n\n';
+
+            if (!fs.existsSync(reportPath)) {
+              body += '> Mutation report not generated. Check workflow logs for details.\n';
+            } else {
+              try {
+                const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+                const metrics = report.schemaVersion === '1' ? report.files : report;
+
+                // Calculate totals
+                let killed = 0, survived = 0, timeout = 0, noCoverage = 0, compileError = 0;
+                for (const file of Object.values(report.files || {})) {
+                  for (const mutant of file.mutants || []) {
+                    if (mutant.status === 'Killed') killed++;
+                    else if (mutant.status === 'Survived') survived++;
+                    else if (mutant.status === 'Timeout') timeout++;
+                    else if (mutant.status === 'NoCoverage') noCoverage++;
+                    else if (mutant.status === 'CompileError') compileError++;
+                  }
+                }
+
+                const total = killed + survived + timeout;
+                const score = total > 0 ? ((killed + timeout) / total * 100).toFixed(1) : 'N/A';
+
+                body += `| Metric | Value |\n`;
+                body += `|--------|-------|\n`;
+                body += `| **Mutation Score** | ${score}% |\n`;
+                body += `| Killed | ${killed} |\n`;
+                body += `| Survived | ${survived} |\n`;
+                body += `| Timeout | ${timeout} |\n`;
+                body += `| No Coverage | ${noCoverage} |\n`;
+                body += `| Compile Error | ${compileError} |\n\n`;
+
+                if (survived > 0) {
+                  body += `> ${survived} mutant(s) survived. Review the HTML report artifact for details.\n\n`;
+                }
+              } catch (e) {
+                body += `> Error parsing mutation report: ${e.message}\n`;
+              }
+            }
+
+            const workflowUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            body += `\n[View full report](${workflowUrl}) | Download HTML report from artifacts`;
+
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('Mutation Testing Report')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body,
+              });
+            }
