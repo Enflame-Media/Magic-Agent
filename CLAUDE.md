@@ -376,6 +376,53 @@ yarn test
 yarn test:watch
 ```
 
+## Mutation Testing
+
+This project uses [Stryker Mutator](https://stryker-mutator.io/) for mutation testing to validate test quality. Mutation testing introduces small changes (mutants) to production code and verifies that tests detect these changes. Surviving mutants indicate gaps in test coverage.
+
+### Commands
+
+| Command | Purpose |
+|---------|---------|
+| `yarn mutate` | Full mutation test run with HTML report |
+| `yarn mutate:incremental` | Fast incremental run (recommended for local dev) |
+| `yarn mutate:dry-run` | Verify setup without running mutations |
+| `yarn mutate:report` | Open HTML report in browser |
+
+### Reports
+
+- **HTML Report**: `reports/mutation/html/index.html` - Interactive report showing all mutants
+- **JSON Report**: `reports/mutation/mutation.json` - Machine-readable results
+- **Incremental Cache**: `reports/mutation/stryker-incremental.json` - Speeds up subsequent runs
+
+### Interpreting Results
+
+| Status | Meaning |
+|--------|---------|
+| **Killed** | Test detected the mutation (good) |
+| **Survived** | Test missed the mutation (needs improvement) |
+| **No Coverage** | No test covers this code |
+| **Timeout** | Mutation caused infinite loop |
+| **Compile Error** | Mutation created invalid TypeScript |
+
+### Best Practices
+
+1. Run `yarn mutate:incremental` before major commits
+2. Focus on surviving mutants in critical business logic (routes, auth, encryption)
+3. Don't aim for 100% - some mutants are equivalent or low-value
+4. Review HTML report during code review
+5. Use CI artifacts to see mutation reports on PRs
+
+### Configuration
+
+Configuration is in `stryker.config.mjs`. Key settings:
+
+- **mutate**: Production files only (excludes tests, schemas, utilities)
+- **testRunner**: Vitest with existing vitest.config.ts
+- **checkers**: TypeScript checker filters type-invalid mutants
+- **incremental**: Enabled for faster subsequent runs
+- **thresholds**: Advisory only (80% high, 60% low, no break threshold)
+
 ## Deployment
 
 ### Prerequisites
@@ -1937,9 +1984,16 @@ Returns `null` for `updateUrl` if the version is up to date.
 
 **Location:** `src/routes/dev.ts`
 
+**Full Documentation:** [`docs/REMOTE-LOGGING.md`](../../docs/REMOTE-LOGGING.md)
+
 #### POST /logs-combined-from-cli-and-mobile-for-simple-ai-debugging
 
-Combined logging endpoint for debugging. Only enabled when `DANGEROUSLY_LOG_TO_SERVER_FOR_AI_AUTO_DEBUGGING` environment variable is set.
+Combined logging endpoint for debugging mobile and CLI applications. Features production guardrails, rate limiting, payload size limits, and optional token authentication.
+
+**Requirements:**
+- `ENVIRONMENT` must NOT be `production` (HAP-821)
+- `DANGEROUSLY_LOG_TO_SERVER_FOR_AI_AUTO_DEBUGGING` must be set
+- Optional: `DEV_LOGGING_TOKEN` for authenticated requests
 
 **Request:**
 
@@ -1948,18 +2002,18 @@ Combined logging endpoint for debugging. Only enabled when `DANGEROUSLY_LOG_TO_S
     "timestamp": "2024-01-15T10:30:00.000Z",
     "level": "info",
     "message": "User action completed",
+    "messageRawObject": [{"key": "value"}],
     "source": "mobile",
     "platform": "ios"
 }
 ```
 
-**Response (200):**
-
-```json
-{
-    "success": true
-}
-```
+**Response Codes:**
+- `200`: Log recorded successfully
+- `401`: Invalid/missing auth token (when DEV_LOGGING_TOKEN is configured)
+- `403`: Debug logging disabled or blocked in production
+- `413`: Payload too large (message max 50KB, raw object max 100KB)
+- `429`: Rate limit exceeded (60 req/min per source/IP)
 
 ### Voice Routes
 

@@ -7,6 +7,10 @@ node_modules/
 coverage/*
 coverage/
 
+# Mutation Testing (Stryker)
+.stryker-tmp/
+reports/mutation/
+
 # Production
 dist/
 
