@@ -309,3 +309,96 @@
     @apply bg-background text-foreground;
   }
 }
+
+/**
+ * Responsive Design System - HAP-916
+ *
+ * Mobile-First Breakpoints (TailwindCSS defaults):
+ * - xs: < 640px (mobile phones)
+ * - sm: >= 640px (small tablets, large phones)
+ * - md: >= 768px (tablets)
+ * - lg: >= 1024px (laptops)
+ * - xl: >= 1280px (desktops)
+ * - 2xl: >= 1536px (large screens)
+ *
+ * Usage with TailwindCSS:
+ * - Default styles apply to mobile (xs)
+ * - Use sm:, md:, lg:, xl:, 2xl: prefixes for larger screens
+ *
+ * Example:
+ *   class="p-2 sm:p-4 lg:p-6"
+ *   Applies p-2 on mobile, p-4 on sm+, p-6 on lg+
+ */
+
+/**
+ * Touch Target Utilities
+ *
+ * WCAG 2.2 Level AA requires minimum 44x44px touch targets.
+ * These utilities ensure accessible touch interactions on mobile.
+ *
+ * @see https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html
+ */
+@layer components {
+  /**
+   * Minimum touch target size (44x44px)
+   * Use on interactive elements for mobile accessibility
+   */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  /**
+   * Recommended touch target size (48x48px)
+   * Provides optimal touch experience
+   */
+  .touch-target-lg {
+    @apply min-h-[48px] min-w-[48px];
+  }
+
+  /**
+   * Touch-friendly button base
+   * Combines touch target with proper padding and centering
+   */
+  .touch-button {
+    @apply min-h-[44px] min-w-[44px] flex items-center justify-center p-2;
+  }
+
+  /**
+   * Mobile navigation item
+   * Optimized for bottom navigation touch targets
+   */
+  .nav-touch-item {
+    @apply min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-1 p-2;
+  }
+}
+
+/**
+ * Safe Area Insets for PWA
+ *
+ * Handles notches, home indicators, and rounded corners on modern devices.
+ * Use env(safe-area-inset-*) for proper spacing.
+ */
+@layer utilities {
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .safe-area-left {
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .safe-area-right {
+    padding-right: env(safe-area-inset-right);
+  }
+
+  .safe-area-inset {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
