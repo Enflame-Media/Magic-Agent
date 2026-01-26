@@ -8,12 +8,23 @@
  * - View account status
  */
 
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { toast } from 'vue-sonner';
 import { useAuthStore } from '@/stores/auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -24,6 +35,9 @@ const initials = computed(() => authStore.initials || 'U');
 const account = computed(() => authStore.account);
 const isGitHubConnected = computed(() => !!account.value?.github);
 
+// Dialog state
+const showDisconnectDialog = ref(false);
+
 function goBack() {
   router.push('/settings');
 }
@@ -31,14 +45,17 @@ function goBack() {
 // Placeholder handlers for account actions
 function connectGitHub() {
   // Would trigger GitHub OAuth flow
-  globalThis.alert('GitHub OAuth not yet implemented');
+  toast.info('GitHub OAuth not yet implemented');
 }
 
-function disconnectGitHub() {
-  if (globalThis.confirm('Are you sure you want to disconnect GitHub?')) {
-    // Would call API to disconnect
-    globalThis.alert('Disconnect not yet implemented');
-  }
+function openDisconnectDialog() {
+  showDisconnectDialog.value = true;
+}
+
+function handleDisconnect() {
+  // Would call API to disconnect
+  toast.info('Disconnect not yet implemented');
+  showDisconnectDialog.value = false;
 }
 </script>
 
@@ -121,7 +138,7 @@ function disconnectGitHub() {
               v-if="isGitHubConnected"
               variant="outline"
               size="sm"
-              @click="disconnectGitHub"
+              @click="openDisconnectDialog"
             >
               Disconnect
             </Button>
@@ -137,5 +154,23 @@ function disconnectGitHub() {
         </CardContent>
       </Card>
     </div>
+
+    <!-- Disconnect GitHub Dialog -->
+    <AlertDialog v-model:open="showDisconnectDialog">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Disconnect GitHub?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This will remove your GitHub connection. You can reconnect at any time.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction variant="destructive" @click="handleDisconnect">
+            Disconnect
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   </div>
 </template>

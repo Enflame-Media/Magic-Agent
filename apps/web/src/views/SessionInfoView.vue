@@ -26,6 +26,16 @@ import {
   ItemTitle,
 } from '@/components/ui/item';
 import { ShareSessionModal } from '@/components/app/sharing';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { archiveSession, deleteSession } from '@/services/sessions';
 import { encryptionCache } from '@/services/encryption/EncryptionCache';
 import { decryptSessionMetadata } from '@/services/encryption/sessionDecryption';
@@ -63,6 +73,8 @@ const isRestoring = ref(false);
 const isArchiving = ref(false);
 const decryptedMetadata = ref<SessionMetadata | null>(null);
 const isShareModalOpen = ref(false);
+const showArchiveDialog = ref(false);
+const showDeleteDialog = ref(false);
 
 const sessionId = computed(() => route.params.id as string);
 const session = computed(() =>
@@ -235,11 +247,14 @@ async function handleRestore(): Promise<void> {
   }
 }
 
+function openArchiveDialog(): void {
+  showArchiveDialog.value = true;
+}
+
 async function handleArchive(): Promise<void> {
   if (!session.value || !session.value.active || isArchiving.value) return;
 
-  const confirmed = globalThis.confirm('Archive this session?');
-  if (!confirmed) return;
+  showArchiveDialog.value = false;
 
   if (!authStore.token) {
     toast.error('Not authenticated');
@@ -272,13 +287,14 @@ async function handleArchive(): Promise<void> {
   }
 }
 
+function openDeleteDialog(): void {
+  showDeleteDialog.value = true;
+}
+
 async function handleDelete(): Promise<void> {
   if (!session.value || isDeleting.value) return;
 
-  const confirmed = globalThis.confirm(
-    'Delete this archived session and all of its messages? This cannot be undone.'
-  );
-  if (!confirmed) return;
+  showDeleteDialog.value = false;
 
   if (!authStore.token) {
     toast.error('Not authenticated');
@@ -458,7 +474,7 @@ async function handleDelete(): Promise<void> {
             variant="outline"
             size="sm"
             :disabled="isActiveSession ? isArchiving : !canRestore || !machineOnline || isRestoring"
-            @click="isActiveSession ? handleArchive() : handleRestore()"
+            @click="isActiveSession ? openArchiveDialog() : handleRestore()"
           >
             <template v-if="isActiveSession">
               {{ isArchiving ? 'Archiving...' : 'Archive' }}
@@ -529,7 +545,7 @@ async function handleDelete(): Promise<void> {
             variant="destructive"
             size="sm"
             :disabled="isDeleting"
-            @click="handleDelete"
+            @click="openDeleteDialog"
           >
             {{ isDeleting ? 'Deleting...' : 'Delete' }}
           </Button>
@@ -603,5 +619,42 @@ async function handleDelete(): Promise<void> {
       v-model:open="isShareModalOpen"
       :session-id="sessionId"
     />
+
+    <!-- Archive Session Dialog -->
+    <AlertDialog v-model:open="showArchiveDialog">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Archive Session?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This will archive the session and stop it. You can restore it later if needed.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction @click="handleArchive">
+            Archive
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
+    <!-- Delete Session Dialog -->
+    <AlertDialog v-model:open="showDeleteDialog">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete Session?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This will permanently delete this archived session and all of its messages.
+            This action cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction variant="destructive" @click="handleDelete">
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   </div>
 </template>
