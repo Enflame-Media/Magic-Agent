@@ -3,9 +3,10 @@
  * MobileBottomNav - Mobile-optimized bottom navigation
  *
  * Replaces the desktop sidebar on mobile viewports (< 640px).
- * Provides touch-friendly navigation with 44px minimum touch targets.
+ * Provides touch-friendly navigation with 48px recommended touch targets (WCAG 2.2).
  *
  * @see HAP-916 - Responsive Design System
+ * @see HAP-919 - Mobile Web Enhancements (Touch Targets)
  */
 
 import { computed } from 'vue';
@@ -85,7 +86,7 @@ function isActive(item: NavItem): boolean {
         <RouterLink
           :to="item.to"
           :class="cn(
-            'nav-touch-item relative w-full transition-colors',
+            'touch-target-lg relative w-full flex flex-col items-center justify-center gap-1 p-2 transition-colors',
             isActive(item)
               ? 'text-primary'
               : 'text-muted-foreground hover:text-foreground',

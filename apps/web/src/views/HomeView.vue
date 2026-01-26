@@ -4,6 +4,8 @@
  *
  * Provides a shadcn-vue inspired dashboard layout with Happy session metrics,
  * connection status, and a table of recent sessions.
+ *
+ * @see HAP-919 - Mobile Web Enhancements (Pull-to-refresh)
  */
 
 import { computed } from 'vue';
@@ -12,10 +14,12 @@ import { useArtifactsStore } from '@/stores/artifacts';
 import { useMachinesStore } from '@/stores/machines';
 import { useSessionsStore, type Session } from '@/stores/sessions';
 import { useSyncStore } from '@/stores/sync';
+import { useSync } from '@/composables/useSync';
+import { useBreakpoints } from '@/composables/useBreakpoints';
 import SectionCards from '@/components/SectionCards.vue';
 import ChartAreaInteractive from '@/components/ChartAreaInteractive.vue';
 import DataTable from '@/components/DataTable.vue';
-import { ConnectionStatus } from '@/components/app';
+import { ConnectionStatus, PullToRefresh } from '@/components/app';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -41,6 +45,14 @@ const sessionsStore = useSessionsStore();
 const machinesStore = useMachinesStore();
 const artifactsStore = useArtifactsStore();
 const syncStore = useSyncStore();
+
+// Pull-to-refresh support (HAP-919)
+const { refresh: syncRefresh } = useSync();
+const { isMobile } = useBreakpoints();
+
+async function handleRefresh(): Promise<void> {
+  await syncRefresh();
+}
 
 const cards = computed<SectionCard[]>(() => {
   const totalSessions = sessionsStore.count;
@@ -138,8 +150,15 @@ function openSettings() {
 </script>
 
 <template>
-  <div class="flex flex-col gap-6 py-6">
-    <SectionCards :cards="cards" />
+  <!-- Pull-to-refresh wrapper for mobile (HAP-919) -->
+  <PullToRefresh
+    ref="pullToRefreshRef"
+    :enabled="isMobile"
+    :mobile-only="true"
+    @refresh="handleRefresh"
+  >
+    <div class="flex flex-col gap-6 py-6">
+      <SectionCards :cards="cards" />
 
     <div class="grid gap-4 px-4 lg:px-6 lg:grid-cols-3">
       <div class="lg:col-span-2">
@@ -174,6 +193,7 @@ function openSettings() {
       </Card>
     </div>
 
-    <DataTable :data="tableData" @new-session="startNewSession" />
-  </div>
+      <DataTable :data="tableData" @new-session="startNewSession" />
+    </div>
+  </PullToRefresh>
 </template>

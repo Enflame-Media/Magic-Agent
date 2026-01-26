@@ -6,9 +6,10 @@
  * Includes dark mode toggle, Sonner toast provider, WebSocket sync,
  * session revival error handling, responsive layout (HAP-916),
  * keyboard shortcuts with command palette (HAP-918),
- * and resizable sidebar with drag handles (HAP-927).
+ * resizable sidebar with drag handles (HAP-927),
+ * and mobile swipe navigation (HAP-919).
  */
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useWindowSize } from '@vueuse/core';
 import { Toaster } from '@/components/ui/sonner';
@@ -18,6 +19,7 @@ import { useRevivalCooldown, type RevivalCooldownState } from '@/composables/use
 import { useBreakpoints } from '@/composables/useBreakpoints';
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts';
 import { useSidebarState } from '@/composables/useSidebarState';
+import { useSwipeNavigation, shouldEnableSwipeForRoute } from '@/composables/useSwipeNavigation';
 import { useAuthStore } from '@/stores/auth';
 import { storeToRefs } from 'pinia';
 import SessionErrorDialog from '@/components/app/SessionErrorDialog.vue';
@@ -58,6 +60,21 @@ const cooldown = computed(() => (cooldownRef as { value: RevivalCooldownState | 
 
 // Responsive breakpoints (HAP-916)
 const { isMobile } = useBreakpoints();
+
+// Swipe navigation for mobile (HAP-919)
+const mobileMainRef = ref<HTMLElement | null>(null);
+const swipeEnabled = computed(() => isMobile.value && shouldEnableSwipeForRoute(route.name));
+const { containerRef: swipeContainerRef } = useSwipeNavigation({
+  enabled: swipeEnabled.value,
+  threshold: 50,
+  enableBack: true,
+  enableForward: true,
+});
+
+// Sync swipe container ref with mobile main ref
+watch(mobileMainRef, (el) => {
+  swipeContainerRef.value = el;
+}, { immediate: true });
 
 // Resizable sidebar state (HAP-927)
 const { width: sidebarWidth, setWidth: setSidebarWidth, config: sidebarConfig } = useSidebarState();
@@ -169,10 +186,10 @@ const pageTitle = computed(() => {
     </SidebarProvider>
   </div>
 
-  <!-- Mobile layout with bottom navigation (HAP-916) -->
+  <!-- Mobile layout with bottom navigation and swipe gestures (HAP-916, HAP-919) -->
   <div v-else-if="showShell && isMobile" id="happy-app" class="min-h-screen bg-background">
     <SiteHeader :title="pageTitle" class="sticky top-0 z-40" />
-    <main class="flex min-h-0 flex-1 flex-col pb-20">
+    <main ref="mobileMainRef" class="flex min-h-0 flex-1 flex-col pb-20 touch-pan-y">
       <RouterView />
     </main>
     <MobileBottomNav />

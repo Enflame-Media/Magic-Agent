@@ -27,6 +27,7 @@ export { default as AgentInput } from './AgentInput/AgentInput.vue';
 export { default as ArtifactViewer } from './ArtifactViewer.vue';
 export { default as FileTree } from './FileTree.vue';
 export { default as ImagePreview } from './ImagePreview.vue';
+export { default as OfflineIndicator } from './OfflineIndicator.vue';
 
 // i18n components
 export { default as LanguageSelector } from './LanguageSelector.vue';
@@ -38,3 +39,11 @@ export { default as UserSearch } from './UserSearch.vue';
 
 // Voice components
 export { VoiceBars, VoiceStatusBar, VoiceButton } from './voice';
+
+// Desktop enhancement components (HAP-918)
+export { default as CommandPalette } from './CommandPalette.vue';
+export { default as AppBreadcrumbs } from './AppBreadcrumbs.vue';
+
+// Mobile enhancement components (HAP-919)
+export { default as MobileBottomNav } from './MobileBottomNav.vue';
+export { default as PullToRefresh } from './PullToRefresh.vue';
