@@ -18,9 +18,11 @@
 
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { ChevronLeft, Check, Mic, Loader2, AlertCircle, CheckCircle2, XCircle, Sparkles } from 'lucide-vue-next';
+import { ChevronLeft, Check, Mic, AlertCircle, CheckCircle2, XCircle, Sparkles } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useVoice } from '@/composables/useVoice';
 import { useVoiceAccess } from '@/composables/useVoiceAccess';
 import { usePurchases } from '@/composables/usePurchases';
@@ -28,7 +30,7 @@ import { useLocale } from '@/composables/useLocale';
 import { VOICE_LANGUAGES } from '@/services/voice/config';
 
 const router = useRouter();
-const { voiceLanguage, setVoiceLanguage } = useVoice();
+const { voiceLanguage, setVoiceLanguage, voiceAssistantEnabled, setVoiceAssistantEnabled } = useVoice();
 const { hasAccess, isLoading: isCheckingAccess, error: accessError, checkAccess } = useVoiceAccess();
 const { showPaywall, isPro } = usePurchases();
 const { t } = useLocale();
@@ -119,6 +121,35 @@ onMounted(async () => {
       </div>
     </header>
 
+    <!-- Voice Assistant Enable/Disable Toggle -->
+    <Card class="mb-4">
+      <CardHeader>
+        <CardTitle class="text-base font-medium">
+          {{ t('settingsVoice.voiceAssistantTitle') }}
+        </CardTitle>
+        <CardDescription>
+          {{ t('settingsVoice.voiceAssistantDescription') }}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div class="flex items-center justify-between rounded-lg border p-3">
+          <div class="flex items-center gap-3">
+            <Mic class="h-5 w-5 text-primary" />
+            <div>
+              <p class="font-medium">{{ t('settingsVoice.enableVoiceAssistant') }}</p>
+              <p class="text-sm text-muted-foreground">
+                {{ voiceAssistantEnabled ? t('settingsVoice.voiceAssistantEnabledSubtitle') : t('settingsVoice.voiceAssistantDisabledSubtitle') }}
+              </p>
+            </div>
+          </div>
+          <Switch
+            :checked="voiceAssistantEnabled"
+            @update:checked="setVoiceAssistantEnabled"
+          />
+        </div>
+      </CardContent>
+    </Card>
+
     <!-- Voice Access Status Card -->
     <Card class="mb-4">
       <CardHeader>
@@ -133,12 +164,15 @@ onMounted(async () => {
         <!-- Loading State -->
         <div
           v-if="accessStatus === 'loading'"
-          class="flex items-center gap-3 p-3 rounded-lg bg-muted/50"
+          class="p-3 rounded-lg bg-muted/50"
         >
-          <Loader2 class="h-5 w-5 animate-spin text-muted-foreground" />
-          <span class="text-sm text-muted-foreground">
-            {{ t('settingsVoice.accessStatus.checking') }}
-          </span>
+          <div class="flex items-center gap-3">
+            <Skeleton class="h-5 w-5 rounded-full" />
+            <div class="space-y-2 flex-1">
+              <Skeleton class="h-4 w-24" />
+              <Skeleton class="h-3 w-40" />
+            </div>
+          </div>
         </div>
 
         <!-- Active State -->

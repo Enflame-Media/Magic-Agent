@@ -12,6 +12,7 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { getPrivacySettings, updatePrivacySettings } from '@/services/privacy';
 
 const router = useRouter();
@@ -93,8 +94,17 @@ function goBack() {
         </CardHeader>
         <CardContent>
           <!-- Loading State -->
-          <div v-if="isLoading" class="flex items-center justify-center py-8">
-            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          <div v-if="isLoading" class="space-y-3 py-2">
+            <div class="flex items-center justify-between p-3 rounded-lg border">
+              <div class="flex items-center gap-3">
+                <Skeleton class="w-10 h-10 rounded-lg" />
+                <div class="space-y-2">
+                  <Skeleton class="h-4 w-32" />
+                  <Skeleton class="h-3 w-48" />
+                </div>
+              </div>
+              <Skeleton class="h-6 w-11 rounded-full" />
+            </div>
           </div>
 
           <!-- Toggle -->
