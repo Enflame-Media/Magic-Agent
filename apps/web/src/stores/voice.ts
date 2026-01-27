@@ -21,6 +21,9 @@ import type { VoiceStatus, VoiceMode } from '@/services/voice/types';
 /** LocalStorage key for voice language preference */
 const VOICE_LANGUAGE_STORAGE_KEY = 'happy_voice_language';
 
+/** LocalStorage key for voice assistant enabled preference */
+const VOICE_ASSISTANT_ENABLED_STORAGE_KEY = 'happy_voice_assistant_enabled';
+
 /**
  * Load voice language from localStorage
  */
@@ -44,6 +47,35 @@ function saveVoiceLanguage(language: string): void {
     if (typeof window === 'undefined') return;
     try {
         localStorage.setItem(VOICE_LANGUAGE_STORAGE_KEY, language);
+    } catch {
+        // localStorage not available
+    }
+}
+
+/**
+ * Load voice assistant enabled preference from localStorage
+ * Defaults to true for new and existing users
+ */
+function loadVoiceAssistantEnabled(): boolean {
+    if (typeof window === 'undefined') return true;
+    try {
+        const stored = localStorage.getItem(VOICE_ASSISTANT_ENABLED_STORAGE_KEY);
+        if (stored !== null) {
+            return stored === 'true';
+        }
+    } catch {
+        // localStorage not available
+    }
+    return true; // Default to enabled
+}
+
+/**
+ * Save voice assistant enabled preference to localStorage
+ */
+function saveVoiceAssistantEnabled(enabled: boolean): void {
+    if (typeof window === 'undefined') return;
+    try {
+        localStorage.setItem(VOICE_ASSISTANT_ENABLED_STORAGE_KEY, String(enabled));
     } catch {
         // localStorage not available
     }
@@ -75,9 +107,17 @@ export const useVoiceStore = defineStore('voice', () => {
     /** User's preferred voice language (persisted to localStorage) */
     const voiceLanguage = ref<string>(loadVoiceLanguage());
 
+    /** Whether voice assistant is enabled (persisted to localStorage) */
+    const voiceAssistantEnabled = ref<boolean>(loadVoiceAssistantEnabled());
+
     // Persist voice language changes to localStorage
     watch(voiceLanguage, (newLanguage) => {
         saveVoiceLanguage(newLanguage);
+    });
+
+    // Persist voice assistant enabled changes to localStorage
+    watch(voiceAssistantEnabled, (newEnabled) => {
+        saveVoiceAssistantEnabled(newEnabled);
     });
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -186,6 +226,13 @@ export const useVoiceStore = defineStore('voice', () => {
     }
 
     /**
+     * Set voice assistant enabled preference
+     */
+    function setVoiceAssistantEnabled(enabled: boolean) {
+        voiceAssistantEnabled.value = enabled;
+    }
+
+    /**
      * Reset store to initial state
      */
     function $reset() {
@@ -206,6 +253,7 @@ export const useVoiceStore = defineStore('voice', () => {
         activeSessionId,
         error,
         voiceLanguage,
+        voiceAssistantEnabled,
         // Getters
         isActive,
         isConnecting,
@@ -222,6 +270,7 @@ export const useVoiceStore = defineStore('voice', () => {
         toggleMute,
         setMuted,
         setVoiceLanguage,
+        setVoiceAssistantEnabled,
         $reset,
     };
 });

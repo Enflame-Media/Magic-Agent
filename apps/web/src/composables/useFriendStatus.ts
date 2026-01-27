@@ -26,7 +26,7 @@
  */
 
 import { ref, onMounted, onUnmounted, type Ref } from 'vue';
-import type { ApiEphemeralFriendStatusUpdate } from '@happy-vue/protocol';
+import type { ApiEphemeralFriendStatusUpdate } from '@happy/protocol';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types

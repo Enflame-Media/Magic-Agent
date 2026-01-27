@@ -25,7 +25,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { openUrl } from '@happy-vue/shared';
+import { openUrl } from '@/shared';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -80,6 +80,10 @@ function navigateToClaudeConnect() {
 
 function navigateToServer() {
   router.push('/settings/server');
+}
+
+function navigateToStorage() {
+  router.push('/settings/storage');
 }
 
 function navigateToMcp() {
@@ -609,7 +613,7 @@ function openGitHub() {
               </svg>
             </button>
             <button
-              class="w-full flex items-center justify-between p-4 hover:bg-accent transition-colors"
+              class="w-full flex items-center justify-between p-4 hover:bg-accent transition-colors border-b"
               @click="navigateToServer"
             >
               <div class="flex items-center gap-3">
@@ -632,6 +636,44 @@ function openGitHub() {
                 <div class="text-left">
                   <p class="font-medium">Server</p>
                   <p class="text-sm text-muted-foreground">API endpoint</p>
+                </div>
+              </div>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5 text-muted-foreground"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+            <!-- HAP-874: Storage settings for artifact cache -->
+            <button
+              class="w-full flex items-center justify-between p-4 hover:bg-accent transition-colors"
+              @click="navigateToStorage"
+            >
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-teal-500/10 flex items-center justify-center">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-5 w-5 text-teal-500"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"
+                    />
+                  </svg>
+                </div>
+                <div class="text-left">
+                  <p class="font-medium">Storage</p>
+                  <p class="text-sm text-muted-foreground">Offline cache, data</p>
                 </div>
               </div>
               <svg

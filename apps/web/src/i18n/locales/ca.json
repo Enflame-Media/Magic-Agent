@@ -894,6 +894,11 @@
     "toolsReadOnlyNote": "La configuracio d'eines es de nomes lectura. Utilitza el CLI per activar o desactivar eines."
   },
   "settingsVoice": {
+    "voiceAssistantTitle": "Assistent de veu",
+    "voiceAssistantDescription": "Activa o desactiva les funcions de l'assistent de veu per a les teves sessions.",
+    "enableVoiceAssistant": "Activa l'assistent de veu",
+    "voiceAssistantEnabledSubtitle": "Les funcions de veu estan actives",
+    "voiceAssistantDisabledSubtitle": "Les funcions de veu estan desactivades",
     "languageTitle": "Idioma",
     "languageDescription": "Tria el teu idioma preferit per a les interaccions amb l'assistent de veu. Aquesta configuracio es sincronitza a tots els teus dispositius.",
     "preferredLanguage": "Idioma preferit",

@@ -190,6 +190,12 @@ const router = createRouter({
       component: () => import('@/views/settings/McpServerView.vue'),
       meta: { requiresAuth: true },
     },
+    {
+      path: '/settings/storage',
+      name: 'settings-storage',
+      component: () => import('@/views/settings/StorageSettingsView.vue'),
+      meta: { requiresAuth: true },
+    },
 
     // ─────────────────────────────────────────────────────────────────────
     // Auth Routes (public)

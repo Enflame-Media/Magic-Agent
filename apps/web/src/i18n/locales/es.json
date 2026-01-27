@@ -894,6 +894,11 @@
     "toolsReadOnlyNote": "La configuración de herramientas es de solo lectura. Usa el CLI para habilitar o deshabilitar herramientas."
   },
   "settingsVoice": {
+    "voiceAssistantTitle": "Asistente de voz",
+    "voiceAssistantDescription": "Activa o desactiva las funciones del asistente de voz para tus sesiones.",
+    "enableVoiceAssistant": "Activar asistente de voz",
+    "voiceAssistantEnabledSubtitle": "Las funciones de voz estan activas",
+    "voiceAssistantDisabledSubtitle": "Las funciones de voz estan desactivadas",
     "languageTitle": "Idioma",
     "languageDescription": "Elige tu idioma preferido para las interacciones con el asistente de voz. Esta configuración se sincroniza en todos tus dispositivos.",
     "preferredLanguage": "Idioma preferido",

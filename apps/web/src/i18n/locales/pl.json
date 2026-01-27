@@ -894,6 +894,11 @@
     "toolsReadOnlyNote": "Konfiguracja narzedzi jest tylko do odczytu. Uzyj CLI, aby wlaczyc lub wylaczyc narzedzia."
   },
   "settingsVoice": {
+    "voiceAssistantTitle": "Asystent glosowy",
+    "voiceAssistantDescription": "Wlacz lub wylacz funkcje asystenta glosowego dla Twoich sesji.",
+    "enableVoiceAssistant": "Wlacz asystenta glosowego",
+    "voiceAssistantEnabledSubtitle": "Funkcje glosowe sa aktywne",
+    "voiceAssistantDisabledSubtitle": "Funkcje glosowe sa wylaczone",
     "languageTitle": "Jezyk",
     "languageDescription": "Wybierz preferowany jezyk dla interakcji z asystentem glosowym. To ustawienie synchronizuje sie na wszystkich Twoich urzadzeniach.",
     "preferredLanguage": "Preferowany jezyk",

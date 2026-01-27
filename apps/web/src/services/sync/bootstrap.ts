@@ -2,6 +2,7 @@ import { getApiBaseUrl } from '@/services/apiBase';
 import { useSessionsStore, type Session } from '@/stores/sessions';
 import { useMachinesStore, type Machine } from '@/stores/machines';
 import { useAuthStore } from '@/stores/auth';
+import type { ImageRef, GitHubProfile } from '@happy/protocol';
 
 interface ApiSession {
   id?: string;
@@ -37,8 +38,8 @@ interface AccountProfile {
   id: string;
   firstName?: string | null;
   lastName?: string | null;
-  avatar?: unknown | null;
-  github?: unknown | null;
+  avatar?: ImageRef | null;
+  github?: GitHubProfile | null;
 }
 
 const API_ENDPOINT = getApiBaseUrl();

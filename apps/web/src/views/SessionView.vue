@@ -299,7 +299,7 @@ async function loadArchivedHistory(): Promise<void> {
     const apiMessages = await fetchSessionMessages(sessionId.value, authStore.token);
     const mappedMessages = apiMessages.map((message) => ({
       id: message.id,
-      sessionId: message.sessionId,
+      sessionId: sessionId.value, // Use the session ID from the route param
       seq: message.seq,
       localId: message.localId ?? null,
       content: message.content,

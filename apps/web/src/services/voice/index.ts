@@ -47,6 +47,11 @@ export {
     startVoiceSession,
     endVoiceSession,
     isVoiceSessionActive,
+    setMicMuted,
+    getInputVolume,
+    getOutputVolume,
+    isInputVoiceActive,
+    isOutputVoiceActive,
 } from './VoiceService';
 
 // Voice hooks for event routing

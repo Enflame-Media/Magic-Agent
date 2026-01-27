@@ -19,7 +19,7 @@ import { ref, computed } from 'vue';
 import type {
   CustomerInfo,
   Offerings,
-} from '@happy-vue/shared';
+} from '@/shared';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types

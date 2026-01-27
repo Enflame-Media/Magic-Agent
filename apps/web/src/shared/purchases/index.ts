@@ -3,7 +3,7 @@
  *
  * Exports all purchase-related types and utilities.
  *
- * @module @happy-vue/shared/purchases
+ * @module @/shared/purchases
  */
 
 export * from './types';

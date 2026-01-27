@@ -301,7 +301,7 @@ describe('Sync Event Handlers', () => {
 
       const cleanup = setupSyncHandlers();
 
-      expect(registeredHandlers.size).toBe(3); // update, ephemeral, error
+      expect(registeredHandlers.size).toBe(5); // update, ephemeral, error, session-revival-paused, session-revived
 
       cleanup();
 

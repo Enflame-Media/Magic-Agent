@@ -37,7 +37,7 @@ import UrlSharingSection from './UrlSharingSection.vue';
 import AddPeopleSection from './AddPeopleSection.vue';
 import InvitationList from './InvitationList.vue';
 import { useSessionSharing } from '@/composables/useSessionSharing';
-import type { SessionSharePermission } from '@happy-vue/protocol';
+import type { SessionSharePermission } from '@happy/protocol';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Props & Emits

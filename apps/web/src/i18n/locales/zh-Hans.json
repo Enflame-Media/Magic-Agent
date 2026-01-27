@@ -894,6 +894,11 @@
     "toolsReadOnlyNote": "工具配置为只读。请使用 CLI 启用或禁用工具。"
   },
   "settingsVoice": {
+    "voiceAssistantTitle": "语音助手",
+    "voiceAssistantDescription": "为您的会话启用或禁用语音助手功能。",
+    "enableVoiceAssistant": "启用语音助手",
+    "voiceAssistantEnabledSubtitle": "语音功能已启用",
+    "voiceAssistantDisabledSubtitle": "语音功能已禁用",
     "languageTitle": "语言",
     "languageDescription": "选择您希望语音助手交互使用的语言。此设置将在您的所有设备间同步。",
     "preferredLanguage": "首选语言",

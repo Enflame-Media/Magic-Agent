@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { SessionSharePermission } from '@happy-vue/protocol';
+import type { SessionSharePermission } from '@happy/protocol';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Props & Emits

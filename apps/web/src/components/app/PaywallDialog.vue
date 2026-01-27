@@ -29,8 +29,8 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { usePurchases } from '@/composables/usePurchases';
-import type { Package } from '@happy-vue/shared';
-import { PaywallResult } from '@happy-vue/shared';
+import type { Package } from '@/shared';
+import { PaywallResult } from '@/shared';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Props & Emits

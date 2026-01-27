@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import PermissionSelect from './PermissionSelect.vue';
-import type { SessionShareUrlConfig, SessionSharePermission } from '@happy-vue/protocol';
+import type { SessionShareUrlConfig, SessionSharePermission } from '@happy/protocol';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Props & Emits

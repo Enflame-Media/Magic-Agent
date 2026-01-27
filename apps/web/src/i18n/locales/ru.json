@@ -895,6 +895,11 @@
     "toolsReadOnlyNote": "Конфигурация инструментов доступна только для чтения. Используйте CLI для включения или отключения инструментов."
   },
   "settingsVoice": {
+    "voiceAssistantTitle": "Голосовой помощник",
+    "voiceAssistantDescription": "Включите или отключите функции голосового помощника для ваших сессий.",
+    "enableVoiceAssistant": "Включить голосовой помощник",
+    "voiceAssistantEnabledSubtitle": "Голосовые функции активны",
+    "voiceAssistantDisabledSubtitle": "Голосовые функции отключены",
     "languageTitle": "Язык",
     "languageDescription": "Выберите предпочтительный язык для взаимодействия с голосовым помощником. Эта настройка синхронизируется на всех ваших устройствах.",
     "preferredLanguage": "Предпочтительный язык",

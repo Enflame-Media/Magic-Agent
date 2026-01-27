@@ -47,8 +47,7 @@
   },
   "dependencies": {
     "@11labs/client": "^0.2.0",
-    "@happy-vue/protocol": "workspace:*",
-    "@happy-vue/shared": "workspace:*",
+    "@happy/protocol": "workspace:*",
     "@revenuecat/purchases-js": "^1.24.1",
     "@tabler/icons-vue": "^3.36.1",
     "@tailwindcss/vite": "^4.1.18",

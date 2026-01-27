@@ -40,8 +40,8 @@ import { storeToRefs } from 'pinia';
 import { z } from 'zod';
 import { useAuthStore } from '@/stores/auth';
 import { getApiBaseUrl } from '@/services/apiBase';
-import type { UserProfile, RelationshipStatus } from '@happy-vue/protocol';
-import { UserProfileSchema } from '@happy-vue/protocol';
+import type { UserProfile, RelationshipStatus } from '@happy/protocol';
+import { UserProfileSchema } from '@happy/protocol';
 import { toast } from 'vue-sonner';
 
 // ─────────────────────────────────────────────────────────────────────────────

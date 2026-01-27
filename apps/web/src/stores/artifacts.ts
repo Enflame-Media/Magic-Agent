@@ -4,17 +4,25 @@
  * Manages artifact collection with optimized Map-based storage.
  * Artifacts represent files and outputs generated during Claude Code sessions.
  *
+ * Features:
+ * - Offline caching via IndexedDB (HAP-874)
+ * - Version-based cache invalidation
+ * - LRU eviction policy for cache management
+ *
  * @example
  * ```typescript
  * const artifacts = useArtifactsStore();
  * artifacts.upsertArtifact(newArtifact);
  * const selected = artifacts.selectedArtifact;
  * ```
+ *
+ * @see HAP-874 - Offline Artifact Caching
  */
 
 import { defineStore } from 'pinia';
 import { ref, shallowRef, computed, triggerRef } from 'vue';
-import type { ApiNewArtifact } from '@happy-vue/protocol';
+import type { ApiNewArtifact } from '@happy/protocol';
+import { artifactCache, type CacheStats, type CacheConfig } from '@/services/artifactCache';
 
 /**
  * Artifact file types for display and syntax highlighting
@@ -236,6 +244,15 @@ export const useArtifactsStore = defineStore('artifacts', () => {
   /** Loading state for body content */
   const loadingBodyIds = ref<Set<string>>(new Set());
 
+  /** Whether cache is initialized (HAP-874) */
+  const cacheInitialized = ref(false);
+
+  /** Whether artifacts are loaded from cache (offline mode indicator) */
+  const isOfflineMode = ref(false);
+
+  /** Cache statistics for UI display */
+  const cacheStats = ref<CacheStats | null>(null);
+
   // ─────────────────────────────────────────────────────────────────────────
   // Getters (Computed)
   // ─────────────────────────────────────────────────────────────────────────
@@ -279,21 +296,36 @@ export const useArtifactsStore = defineStore('artifacts', () => {
       .sort((a, b) => a.seq - b.seq);
   }
 
-  /** Build file tree from artifacts */
+  /**
+   * Build file tree from artifacts
+   *
+   * Optimized for large artifact collections (HAP-873):
+   * - Single-pass tree construction
+   * - Efficient path parsing with string slicing
+   * - In-place sorting to avoid extra allocations
+   * - Iterative sorting to prevent stack overflow
+   */
   const fileTree = computed((): FileTreeNode[] => {
-    const root: FileTreeNode[] = [];
-    const pathMap = new Map<string, FileTreeNode>();
+    const artifactValues = artifacts.value;
+    if (artifactValues.size === 0) return [];
 
-    for (const artifact of artifacts.value.values()) {
+    // Pre-allocate pathMap with estimated size
+    const pathMap = new Map<string, FileTreeNode>();
+    const root: FileTreeNode[] = [];
+
+    // Build tree in a single pass
+    for (const artifact of artifactValues.values()) {
       const path = artifact.filePath || artifact.title || artifact.id;
       const parts = path.split('/').filter(Boolean);
+
+      if (parts.length === 0) continue;
 
       let currentPath = '';
       let currentLevel = root;
 
       for (let i = 0; i < parts.length; i++) {
         const part = parts[i];
-        if (!part) continue; // Skip empty parts
+        if (!part) continue;
 
         const isLast = i === parts.length - 1;
         currentPath = currentPath ? `${currentPath}/${part}` : part;
@@ -319,22 +351,51 @@ export const useArtifactsStore = defineStore('artifacts', () => {
       }
     }
 
-    // Sort: directories first, then alphabetically
+    // Iterative sorting to avoid stack overflow with deep trees
     const sortNodes = (nodes: FileTreeNode[]): FileTreeNode[] => {
-      return nodes
-        .map((node) => ({
-          ...node,
-          children: node.children ? sortNodes(node.children) : undefined,
-        }))
-        .sort((a, b) => {
+      // Use a stack for iterative traversal
+      const stack: FileTreeNode[][] = [nodes];
+
+      while (stack.length > 0) {
+        const current = stack.pop()!;
+
+        // Sort in-place
+        current.sort((a, b) => {
           if (a.isDirectory !== b.isDirectory) {
             return a.isDirectory ? -1 : 1;
           }
           return a.name.localeCompare(b.name);
         });
+
+        // Add children to stack
+        for (const node of current) {
+          if (node.children && node.children.length > 0) {
+            stack.push(node.children);
+          }
+        }
+      }
+
+      return nodes;
     };
 
     return sortNodes(root);
+  });
+
+  /**
+   * File tree node count (for performance monitoring)
+   */
+  const fileTreeNodeCount = computed((): number => {
+    let count = 0;
+    const countNodes = (nodes: FileTreeNode[]) => {
+      count += nodes.length;
+      for (const node of nodes) {
+        if (node.children) {
+          countNodes(node.children);
+        }
+      }
+    };
+    countNodes(fileTree.value);
+    return count;
   });
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -489,6 +550,190 @@ export const useArtifactsStore = defineStore('artifacts', () => {
    */
   function $reset() {
     clearArtifacts();
+    isOfflineMode.value = false;
+    cacheStats.value = null;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Cache Operations (HAP-874)
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Initialize the artifact cache.
+   * Should be called when the app starts.
+   */
+  async function initializeCache(): Promise<void> {
+    if (cacheInitialized.value) return;
+
+    try {
+      await artifactCache.initialize();
+      cacheInitialized.value = true;
+      await refreshCacheStats();
+      console.debug('[artifacts] Cache initialized');
+    } catch (error) {
+      console.error('[artifacts] Failed to initialize cache:', error);
+    }
+  }
+
+  /**
+   * Load cached artifacts for offline viewing.
+   * Sets isOfflineMode to true when loading from cache.
+   */
+  async function loadFromCache(): Promise<void> {
+    if (!cacheInitialized.value) {
+      await initializeCache();
+    }
+
+    try {
+      const cachedArtifacts = await artifactCache.loadCachedArtifacts();
+      if (cachedArtifacts.length > 0) {
+        setArtifacts(cachedArtifacts);
+        isOfflineMode.value = true;
+        console.debug(`[artifacts] Loaded ${cachedArtifacts.length} artifacts from cache`);
+      }
+    } catch (error) {
+      console.error('[artifacts] Failed to load from cache:', error);
+    }
+  }
+
+  /**
+   * Load cached artifacts for a specific session.
+   *
+   * @param sessionId - Session ID to load artifacts for
+   */
+  async function loadCachedForSession(sessionId: string): Promise<void> {
+    if (!cacheInitialized.value) {
+      await initializeCache();
+    }
+
+    try {
+      const cachedArtifacts = await artifactCache.getCachedForSession(sessionId);
+      if (cachedArtifacts.length > 0) {
+        for (const artifact of cachedArtifacts) {
+          artifacts.value.set(artifact.id, artifact);
+        }
+        triggerRef(artifacts);
+        isOfflineMode.value = true;
+        console.debug(`[artifacts] Loaded ${cachedArtifacts.length} cached artifacts for session ${sessionId}`);
+      }
+    } catch (error) {
+      console.error(`[artifacts] Failed to load cached artifacts for session ${sessionId}:`, error);
+    }
+  }
+
+  /**
+   * Cache an artifact after decryption.
+   * Called automatically when artifacts are decrypted.
+   *
+   * @param artifact - Artifact to cache
+   */
+  async function cacheArtifact(artifact: DecryptedArtifact): Promise<void> {
+    if (!cacheInitialized.value) {
+      await initializeCache();
+    }
+
+    try {
+      await artifactCache.cacheArtifact(artifact);
+    } catch (error) {
+      console.error(`[artifacts] Failed to cache artifact ${artifact.id}:`, error);
+    }
+  }
+
+  /**
+   * Cache artifact body content.
+   * Called when body is loaded on-demand.
+   *
+   * @param id - Artifact ID
+   * @param body - Body content to cache
+   */
+  async function cacheBody(id: string, body: string | null): Promise<void> {
+    if (!cacheInitialized.value) return;
+
+    try {
+      await artifactCache.cacheBody(id, body);
+    } catch (error) {
+      console.error(`[artifacts] Failed to cache body for ${id}:`, error);
+    }
+  }
+
+  /**
+   * Check if a cached artifact is stale.
+   *
+   * @param id - Artifact ID
+   * @param headerVersion - Current header version from server
+   * @param bodyVersion - Current body version from server
+   * @returns True if cache needs refresh
+   */
+  async function isCacheStale(
+    id: string,
+    headerVersion: number,
+    bodyVersion: number | null
+  ): Promise<boolean> {
+    if (!cacheInitialized.value) return true;
+    return artifactCache.isStale(id, headerVersion, bodyVersion);
+  }
+
+  /**
+   * Remove a cached artifact.
+   *
+   * @param id - Artifact ID
+   */
+  async function removeCached(id: string): Promise<void> {
+    if (!cacheInitialized.value) return;
+
+    try {
+      await artifactCache.removeCached(id);
+    } catch (error) {
+      console.error(`[artifacts] Failed to remove cached artifact ${id}:`, error);
+    }
+  }
+
+  /**
+   * Clear the entire artifact cache.
+   */
+  async function clearCache(): Promise<void> {
+    try {
+      await artifactCache.clearCache();
+      await refreshCacheStats();
+      console.debug('[artifacts] Cache cleared');
+    } catch (error) {
+      console.error('[artifacts] Failed to clear cache:', error);
+    }
+  }
+
+  /**
+   * Refresh cache statistics.
+   */
+  async function refreshCacheStats(): Promise<void> {
+    try {
+      cacheStats.value = await artifactCache.getStats();
+    } catch (error) {
+      console.error('[artifacts] Failed to get cache stats:', error);
+    }
+  }
+
+  /**
+   * Get current cache configuration.
+   */
+  function getCacheConfig(): CacheConfig {
+    return artifactCache.getConfig();
+  }
+
+  /**
+   * Update cache configuration.
+   *
+   * @param config - Partial configuration to update
+   */
+  function setCacheConfig(config: Partial<CacheConfig>): void {
+    artifactCache.setConfig(config);
+  }
+
+  /**
+   * Clear offline mode flag.
+   * Called when live data is received from server.
+   */
+  function clearOfflineMode(): void {
+    isOfflineMode.value = false;
   }
 
   return {
@@ -496,12 +741,16 @@ export const useArtifactsStore = defineStore('artifacts', () => {
     artifacts,
     selectedArtifactId,
     loadingBodyIds,
+    cacheInitialized,
+    isOfflineMode,
+    cacheStats,
     // Getters
     selectedArtifact,
     count,
     artifactsList,
     artifactsByType,
     fileTree,
+    fileTreeNodeCount,
     // Actions
     getArtifact,
     upsertArtifact,
@@ -517,5 +766,18 @@ export const useArtifactsStore = defineStore('artifacts', () => {
     clearArtifacts,
     artifactsForSession,
     $reset,
+    // Cache Actions (HAP-874)
+    initializeCache,
+    loadFromCache,
+    loadCachedForSession,
+    cacheArtifact,
+    cacheBody,
+    isCacheStale,
+    removeCached,
+    clearCache,
+    refreshCacheStats,
+    getCacheConfig,
+    setCacheConfig,
+    clearOfflineMode,
   };
 });

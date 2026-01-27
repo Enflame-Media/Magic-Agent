@@ -14,7 +14,7 @@
 
 import { defineStore } from 'pinia';
 import { ref, shallowRef, computed, triggerRef } from 'vue';
-import type { ApiUpdateNewSession } from '@happy-vue/protocol';
+import type { ApiUpdateNewSession } from '@happy/protocol';
 
 /**
  * Session data structure

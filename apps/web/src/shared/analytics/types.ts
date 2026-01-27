@@ -4,7 +4,7 @@
  * Shared analytics types for tracking purchase funnel events
  * across all platforms (web, mobile, macOS).
  *
- * @module @happy-vue/shared/analytics
+ * @module @/shared/analytics
  */
 
 // ─────────────────────────────────────────────────────────────────────────────

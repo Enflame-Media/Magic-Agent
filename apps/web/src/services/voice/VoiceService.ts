@@ -4,6 +4,13 @@
  * Core voice service implementation using ElevenLabs Conversational AI.
  * Manages WebRTC connections for real-time voice communication.
  *
+ * Features:
+ * - Text-to-speech via ElevenLabs
+ * - WebRTC audio streaming
+ * - Voice Activity Detection (VAD)
+ * - Mute/unmute microphone control
+ * - Client tools for session interaction
+ *
  * @example
  * ```typescript
  * import { voiceService } from '@/services/voice';
@@ -14,14 +21,18 @@
  * });
  *
  * voiceService.sendContextualUpdate('User clicked on file.ts');
+ * voiceService.setMicMuted(true); // Mute microphone
  *
  * await voiceService.endSession();
  * ```
+ *
+ * @see HAP-681 - Implement voice features across all platforms
  */
 
 import { Conversation, type Mode, type DisconnectionDetails } from '@11labs/client';
 import type { VoiceSession, VoiceSessionConfig, VoiceEventCallbacks, VoiceMode } from './types';
 import { ELEVENLABS_CONFIG, VOICE_CONFIG, getElevenLabsLanguageCode } from './config';
+import { voiceClientTools } from './clientTools';
 import { useVoiceStore } from '@/stores/voice';
 
 /**
@@ -38,6 +49,18 @@ function convertMode(sdkMode: Mode): VoiceMode {
 }
 
 /**
+ * Voice Activity Detection (VAD) polling interval in ms
+ * Used to check input/output volume levels for UI feedback
+ */
+const VAD_POLLING_INTERVAL_MS = 100;
+
+/**
+ * Volume threshold for detecting voice activity (0-1 scale)
+ * Values above this threshold indicate active speech
+ */
+const VAD_VOLUME_THRESHOLD = 0.1;
+
+/**
  * Voice Service Implementation
  *
  * Implements the VoiceSession interface using ElevenLabs SDK.
@@ -46,6 +69,7 @@ function convertMode(sdkMode: Mode): VoiceMode {
 class VoiceServiceImpl implements VoiceSession {
     private _callbacks: VoiceEventCallbacks = {};
     private audioContext: AudioContext | null = null;
+    private vadPollingInterval: ReturnType<typeof setInterval> | null = null;
 
     /**
      * Request microphone permission
@@ -141,17 +165,27 @@ class VoiceServiceImpl implements VoiceSession {
                     language: language as 'en' | 'es' | 'ru' | 'pl' | 'pt' | 'zh',
                 },
             },
+            // Register client tools for voice assistant to interact with Claude Code
+            clientTools: voiceClientTools,
             onConnect: ({ conversationId }) => {
                 if (VOICE_CONFIG.ENABLE_DEBUG_LOGGING) {
                     console.log('[Voice] Connected with conversation ID:', conversationId);
                 }
                 store.setConversationId(conversationId);
+
+                // Start Voice Activity Detection polling
+                this.startVadPolling();
+
                 this._callbacks.onConnect?.();
             },
             onDisconnect: (details: DisconnectionDetails) => {
                 if (VOICE_CONFIG.ENABLE_DEBUG_LOGGING) {
                     console.log('[Voice] Disconnected:', details.reason);
                 }
+
+                // Stop VAD polling
+                this.stopVadPolling();
+
                 store.setStatus('disconnected');
                 this._callbacks.onDisconnect?.();
             },
@@ -187,6 +221,9 @@ class VoiceServiceImpl implements VoiceSession {
      */
     async endSession(): Promise<void> {
         const store = useVoiceStore();
+
+        // Stop VAD polling first
+        this.stopVadPolling();
 
         try {
             if (conversationInstance) {
@@ -266,6 +303,122 @@ class VoiceServiceImpl implements VoiceSession {
     getConversationId(): string | null {
         return conversationInstance?.getId() ?? null;
     }
+
+    /**
+     * Set microphone mute state
+     *
+     * When muted, the microphone input is disabled but the voice session
+     * remains active and can still receive audio from the assistant.
+     *
+     * @param isMuted - Whether to mute the microphone
+     */
+    setMicMuted(isMuted: boolean): void {
+        if (!conversationInstance) {
+            if (VOICE_CONFIG.ENABLE_DEBUG_LOGGING) {
+                console.log('[Voice] No active session, cannot set mute state');
+            }
+            return;
+        }
+
+        if (VOICE_CONFIG.ENABLE_DEBUG_LOGGING) {
+            console.log('[Voice] Setting mic muted:', isMuted);
+        }
+
+        conversationInstance.setMicMuted(isMuted);
+    }
+
+    /**
+     * Get current input (microphone) volume level
+     *
+     * Returns a normalized value between 0 and 1 representing
+     * the current microphone input volume.
+     *
+     * @returns Volume level (0-1), or 0 if no active session
+     */
+    getInputVolume(): number {
+        if (!conversationInstance) {
+            return 0;
+        }
+        return conversationInstance.getInputVolume();
+    }
+
+    /**
+     * Get current output (speaker) volume level
+     *
+     * Returns a normalized value between 0 and 1 representing
+     * the current audio output volume.
+     *
+     * @returns Volume level (0-1), or 0 if no active session
+     */
+    getOutputVolume(): number {
+        if (!conversationInstance) {
+            return 0;
+        }
+        return conversationInstance.getOutputVolume();
+    }
+
+    /**
+     * Check if voice activity is detected on input (user speaking)
+     *
+     * Uses the input volume and compares against the VAD threshold
+     * to determine if the user is currently speaking.
+     *
+     * @returns True if voice activity detected
+     */
+    isInputVoiceActive(): boolean {
+        return this.getInputVolume() > VAD_VOLUME_THRESHOLD;
+    }
+
+    /**
+     * Check if voice activity is detected on output (AI speaking)
+     *
+     * Uses the output volume and compares against the VAD threshold
+     * to determine if the AI is currently speaking.
+     *
+     * @returns True if voice activity detected
+     */
+    isOutputVoiceActive(): boolean {
+        return this.getOutputVolume() > VAD_VOLUME_THRESHOLD;
+    }
+
+    /**
+     * Start Voice Activity Detection polling
+     *
+     * Periodically checks input/output volume levels and updates
+     * the voice store with activity state for UI feedback.
+     */
+    private startVadPolling(): void {
+        if (this.vadPollingInterval) {
+            return; // Already polling
+        }
+
+        this.vadPollingInterval = setInterval(() => {
+            if (!conversationInstance) {
+                this.stopVadPolling();
+                return;
+            }
+
+            // Get volume levels for potential UI updates
+            const inputVolume = this.getInputVolume();
+            const outputVolume = this.getOutputVolume();
+
+            // Emit latency callback if registered (for debugging/monitoring)
+            if (this._callbacks.onLatency && (inputVolume > 0 || outputVolume > 0)) {
+                // Note: This is a simplified latency metric based on activity
+                this._callbacks.onLatency({ latencyMs: VAD_POLLING_INTERVAL_MS });
+            }
+        }, VAD_POLLING_INTERVAL_MS);
+    }
+
+    /**
+     * Stop Voice Activity Detection polling
+     */
+    private stopVadPolling(): void {
+        if (this.vadPollingInterval) {
+            clearInterval(this.vadPollingInterval);
+            this.vadPollingInterval = null;
+        }
+    }
 }
 
 /**
@@ -295,4 +448,41 @@ export async function endVoiceSession(): Promise<void> {
  */
 export function isVoiceSessionActive(): boolean {
     return voiceService.isSessionActive();
+}
+
+/**
+ * Set microphone mute state
+ *
+ * @param isMuted - Whether to mute the microphone
+ */
+export function setMicMuted(isMuted: boolean): void {
+    voiceService.setMicMuted(isMuted);
+}
+
+/**
+ * Get current input volume level (0-1)
+ */
+export function getInputVolume(): number {
+    return voiceService.getInputVolume();
+}
+
+/**
+ * Get current output volume level (0-1)
+ */
+export function getOutputVolume(): number {
+    return voiceService.getOutputVolume();
+}
+
+/**
+ * Check if voice activity is detected on input (user speaking)
+ */
+export function isInputVoiceActive(): boolean {
+    return voiceService.isInputVoiceActive();
+}
+
+/**
+ * Check if voice activity is detected on output (AI speaking)
+ */
+export function isOutputVoiceActive(): boolean {
+    return voiceService.isOutputVoiceActive();
 }

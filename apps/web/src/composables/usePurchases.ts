@@ -29,14 +29,14 @@ import type {
   CustomerInfo,
   Offerings,
   Package,
-} from '@happy-vue/shared';
+} from '@/shared';
 import {
   PaywallResult,
   PurchaseError,
   PurchaseErrorCode,
   trackPurchaseEvent,
   PurchaseAnalyticsEvent,
-} from '@happy-vue/shared';
+} from '@/shared';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // RevenueCat SDK Types (from @revenuecat/purchases-js)

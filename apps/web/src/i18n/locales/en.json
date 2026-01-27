@@ -892,6 +892,11 @@
     "toolsReadOnlyNote": "Tool configuration is read-only. Use the CLI to enable or disable tools."
   },
   "settingsVoice": {
+    "voiceAssistantTitle": "Voice Assistant",
+    "voiceAssistantDescription": "Enable or disable voice assistant features for your sessions.",
+    "enableVoiceAssistant": "Enable Voice Assistant",
+    "voiceAssistantEnabledSubtitle": "Voice features are active",
+    "voiceAssistantDisabledSubtitle": "Voice features are disabled",
     "languageTitle": "Language",
     "languageDescription": "Choose your preferred language for voice assistant interactions. This setting syncs across all your devices.",
     "preferredLanguage": "Preferred Language",

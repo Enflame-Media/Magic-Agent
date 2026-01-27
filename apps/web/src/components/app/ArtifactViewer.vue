@@ -7,6 +7,7 @@
  * - Content viewer (code, image, or raw text)
  * - Loading and error states
  * - Download functionality (single file and ZIP bundle)
+ * - Virtual scrolling for large artifact sets (HAP-873)
  *
  * @example
  * ```vue
@@ -23,8 +24,16 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import FileTree from './FileTree.vue';
+import VirtualFileTree from './VirtualFileTree.vue';
 import ImagePreview from './ImagePreview.vue';
 import CodeBlock from './CodeBlock.vue';
+
+/**
+ * Threshold for switching to virtual file tree.
+ * Below this count, use the simple recursive component.
+ * Above this count, use virtual scrolling for performance.
+ */
+const VIRTUAL_TREE_THRESHOLD = 100;
 
 interface Props {
   /** Filter artifacts by session ID (optional) */
@@ -78,6 +87,14 @@ const displayFilename = computed(() => {
   const artifact = selectedArtifact.value;
   if (!artifact) return '';
   return artifact.filePath || artifact.title || artifact.id;
+});
+
+/**
+ * Use virtual file tree when artifact count exceeds threshold.
+ * This improves performance for large artifact collections (HAP-873).
+ */
+const useVirtualTree = computed(() => {
+  return artifactsStore.fileTreeNodeCount > VIRTUAL_TREE_THRESHOLD;
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -198,26 +215,37 @@ watch(
       </div>
 
       <!-- File tree -->
-      <ScrollArea class="flex-1">
-        <div v-if="artifacts.length === 0" class="p-4 text-center text-muted-foreground">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-8 w-8 mx-auto mb-2 opacity-50"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            stroke-width="1.5"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z"
-            />
-          </svg>
-          <p class="text-sm">No artifacts</p>
-        </div>
+      <!-- Empty state -->
+      <div v-if="artifacts.length === 0" class="flex-1 p-4 text-center text-muted-foreground">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-8 w-8 mx-auto mb-2 opacity-50"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          stroke-width="1.5"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z"
+          />
+        </svg>
+        <p class="text-sm">No artifacts</p>
+      </div>
+
+      <!-- Virtual file tree for large artifact sets (HAP-873) -->
+      <VirtualFileTree
+        v-else-if="useVirtualTree"
+        class="flex-1"
+        :tree="fileTree"
+        :selected-id="artifactsStore.selectedArtifactId"
+        @select="handleSelect"
+      />
+
+      <!-- Standard file tree for smaller sets -->
+      <ScrollArea v-else class="flex-1">
         <FileTree
-          v-else
           :tree="fileTree"
           :selected-id="artifactsStore.selectedArtifactId"
           @select="handleSelect"

@@ -45,6 +45,11 @@ import { useVoiceStore } from '@/stores/voice';
 import {
     startVoiceSession,
     endVoiceSession,
+    setMicMuted as serviceMicMuted,
+    getInputVolume,
+    getOutputVolume,
+    isInputVoiceActive,
+    isOutputVoiceActive,
     voiceHooks,
 } from '@/services/voice';
 
@@ -62,6 +67,7 @@ export interface UseVoiceReturn {
     statusMessage: ComputedRef<string>;
     activeSessionId: ComputedRef<string | null>;
     voiceLanguage: ComputedRef<string>;
+    voiceAssistantEnabled: ComputedRef<boolean>;
 
     // Actions
     startSession: (sessionId: string, initialContext?: string) => Promise<void>;
@@ -69,6 +75,13 @@ export interface UseVoiceReturn {
     toggleMute: () => void;
     setMuted: (muted: boolean) => void;
     setVoiceLanguage: (language: string) => void;
+    setVoiceAssistantEnabled: (enabled: boolean) => void;
+
+    // Voice Activity Detection (VAD)
+    getInputVolume: () => number;
+    getOutputVolume: () => number;
+    isInputVoiceActive: () => boolean;
+    isOutputVoiceActive: () => boolean;
 
     // Hooks for event integration
     hooks: typeof voiceHooks;
@@ -88,6 +101,7 @@ export function useVoice(): UseVoiceReturn {
         activeSessionId,
         error,
         voiceLanguage,
+        voiceAssistantEnabled,
     } = storeToRefs(store);
 
     // Computed properties
@@ -116,8 +130,15 @@ export function useVoice(): UseVoiceReturn {
 
     /**
      * Start a voice session
+     * Guards against starting if voice assistant is disabled
      */
     async function startSession(sessionId: string, initialContext?: string): Promise<void> {
+        // Guard: Check if voice assistant is enabled
+        if (!voiceAssistantEnabled.value) {
+            console.log('[Voice] Voice assistant is disabled, not starting session');
+            return;
+        }
+
         // Get initial context from voice hooks
         const context = initialContext ?? voiceHooks.onVoiceStarted(sessionId);
         await startVoiceSession(sessionId, context);
@@ -133,16 +154,23 @@ export function useVoice(): UseVoiceReturn {
 
     /**
      * Toggle microphone mute state
+     *
+     * Updates both the store state and the ElevenLabs SDK mute state
      */
     function toggleMute(): void {
-        store.toggleMute();
+        const newMutedState = !isMuted.value;
+        store.setMuted(newMutedState);
+        serviceMicMuted(newMutedState);
     }
 
     /**
      * Set microphone mute state
+     *
+     * Updates both the store state and the ElevenLabs SDK mute state
      */
     function setMuted(muted: boolean): void {
         store.setMuted(muted);
+        serviceMicMuted(muted);
     }
 
     /**
@@ -150,6 +178,13 @@ export function useVoice(): UseVoiceReturn {
      */
     function setVoiceLanguage(language: string): void {
         store.setVoiceLanguage(language);
+    }
+
+    /**
+     * Set voice assistant enabled preference
+     */
+    function setVoiceAssistantEnabled(enabled: boolean): void {
+        store.setVoiceAssistantEnabled(enabled);
     }
 
     return {
@@ -163,6 +198,7 @@ export function useVoice(): UseVoiceReturn {
         statusMessage,
         activeSessionId: computed(() => activeSessionId.value),
         voiceLanguage: computed(() => voiceLanguage.value),
+        voiceAssistantEnabled: computed(() => voiceAssistantEnabled.value),
 
         // Actions
         startSession,
@@ -170,6 +206,13 @@ export function useVoice(): UseVoiceReturn {
         toggleMute,
         setMuted,
         setVoiceLanguage,
+        setVoiceAssistantEnabled,
+
+        // Voice Activity Detection (VAD)
+        getInputVolume,
+        getOutputVolume,
+        isInputVoiceActive,
+        isOutputVoiceActive,
 
         // Hooks
         hooks: voiceHooks,

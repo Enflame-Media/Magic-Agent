@@ -55,7 +55,7 @@ import {
   type SessionShareUrlConfig,
   type SessionShareInvitation,
   type SessionSharePermission,
-} from '@happy-vue/protocol';
+} from '@happy/protocol';
 import { toast } from 'vue-sonner';
 
 // ─────────────────────────────────────────────────────────────────────────────

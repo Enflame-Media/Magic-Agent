@@ -2,7 +2,7 @@
  * Sync Event Handlers
  *
  * Processes incoming WebSocket events and updates Pinia stores.
- * All incoming data is validated with Zod schemas from @happy-vue/protocol.
+ * All incoming data is validated with Zod schemas from @happy/protocol.
  *
  * Events handled:
  * - 'update': Persistent state changes (sessions, messages, machines, etc.)
@@ -23,7 +23,7 @@ import {
     type ApiNewArtifact,
     type ApiUpdateArtifact,
     type ApiDeleteArtifact,
-} from '@happy-vue/protocol';
+} from '@happy/protocol';
 import { useSessionsStore } from '@/stores/sessions';
 import { useMessagesStore } from '@/stores/messages';
 import { useMachinesStore } from '@/stores/machines';
@@ -180,6 +180,9 @@ function handleUpdate(data: unknown): void {
             const artifactId = artifactUpdate.artifactId;
             const artifactsStore = useArtifactsStore();
 
+            // Clear offline mode since we're receiving live data
+            artifactsStore.clearOfflineMode();
+
             // First, add to store with placeholder data
             artifactsStore.upsertFromApi(artifactUpdate);
 
@@ -224,6 +227,12 @@ function handleUpdate(data: unknown): void {
                         artifactsStore.applyDecryptedBody(artifactId, body?.body ?? null);
                     }
 
+                    // HAP-874: Cache the decrypted artifact for offline access
+                    const decryptedArtifact = artifactsStore.getArtifact(artifactId);
+                    if (decryptedArtifact) {
+                        await artifactsStore.cacheArtifact(decryptedArtifact);
+                    }
+
                     console.debug(`[sync] Processed new artifact ${artifactId}`);
                 } catch (error) {
                     console.error(`[sync] Failed to process new artifact ${artifactId}:`, error);
@@ -237,6 +246,9 @@ function handleUpdate(data: unknown): void {
             const artifactUpdate = update as ApiUpdateArtifact;
             const artifactId = artifactUpdate.artifactId;
             const artifactsStore = useArtifactsStore();
+
+            // Clear offline mode since we're receiving live data
+            artifactsStore.clearOfflineMode();
 
             // Check if artifact exists
             const existingArtifact = artifactsStore.getArtifact(artifactId);
@@ -283,6 +295,12 @@ function handleUpdate(data: unknown): void {
                         });
                     }
 
+                    // HAP-874: Update cache with new artifact data
+                    const updatedArtifact = artifactsStore.getArtifact(artifactId);
+                    if (updatedArtifact) {
+                        await artifactsStore.cacheArtifact(updatedArtifact);
+                    }
+
                     console.debug(`[sync] Updated artifact ${artifactId}`);
                 } catch (error) {
                     console.error(`[sync] Failed to update artifact ${artifactId}:`, error);
@@ -297,11 +315,17 @@ function handleUpdate(data: unknown): void {
             const artifactId = artifactUpdate.artifactId;
             const artifactsStore = useArtifactsStore();
 
+            // Clear offline mode since we're receiving live data
+            artifactsStore.clearOfflineMode();
+
             // Remove from store
             artifactsStore.removeArtifact(artifactId);
 
             // Remove encryption key from memory
             removeArtifactKey(artifactId);
+
+            // HAP-874: Remove from cache
+            artifactsStore.removeCached(artifactId);
 
             console.debug(`[sync] Deleted artifact ${artifactId}`);
             break;

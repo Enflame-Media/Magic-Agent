@@ -1,5 +1,5 @@
-import type { ApiMessage } from '@happy-vue/protocol';
-import type { EncryptedContent } from '@happy-vue/protocol';
+import type { ApiMessage } from '@happy/protocol';
+import type { EncryptedContent } from '@happy/protocol';
 import { getApiBaseUrl } from './apiBase';
 
 const API_ENDPOINT = getApiBaseUrl();

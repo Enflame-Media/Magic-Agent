@@ -8,11 +8,7 @@
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "@happy-vue/shared": ["../../packages/shared/src"],
-      "@happy-vue/shared/*": ["../../packages/shared/src/*"],
-      "@happy-vue/protocol": ["../../packages/protocol/src"],
-      "@happy-vue/protocol/*": ["../../packages/protocol/src/*"]
+      "@/*": ["./src/*"]
     },
     "types": ["vite/client", "vitest/globals"]
   },
@@ -23,8 +19,5 @@
     "vite.config.ts"
   ],
   "exclude": ["node_modules", "dist"],
-  "references": [
-    { "path": "../../packages/shared" },
-    { "path": "../../packages/protocol" }
-  ]
+  "references": []
 }

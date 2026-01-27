@@ -4,7 +4,7 @@
  * Common types that work across all platforms (web, mobile, macOS).
  * Based on the apps/web/react/sources/sync/revenueCat/types.ts implementation.
  *
- * @module @happy-vue/shared/purchases
+ * @module @/shared/purchases
  */
 
 // ─────────────────────────────────────────────────────────────────────────────
