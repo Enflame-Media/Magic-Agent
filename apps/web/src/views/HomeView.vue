@@ -8,7 +8,7 @@
  * @see HAP-919 - Mobile Web Enhancements (Pull-to-refresh)
  */
 
-import { computed } from 'vue';
+import { computed, defineAsyncComponent } from 'vue';
 import { useRouter } from 'vue-router';
 import { useArtifactsStore } from '@/stores/artifacts';
 import { useMachinesStore } from '@/stores/machines';
@@ -17,8 +17,16 @@ import { useSyncStore } from '@/stores/sync';
 import { useSync } from '@/composables/useSync';
 import { useBreakpoints } from '@/composables/useBreakpoints';
 import SectionCards from '@/components/SectionCards.vue';
-import ChartAreaInteractive from '@/components/ChartAreaInteractive.vue';
 import DataTable from '@/components/DataTable.vue';
+import { Skeleton } from '@/components/ui/skeleton';
+
+// Lazy load Chart component - @unovis library is heavy
+const ChartAreaInteractive = defineAsyncComponent({
+  loader: () => import('@/components/ChartAreaInteractive.vue'),
+  loadingComponent: Skeleton,
+  delay: 200,
+  timeout: 10000,
+});
 import { ConnectionStatus, PullToRefresh } from '@/components/app';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';

@@ -6,6 +6,7 @@
  * - Pinia for state management
  * - Vue I18n for internationalization (7 languages)
  * - Tailwind CSS with ShadCN-Vue theme
+ * - PWA with service worker for offline support
  */
 
 import { createApp } from 'vue';
@@ -33,3 +34,31 @@ void authStore.initialize();
 
 // Mount the application
 app.mount('#app');
+
+// Register service worker for PWA support
+// Uses vite-plugin-pwa with autoUpdate strategy
+if ('serviceWorker' in navigator) {
+  import('virtual:pwa-register').then(({ registerSW }) => {
+    registerSW({
+      immediate: true,
+      onNeedRefresh() {
+        // New content available - auto-update is enabled
+        // so this will reload automatically
+        console.log('[PWA] New content available, updating...');
+      },
+      onOfflineReady() {
+        console.log('[PWA] App ready to work offline');
+      },
+      onRegistered(registration) {
+        if (registration) {
+          console.log('[PWA] Service worker registered');
+        }
+      },
+      onRegisterError(error) {
+        console.error('[PWA] Service worker registration failed:', error);
+      },
+    });
+  }).catch((error: unknown) => {
+    console.warn('[PWA] Failed to load PWA module:', error);
+  });
+}

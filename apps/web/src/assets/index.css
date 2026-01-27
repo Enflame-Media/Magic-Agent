@@ -353,19 +353,19 @@
   }
 
   .status-dot-success {
-    @apply status-dot bg-success;
+    @apply w-2 h-2 rounded-full bg-success;
   }
 
   .status-dot-warning {
-    @apply status-dot bg-warning;
+    @apply w-2 h-2 rounded-full bg-warning;
   }
 
   .status-dot-error {
-    @apply status-dot bg-destructive;
+    @apply w-2 h-2 rounded-full bg-destructive;
   }
 
   .status-dot-info {
-    @apply status-dot bg-info;
+    @apply w-2 h-2 rounded-full bg-info;
   }
 }
 

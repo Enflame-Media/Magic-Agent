@@ -8,10 +8,18 @@
  * @see HAP-814 - Implements real key exchange and session establishment
  */
 
-import { ref, computed } from 'vue';
+import { ref, computed, defineAsyncComponent } from 'vue';
 import { useRouter } from 'vue-router';
-import QRScanner from '@/components/app/QRScanner.vue';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
+
+// Lazy load QRScanner - @zxing library is ~100KB
+const QRScanner = defineAsyncComponent({
+  loader: () => import('@/components/app/QRScanner.vue'),
+  loadingComponent: Spinner,
+  delay: 200,
+  timeout: 10000,
+});
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Keyboard, CheckCircle2, AlertCircle, Loader2 } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
