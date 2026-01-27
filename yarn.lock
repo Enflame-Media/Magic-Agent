@@ -10115,10 +10115,10 @@ __metadata:
     eslint: "npm:^9.39.2"
     eslint-config-prettier: "npm:^10.1.8"
     eslint-plugin-vue: "npm:^10.7.0"
-    oxlint: "npm:^1.41.0"
-    prettier: "npm:^3.8.0"
+    oxlint: "npm:^1.42.0"
+    prettier: "npm:^3.8.1"
     typescript: "npm:^5.9.3"
-    typescript-eslint: "npm:^8.53.1"
+    typescript-eslint: "npm:^8.54.0"
     vue-eslint-parser: "npm:^10.2.0"
   languageName: unknown
   linkType: soft
@@ -12640,7 +12640,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"oxlint@npm:^1.41.0":
+"oxlint@npm:^1.42.0":
   version: 1.42.0
   resolution: "oxlint@npm:1.42.0"
   dependencies:
@@ -13226,7 +13226,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prettier@npm:^3.8.0":
+"prettier@npm:^3.8.1":
   version: 3.8.1
   resolution: "prettier@npm:3.8.1"
   bin:
@@ -15750,7 +15750,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript-eslint@npm:^8.53.1":
+"typescript-eslint@npm:^8.54.0":
   version: 8.54.0
   resolution: "typescript-eslint@npm:8.54.0"
   dependencies:
