@@ -1,0 +1,401 @@
+/**
+ * Global CSS for Happy Vue.js Web Application
+ *
+ * Uses Tailwind CSS v4 with ShadCN-Vue CSS variables.
+ * Colors are mapped from the Happy app theme (apps/web/react/sources/theme.ts).
+ *
+ * Theme tokens reference:
+ * - Primary: Happy purple (#5B6EF0 - hsl(235, 84%, 64%))
+ * - Success: Green (#22C55E)
+ * - Warning: Amber (#F59E0B)
+ * - Destructive: Red (#EF4444)
+ */
+
+@import 'tailwindcss';
+
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/**
+ * ShadCN-Vue CSS Variables
+ *
+ * These CSS variables power the ShadCN-Vue component theming system.
+ * Values are in HSL format without the hsl() wrapper for flexibility.
+ *
+ * Light theme colors derived from Happy app theme.
+ */
+@layer base {
+  :root {
+    /* Base colors */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 5%;
+
+    /* Card/Surface */
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 5%;
+
+    /* Popover */
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 5%;
+
+    /* Primary - Happy purple (#5B6EF0) */
+    --primary: 235 84% 64%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary - Muted gray */
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 25%;
+
+    /* Muted */
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
+
+    /* Accent */
+    --accent: 235 84% 97%;
+    --accent-foreground: 235 84% 45%;
+
+    /* Destructive - Red (#EF4444) */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Border, input, ring */
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 235 84% 64%;
+
+    /* Chart colors */
+    --chart-1: 235 84% 64%;
+    --chart-2: 142 71% 45%;
+    --chart-3: 38 92% 50%;
+    --chart-4: 0 84% 60%;
+    --chart-5: 280 84% 60%;
+
+    /* Radius for rounded corners */
+    --radius: 0.625rem;
+
+    /* Sidebar */
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 0 0% 5%;
+    --sidebar-primary: 235 84% 64%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 235 84% 97%;
+    --sidebar-accent-foreground: 235 84% 45%;
+    --sidebar-border: 0 0% 90%;
+    --sidebar-ring: 235 84% 64%;
+
+    /* Happy brand colors */
+    --happy-primary: 235 84% 64%;
+    --happy-primary-hover: 235 84% 58%;
+    --happy-primary-active: 235 84% 52%;
+    --happy-success: 142 71% 45%;
+    --happy-success-foreground: 0 0% 100%;
+    --happy-warning: 38 92% 50%;
+    --happy-warning-foreground: 0 0% 10%;
+    --happy-info: 192 91% 50%;
+    --happy-info-foreground: 0 0% 100%;
+
+    /* Semantic colors for status indicators */
+    --success: 142 71% 45%;
+    --warning: 38 92% 50%;
+    --info: 192 91% 50%;
+    --link: 192 91% 50%;
+
+    /* Syntax highlighting (light) */
+    --syntax-keyword: #1d4ed8;
+    --syntax-string: #059669;
+    --syntax-comment: #6b7280;
+    --syntax-number: #0891b2;
+    --syntax-function: #9333ea;
+    --syntax-bracket-1: #ff6b6b;
+    --syntax-bracket-2: #4ecdc4;
+    --syntax-bracket-3: #45b7d1;
+    --syntax-bracket-4: #f7b731;
+    --syntax-bracket-5: #5f27cd;
+    --syntax-default: #374151;
+  }
+
+  /**
+   * Dark theme colors derived from Happy app dark theme.
+   * Applied via class="dark" on the root element.
+   */
+  .dark {
+    /* Base colors - Dark surface like iOS dark mode */
+    --background: 260 6% 10%;
+    --foreground: 0 0% 98%;
+
+    /* Card/Surface */
+    --card: 260 6% 12%;
+    --card-foreground: 0 0% 98%;
+
+    /* Popover */
+    --popover: 260 6% 12%;
+    --popover-foreground: 0 0% 98%;
+
+    /* Primary - slightly brighter in dark mode */
+    --primary: 235 84% 68%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary */
+    --secondary: 260 6% 18%;
+    --secondary-foreground: 0 0% 98%;
+
+    /* Muted */
+    --muted: 260 6% 18%;
+    --muted-foreground: 0 0% 60%;
+
+    /* Accent */
+    --accent: 235 50% 25%;
+    --accent-foreground: 235 84% 75%;
+
+    /* Destructive */
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Border, input, ring */
+    --border: 260 6% 22%;
+    --input: 260 6% 22%;
+    --ring: 235 84% 68%;
+
+    /* Sidebar */
+    --sidebar-background: 260 6% 10%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 235 84% 68%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 235 50% 25%;
+    --sidebar-accent-foreground: 235 84% 75%;
+    --sidebar-border: 260 6% 22%;
+    --sidebar-ring: 235 84% 68%;
+
+    /* Happy brand colors (dark variants) */
+    --happy-primary: 235 84% 68%;
+    --happy-primary-hover: 235 84% 72%;
+    --happy-primary-active: 235 84% 75%;
+    --happy-success: 142 69% 52%;
+    --happy-success-foreground: 0 0% 100%;
+    --happy-warning: 38 92% 55%;
+    --happy-warning-foreground: 0 0% 10%;
+    --happy-info: 192 91% 55%;
+    --happy-info-foreground: 0 0% 100%;
+
+    /* Semantic colors (dark variants) */
+    --success: 142 69% 52%;
+    --warning: 38 92% 55%;
+    --info: 192 91% 55%;
+    --link: 192 91% 55%;
+
+    /* Syntax highlighting (dark) */
+    --syntax-keyword: #569CD6;
+    --syntax-string: #CE9178;
+    --syntax-comment: #6A9955;
+    --syntax-number: #B5CEA8;
+    --syntax-function: #DCDCAA;
+    --syntax-bracket-1: #FFD700;
+    --syntax-bracket-2: #DA70D6;
+    --syntax-bracket-3: #179FFF;
+    --syntax-bracket-4: #FF8C00;
+    --syntax-bracket-5: #00FF00;
+    --syntax-default: #D4D4D4;
+  }
+}
+
+/**
+ * Tailwind CSS v4 theme inline configuration
+ * Maps CSS variables to Tailwind theme tokens
+ */
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  /* Core colors */
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  /* Chart colors */
+  --color-chart-1: hsl(var(--chart-1));
+  --color-chart-2: hsl(var(--chart-2));
+  --color-chart-3: hsl(var(--chart-3));
+  --color-chart-4: hsl(var(--chart-4));
+  --color-chart-5: hsl(var(--chart-5));
+
+  /* Sidebar colors */
+  --color-sidebar-background: hsl(var(--sidebar-background));
+  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
+  --color-sidebar-primary: hsl(var(--sidebar-primary));
+  --color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
+  --color-sidebar-accent: hsl(var(--sidebar-accent));
+  --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
+  --color-sidebar-border: hsl(var(--sidebar-border));
+  --color-sidebar-ring: hsl(var(--sidebar-ring));
+
+  /* Happy brand tokens - use as: bg-happy-primary, text-happy-success, etc. */
+  --color-happy-primary: hsl(var(--happy-primary));
+  --color-happy-primary-hover: hsl(var(--happy-primary-hover));
+  --color-happy-primary-active: hsl(var(--happy-primary-active));
+  --color-happy-success: hsl(var(--happy-success));
+  --color-happy-success-foreground: hsl(var(--happy-success-foreground));
+  --color-happy-warning: hsl(var(--happy-warning));
+  --color-happy-warning-foreground: hsl(var(--happy-warning-foreground));
+  --color-happy-info: hsl(var(--happy-info));
+  --color-happy-info-foreground: hsl(var(--happy-info-foreground));
+
+  /* Semantic status colors */
+  --color-success: hsl(var(--success));
+  --color-warning: hsl(var(--warning));
+  --color-info: hsl(var(--info));
+  --color-link: hsl(var(--link));
+}
+
+/**
+ * Base layer styles
+ */
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+    min-height: 100vh;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/**
+ * Responsive Design System - HAP-916
+ *
+ * Mobile-First Breakpoints (TailwindCSS defaults):
+ * - xs: < 640px (mobile phones)
+ * - sm: >= 640px (small tablets, large phones)
+ * - md: >= 768px (tablets)
+ * - lg: >= 1024px (laptops)
+ * - xl: >= 1280px (desktops)
+ * - 2xl: >= 1536px (large screens)
+ *
+ * Usage with TailwindCSS:
+ * - Default styles apply to mobile (xs)
+ * - Use sm:, md:, lg:, xl:, 2xl: prefixes for larger screens
+ *
+ * Example:
+ *   class="p-2 sm:p-4 lg:p-6"
+ *   Applies p-2 on mobile, p-4 on sm+, p-6 on lg+
+ */
+
+/**
+ * Touch Target Utilities
+ *
+ * WCAG 2.2 Level AA requires minimum 44x44px touch targets.
+ * These utilities ensure accessible touch interactions on mobile.
+ *
+ * @see https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html
+ */
+@layer components {
+  /**
+   * Minimum touch target size (44x44px)
+   * Use on interactive elements for mobile accessibility
+   */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  /**
+   * Recommended touch target size (48x48px)
+   * Provides optimal touch experience
+   */
+  .touch-target-lg {
+    @apply min-h-[48px] min-w-[48px];
+  }
+
+  /**
+   * Touch-friendly button base
+   * Combines touch target with proper padding and centering
+   */
+  .touch-button {
+    @apply min-h-[44px] min-w-[44px] flex items-center justify-center p-2;
+  }
+
+  /**
+   * Mobile navigation item
+   * Optimized for bottom navigation touch targets
+   */
+  .nav-touch-item {
+    @apply min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-1 p-2;
+  }
+
+  /**
+   * Status indicator dot
+   * Used for connection status, session status, etc.
+   */
+  .status-dot {
+    @apply w-2 h-2 rounded-full;
+  }
+
+  .status-dot-success {
+    @apply w-2 h-2 rounded-full bg-success;
+  }
+
+  .status-dot-warning {
+    @apply w-2 h-2 rounded-full bg-warning;
+  }
+
+  .status-dot-error {
+    @apply w-2 h-2 rounded-full bg-destructive;
+  }
+
+  .status-dot-info {
+    @apply w-2 h-2 rounded-full bg-info;
+  }
+}
+
+/**
+ * Safe Area Insets for PWA
+ *
+ * Handles notches, home indicators, and rounded corners on modern devices.
+ * Use env(safe-area-inset-*) for proper spacing.
+ */
+@layer utilities {
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .safe-area-left {
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .safe-area-right {
+    padding-right: env(safe-area-inset-right);
+  }
+
+  .safe-area-inset {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}

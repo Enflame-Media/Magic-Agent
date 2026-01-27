@@ -1,0 +1,25 @@
+{
+  "name": "happy-pwa-screenshots",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PWA screenshot generator using Cloudflare Browser Rendering",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --env development",
+    "deploy:dev": "wrangler deploy --env development",
+    "deploy:prod": "wrangler deploy --env production",
+    "generate:dev": "curl -s https://happy-pwa-screenshots-dev.enflamemedia.workers.dev/generate | jq",
+    "generate:prod": "curl -s https://happy-pwa-screenshots.enflamemedia.workers.dev/generate | jq",
+    "status:dev": "curl -s https://happy-pwa-screenshots-dev.enflamemedia.workers.dev/status | jq",
+    "status:prod": "curl -s https://happy-pwa-screenshots.enflamemedia.workers.dev/status | jq",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@cloudflare/puppeteer": "^1.0.5"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250124.0",
+    "typescript": "^5.9.3",
+    "wrangler": "^4.59.2"
+  }
+}

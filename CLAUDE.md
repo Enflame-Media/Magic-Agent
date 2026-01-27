@@ -1,6 +1,6 @@
 # Happy Vue - Development Guidelines
 
-> **📍 Part of the Happy monorepo** — See root [`CLAUDE.md`](../../../CLAUDE.md) for overall architecture and cross-project guidelines.
+> **Part of the Happy monorepo** — See root [`CLAUDE.md`](../../../CLAUDE.md) for overall architecture and cross-project guidelines.
 
 ---
 
@@ -8,68 +8,79 @@ This file provides guidance to Claude Code when working with the Happy Vue.js we
 
 ## Project Overview
 
-**Happy Vue** is a Vue.js workspace for the Happy web client. This is part of the migration from React Native to a Vue.js architecture.
+**Happy Vue** is a Vue.js web application for the Happy mobile/web client. It provides remote control and session sharing for Claude Code with end-to-end encryption.
 
 ## Architecture
 
-### Monorepo Structure
+### Directory Structure
 
 ```
-happy-vue/
-├── apps/
-│   └── web/           # Vue.js + Vite
-├── packages/
-│   ├── shared/        # Shared composables, utilities
-│   └── protocol/      # Port of @happy/protocol
-├── package.json       # Root workspace config (yarn workspaces)
-├── .yarnrc.yml        # Yarn v4 configuration
-└── tsconfig.base.json
+apps/web/vue/
+├── src/
+│   ├── components/     # Vue components
+│   ├── composables/    # Vue composables (hooks)
+│   ├── stores/         # Pinia stores
+│   ├── services/       # API and utility services
+│   ├── views/          # Page/route views
+│   ├── shared/         # Shared utilities (purchases, analytics, url)
+│   ├── i18n/           # Internationalization
+│   ├── lib/            # Utility libraries
+│   └── assets/         # Static assets and styles
+├── public/             # Static public files
+├── e2e/                # Playwright E2E tests
+├── scripts/            # Build and deployment scripts
+├── wrangler.toml       # Cloudflare Workers config
+├── vite.config.ts      # Vite configuration
+├── tsconfig.json       # TypeScript configuration
+└── package.json        # Dependencies and scripts
 ```
 
-### Package Naming Convention
+### Key Dependencies
 
-All packages use the `@happy-vue/` scope:
-
-- `@happy-vue/web` - Web application
-- `@happy-vue/shared` - Shared utilities
-- `@happy-vue/protocol` - Protocol types
+- **@happy/protocol** - Shared Zod schemas from root monorepo (`workspace:*`)
+- **Vue 3** - Frontend framework with Composition API
+- **Pinia** - State management
+- **Vue Router** - Client-side routing
+- **TailwindCSS 4** - Styling with ShadCN-Vue components
+- **Vite 7** - Build tool
+- **Zod** - Schema validation
 
 ## Development Guidelines
 
 ### Package Manager
 
-**Always use yarn v4** (not npm or pnpm):
+**Always use yarn v4** from the root monorepo:
 
 ```bash
-# Enable Corepack first (provides yarn v4)
-corepack enable
-
-# Install dependencies
+# From root monorepo - install all dependencies
+cd /volume1/Projects/happy
 yarn install
 
-# Add a dependency to a specific package
-yarn workspace @happy-vue/web add vue
-
-# Run a script in a specific package
-yarn workspace @happy-vue/web dev
-
-# Run a script in all packages
-yarn workspaces foreach -A run build
+# From Vue app directory - run scripts
+cd apps/web/vue
+yarn dev       # Start dev server
+yarn build     # Build for production
+yarn typecheck # Run TypeScript check
 ```
 
 ### TypeScript
 
 - All code uses TypeScript with **strict mode**
-- Shared configuration in `tsconfig.base.json`
-- Each package extends the base config
+- Path alias: `@/*` → `./src/*`
+- Protocol types from `@happy/protocol`
 
 ### Path Aliases
 
-Standard path alias pattern across all packages:
+```typescript
+// Import from local source
+import { useAuthStore } from '@/stores/auth';
 
-- `@/*` → `./src/*` (local source)
-- `@happy-vue/shared` → `../../packages/shared/src`
-- `@happy-vue/protocol` → `../../packages/protocol/src`
+// Import shared utilities
+import { openUrl, trackPurchaseEvent } from '@/shared';
+
+// Import protocol types (from root monorepo)
+import { ApiUpdateSchema, type ApiUpdate } from '@happy/protocol';
+```
 
 ### Code Style
 
@@ -83,107 +94,69 @@ Standard path alias pattern across all packages:
 
 ```bash
 # Development
-yarn dev:web          # Start web dev server
+yarn dev          # Start dev server (Vite)
 
 # Building
-yarn build            # Build all packages
-yarn build:web        # Build web only
+yarn build        # TypeScript check + Vite build
 
 # Quality
-yarn typecheck        # Type check all packages
-yarn lint             # Lint all packages
-yarn test             # Run all tests
+yarn typecheck    # Type check
+yarn lint         # Lint (handled at root level)
+yarn test         # Run unit tests (Vitest)
+yarn test:run     # Run tests once
+yarn test:coverage # Run tests with coverage
+
+# E2E Testing
+yarn test:e2e     # Run Playwright tests
+yarn test:e2e:ui  # Run with Playwright UI
+
+# Deployment
+yarn deploy:dev   # Deploy to development (Cloudflare Workers)
+yarn deploy:prod  # Deploy to production (Cloudflare Workers)
 
 # Maintenance
-yarn clean            # Clean all build artifacts
+yarn clean        # Clean build artifacts
 ```
 
-## Key Patterns
+## Deployment
 
-### Shared Code
+### Cloudflare Workers
 
-Business logic should be placed in `@happy-vue/shared`:
+The app is deployed as a static SPA on Cloudflare Workers:
 
-```typescript
-// packages/shared/src/composables/useSession.ts
-export function useSession() {
-  // Shared session logic
-}
+- **Development**: `happy-vue-dev.enflamemedia.com`
+- **Production**: `happy-vue.enflamemedia.com`
 
-// apps/web/src/components/SessionView.vue
-import { useSession } from '@happy-vue/shared';
-```
-
-### Protocol Types
-
-API types come from `@happy-vue/protocol`:
-
-```typescript
-import { ApiUpdateSchema, type ApiUpdate } from '@happy-vue/protocol';
-```
+Configuration is in `wrangler.toml`.
 
 ## Testing
 
-### Unit Tests
+### Unit Tests (Vitest)
 
 ```bash
-# Run unit tests
-yarn workspace @happy-vue/web test
-
-# Run tests with coverage
-yarn workspace @happy-vue/web test:coverage
-
-# Run tests in watch mode
-yarn workspace @happy-vue/web test:watch
+yarn test         # Watch mode
+yarn test:run     # Single run
+yarn test:coverage # With coverage
 ```
 
 ### E2E Tests (Playwright)
 
 ```bash
-# Run all E2E tests
-yarn workspace @happy-vue/web test:e2e
-
-# Run with UI
-yarn workspace @happy-vue/web test:e2e:ui
-
-# Run specific browser
-yarn workspace @happy-vue/web test:e2e:chromium
+yarn test:e2e           # All browsers
+yarn test:e2e:chromium  # Chromium only
+yarn test:e2e:ui        # With UI
 ```
 
-### Visual Regression Testing
-
-Visual regression tests use **Percy** (cloud-based) integrated with Playwright. Percy manages baselines in the cloud, not locally.
+### Visual Regression (Percy)
 
 ```bash
-# Run visual tests locally (without Percy upload)
-yarn workspace @happy-vue/web test:e2e:visual:local
-
-# Run with Percy (requires PERCY_TOKEN)
-export PERCY_TOKEN=your_token_here
-yarn workspace @happy-vue/web test:e2e:visual
+yarn test:e2e:visual:local  # Local only
+yarn test:e2e:visual        # With Percy (requires PERCY_TOKEN)
 ```
-
-**Baseline Management:**
-- First Percy run automatically creates initial baselines
-- Baselines are reviewed and approved via [Percy Dashboard](https://percy.io)
-- No local snapshot files are committed to the repository
-
-For detailed visual regression testing documentation, see [`docs/VISUAL-REGRESSION-TESTING.md`](./docs/VISUAL-REGRESSION-TESTING.md).
 
 ## Related Documentation
 
-- Root monorepo: `../CLAUDE.md`
-- Protocol package: `../../../packages/schema/protocol/CLAUDE.md`
-- Visual regression testing: [`docs/VISUAL-REGRESSION-TESTING.md`](./docs/VISUAL-REGRESSION-TESTING.md)
-- Migration epic: [HAP-660](https://linear.app/enflame-media/issue/HAP-660)
-
-## Migration Context
-
-This repository is being built as part of the Vue.js migration:
-
-| Phase | Description    | Issues  |
-| ----- | -------------- | ------- |
-| 0     | Monorepo setup | HAP-661 |
-| 1     | Web app        | TBD     |
-
-Reference the original React Native app at `../react/` for implementation details.
+- Root monorepo: [`../../../CLAUDE.md`](../../../CLAUDE.md)
+- Protocol package: [`../../../packages/schema/protocol/CLAUDE.md`](../../../packages/schema/protocol/CLAUDE.md)
+- Visual regression: [`docs/VISUAL-REGRESSION-TESTING.md`](./docs/VISUAL-REGRESSION-TESTING.md)
+- Linear issue: [HAP-935](https://linear.app/enflame-media/issue/HAP-935)
