@@ -1,5 +1,9 @@
 {
   "compilerOptions": {
+    "composite": true,
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "jsx": "preserve",
+    "jsxImportSource": "vue",
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "bundler",
@@ -21,12 +25,17 @@
     "noEmit": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
+    "baseUrl": ".",
     "paths": {
-      "@happy-vue/shared": ["./packages/shared/src"],
-      "@happy-vue/shared/*": ["./packages/shared/src/*"],
-      "@happy-vue/protocol": ["./packages/protocol/src"],
-      "@happy-vue/protocol/*": ["./packages/protocol/src/*"]
-    }
+      "@/*": ["./src/*"]
+    },
+    "types": ["vite/client", "vitest/globals"]
   },
-  "exclude": ["node_modules", "**/dist", "**/*.test.ts", "**/*.spec.ts", ".turbo"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.vue",
+    "vite.config.ts"
+  ],
+  "exclude": ["node_modules", "dist"]
 }
