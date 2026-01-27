@@ -34,6 +34,12 @@ import {
   ResizablePanel,
   ResizableHandle,
 } from '@/components/ui/resizable';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 const route = useRoute();
 
@@ -170,8 +176,17 @@ const pageTitle = computed(() => {
           <SessionSidebar />
         </ResizablePanel>
 
-        <!-- Resize handle - visible on hover -->
-        <ResizableHandle class="hover:bg-primary/20 transition-colors" @dblclick="resetSidebarWidth" />
+        <!-- Resize handle with tooltip for discoverability (HAP-934) -->
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <ResizableHandle class="hover:bg-primary/20 transition-colors" @dblclick="resetSidebarWidth" />
+            </TooltipTrigger>
+            <TooltipContent>
+              Double-click to reset to default width
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
 
         <!-- Main content panel -->
         <ResizablePanel :default-size="100 - sidebarDefaultSize">
