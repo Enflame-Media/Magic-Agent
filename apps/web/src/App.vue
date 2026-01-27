@@ -77,7 +77,7 @@ watch(mobileMainRef, (el) => {
 }, { immediate: true });
 
 // Resizable sidebar state (HAP-927)
-const { width: sidebarWidth, setWidth: setSidebarWidth, config: sidebarConfig } = useSidebarState();
+const { width: sidebarWidth, setWidth: setSidebarWidth, reset: resetSidebarWidth, config: sidebarConfig } = useSidebarState();
 const { width: windowWidth } = useWindowSize();
 
 // Convert pixel width to percentage for ResizablePanel
@@ -171,7 +171,7 @@ const pageTitle = computed(() => {
         </ResizablePanel>
 
         <!-- Resize handle - visible on hover -->
-        <ResizableHandle class="hover:bg-primary/20 transition-colors" />
+        <ResizableHandle class="hover:bg-primary/20 transition-colors" @dblclick="resetSidebarWidth" />
 
         <!-- Main content panel -->
         <ResizablePanel :default-size="100 - sidebarDefaultSize">
