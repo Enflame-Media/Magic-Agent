@@ -5,21 +5,45 @@
  * Displays all session artifacts with file tree navigation
  * and content preview. Can be filtered by session ID.
  *
+ * Features:
+ * - Offline viewing with cached artifacts (HAP-874)
+ * - Session-specific artifact filtering
+ *
  * Routes:
  * - /artifacts - All artifacts
  * - /session/:id/artifacts - Session-specific artifacts
+ *
+ * @see HAP-874 - Offline Artifact Caching
  */
 
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useArtifactsStore } from '@/stores/artifacts';
-import { ArtifactViewer, EmptyState } from '@/components/app';
+import { ArtifactViewer, EmptyState, OfflineIndicator, PullToRefresh } from '@/components/app';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useOfflineArtifacts } from '@/composables/useOfflineArtifacts';
+import { useBreakpoints } from '@/composables/useBreakpoints';
 
 const route = useRoute();
 const router = useRouter();
 const artifactsStore = useArtifactsStore();
+
+// HAP-874: Offline artifacts support
+// HAP-932: Pull-to-refresh integration
+const { loadCachedArtifacts, loadCachedForSession } = useOfflineArtifacts();
+const { isMobile } = useBreakpoints();
+
+// Pull-to-refresh handler (HAP-932)
+async function handleRefresh(): Promise<void> {
+  if (sessionId.value) {
+    // Refresh session-specific artifacts
+    await loadCachedForSession(sessionId.value);
+  } else {
+    // Refresh all artifacts
+    await loadCachedArtifacts();
+  }
+}
 
 // Session ID from route (optional)
 const sessionId = computed(() => (route.params.id as string) ?? null);
@@ -92,36 +116,46 @@ onMounted(() => {
           {{ artifactCount }} {{ artifactCount === 1 ? 'file' : 'files' }}
         </p>
       </div>
+
+      <!-- HAP-874: Offline indicator -->
+      <OfflineIndicator />
     </header>
 
-    <!-- Content -->
-    <div class="flex-1 p-4 overflow-hidden">
-      <!-- Loading -->
-      <div v-if="isLoading" class="h-full flex items-center justify-center">
-        <div class="space-y-4 w-full max-w-md">
-          <Skeleton class="h-8 w-3/4" />
-          <Skeleton class="h-4 w-1/2" />
-          <Skeleton class="h-4 w-2/3" />
+    <!-- Content with pull-to-refresh (HAP-932) -->
+    <PullToRefresh
+      :enabled="isMobile"
+      :mobile-only="true"
+      class="flex-1 overflow-hidden"
+      @refresh="handleRefresh"
+    >
+      <div class="h-full p-4">
+        <!-- Loading -->
+        <div v-if="isLoading" class="h-full flex items-center justify-center">
+          <div class="space-y-4 w-full max-w-md">
+            <Skeleton class="h-8 w-3/4" />
+            <Skeleton class="h-4 w-1/2" />
+            <Skeleton class="h-4 w-2/3" />
+          </div>
         </div>
+
+        <!-- Empty state -->
+        <EmptyState
+          v-else-if="!hasArtifacts"
+          title="No artifacts"
+          :description="
+            sessionId
+              ? 'This session has no artifacts yet.'
+              : 'You don\'t have any artifacts. Artifacts are created during Claude Code sessions.'
+          "
+        />
+
+        <!-- Artifact viewer -->
+        <ArtifactViewer
+          v-else
+          :session-id="sessionId"
+          class="h-full"
+        />
       </div>
-
-      <!-- Empty state -->
-      <EmptyState
-        v-else-if="!hasArtifacts"
-        title="No artifacts"
-        :description="
-          sessionId
-            ? 'This session has no artifacts yet.'
-            : 'You don\'t have any artifacts. Artifacts are created during Claude Code sessions.'
-        "
-      />
-
-      <!-- Artifact viewer -->
-      <ArtifactViewer
-        v-else
-        :session-id="sessionId"
-        class="h-full"
-      />
-    </div>
+    </PullToRefresh>
   </div>
 </template>
