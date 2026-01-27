@@ -10,22 +10,33 @@
  *
  * @see HAP-717 - Implement friends UI for happy-vue web app
  * @see HAP-684 - Phase 4: Implement Friends and Social Features
+ * @see HAP-931 - Add pull-to-refresh support (mobile-only)
  */
 
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, defineAsyncComponent } from 'vue';
 import { useRouter } from 'vue-router';
 import { useFriends } from '@/composables/useFriends';
 import { useFriendStatus } from '@/composables/useFriendStatus';
+import { useBreakpoints } from '@/composables/useBreakpoints';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import UserProfileCard from '@/components/app/UserProfileCard.vue';
 import FriendRequestCard from '@/components/app/FriendRequestCard.vue';
 import UserSearch from '@/components/app/UserSearch.vue';
 import EmptyState from '@/components/app/EmptyState.vue';
-import QRScanner from '@/components/app/QRScanner.vue';
+import { PullToRefresh } from '@/components/app';
+
+// Lazy load QRScanner - @zxing library is ~100KB
+const QRScanner = defineAsyncComponent({
+  loader: () => import('@/components/app/QRScanner.vue'),
+  loadingComponent: Spinner,
+  delay: 200,
+  timeout: 10000,
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Composables
@@ -47,6 +58,9 @@ const {
 
 const { setBulkStatus } = useFriendStatus();
 const router = useRouter();
+
+// Pull-to-refresh support (HAP-931)
+const { isMobile } = useBreakpoints();
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Local State
@@ -85,6 +99,21 @@ onMounted(async () => {
 // ─────────────────────────────────────────────────────────────────────────────
 // Handlers
 // ─────────────────────────────────────────────────────────────────────────────
+
+/** Pull-to-refresh handler - reloads friend list and updates online status (HAP-931) */
+async function handleRefresh(): Promise<void> {
+  await loadFriends();
+
+  // Re-initialize online status for all friends
+  if (friends.value.length > 0) {
+    setBulkStatus(
+      friends.value.map((f) => ({
+        userId: f.id,
+        isOnline: false, // Would be fetched from API in real implementation
+      }))
+    );
+  }
+}
 
 async function handleAcceptRequest(userId: string): Promise<void> {
   processingId.value = userId;
@@ -168,17 +197,23 @@ function handleQRError(_err: Error): void {
 </script>
 
 <template>
-  <div class="container mx-auto max-w-2xl p-4">
-    <!-- Header -->
-    <div class="mb-6">
-      <h1 class="text-2xl font-bold">Friends</h1>
-      <p class="text-sm text-muted-foreground">
-        Connect with other Happy users
-      </p>
-    </div>
+  <!-- Pull-to-refresh wrapper for mobile (HAP-931) -->
+  <PullToRefresh
+    :enabled="isMobile"
+    :mobile-only="true"
+    @refresh="handleRefresh"
+  >
+    <div class="container mx-auto max-w-2xl p-4">
+      <!-- Header -->
+      <div class="mb-6">
+        <h1 class="text-2xl font-bold">Friends</h1>
+        <p class="text-sm text-muted-foreground">
+          Connect with other Happy users
+        </p>
+      </div>
 
-    <!-- Tabs -->
-    <Tabs v-model="activeTab" class="w-full" @update:model-value="(val) => isQRScannerActive = val === 'scan'">
+      <!-- Tabs -->
+      <Tabs v-model="activeTab" class="w-full" @update:model-value="(val) => isQRScannerActive = val === 'scan'">
       <TabsList class="grid w-full grid-cols-4">
         <TabsTrigger value="friends">
           Friends
@@ -339,8 +374,9 @@ function handleQRError(_err: Error): void {
           </CardContent>
         </Card>
       </TabsContent>
-    </Tabs>
-  </div>
+      </Tabs>
+    </div>
+  </PullToRefresh>
 </template>
 
 <style scoped>
