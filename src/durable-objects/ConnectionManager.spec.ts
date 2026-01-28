@@ -22,7 +22,7 @@ vi.mock('@sentry/cloudflare', () => ({
     captureMessage: vi.fn(),
     addBreadcrumb: vi.fn(),
     flush: vi.fn().mockResolvedValue(true),
-    startSpan: vi.fn((options, callback) => callback()),
+    startSpan: vi.fn((_options, callback) => callback()),
     consoleIntegration: vi.fn(() => ({})),
     instrumentDurableObjectWithSentry: vi.fn(
         (_optionsFn: unknown, BaseClass: new (...args: unknown[]) => unknown) => BaseClass
@@ -43,7 +43,7 @@ vi.mock('@/lib/sentry', () => ({
     captureMessage: vi.fn(),
     addBreadcrumb: vi.fn(),
     flushSentry: vi.fn().mockResolvedValue(true),
-    startSpan: vi.fn((options, callback) => callback()),
+    startSpan: vi.fn((_options, callback) => callback()),
     Sentry: {
         setContext: vi.fn(),
         setTag: vi.fn(),
@@ -52,7 +52,7 @@ vi.mock('@/lib/sentry', () => ({
         captureMessage: vi.fn(),
         addBreadcrumb: vi.fn(),
         flush: vi.fn().mockResolvedValue(true),
-        startSpan: vi.fn((options, callback) => callback()),
+        startSpan: vi.fn((_options, callback) => callback()),
     },
 }));
 
