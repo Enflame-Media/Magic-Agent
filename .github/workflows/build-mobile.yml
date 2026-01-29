@@ -1,5 +1,8 @@
 name: Build Mobile
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: [main]
@@ -31,6 +34,9 @@ on:
           - beta
           - release
         default: 'beta'
+
+permissions:
+  contents: read
 
 # Cancel in-progress runs for the same branch
 concurrency:
