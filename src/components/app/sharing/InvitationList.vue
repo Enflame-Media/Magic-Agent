@@ -9,7 +9,7 @@
 
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { Mail, Clock, X, RotateCw, Loader2 } from 'lucide-vue-next';
+import { Mail, Clock, X, RotateCw } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { SessionShareInvitation, SessionSharePermission } from '@happy/protocol';

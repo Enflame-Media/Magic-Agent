@@ -7,7 +7,7 @@ export function usePlanLimits() {
 
   function refreshLimits() {
     // TODO: wire to usage sync data
-    used.value = used.value;
+    // Placeholder - will be implemented when usage sync is ready
   }
 
   return {

@@ -5,13 +5,17 @@
  * Search input with debounced user search and results display.
  * Shows search results as UserProfileCards with action buttons.
  *
+ * Uses TanStack Form for input management with debounced search.
+ *
  * @see HAP-717 - Implement friends UI for happy-vue web app
  */
 
-import { ref, watch } from 'vue';
+import { ref } from 'vue';
+import { useForm } from '@tanstack/vue-form';
 import { useFriends } from '@/composables/useFriends';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Field } from '@/components/ui/form';
 import UserProfileCard from './UserProfileCard.vue';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -49,32 +53,47 @@ const {
 } = useFriends();
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Form Schema
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Form Setup
+// ─────────────────────────────────────────────────────────────────────────────
+
+const form = useForm({
+  defaultValues: {
+    query: '',
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Local State
 // ─────────────────────────────────────────────────────────────────────────────
 
-const query = ref('');
 const processingId = ref<string | null>(null);
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
+// Get current query value for template conditionals
+const queryValue = () => form.getFieldValue('query') ?? '';
+
 // ─────────────────────────────────────────────────────────────────────────────
-// Watchers
+// Debounced Search
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Debounced search
-watch(query, (newQuery) => {
+function handleQueryChange(value: string): void {
   if (debounceTimer) {
     clearTimeout(debounceTimer);
   }
 
-  if (!newQuery.trim()) {
+  if (!value.trim()) {
     clearSearch();
     return;
   }
 
   debounceTimer = setTimeout(() => {
-    void searchUsers(newQuery.trim());
+    void searchUsers(value.trim());
   }, 300);
-});
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Handlers
@@ -85,8 +104,9 @@ async function handleAddFriend(userId: string): Promise<void> {
   try {
     await addFriend(userId);
     // Refresh search to update relationship status
-    if (query.value.trim()) {
-      await searchUsers(query.value.trim());
+    const currentQuery = queryValue();
+    if (currentQuery.trim()) {
+      await searchUsers(currentQuery.trim());
     }
   } finally {
     processingId.value = null;
@@ -101,26 +121,37 @@ function handleUserClick(userId: string): void {
 <template>
   <div class="space-y-4">
     <!-- Search input -->
-    <div class="relative">
-      <svg
-        class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 20 20"
-        fill="currentColor"
-      >
-        <path
-          fill-rule="evenodd"
-          d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z"
-          clip-rule="evenodd"
-        />
-      </svg>
-      <Input
-        v-model="query"
-        type="search"
-        :placeholder="placeholder"
-        class="pl-9"
-      />
-    </div>
+    <form.Field name="query" v-slot="{ field }">
+      <Field>
+        <div class="relative">
+          <svg
+            class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z"
+              clip-rule="evenodd"
+            />
+          </svg>
+          <Input
+            :id="field.name"
+            type="search"
+            :model-value="field.state.value"
+            @input="(e: Event) => {
+              const value = (e.target as HTMLInputElement).value;
+              field.handleChange(value);
+              handleQueryChange(value);
+            }"
+            @blur="field.handleBlur"
+            :placeholder="placeholder"
+            class="pl-9"
+          />
+        </div>
+      </Field>
+    </form.Field>
 
     <!-- Loading state -->
     <div v-if="isSearching" class="space-y-2">
@@ -145,7 +176,7 @@ function handleUserClick(userId: string): void {
 
     <!-- No results -->
     <div
-      v-else-if="query.trim() && !isSearching"
+      v-else-if="queryValue().trim() && !isSearching"
       class="text-center py-8 text-muted-foreground"
     >
       <svg
@@ -168,7 +199,7 @@ function handleUserClick(userId: string): void {
 
     <!-- Initial state -->
     <div
-      v-else-if="!query.trim()"
+      v-else-if="!queryValue().trim()"
       class="text-center py-8 text-muted-foreground"
     >
       <svg
@@ -190,7 +221,3 @@ function handleUserClick(userId: string): void {
     </div>
   </div>
 </template>
-
-<style scoped>
-/* No custom styles needed - using Tailwind */
-</style>

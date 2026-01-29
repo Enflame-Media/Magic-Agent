@@ -10,7 +10,7 @@
  * @see HAP-720 - NativeScript Mobile Testing Suite
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
   generateBoxKeyPair,
   encryptBox,
@@ -47,7 +47,6 @@ describe('Encryption Service', () => {
 
   describe('encryptBox and decryptBox', () => {
     it('should encrypt and decrypt data correctly', () => {
-      const senderKeyPair = generateBoxKeyPair();
       const recipientKeyPair = generateBoxKeyPair();
       const message = new TextEncoder().encode('Hello, World!');
 
@@ -82,8 +81,8 @@ describe('Encryption Service', () => {
 
       const encrypted = encryptBox(message, recipientKeyPair.publicKey);
 
-      // Corrupt the ciphertext
-      encrypted[encrypted.length - 1] ^= 0xff;
+      // Corrupt the ciphertext (index is guaranteed to exist since encrypted has data)
+      encrypted[encrypted.length - 1]! ^= 0xff;
 
       const decrypted = decryptBox(encrypted, recipientKeyPair.secretKey);
       expect(decrypted).toBeNull();

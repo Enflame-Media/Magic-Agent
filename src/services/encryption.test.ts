@@ -75,11 +75,9 @@ describe('Encryption Service', () => {
   });
 
   describe('encryptBox', () => {
-    let senderKeypair: BoxKeyPair;
     let recipientKeypair: BoxKeyPair;
 
     beforeEach(() => {
-      senderKeypair = generateBoxKeyPair();
       recipientKeypair = generateBoxKeyPair();
     });
 
@@ -204,9 +202,9 @@ describe('Encryption Service', () => {
       const data = new TextEncoder().encode('Test message');
       const encrypted = encryptBox(data, recipientKeypair.publicKey);
 
-      // Modify the ciphertext portion
+      // Modify the ciphertext portion (index 60 is guaranteed to exist in encrypted data)
       const modified = new Uint8Array(encrypted);
-      modified[60] ^= 0xff; // Flip bits in ciphertext area
+      modified[60]! ^= 0xff; // Flip bits in ciphertext area
 
       const decrypted = decryptBox(modified, recipientKeypair.secretKey);
 
@@ -217,9 +215,9 @@ describe('Encryption Service', () => {
       const data = new TextEncoder().encode('Test message');
       const encrypted = encryptBox(data, recipientKeypair.publicKey);
 
-      // Modify the nonce (bytes 32-55)
+      // Modify the nonce (bytes 32-55, index 35 is guaranteed to exist)
       const modified = new Uint8Array(encrypted);
-      modified[35] ^= 0xff;
+      modified[35]! ^= 0xff;
 
       const decrypted = decryptBox(modified, recipientKeypair.secretKey);
 
@@ -485,10 +483,10 @@ Line 3`;
 
     it('should produce well-distributed random values', () => {
       const bytes = randomBytes(10000);
-      const counts = new Array(256).fill(0);
+      const counts = Array.from({ length: 256 }, () => 0);
 
       for (const byte of bytes) {
-        counts[byte]++;
+        counts[byte] = (counts[byte] ?? 0) + 1;
       }
 
       // Each byte value should appear roughly 39 times (10000/256)

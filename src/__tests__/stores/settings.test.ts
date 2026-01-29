@@ -12,7 +12,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
-import { useSettingsStore, type UserSettings } from '@/stores/settings';
+import { useSettingsStore } from '@/stores/settings';
 
 describe('Settings Store', () => {
   beforeEach(() => {

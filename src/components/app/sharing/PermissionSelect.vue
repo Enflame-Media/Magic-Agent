@@ -60,8 +60,10 @@ const triggerClass = computed(() => {
 // Handlers
 // ─────────────────────────────────────────────────────────────────────────────
 
-function handleValueChange(value: string): void {
-  emit('update:modelValue', value as SessionSharePermission);
+function handleValueChange(value: string | number | bigint | Record<string, unknown> | null): void {
+  if (typeof value === 'string') {
+    emit('update:modelValue', value as SessionSharePermission);
+  }
 }
 </script>
 

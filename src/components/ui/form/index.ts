@@ -1,7 +1,37 @@
-export { default as FormControl } from "./FormControl.vue"
-export { default as FormDescription } from "./FormDescription.vue"
-export { default as FormItem } from "./FormItem.vue"
-export { default as FormLabel } from "./FormLabel.vue"
-export { default as FormMessage } from "./FormMessage.vue"
-export { FORM_ITEM_INJECTION_KEY } from "./injectionKeys"
-export { Form, Field as FormField, FieldArray as FormFieldArray } from "vee-validate"
+/**
+ * TanStack Form + ShadCN-Vue form components
+ *
+ * Pattern based on: https://www.shadcn-vue.com/docs/forms/tanstack-form
+ *
+ * @example
+ * import { useForm } from '@tanstack/vue-form'
+ * import { z } from 'zod'
+ * import { Field, FieldLabel, FieldDescription, FieldError, isInvalid } from '@/components/ui/form'
+ *
+ * const schema = z.object({ email: z.string().email() })
+ * const form = useForm({
+ *   defaultValues: { email: '' },
+ *   validators: { onSubmit: schema },
+ *   onSubmit: async ({ value }) => { ... }
+ * })
+ *
+ * <form @submit.prevent="form.handleSubmit">
+ *   <form.Field name="email" v-slot="{ field }">
+ *     <Field :data-invalid="isInvalid(field)">
+ *       <FieldLabel :for="field.name">Email</FieldLabel>
+ *       <Input
+ *         :id="field.name"
+ *         :model-value="field.state.value"
+ *         @input="field.handleChange($event.target.value)"
+ *         @blur="field.handleBlur"
+ *       />
+ *       <FieldError v-if="isInvalid(field)" :errors="field.state.meta.errors" />
+ *     </Field>
+ *   </form.Field>
+ * </form>
+ */
+export { default as Field } from './Field.vue'
+export { default as FieldLabel } from './FieldLabel.vue'
+export { default as FieldDescription } from './FieldDescription.vue'
+export { default as FieldError } from './FieldError.vue'
+export { isInvalid } from './isInvalid'

@@ -22,8 +22,8 @@ function createMockMessage(sessionId: string, overrides: Partial<Message> = {}):
     seq: 0,
     localId: null,
     content: {
-      ciphertext: 'encrypted-content',
-      nonce: 'test-nonce',
+      t: 'encrypted',
+      c: 'base64EncodedEncryptedContent==',
     },
     createdAt: Date.now(),
     ...overrides,
@@ -101,7 +101,7 @@ describe('Messages Store', () => {
         id: 'api-msg-1',
         seq: 1,
         localId: 'local-1',
-        content: { ciphertext: 'encrypted', nonce: 'nonce-1' },
+        content: { t: 'encrypted' as const, c: 'base64EncodedContent==' },
         createdAt: Date.now(),
       };
 
@@ -118,7 +118,7 @@ describe('Messages Store', () => {
       const apiMessage = {
         id: 'api-msg-1',
         seq: 1,
-        content: { ciphertext: 'encrypted', nonce: 'nonce-1' },
+        content: { t: 'encrypted' as const, c: 'base64EncodedContent==' },
         createdAt: Date.now(),
       };
 

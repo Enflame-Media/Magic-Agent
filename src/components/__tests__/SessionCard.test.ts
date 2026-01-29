@@ -36,11 +36,16 @@ describe('SessionCard', () => {
   function createSession(overrides: Partial<Session> = {}): Session {
     return {
       id: 'test-session-123',
-      machineId: 'machine-1',
+      seq: 0,
       metadata: JSON.stringify({ name: 'Test Session', path: '/home/user/project' }),
+      metadataVersion: 1,
+      agentState: null,
+      agentStateVersion: 0,
+      dataEncryptionKey: null,
       active: true,
-      createdAt: '2024-01-01T00:00:00.000Z',
-      updatedAt: new Date().toISOString(),
+      activeAt: Date.now(),
+      createdAt: new Date('2024-01-01T00:00:00.000Z').getTime(),
+      updatedAt: Date.now(),
       ...overrides,
     };
   }
@@ -182,7 +187,7 @@ describe('SessionCard', () => {
       const wrapper = mount(SessionCard, {
         props: {
           session: createSession({
-            updatedAt: new Date().toISOString(),
+            updatedAt: Date.now(),
           }),
         },
       });
@@ -190,7 +195,7 @@ describe('SessionCard', () => {
     });
 
     it('should show minutes for recent activity', () => {
-      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+      const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
       const wrapper = mount(SessionCard, {
         props: {
           session: createSession({ updatedAt: fiveMinutesAgo }),
@@ -200,7 +205,7 @@ describe('SessionCard', () => {
     });
 
     it('should show hours for activity within a day', () => {
-      const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
+      const threeHoursAgo = Date.now() - 3 * 60 * 60 * 1000;
       const wrapper = mount(SessionCard, {
         props: {
           session: createSession({ updatedAt: threeHoursAgo }),
@@ -210,7 +215,7 @@ describe('SessionCard', () => {
     });
 
     it('should show days for activity within a week', () => {
-      const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+      const twoDaysAgo = Date.now() - 2 * 24 * 60 * 60 * 1000;
       const wrapper = mount(SessionCard, {
         props: {
           session: createSession({ updatedAt: twoDaysAgo }),
@@ -220,10 +225,10 @@ describe('SessionCard', () => {
     });
 
     it('should show date for activity over a week ago', () => {
-      const twoWeeksAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+      const twoWeeksAgo = Date.now() - 14 * 24 * 60 * 60 * 1000;
       const wrapper = mount(SessionCard, {
         props: {
-          session: createSession({ updatedAt: twoWeeksAgo.toISOString() }),
+          session: createSession({ updatedAt: twoWeeksAgo }),
         },
       });
       // Should show formatted date (exact format depends on locale)

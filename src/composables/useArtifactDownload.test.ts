@@ -31,14 +31,11 @@ vi.mock('jszip', () => ({
 
 // Track download actions for assertions
 const mockClick = vi.fn();
-let lastCreatedElement: HTMLAnchorElement | null = null;
 
 // Store original methods
 const originalCreateObjectURL = globalThis.URL.createObjectURL;
 const originalRevokeObjectURL = globalThis.URL.revokeObjectURL;
 const originalCreateElement = globalThis.document.createElement.bind(globalThis.document);
-const originalAppendChild = globalThis.document.body.appendChild.bind(globalThis.document.body);
-const originalRemoveChild = globalThis.document.body.removeChild.bind(globalThis.document.body);
 
 // Setup global mocks
 beforeEach(() => {
@@ -47,7 +44,6 @@ beforeEach(() => {
   mockGenerateAsync.mockClear();
   mockGenerateAsync.mockResolvedValue(new Blob(['test-zip-content'], { type: 'application/zip' }));
   mockClick.mockClear();
-  lastCreatedElement = null;
 
   // Spy on URL methods
   globalThis.URL.createObjectURL = vi.fn().mockReturnValue('blob:test-url');
@@ -58,7 +54,6 @@ beforeEach(() => {
     if (tagName === 'a') {
       const anchor = originalCreateElement('a') as HTMLAnchorElement;
       anchor.click = mockClick;
-      lastCreatedElement = anchor;
       return anchor;
     }
     return originalCreateElement(tagName);

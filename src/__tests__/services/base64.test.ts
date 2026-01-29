@@ -44,10 +44,9 @@ describe('Base64 Utilities', () => {
     it('should handle special characters requiring URL encoding', () => {
       // Create data that would produce + and / in standard base64
       const input = new Uint8Array([251, 255, 254]); // Produces ++/+
-      const standard = encodeBase64(input, 'base64');
       const urlSafe = encodeBase64(input, 'base64url');
 
-      // Standard may contain + or /
+      // URL safe should not contain + or /
       expect(urlSafe).not.toMatch(/[+/]/);
       // URL safe should not have padding
       expect(urlSafe).not.toMatch(/=/);

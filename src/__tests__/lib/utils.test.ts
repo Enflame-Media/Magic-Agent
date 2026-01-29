@@ -128,8 +128,8 @@ describe('cn utility function', () => {
 
   describe('Real-world usage patterns', () => {
     it('should handle button variant pattern', () => {
-      const variant = 'primary';
-      const size = 'lg';
+      const variant: string = 'primary';
+      const size: string = 'lg';
 
       const result = cn(
         'inline-flex items-center justify-center rounded-md',

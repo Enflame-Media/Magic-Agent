@@ -15,6 +15,8 @@
 
 import { computed, ref, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { useForm } from '@tanstack/vue-form';
+import { z } from 'zod';
 import { useSessionsStore } from '@/stores/sessions';
 import { useMessagesStore } from '@/stores/messages';
 import { useAuthStore } from '@/stores/auth';
@@ -64,9 +66,34 @@ const messages = computed(() =>
 const isLoading = ref(true);
 const decryptedMetadata = ref<SessionMetadata | null>(null);
 const decryptedContentById = ref<Map<string, string>>(new Map());
-const messageInput = ref('');
 const isSending = ref(false);
 const isShareModalOpen = ref(false);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Message Form
+// ─────────────────────────────────────────────────────────────────────────────
+
+const messageSchema = z.object({
+  message: z.string().min(1, 'Message cannot be empty'),
+});
+
+const messageForm = useForm({
+  defaultValues: {
+    message: '',
+  },
+  validators: {
+    onSubmit: messageSchema,
+  },
+  onSubmit: async ({ value }) => {
+    await doSendMessage(value.message);
+  },
+});
+
+// Computed accessor for template v-model compatibility
+const messageInput = computed({
+  get: () => messageForm.getFieldValue('message') ?? '',
+  set: (value: string) => messageForm.setFieldValue('message', value),
+});
 
 async function refreshMetadata(): Promise<void> {
   if (!session.value) {
@@ -355,6 +382,11 @@ function openShareModal() {
 }
 
 async function handleSendMessage(): Promise<void> {
+  // Trigger form validation and submission
+  await messageForm.handleSubmit();
+}
+
+async function doSendMessage(text: string): Promise<void> {
   if (!session.value || !session.value.active) {
     toast.error('Session is not active');
     return;
@@ -364,13 +396,13 @@ async function handleSendMessage(): Promise<void> {
     return;
   }
 
-  const text = messageInput.value.trim();
-  if (!text) {
+  const trimmedText = text.trim();
+  if (!trimmedText) {
     return;
   }
 
   isSending.value = true;
-  const result = await sendSessionMessage(session.value, text, permissionMode.value);
+  const result = await sendSessionMessage(session.value, trimmedText, permissionMode.value);
   isSending.value = false;
 
   if (!result.ok) {
@@ -378,11 +410,11 @@ async function handleSendMessage(): Promise<void> {
     return;
   }
 
-  messageInput.value = '';
+  messageForm.reset();
 }
 
 async function handleOptionPress(option: { title: string }): Promise<void> {
-  messageInput.value = option.title;
+  messageForm.setFieldValue('message', option.title);
   await handleSendMessage();
 }
 </script>
