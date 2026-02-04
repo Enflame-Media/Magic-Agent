@@ -235,9 +235,12 @@ export class RpcHandlerManager {
             return;
         }
 
+        // Use fallback for method field to avoid undefined in logs
+        const method = cancel.method || '<unknown>';
+
         const controller = this.pendingRequests.get(cancel.requestId);
         if (controller) {
-            this.logger('[RPC] Cancelling request', { requestId: cancel.requestId, method: cancel.method });
+            this.logger('[RPC] Cancelling request', { requestId: cancel.requestId, method });
             controller.abort();
             // Note: Don't delete here - handleRequest's finally block handles cleanup
             // Deleting here would cause a race condition if the handler is still running
