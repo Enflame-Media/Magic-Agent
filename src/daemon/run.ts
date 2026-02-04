@@ -243,17 +243,23 @@ export async function startDaemon(): Promise<void> {
     logger.debug('[DAEMON RUN] Daemon version mismatch detected, restarting daemon with current CLI version');
     await stopDaemon();
   } else {
-    logger.debug('[DAEMON RUN] Daemon version matches, keeping existing daemon');
+    logger.debug('[DAEMON RUN] Daemon version matches, exiting cleanly');
     console.log('Daemon already running with matching version');
-    process.exit(EXIT_CODES.SUCCESS.code);
+    // Clean exit - signal handlers will be removed by process termination
+    // Use setImmediate to ensure message is logged before exit
+    setImmediate(() => process.exit(EXIT_CODES.SUCCESS.code));
+    return; // Prevent further execution while exit is pending
   }
 
   // Acquire exclusive lock (proves daemon is running)
   const daemonLockHandle = await acquireDaemonLock(5, 200);
   if (!daemonLockHandle) {
-    logger.debug('[DAEMON RUN] Daemon lock file already held, another daemon is running');
+    logger.debug('[DAEMON RUN] Daemon lock file already held, exiting cleanly');
     console.log('Another daemon instance is already running (lock file held)');
-    process.exit(EXIT_CODES.SUCCESS.code);
+    // Clean exit - signal handlers will be removed by process termination
+    // Use setImmediate to ensure message is logged before exit
+    setImmediate(() => process.exit(EXIT_CODES.SUCCESS.code));
+    return; // Prevent further execution while exit is pending
   }
 
   // At this point we should be safe to startup the daemon:
@@ -562,8 +568,23 @@ export async function startDaemon(): Promise<void> {
         return new Promise((resolve) => {
           // Set timeout for webhook - configurable via env var, default 30s
           // Slow systems may need more time for cold start + auth + network
-          const timeoutMs = parseInt(process.env.HAPPY_SESSION_SPAWN_TIMEOUT || '30000', 10);
-          const effectiveTimeout = Number.isNaN(timeoutMs) || timeoutMs < 1000 ? 30000 : timeoutMs;
+          // HAP-954: Added upper bound validation to prevent extremely long hangs
+          const MAX_SPAWN_TIMEOUT_MS = 300000;  // 5 minutes
+          const DEFAULT_SPAWN_TIMEOUT_MS = 30000;
+
+          const timeoutMs = parseInt(process.env.HAPPY_SESSION_SPAWN_TIMEOUT || '', 10);
+          let effectiveTimeout = DEFAULT_SPAWN_TIMEOUT_MS;
+
+          if (!Number.isNaN(timeoutMs)) {
+            if (timeoutMs < 1000) {
+              logger.warn(`[DAEMON RUN] HAPPY_SESSION_SPAWN_TIMEOUT too low (${timeoutMs}ms), using default ${DEFAULT_SPAWN_TIMEOUT_MS}ms`);
+            } else if (timeoutMs > MAX_SPAWN_TIMEOUT_MS) {
+              logger.warn(`[DAEMON RUN] HAPPY_SESSION_SPAWN_TIMEOUT too high (${timeoutMs}ms), capping at ${MAX_SPAWN_TIMEOUT_MS}ms`);
+              effectiveTimeout = MAX_SPAWN_TIMEOUT_MS;
+            } else {
+              effectiveTimeout = timeoutMs;
+            }
+          }
 
           const timeout = setTimeout(() => {
             pidToAwaiter.delete(happyProcess.pid!);
