@@ -45,6 +45,19 @@ export class OutgoingMessageQueue extends EventEmitter {
     isDisabled(): boolean {
         return this.disabled;
     }
+
+    /**
+     * Re-enable the queue after it was disabled due to socket disconnection.
+     * Call this when the socket reconnects to resume message processing.
+     */
+    enable(): void {
+        if (this.disabled) {
+            logger.debug('[QUEUE] Queue re-enabled after socket reconnection');
+            this.disabled = false;
+            // Trigger processing in case messages were queued while disabled
+            this.scheduleProcessing();
+        }
+    }
     
     /**
      * Add message to queue

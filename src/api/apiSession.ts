@@ -180,6 +180,9 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
                 this.requestStateSync(true).catch((error) => {
                     logger.debug('[API] State reconciliation failed:', error);
                 });
+
+                // HAP-944: Emit socketReconnect event so consumers can re-enable message queues
+                this.emit('socketReconnect');
             }
             this.hasConnectedBefore = true;
 

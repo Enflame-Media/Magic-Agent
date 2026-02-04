@@ -123,6 +123,14 @@ export async function claudeRemoteLauncher(session: Session): Promise<'switch' |
         (logMessage) => session.client.sendClaudeSessionMessage(logMessage)
     );
 
+    // HAP-944: Re-enable the message queue when socket reconnects
+    // This fixes the issue where the queue stays permanently disabled after a socket disconnection
+    const onSocketReconnect = () => {
+        logger.debug('[remote]: Socket reconnected - re-enabling message queue');
+        messageQueue.enable();
+    };
+    session.client.on('socketReconnect', onSocketReconnect);
+
     // Set up callback to release delayed messages when permission is requested
     permissionHandler.setOnPermissionRequest((toolCallId: string) => {
         messageQueue.releaseToolCall(toolCallId).catch((error) => {
@@ -543,6 +551,9 @@ export async function claudeRemoteLauncher(session: Session): Promise<'switch' |
 
         // Fix #5: Remove session deleted listener
         session.client.off('sessionDeleted', onSessionDeleted);
+
+        // HAP-944: Remove socket reconnect listener
+        session.client.off('socketReconnect', onSocketReconnect);
 
         // Reset Terminal
         process.stdin.off('data', abort);
