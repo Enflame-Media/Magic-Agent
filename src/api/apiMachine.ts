@@ -326,12 +326,14 @@ export class ApiMachineClient {
             logger.debug(`[API MACHINE] [REVIVAL] Global cooldown active, ${remainingMs}ms remaining. Rejecting revival for ${sessionId.substring(0, 8)}...`);
 
             // HAP-784: Notify mobile app about cooldown state
+            // HAP-951: Include user-friendly message for display
             if (this.socket?.connected) {
+                const remainingSeconds = Math.ceil(remainingMs / 1000);
                 this.socket.emitClient('session-revival-paused', {
                     reason: 'circuit_breaker',
                     remainingMs,
                     resumesAt: this.revivalCooldownUntil,
-                    machineId: this.machine.id
+                    machineId: this.machine.id,
                 });
                 logger.debug(`[API MACHINE] [REVIVAL] Broadcast session-revival-paused event`);
             }
@@ -487,7 +489,29 @@ export class ApiMachineClient {
         }
 
         // Step 3: Spawn new session with --resume flag
+        // HAP-950: Track start time and emit progress events during revival
+        const startTime = Date.now();
+        const PROGRESS_INTERVAL_MS = 5000; // Emit progress every 5 seconds
+        let progressInterval: NodeJS.Timeout | null = null;
+
         try {
+            // HAP-950: Start progress interval to provide feedback during long revival
+            progressInterval = setInterval(() => {
+                if (this.socket?.connected) {
+                    const elapsedMs = Date.now() - startTime;
+                    const remainingMs = Math.max(0, SESSION_REVIVAL_TIMEOUT_MS - elapsedMs);
+                    this.socket.emitClient('session-revival-progress', {
+                        sessionId,
+                        elapsedMs,
+                        timeoutMs: SESSION_REVIVAL_TIMEOUT_MS,
+                        remainingMs,
+                        message: 'Reviving session...',
+                        machineId: this.machine.id
+                    });
+                    logger.debug(`[API MACHINE] [REVIVAL] Progress: ${Math.round(elapsedMs / 1000)}s elapsed, ${Math.round(remainingMs / 1000)}s remaining`);
+                }
+            }, PROGRESS_INTERVAL_MS);
+
             // Create a timeout promise
             const timeoutPromise = new Promise<never>((_, reject) => {
                 setTimeout(() => {
@@ -541,6 +565,12 @@ export class ApiMachineClient {
                 originalSessionId: sessionId,
                 error: error instanceof Error ? error.message : 'Unknown error during revival'
             };
+        } finally {
+            // HAP-950: Always clear the progress interval
+            if (progressInterval) {
+                clearInterval(progressInterval);
+                logger.debug(`[API MACHINE] [REVIVAL] Cleared progress interval`);
+            }
         }
     }
 
@@ -632,59 +662,85 @@ export class ApiMachineClient {
             const newMethod = `${revivalResult.newSessionId}:${methodName}`;
             logger.debug(`[API MACHINE] [REVIVAL] Replaying command: ${methodName} on revived session ${revivalResult.newSessionId?.substring(0, 8)}...`);
 
-            // HAP-744: Wait for the new session's handlers to be registered using polling
-            // instead of a fixed delay. The spawn-happy-session RPC waits for the session
-            // webhook, but handlers may take longer to register.
+            // HAP-744, HAP-946: Wait for the new session's handlers to be registered by polling
+            // the actual RPC request. The spawn-happy-session RPC waits for the session webhook,
+            // but handlers may take longer to register on the WebSocket.
+            //
+            // Previous implementation checked getSessionStatus() which only verifies PID tracking,
+            // not handler registration. Now we poll by attempting the request and checking if
+            // it still returns SESSION_NOT_ACTIVE (indicating handlers aren't registered yet).
             const POLL_INTERVAL_MS = 100;
             const MAX_WAIT_MS = 5000;
+            const MIN_WAIT_MS = 200; // Minimum wait for cold start buffer
             let waited = 0;
-            let handlerReady = false;
+            let replayResponse: string | null = null;
 
             while (waited < MAX_WAIT_MS) {
-                // Check if the new session's handlers are registered
-                // by attempting to get its status from the handler manager
-                try {
-                    const status = this.rpcHandlers?.getSessionStatus(revivalResult.newSessionId!);
-                    if (status?.status === 'active') {
-                        handlerReady = true;
-                        logger.debug(`[API MACHINE] [REVIVAL] Handler ready after ${waited}ms`);
+                // Attempt the RPC request to check if handlers are registered
+                const response = await this.rpcHandlerManager.handleRequest({
+                    ...request,
+                    method: newMethod
+                });
+
+                // Check if the response indicates handlers are not yet registered
+                const decryptedResponse = decrypt<{
+                    error?: string;
+                    code?: string;
+                }>(this.machine.encryptionKey, this.machine.encryptionVariant, decodeBase64(response));
+
+                // If the response is NOT a SESSION_NOT_ACTIVE error, handlers are ready
+                if (!decryptedResponse?.code || decryptedResponse.code !== RPC_ERROR_CODES.SESSION_NOT_ACTIVE) {
+                    // Ensure minimum wait time for cold start buffer before accepting
+                    if (waited >= MIN_WAIT_MS) {
+                        replayResponse = response;
+                        logger.debug(`[API MACHINE] [REVIVAL] Handler ${methodName} ready after ${waited}ms`);
                         break;
                     }
-                } catch {
-                    // Handler not ready yet, continue polling
+                    // Handler appears ready but we haven't waited minimum time yet
+                    // Store the response and continue polling briefly
+                    replayResponse = response;
                 }
 
                 await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS));
                 waited += POLL_INTERVAL_MS;
             }
 
-            if (!handlerReady) {
-                logger.debug(`[API MACHINE] [REVIVAL] Handler not ready after ${MAX_WAIT_MS}ms, proceeding anyway`);
+            // If we have a response (handlers became ready), return it
+            if (replayResponse !== null) {
+                const decryptedReplayResponse = decrypt<{
+                    error?: string;
+                    code?: string;
+                }>(this.machine.encryptionKey, this.machine.encryptionVariant, decodeBase64(replayResponse));
+
+                if (decryptedReplayResponse && !decryptedReplayResponse.error) {
+                    logger.debug(`[API MACHINE] [REVIVAL] Command replay succeeded`);
+                    return replayResponse;
+                }
+
+                // Replay completed but with an error (not SESSION_NOT_ACTIVE)
+                logger.debug(`[API MACHINE] [REVIVAL] Command replay failed: ${decryptedReplayResponse?.error || 'Unknown error'}`);
+                return replayResponse;
             }
 
-            // Replay the original request with the new session ID
-            const replayResponse = await this.rpcHandlerManager.handleRequest({
+            // Handlers never became ready within timeout - make final attempt anyway
+            logger.debug(`[API MACHINE] [REVIVAL] Handler not ready after ${MAX_WAIT_MS}ms, making final attempt`);
+            const finalResponse = await this.rpcHandlerManager.handleRequest({
                 ...request,
                 method: newMethod
             });
 
-            // Check if replay succeeded
-            const decryptedReplayResponse = decrypt<{
+            const decryptedFinalResponse = decrypt<{
                 error?: string;
                 code?: string;
-            }>(this.machine.encryptionKey, this.machine.encryptionVariant, decodeBase64(replayResponse));
+            }>(this.machine.encryptionKey, this.machine.encryptionVariant, decodeBase64(finalResponse));
 
-            if (decryptedReplayResponse && !decryptedReplayResponse.error) {
-                // Replay succeeded - include revival metadata in response
-                // Note: We can't easily modify the encrypted response, so we return it as-is
-                // The client should receive the session-revived event separately
-                logger.debug(`[API MACHINE] [REVIVAL] Command replay succeeded`);
-                return replayResponse;
+            if (decryptedFinalResponse && !decryptedFinalResponse.error) {
+                logger.debug(`[API MACHINE] [REVIVAL] Command replay succeeded on final attempt`);
+            } else {
+                logger.debug(`[API MACHINE] [REVIVAL] Command replay failed on final attempt: ${decryptedFinalResponse?.error || 'Unknown error'}`);
             }
 
-            // Replay failed - log and return the replay response (which contains the error)
-            logger.debug(`[API MACHINE] [REVIVAL] Command replay failed: ${decryptedReplayResponse?.error || 'Unknown error'}`);
-            return replayResponse;
+            return finalResponse;
 
         } catch (error) {
             // Decryption or processing error - return original response
