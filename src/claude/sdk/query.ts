@@ -459,6 +459,9 @@ export function query(config: {
     // Use separate exitHandler reference so we can remove it later (prevents handler accumulation)
     const exitHandler = () => cleanup()
     process.on('exit', exitHandler)
+    // Also handle SIGTERM/SIGINT to prevent orphan processes when parent is killed
+    process.on('SIGTERM', cleanup)
+    process.on('SIGINT', cleanup)
 
     // Declare query before processExitPromise to avoid TDZ issues
     // (close event may fire before Query construction if child exits immediately)
@@ -509,6 +512,8 @@ export function query(config: {
     processExitPromise.finally(() => {
         cleanup()
         process.removeListener('exit', exitHandler)  // Remove handler to prevent accumulation
+        process.removeListener('SIGTERM', cleanup)   // Remove signal handlers to prevent accumulation
+        process.removeListener('SIGINT', cleanup)
         // Remove abort listener to prevent accumulation if AbortSignal is reused (HAP-173)
         // Only remove if we actually added it (not if signal was already aborted)
         if (listenerAdded && config.options?.abort && setKillTimeout) {

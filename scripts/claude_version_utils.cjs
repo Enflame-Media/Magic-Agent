@@ -437,6 +437,17 @@ function runClaudeCli(cliPath) {
             env: process.env,
             shell: process.platform === 'win32' // Use shell on Windows for proper path handling
         });
+
+        // Forward termination signals to child process
+        // Without this, killing the launcher orphans the Claude binary (PPID becomes 1)
+        const forwardSignal = (signal) => {
+            if (!child.killed) {
+                child.kill(signal);
+            }
+        };
+        process.on('SIGTERM', () => forwardSignal('SIGTERM'));
+        process.on('SIGINT', () => forwardSignal('SIGINT'));
+
         child.on('error', (error) => {
             console.error('\x1b[31mFailed to start Claude Code:\x1b[0m', error.message);
             process.exit(1);
