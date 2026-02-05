@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Launcher icon colors -->
+    <color name="ic_launcher_background">#D84315</color>
+
+    <!-- Legacy colors for XML-based theming (if needed) -->
+    <color name="primary">#D84315</color>
+    <color name="primary_variant">#832900</color>
+    <color name="secondary">#006874</color>
+    <color name="background">#FFFBFF</color>
+</resources>
