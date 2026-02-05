@@ -113,6 +113,18 @@
 -keep class javax.inject.** { *; }
 -keep class * extends dagger.hilt.android.internal.managers.ViewComponentManager$FragmentContextWrapper { *; }
 
+# ==================== ML Kit Barcode Scanning ====================
+# Keep ML Kit barcode scanning classes
+-keep class com.google.mlkit.vision.barcode.** { *; }
+-keep class com.google.android.gms.internal.mlkit_vision_barcode.** { *; }
+
+# ==================== CameraX ====================
+# CameraX uses reflection for initialization
+-keep class androidx.camera.** { *; }
+
+# ==================== Accompanist ====================
+-dontwarn com.google.accompanist.**
+
 # ==================== App Models ====================
 # Keep domain models for serialization
 -keep class com.enflame.happy.domain.model.** { *; }

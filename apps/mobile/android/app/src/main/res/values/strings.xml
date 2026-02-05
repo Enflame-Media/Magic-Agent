@@ -20,6 +20,25 @@
     <string name="retry">Retry</string>
     <string name="close">Close</string>
 
+    <!-- QR Scanner -->
+    <string name="qr_scanner_title">Scan QR Code</string>
+    <string name="qr_scanner_instruction">Point your camera at the QR code shown in Claude Code CLI</string>
+    <string name="qr_scanner_processing">Processing QR code…</string>
+    <string name="qr_scanner_permission_title">Camera Access Required</string>
+    <string name="qr_scanner_permission_description">Happy needs camera access to scan QR codes from Claude Code CLI for device pairing.</string>
+    <string name="qr_scanner_permission_rationale">Camera permission was denied. Happy needs camera access to scan QR codes for pairing. Please grant camera access to continue.</string>
+    <string name="qr_scanner_grant_permission">Grant Camera Access</string>
+    <string name="qr_scanner_error_title">Invalid QR Code</string>
+    <string name="qr_scanner_scan_again">Scan Again</string>
+
+    <!-- Pairing Confirmation -->
+    <string name="pairing_title">Confirm Pairing</string>
+    <string name="pairing_qr_scanned">QR Code Scanned</string>
+    <string name="pairing_confirm_description">Review the device details below and confirm to establish a secure connection.</string>
+    <string name="pairing_device_name">Device</string>
+    <string name="pairing_public_key">Public Key</string>
+    <string name="pairing_confirm_button">Confirm Pairing</string>
+
     <!-- Error messages -->
     <string name="error_generic">Something went wrong</string>
     <string name="error_network">Network error. Please check your connection.</string>

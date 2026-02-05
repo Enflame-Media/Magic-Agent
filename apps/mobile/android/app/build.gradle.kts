@@ -94,6 +94,15 @@ dependencies {
     implementation(libs.datastore.preferences)
     ksp(libs.room.compiler)
 
+    // CameraX
+    implementation(libs.bundles.camerax)
+
+    // ML Kit Barcode Scanning
+    implementation(libs.mlkit.barcode.scanning)
+
+    // Accompanist Permissions
+    implementation(libs.accompanist.permissions)
+
     // Encryption
     implementation(libs.tink.android)
 
