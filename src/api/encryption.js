@@ -45,7 +45,7 @@ var errors_1 = require("@/utils/errors");
  * Combined with random bytes to eliminate any theoretical nonce collision risk.
  */
 var nonceCounter = 0n;
-var MAX_UINT64 = (Math.pow(2n, 64n)) - 1n;
+var MAX_UINT64 = (2n ** 64n) - 1n;
 /**
  * Encode a Uint8Array to base64 string
  * @param buffer - The buffer to encode

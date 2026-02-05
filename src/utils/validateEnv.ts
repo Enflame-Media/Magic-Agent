@@ -200,7 +200,7 @@ export function validateRemoteLoggingUrl(url: string): RemoteLoggingUrlValidatio
 
   // HTTP is only allowed for localhost (local development)
   if (protocol === 'http:') {
-    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1'
+    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1' || hostname === '[::1]'
     if (isLocalhost) {
       return { valid: true, url }
     }
