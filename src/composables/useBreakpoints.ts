@@ -130,3 +130,39 @@ export const TOUCH_TARGET_MIN_SIZE = 44;
  * Recommended touch target size for optimal mobile experience
  */
 export const TOUCH_TARGET_RECOMMENDED_SIZE = 48;
+
+/**
+ * Responsive container max-width tokens (in pixels)
+ * Maps to the ResponsiveContainer size prop values
+ *
+ * @see HAP-962 - Responsive Mobile-First Design System
+ */
+export const CONTAINER_MAX_WIDTHS = {
+  /** 672px - Forms, settings, narrow content */
+  narrow: 672,
+  /** 1024px - Standard content pages */
+  default: 1024,
+  /** 1280px - Dashboards, data-heavy views */
+  wide: 1280,
+  /** 1536px - Ultra-wide, 4K optimized */
+  ultrawide: 1536,
+} as const;
+
+/**
+ * Responsive spacing scale (in pixels)
+ * Mobile-first values that scale up at breakpoints
+ */
+export const RESPONSIVE_SPACING = {
+  /** Padding at mobile viewport */
+  mobilePadding: 16,
+  /** Padding at tablet viewport (sm+) */
+  tabletPadding: 24,
+  /** Padding at desktop viewport (lg+) */
+  desktopPadding: 32,
+  /** Gap between elements at mobile */
+  mobileGap: 12,
+  /** Gap between elements at tablet (sm+) */
+  tabletGap: 16,
+  /** Gap between elements at desktop (lg+) */
+  desktopGap: 24,
+} as const;
