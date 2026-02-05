@@ -7,9 +7,10 @@
  * session revival error handling, responsive layout (HAP-916),
  * keyboard shortcuts with command palette (HAP-918),
  * resizable sidebar with drag handles (HAP-927),
- * and mobile swipe navigation (HAP-919).
+ * mobile swipe navigation (HAP-919),
+ * and skip links with ARIA landmarks for accessibility (HAP-963).
  */
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useWindowSize } from '@vueuse/core';
 import { Toaster } from '@/components/ui/sonner';
@@ -27,6 +28,7 @@ import RevivalCooldownBanner from '@/components/app/RevivalCooldownBanner.vue';
 import SessionSidebar from '@/components/app/SessionSidebar.vue';
 import MobileBottomNav from '@/components/app/MobileBottomNav.vue';
 import CommandPalette from '@/components/app/CommandPalette.vue';
+import SkipLink from '@/components/app/SkipLink.vue';
 import SiteHeader from '@/components/SiteHeader.vue';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import {
@@ -46,9 +48,12 @@ const route = useRoute();
 // Initialize WebSocket sync - auto-connects when authenticated (HAP-671)
 useSync();
 
-// Initialize global keyboard shortcuts (HAP-918)
-// This registers Cmd/Ctrl+K for command palette and Escape for closing modals
-useKeyboardShortcuts();
+// Initialize global keyboard shortcuts (HAP-918, HAP-963)
+// This registers Cmd/Ctrl+K for command palette, Cmd/Ctrl+/ for sidebar, and Escape for closing modals
+const {
+  registerSidebarToggle,
+  unregisterSidebarToggle,
+} = useKeyboardShortcuts();
 
 // Session revival error handling (HAP-736)
 const {
@@ -83,8 +88,19 @@ watch(mobileMainRef, (el) => {
 }, { immediate: true });
 
 // Resizable sidebar state (HAP-927)
-const { width: sidebarWidth, setWidth: setSidebarWidth, reset: resetSidebarWidth, config: sidebarConfig } = useSidebarState();
+const { width: sidebarWidth, setWidth: setSidebarWidth, reset: resetSidebarWidth, toggleCollapsed, config: sidebarConfig } = useSidebarState();
 const { width: windowWidth } = useWindowSize();
+
+// Register Cmd/Ctrl+/ sidebar toggle (HAP-963)
+onMounted(() => {
+  registerSidebarToggle('app-sidebar', () => {
+    toggleCollapsed();
+  });
+});
+
+onUnmounted(() => {
+  unregisterSidebarToggle('app-sidebar');
+});
 
 // Convert pixel width to percentage for ResizablePanel
 // Based on window width since ResizablePanelGroup fills the viewport
@@ -164,6 +180,9 @@ const pageTitle = computed(() => {
 
   <!-- Desktop layout with resizable sidebar (HAP-916, HAP-927) -->
   <div v-if="showShell && !isMobile" id="happy-app" class="min-h-screen bg-background">
+    <!-- Skip link for keyboard/screen reader users (HAP-963) -->
+    <SkipLink target-id="main-content" />
+
     <SidebarProvider class="min-h-svh">
       <ResizablePanelGroup direction="horizontal" class="min-h-svh">
         <!-- Sidebar panel with drag-to-resize (HAP-927) -->
@@ -180,7 +199,11 @@ const pageTitle = computed(() => {
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger as-child>
-              <ResizableHandle class="hover:bg-primary/20 transition-colors" @dblclick="resetSidebarWidth" />
+              <ResizableHandle
+                class="hover:bg-primary/20 transition-colors"
+                aria-label="Resize sidebar"
+                @dblclick="resetSidebarWidth"
+              />
             </TooltipTrigger>
             <TooltipContent>
               Double-click to reset to default width
@@ -192,9 +215,9 @@ const pageTitle = computed(() => {
         <ResizablePanel :default-size="100 - sidebarDefaultSize">
           <SidebarInset>
             <SiteHeader :title="pageTitle" />
-            <div class="flex min-h-0 flex-1 flex-col">
+            <main id="main-content" class="flex min-h-0 flex-1 flex-col" role="main" :aria-label="pageTitle">
               <RouterView />
-            </div>
+            </main>
           </SidebarInset>
         </ResizablePanel>
       </ResizablePanelGroup>
@@ -203,8 +226,17 @@ const pageTitle = computed(() => {
 
   <!-- Mobile layout with bottom navigation and swipe gestures (HAP-916, HAP-919) -->
   <div v-else-if="showShell && isMobile" id="happy-app" class="min-h-screen bg-background">
+    <!-- Skip link for keyboard/screen reader users (HAP-963) -->
+    <SkipLink target-id="main-content" />
+
     <SiteHeader :title="pageTitle" class="sticky top-0 z-40" />
-    <main ref="mobileMainRef" class="flex min-h-0 flex-1 flex-col pb-20 touch-pan-y">
+    <main
+      id="main-content"
+      ref="mobileMainRef"
+      class="flex min-h-0 flex-1 flex-col pb-20 touch-pan-y"
+      role="main"
+      :aria-label="pageTitle"
+    >
       <RouterView />
     </main>
     <MobileBottomNav />
@@ -212,6 +244,8 @@ const pageTitle = computed(() => {
 
   <!-- Unauthenticated layout -->
   <div v-else class="min-h-screen bg-background">
-    <RouterView />
+    <main role="main" aria-label="Authentication">
+      <RouterView />
+    </main>
   </div>
 </template>

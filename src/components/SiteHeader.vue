@@ -4,6 +4,7 @@
  *
  * @see HAP-916 - Responsive Design System
  * @see HAP-918 - Breadcrumb Navigation
+ * @see HAP-963 - Keyboard Shortcuts and Accessibility
  */
 import type { HTMLAttributes } from 'vue';
 import { cn } from '@/lib/utils';
@@ -26,16 +27,18 @@ const { isLargeScreen } = useBreakpoints();
 
 <template>
   <header
+    role="banner"
     :class="cn(
       'flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)',
       props.class,
     )"
   >
     <div class="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
-      <SidebarTrigger class="-ml-1" />
+      <SidebarTrigger class="-ml-1" aria-label="Toggle sidebar" />
       <Separator
         orientation="vertical"
         class="mx-2 data-[orientation=vertical]:h-4"
+        aria-hidden="true"
       />
 
       <!-- Breadcrumbs for xl+ screens (HAP-918) -->
@@ -55,6 +58,7 @@ const { isLargeScreen } = useBreakpoints();
           variant="outline"
           size="sm"
           class="hidden xl:flex items-center gap-2 text-muted-foreground"
+          aria-label="Open command palette (Cmd+K)"
           @click="openCommandPalette"
         >
           <svg
@@ -66,12 +70,13 @@ const { isLargeScreen } = useBreakpoints();
             stroke-linecap="round"
             stroke-linejoin="round"
             class="h-4 w-4"
+            aria-hidden="true"
           >
             <circle cx="11" cy="11" r="8" />
             <path d="m21 21-4.3-4.3" />
           </svg>
           <span class="hidden lg:inline">Search...</span>
-          <Kbd class="hidden lg:inline-flex">⌘K</Kbd>
+          <Kbd class="hidden lg:inline-flex">&#x2318;K</Kbd>
         </Button>
       </div>
     </div>

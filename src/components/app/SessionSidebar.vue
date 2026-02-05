@@ -4,9 +4,10 @@
  *
  * Shows active and archived sessions with quick navigation,
  * connection status, and a primary action for starting a new session.
+ * Supports arrow key navigation for keyboard accessibility (HAP-963).
  */
 
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useRoute, useRouter, RouterLink } from 'vue-router';
 import { Button } from '@/components/ui/button';
 import { ConnectionStatus } from '@/components/app';
@@ -27,6 +28,7 @@ import {
 import { useAuthStore } from '@/stores/auth';
 import { useSessionsStore, type Session } from '@/stores/sessions';
 import { useDarkMode } from '@/composables/useDarkMode';
+import { useArrowNavigation } from '@/composables/useArrowNavigation';
 
 const route = useRoute();
 const router = useRouter();
@@ -50,6 +52,20 @@ const accountLabel = computed(() => {
 const currentSessionId = computed(() => {
   const id = route.params.id;
   return typeof id === 'string' ? id : null;
+});
+
+// Arrow key navigation for session lists (HAP-963)
+const activeSessionsListRef = ref<HTMLElement | null>(null);
+const inactiveSessionsListRef = ref<HTMLElement | null>(null);
+
+useArrowNavigation(activeSessionsListRef, {
+  itemSelector: '[data-nav-item]',
+  loop: false,
+});
+
+useArrowNavigation(inactiveSessionsListRef, {
+  itemSelector: '[data-nav-item]',
+  loop: false,
 });
 
 function startNewSession() {
@@ -92,7 +108,7 @@ function lastActivity(session: Session): string {
 </script>
 
 <template>
-  <Sidebar collapsible="icon">
+  <Sidebar collapsible="icon" aria-label="Session navigation">
     <SidebarHeader class="gap-3">
       <SidebarMenu>
         <SidebarMenuItem>
@@ -105,7 +121,7 @@ function lastActivity(session: Session): string {
       </SidebarMenu>
 
       <div class="px-2">
-        <Button class="w-full" @click="startNewSession">
+        <Button class="w-full" @click="startNewSession" aria-label="Start a new session">
           New Session
         </Button>
       </div>
@@ -116,22 +132,30 @@ function lastActivity(session: Session): string {
     </SidebarHeader>
 
     <SidebarContent>
-      <div v-if="!hasAnySessions" class="px-3 text-sm text-muted-foreground">
+      <div v-if="!hasAnySessions" class="px-3 text-sm text-muted-foreground" role="status">
         Connect a terminal running the Happy CLI to see your sessions.
       </div>
 
       <template v-else>
         <SidebarGroup v-if="activeSessions.length > 0">
-          <SidebarGroupLabel>Active Sessions</SidebarGroupLabel>
-          <SidebarMenu>
-            <SidebarMenuItem v-for="session in activeSessions" :key="session.id">
+          <SidebarGroupLabel id="active-sessions-label">Active Sessions</SidebarGroupLabel>
+          <SidebarMenu ref="activeSessionsListRef" role="listbox" aria-labelledby="active-sessions-label">
+            <SidebarMenuItem
+              v-for="session in activeSessions"
+              :key="session.id"
+              role="option"
+              data-nav-item
+              tabindex="-1"
+              :aria-selected="session.id === currentSessionId"
+              :aria-label="`${sessionName(session)} - ${session.id === currentSessionId ? 'currently selected' : 'active session'}`"
+            >
               <SidebarMenuButton
                 as-child
                 :is-active="session.id === currentSessionId"
                 size="lg"
               >
                 <RouterLink :to="`/session/${session.id}`">
-                  <span class="mt-1 h-2 w-2 rounded-full bg-emerald-500" />
+                  <span class="mt-1 h-2 w-2 rounded-full bg-emerald-500" aria-hidden="true" />
                   <span class="flex flex-col gap-0.5">
                     <span class="text-sm font-medium leading-none">
                       {{ sessionName(session) }}
@@ -152,16 +176,24 @@ function lastActivity(session: Session): string {
         <SidebarSeparator v-if="activeSessions.length > 0 && inactiveSessions.length > 0" />
 
         <SidebarGroup v-if="inactiveSessions.length > 0">
-          <SidebarGroupLabel>Archived Sessions</SidebarGroupLabel>
-          <SidebarMenu>
-            <SidebarMenuItem v-for="session in inactiveSessions" :key="session.id">
+          <SidebarGroupLabel id="archived-sessions-label">Archived Sessions</SidebarGroupLabel>
+          <SidebarMenu ref="inactiveSessionsListRef" role="listbox" aria-labelledby="archived-sessions-label">
+            <SidebarMenuItem
+              v-for="session in inactiveSessions"
+              :key="session.id"
+              role="option"
+              data-nav-item
+              tabindex="-1"
+              :aria-selected="session.id === currentSessionId"
+              :aria-label="`${sessionName(session)} - archived session`"
+            >
               <SidebarMenuButton
                 as-child
                 :is-active="session.id === currentSessionId"
                 size="lg"
               >
                 <RouterLink :to="`/session/${session.id}`">
-                  <span class="mt-1 h-2 w-2 rounded-full bg-muted-foreground/60" />
+                  <span class="mt-1 h-2 w-2 rounded-full bg-muted-foreground/60" aria-hidden="true" />
                   <span class="flex flex-col gap-0.5">
                     <span class="text-sm font-medium leading-none">
                       {{ sessionName(session) }}
@@ -186,6 +218,7 @@ function lastActivity(session: Session): string {
         <SidebarMenuItem>
           <SidebarMenuButton
             tooltip="Toggle theme"
+            :aria-label="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
             @click="toggle"
           >
             <svg
@@ -199,6 +232,7 @@ function lastActivity(session: Session): string {
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
+              aria-hidden="true"
             >
               <circle cx="12" cy="12" r="4" />
               <path d="M12 2v2" />
@@ -221,6 +255,7 @@ function lastActivity(session: Session): string {
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
+              aria-hidden="true"
             >
               <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
             </svg>

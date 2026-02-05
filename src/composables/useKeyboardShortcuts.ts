@@ -2,10 +2,11 @@
  * Global keyboard shortcuts composable for Happy Vue.js Web Application
  *
  * Provides centralized keyboard shortcut management using @vueuse/core useMagicKeys.
- * Handles Cmd/Ctrl+K for command palette, Escape for closing modals/dropdowns,
- * and other global shortcuts.
+ * Handles Cmd/Ctrl+K for command palette, Cmd/Ctrl+/ for sidebar toggle,
+ * Escape for closing modals/dropdowns, and arrow key navigation for lists.
  *
  * @see HAP-918 - Desktop Enhancements - Keyboard Shortcuts
+ * @see HAP-963 - Keyboard Shortcuts and Accessibility
  */
 
 import { useMagicKeys, whenever } from '@vueuse/core';
@@ -31,6 +32,10 @@ const isCommandPaletteOpen = ref(false);
  */
 const escapeHandlers: ShortcutRegistration[] = [];
 
+/**
+ * Registry for sidebar toggle handlers
+ */
+const sidebarToggleHandlers: ShortcutRegistration[] = [];
 
 /**
  * Composable return type
@@ -48,6 +53,10 @@ export interface UseKeyboardShortcutsReturn {
   registerEscapeHandler: (id: string, handler: () => void) => void;
   /** Unregister an escape key handler */
   unregisterEscapeHandler: (id: string) => void;
+  /** Register a sidebar toggle handler (for Cmd/Ctrl+/) */
+  registerSidebarToggle: (id: string, handler: () => void) => void;
+  /** Unregister a sidebar toggle handler */
+  unregisterSidebarToggle: (id: string) => void;
   /** Check if an element is an input (to avoid triggering shortcuts while typing) */
   isInputElement: (target: EventTarget | null) => boolean;
 }
@@ -66,6 +75,11 @@ function isInputElement(target: EventTarget | null): boolean {
 /**
  * Composable for global keyboard shortcuts
  *
+ * Supports:
+ * - Cmd/Ctrl+K: Toggle command palette
+ * - Cmd/Ctrl+/: Toggle sidebar
+ * - Escape: Close modals/dropdowns (stack-based)
+ *
  * @example
  * ```vue
  * <script setup lang="ts">
@@ -76,6 +90,8 @@ function isInputElement(target: EventTarget | null): boolean {
  *   toggleCommandPalette,
  *   registerEscapeHandler,
  *   unregisterEscapeHandler,
+ *   registerSidebarToggle,
+ *   unregisterSidebarToggle,
  * } = useKeyboardShortcuts();
  *
  * // Register escape handler for a modal
@@ -83,9 +99,15 @@ function isInputElement(target: EventTarget | null): boolean {
  *   closeModal();
  * });
  *
+ * // Register sidebar toggle
+ * registerSidebarToggle('app-sidebar', () => {
+ *   sidebar.toggleCollapsed();
+ * });
+ *
  * // Clean up on unmount
  * onUnmounted(() => {
  *   unregisterEscapeHandler('my-modal');
+ *   unregisterSidebarToggle('app-sidebar');
  * });
  * </script>
  * ```
@@ -95,6 +117,9 @@ export function useKeyboardShortcuts(): UseKeyboardShortcutsReturn {
 
   // Cmd/Ctrl + K for command palette
   const cmdK = computed(() => keys.meta_k?.value || keys.ctrl_k?.value);
+
+  // Cmd/Ctrl + / for sidebar toggle
+  const cmdSlash = computed(() => keys['meta_/']?.value || keys['ctrl_/']?.value);
 
   // Escape key for closing modals
   const escape = keys.escape;
@@ -108,6 +133,21 @@ export function useKeyboardShortcuts(): UseKeyboardShortcutsReturn {
       // This is intentional - users expect Cmd+K to work anywhere
     }
     toggleCommandPalette();
+  });
+
+  // Handle Cmd/Ctrl + / for sidebar toggle
+  whenever(cmdSlash, () => {
+    // Don't trigger if typing in an input
+    const activeElement = document.activeElement;
+    if (isInputElement(activeElement)) return;
+
+    // Call the most recently registered sidebar toggle handler
+    if (sidebarToggleHandlers.length > 0) {
+      const lastHandler = sidebarToggleHandlers[sidebarToggleHandlers.length - 1];
+      if (lastHandler) {
+        lastHandler.handler();
+      }
+    }
   });
 
   // Handle Escape key
@@ -157,6 +197,22 @@ export function useKeyboardShortcuts(): UseKeyboardShortcutsReturn {
     }
   }
 
+  function registerSidebarToggle(id: string, handler: () => void) {
+    // Remove existing handler with same ID if present
+    const existingIndex = sidebarToggleHandlers.findIndex(h => h.id === id);
+    if (existingIndex !== -1) {
+      sidebarToggleHandlers.splice(existingIndex, 1);
+    }
+    sidebarToggleHandlers.push({ id, handler });
+  }
+
+  function unregisterSidebarToggle(id: string) {
+    const index = sidebarToggleHandlers.findIndex(h => h.id === id);
+    if (index !== -1) {
+      sidebarToggleHandlers.splice(index, 1);
+    }
+  }
+
   return {
     isCommandPaletteOpen,
     openCommandPalette,
@@ -164,6 +220,8 @@ export function useKeyboardShortcuts(): UseKeyboardShortcutsReturn {
     toggleCommandPalette,
     registerEscapeHandler,
     unregisterEscapeHandler,
+    registerSidebarToggle,
+    unregisterSidebarToggle,
     isInputElement,
   };
 }

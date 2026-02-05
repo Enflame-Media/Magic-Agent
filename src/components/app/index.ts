@@ -44,6 +44,13 @@ export { VoiceBars, VoiceStatusBar, VoiceButton } from './voice';
 export { default as CommandPalette } from './CommandPalette.vue';
 export { default as AppBreadcrumbs } from './AppBreadcrumbs.vue';
 
+// Accessibility components (HAP-963)
+export { default as SkipLink } from './SkipLink.vue';
+
 // Mobile enhancement components (HAP-919)
 export { default as MobileBottomNav } from './MobileBottomNav.vue';
 export { default as PullToRefresh } from './PullToRefresh.vue';
+
+// Responsive design system components (HAP-962)
+export { default as ResponsiveContainer } from './ResponsiveContainer.vue';
+export { default as DesktopNavigation } from './DesktopNavigation.vue';

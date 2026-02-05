@@ -370,6 +370,190 @@
 }
 
 /**
+ * Responsive Design System Components - HAP-962
+ *
+ * Mobile-first responsive component classes for adaptive layouts.
+ * These provide standardized responsive behavior across all views.
+ */
+@layer components {
+  /**
+   * Responsive container - adapts max-width and padding to viewport
+   * Use as a wrapper for page content that needs responsive constraints
+   */
+  .responsive-container {
+    @apply w-full mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .responsive-container--narrow {
+    @apply responsive-container max-w-2xl;
+  }
+
+  .responsive-container--default {
+    @apply responsive-container max-w-5xl;
+  }
+
+  .responsive-container--wide {
+    @apply responsive-container max-w-7xl;
+  }
+
+  /**
+   * Responsive grid - adapts columns to viewport width
+   * Single column on mobile, multi-column on wider screens
+   */
+  .responsive-grid {
+    @apply grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4;
+  }
+
+  .responsive-grid--cards {
+    @apply grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4;
+  }
+
+  /**
+   * Responsive stack - vertical on mobile, horizontal on desktop
+   */
+  .responsive-stack {
+    @apply flex flex-col gap-4 lg:flex-row;
+  }
+
+  /**
+   * Responsive text sizing
+   * Scales text size based on viewport for readability
+   */
+  .responsive-heading {
+    @apply text-xl sm:text-2xl lg:text-3xl font-semibold;
+  }
+
+  .responsive-subheading {
+    @apply text-lg sm:text-xl font-medium;
+  }
+
+  .responsive-body {
+    @apply text-sm sm:text-base;
+  }
+
+  /**
+   * Responsive panel layout
+   * Used for multi-panel views that collapse on mobile
+   */
+  .responsive-panels {
+    @apply flex flex-col lg:flex-row h-full;
+  }
+
+  .responsive-panel--sidebar {
+    @apply hidden lg:flex lg:w-64 xl:w-72 flex-shrink-0 border-r border-border;
+  }
+
+  .responsive-panel--main {
+    @apply flex-1 min-w-0;
+  }
+
+  .responsive-panel--detail {
+    @apply hidden xl:flex xl:w-80 flex-shrink-0 border-l border-border;
+  }
+
+  /**
+   * Responsive spacing
+   * Progressive padding that increases with viewport
+   */
+  .responsive-padding {
+    @apply p-4 sm:p-6 lg:p-8;
+  }
+
+  .responsive-padding-x {
+    @apply px-4 sm:px-6 lg:px-8;
+  }
+
+  .responsive-padding-y {
+    @apply py-4 sm:py-5 lg:py-6;
+  }
+
+  /**
+   * Responsive gap utilities
+   */
+  .responsive-gap {
+    @apply gap-3 sm:gap-4 lg:gap-6;
+  }
+
+  /**
+   * Mobile-only and desktop-only visibility helpers
+   * Complement TailwindCSS's responsive display utilities
+   */
+  .mobile-only {
+    @apply sm:hidden;
+  }
+
+  .tablet-up {
+    @apply hidden sm:block;
+  }
+
+  .desktop-only {
+    @apply hidden lg:block;
+  }
+
+  .large-screen-only {
+    @apply hidden xl:block;
+  }
+}
+
+/**
+ * Accessibility Utilities - HAP-963
+ *
+ * Provides visible focus indicators, screen reader utilities,
+ * and keyboard navigation support for WCAG 2.1 AA compliance.
+ */
+@layer components {
+  /**
+   * Enhanced focus indicator for keyboard navigation
+   * Only visible when navigating with keyboard (focus-visible)
+   * Uses 2px outline with offset for clear visibility against any background
+   */
+  .focus-ring {
+    @apply outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+  }
+
+  /**
+   * Screen reader only text - visually hidden but accessible
+   * Use for providing context to screen readers without visual clutter
+   */
+  .sr-only-focusable {
+    @apply sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-2;
+  }
+}
+
+@layer base {
+  /**
+   * Enhanced focus-visible styles for all interactive elements
+   * Ensures visible focus indicators for keyboard navigation (WCAG 2.4.7)
+   */
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
+  /**
+   * Remove outline for mouse users while keeping it for keyboard users
+   * This preserves native focus styles only for keyboard navigation
+   */
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  /**
+   * Respect user preference for reduced motion (WCAG 2.3.3)
+   */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/**
  * Safe Area Insets for PWA
  *
  * Handles notches, home indicators, and rounded corners on modern devices.
