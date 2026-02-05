@@ -26,10 +26,14 @@ This file provides guidance to Claude Code when working with the Happy iOS nativ
 | Asset Catalog | Done | AccentColor, AppIcon placeholders |
 | Unit Tests | Done | HappyTests target |
 | UI Tests | Done | HappyUITests target |
+| QR Code Scanner | Done | AVFoundation-based QR scanning (HAP-959) |
+| QR Payload Parsing | Done | JSON parsing with validation |
+| Camera Permission | Done | CameraPermissionService with async API |
+| Pairing Confirmation | Done | Post-scan confirmation screen |
+| Permission Denied UI | Done | Settings deep-link for camera access |
 
 ### Next Steps (Phase 2)
 
-- [ ] QR code scanner implementation
 - [ ] Authentication service
 - [ ] API service integration
 - [ ] WebSocket sync service

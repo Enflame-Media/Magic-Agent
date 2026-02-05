@@ -25,6 +25,10 @@ struct ContentView: View {
 /// This view provides onboarding instructions and a way to
 /// connect to a Claude Code CLI instance via QR code scanning.
 struct WelcomeView: View {
+
+    /// Controls navigation to the QR scanner screen.
+    @State private var showScanner = false
+
     var body: some View {
         VStack(spacing: 32) {
             Spacer()
@@ -75,10 +79,8 @@ struct WelcomeView: View {
 
             Spacer()
 
-            // Connect button
-            Button {
-                // TODO: Implement QR scanner
-            } label: {
+            // Connect button - navigates to QR scanner
+            NavigationLink(destination: QRScannerView()) {
                 Label("Scan QR Code", systemImage: "qrcode.viewfinder")
                     .frame(maxWidth: .infinity)
             }
