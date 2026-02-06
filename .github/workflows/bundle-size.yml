@@ -124,7 +124,7 @@ jobs:
 
       # Post comment on PR using github-script (safe - no shell injection)
       - name: Post bundle size comment
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const fs = require('fs');
