@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getPrivacySettings, updatePrivacySettings } from '@/services/privacy';
+import ResponsiveContainer from '@/components/app/ResponsiveContainer.vue';
 
 const router = useRouter();
 
@@ -61,7 +62,7 @@ function goBack() {
 </script>
 
 <template>
-  <div class="container mx-auto px-4 py-6 max-w-2xl">
+  <ResponsiveContainer size="narrow" padding="default">
     <!-- Header -->
     <header class="flex items-center gap-4 mb-6">
       <Button variant="ghost" size="icon" @click="goBack">
@@ -176,5 +177,5 @@ function goBack() {
         </CardContent>
       </Card>
     </div>
-  </div>
+  </ResponsiveContainer>
 </template>

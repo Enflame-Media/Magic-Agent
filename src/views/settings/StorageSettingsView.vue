@@ -19,6 +19,7 @@ import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
 import { useUiStore } from '@/stores/ui';
 import { useOfflineArtifacts } from '@/composables/useOfflineArtifacts';
+import ResponsiveContainer from '@/components/app/ResponsiveContainer.vue';
 
 const router = useRouter();
 const ui = useUiStore();
@@ -83,7 +84,7 @@ const lastCachedFormatted = computed(() => {
 </script>
 
 <template>
-  <div class="container mx-auto px-4 py-6 max-w-2xl">
+  <ResponsiveContainer size="narrow" padding="default">
     <!-- Header -->
     <header class="flex items-center gap-4 mb-6">
       <Button variant="ghost" size="icon" @click="goBack">
@@ -233,5 +234,5 @@ const lastCachedFormatted = computed(() => {
         </CardContent>
       </Card>
     </div>
-  </div>
+  </ResponsiveContainer>
 </template>

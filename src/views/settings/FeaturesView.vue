@@ -7,6 +7,7 @@ import { useRouter } from 'vue-router';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
+import ResponsiveContainer from '@/components/app/ResponsiveContainer.vue';
 
 const router = useRouter();
 
@@ -20,7 +21,7 @@ function goBack() {
 </script>
 
 <template>
-  <div class="container mx-auto px-4 py-6 max-w-2xl">
+  <ResponsiveContainer size="narrow" padding="default">
     <header class="flex items-center gap-4 mb-6">
       <Button variant="ghost" size="icon" @click="goBack">
         <svg
@@ -84,5 +85,5 @@ function goBack() {
         </CardContent>
       </Card>
     </div>
-  </div>
+  </ResponsiveContainer>
 </template>

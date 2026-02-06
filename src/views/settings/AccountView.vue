@@ -25,6 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import ResponsiveContainer from '@/components/app/ResponsiveContainer.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -60,7 +61,7 @@ function handleDisconnect() {
 </script>
 
 <template>
-  <div class="container mx-auto px-4 py-6 max-w-2xl">
+  <ResponsiveContainer size="narrow" padding="default">
     <!-- Header -->
     <header class="flex items-center gap-4 mb-6">
       <Button variant="ghost" size="icon" @click="goBack">
@@ -172,5 +173,5 @@ function handleDisconnect() {
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  </div>
+  </ResponsiveContainer>
 </template>

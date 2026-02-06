@@ -103,9 +103,19 @@ export const DEFAULT_LANGUAGE: SupportedLanguage = 'en';
 const STORAGE_KEY = 'happy-locale';
 
 /**
+ * Check if running in browser environment (not Cloudflare Workers)
+ */
+const isBrowser = typeof window !== 'undefined' && typeof localStorage !== 'undefined';
+
+/**
  * Detect the user's preferred language from browser/system settings
  */
 export function detectSystemLocale(): SupportedLanguage {
+  // Return default if not in browser (e.g., Cloudflare Workers)
+  if (!isBrowser || typeof navigator === 'undefined') {
+    return DEFAULT_LANGUAGE;
+  }
+
   // Try navigator.language first (most specific)
   const browserLang = navigator.language;
 
@@ -155,6 +165,11 @@ export function isSupportedLanguage(lang: string): lang is SupportedLanguage {
  * Get the persisted locale from localStorage, or detect system locale
  */
 export function getInitialLocale(): SupportedLanguage {
+  // Return default if not in browser (e.g., Cloudflare Workers)
+  if (!isBrowser) {
+    return DEFAULT_LANGUAGE;
+  }
+
   const stored = localStorage.getItem(STORAGE_KEY);
   if (stored && isSupportedLanguage(stored)) {
     return stored;
@@ -166,7 +181,9 @@ export function getInitialLocale(): SupportedLanguage {
  * Persist locale preference to localStorage
  */
 export function persistLocale(locale: SupportedLanguage): void {
-  localStorage.setItem(STORAGE_KEY, locale);
+  if (isBrowser) {
+    localStorage.setItem(STORAGE_KEY, locale);
+  }
 }
 
 /**

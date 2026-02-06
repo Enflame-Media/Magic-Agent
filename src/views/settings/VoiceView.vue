@@ -28,6 +28,7 @@ import { useVoiceAccess } from '@/composables/useVoiceAccess';
 import { usePurchases } from '@/composables/usePurchases';
 import { useLocale } from '@/composables/useLocale';
 import { VOICE_LANGUAGES } from '@/services/voice/config';
+import ResponsiveContainer from '@/components/app/ResponsiveContainer.vue';
 
 const router = useRouter();
 const { voiceLanguage, setVoiceLanguage, voiceAssistantEnabled, setVoiceAssistantEnabled } = useVoice();
@@ -109,7 +110,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="container mx-auto px-4 py-6 max-w-2xl">
+  <ResponsiveContainer size="narrow" padding="default">
     <!-- Header -->
     <header class="flex items-center gap-4 mb-6">
       <Button variant="ghost" size="icon" @click="goBack">
@@ -280,5 +281,5 @@ onMounted(async () => {
     <p class="text-sm text-muted-foreground mt-4 px-1">
       {{ t('settingsVoice.language.footer', { count: voiceLanguages.length }, voiceLanguages.length) }}
     </p>
-  </div>
+  </ResponsiveContainer>
 </template>

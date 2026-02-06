@@ -22,6 +22,7 @@ import {
 import { createAuthSession } from '@/services/auth';
 import { useAuthStore } from '@/stores/auth';
 import { toast } from 'vue-sonner';
+import ResponsiveContainer from '@/components/app/ResponsiveContainer.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -132,7 +133,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="connecting-view">
+  <ResponsiveContainer size="narrow" padding="default" class="connecting-view">
     <div class="connecting-container">
       <!-- Header -->
       <div class="header">
@@ -228,23 +229,19 @@ onUnmounted(() => {
         </ol>
       </div>
     </div>
-  </div>
+  </ResponsiveContainer>
 </template>
 
 <style scoped>
 .connecting-view {
   min-height: 100vh;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 1.5rem;
-  padding-top: 3rem;
   background: hsl(var(--background));
 }
 
 .connecting-container {
   width: 100%;
   max-width: 420px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;

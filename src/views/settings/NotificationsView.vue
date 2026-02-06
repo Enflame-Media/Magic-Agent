@@ -11,6 +11,7 @@ import { useSettingsStore, type NotificationSettings } from '@/stores/settings';
 import { useLocale } from '@/composables/useLocale';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import ResponsiveContainer from '@/components/app/ResponsiveContainer.vue';
 
 const router = useRouter();
 const settingsStore = useSettingsStore();
@@ -30,7 +31,7 @@ function toggleSetting(key: keyof NotificationSettings) {
 </script>
 
 <template>
-  <div class="container mx-auto px-4 py-6 max-w-2xl">
+  <ResponsiveContainer size="narrow" padding="default">
     <header class="flex items-center gap-4 mb-6">
       <Button variant="ghost" size="icon" @click="goBack">
         <svg
@@ -174,5 +175,5 @@ function toggleSetting(key: keyof NotificationSettings) {
         </CardContent>
       </Card>
     </div>
-  </div>
+  </ResponsiveContainer>
 </template>

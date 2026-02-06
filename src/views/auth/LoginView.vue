@@ -8,6 +8,7 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import LoginForm from '@/components/new-york-v4/blocks/login-03/components/LoginForm.vue';
+import ResponsiveContainer from '@/components/app/ResponsiveContainer.vue';
 
 const router = useRouter();
 const isLoading = ref(false);
@@ -43,7 +44,7 @@ function goToManualEntry() {
           </p>
         </div>
       </div>
-      <div class="flex items-center justify-center px-6 py-12">
+      <ResponsiveContainer size="narrow" padding="comfortable" class="flex items-center justify-center">
         <LoginForm
           class="w-full max-w-sm"
           :is-loading="isLoading"
@@ -51,7 +52,7 @@ function goToManualEntry() {
           @scan="goToScanner"
           @manual="goToManualEntry"
         />
-      </div>
+      </ResponsiveContainer>
     </div>
   </div>
 </template>

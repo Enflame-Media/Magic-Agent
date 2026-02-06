@@ -17,6 +17,7 @@ import { ArrowLeft, Clipboard, CheckCircle2, AlertCircle, Loader2 } from 'lucide
 import { useAuth } from '@/composables/useAuth';
 import { CliConnectionError } from '@/services/auth';
 import { toast } from 'vue-sonner';
+import ResponsiveContainer from '@/components/app/ResponsiveContainer.vue';
 
 const router = useRouter();
 const { connectToCli, authenticateWithSecret, parseQRCode, canApproveConnections } = useAuth();
@@ -150,7 +151,7 @@ function retry() {
 </script>
 
 <template>
-  <div class="manual-entry-view">
+  <ResponsiveContainer size="narrow" padding="default" class="manual-entry-view">
     <div class="entry-container">
       <!-- Header -->
       <div class="header">
@@ -264,23 +265,19 @@ function retry() {
         </ol>
       </div>
     </div>
-  </div>
+  </ResponsiveContainer>
 </template>
 
 <style scoped>
 .manual-entry-view {
   min-height: 100vh;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 1.5rem;
-  padding-top: 3rem;
   background: hsl(var(--background));
 }
 
 .entry-container {
   width: 100%;
   max-width: 420px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;

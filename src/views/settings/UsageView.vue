@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { usePlanLimits } from '@/composables/usePlanLimits';
 import { usePerformanceMonitor } from '@/composables/usePerformanceMonitor';
+import ResponsiveContainer from '@/components/app/ResponsiveContainer.vue';
 
 const router = useRouter();
 const { limit, used, resetAt, refreshLimits } = usePlanLimits();
@@ -22,7 +23,7 @@ function goBack() {
 </script>
 
 <template>
-  <div class="container mx-auto px-4 py-6 max-w-2xl">
+  <ResponsiveContainer size="narrow" padding="default">
     <header class="flex items-center gap-4 mb-6">
       <Button variant="ghost" size="icon" @click="goBack">
         <svg
@@ -83,5 +84,5 @@ function goBack() {
         </CardContent>
       </Card>
     </div>
-  </div>
+  </ResponsiveContainer>
 </template>
