@@ -84,6 +84,7 @@ struct PairingConfirmationView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
+                .accessibilityIdentifier("confirmPairingButton")
 
                 Button("pairing.scanAgain".localized) {
                     onCancel()
@@ -95,6 +96,7 @@ struct PairingConfirmationView: View {
             Spacer()
         }
         .padding()
+        .accessibilityIdentifier("pairingConfirmationView")
         .navigationTitle("pairing.navigationTitle".localized)
         .navigationBarTitleDisplayMode(.inline)
     }

@@ -1,0 +1,65 @@
+# Copyright (c) 2024-2026 Enflame Media. All rights reserved.
+#
+# SwiftLint configuration for Happy iOS
+
+included:
+  - Happy
+  - HappyTests
+  - HappyUITests
+
+excluded:
+  - build
+  - Pods
+  - vendor
+  - Happy/Generated
+
+disabled_rules:
+  - trailing_comma
+  - type_body_length
+
+opt_in_rules:
+  - empty_count
+  - closure_spacing
+  - contains_over_filter_count
+  - contains_over_first_not_nil
+  - discouraged_object_literal
+  - empty_string
+  - first_where
+  - last_where
+  - modifier_order
+  - overridden_super_call
+  - private_action
+  - private_outlet
+  - redundant_nil_coalescing
+  - sorted_first_last
+
+line_length:
+  warning: 140
+  error: 200
+
+file_length:
+  warning: 500
+  error: 1000
+
+type_name:
+  min_length: 3
+  max_length: 50
+
+identifier_name:
+  min_length: 2
+  max_length: 50
+  excluded:
+    - id
+    - i
+    - j
+    - x
+    - y
+    - z
+
+function_body_length:
+  warning: 60
+  error: 100
+
+nesting:
+  type_level: 3
+  function_level: 3

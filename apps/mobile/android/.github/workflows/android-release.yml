@@ -3,6 +3,9 @@
 # GitHub Actions release workflow for Happy Android
 # Builds signed release APK/AAB and deploys to Google Play internal testing
 #
+# Uses Fastlane lanes for centralized build process management.
+# Version code is auto-generated from git commit count (base 1000 + commit count).
+#
 # Security: All workflow_dispatch inputs are passed through env: blocks
 # and referenced as shell variables to prevent command injection.
 #
@@ -23,9 +26,10 @@ on:
         required: true
         type: string
       version_code:
-        description: 'Version code (integer, e.g., 12)'
-        required: true
+        description: 'Version code override (leave empty for auto-increment from git commit count)'
+        required: false
         type: string
+        default: ''
       track:
         description: 'Google Play release track'
         required: true
@@ -49,7 +53,11 @@ concurrency:
 env:
   JAVA_VERSION: "17"
   JAVA_DISTRIBUTION: "temurin"
+  RUBY_VERSION: "3.2"
   GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.parallel=true"
+  BUNDLE_GEMFILE: fastlane/Gemfile
+  FASTLANE_SKIP_UPDATE_CHECK: "1"
+  FASTLANE_HIDE_CHANGELOG: "1"
 
 jobs:
   # ---------------------------------------------------------------------------
@@ -63,6 +71,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history needed for git commit count version code
 
       - name: Set up JDK
         uses: actions/setup-java@v4
@@ -75,14 +85,20 @@ jobs:
         with:
           cache-read-only: true
 
+      - name: Set up Ruby and install Fastlane
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
+
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
       - name: Run unit tests
-        run: ./gradlew testReleaseUnitTest --stacktrace
+        run: bundle exec fastlane test
 
       - name: Run lint checks
-        run: ./gradlew lintRelease --stacktrace
+        run: bundle exec fastlane lint
 
   # ---------------------------------------------------------------------------
   # Job: Build signed release and deploy
@@ -97,6 +113,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history needed for git commit count version code
 
       - name: Set up JDK
         uses: actions/setup-java@v4
@@ -109,6 +127,12 @@ jobs:
         with:
           cache-read-only: true
 
+      - name: Set up Ruby and install Fastlane
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
+
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
@@ -118,31 +142,31 @@ jobs:
         run: |
           echo "$KEYSTORE_FILE" | base64 --decode > app/release-keystore.jks
 
-      - name: Build signed release APK
+      - name: Compute version code
+        id: version
         env:
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          INPUT_VERSION_CODE: ${{ github.event.inputs.version_code }}
         run: |
-          ./gradlew assembleRelease \
-            -Pandroid.injected.signing.store.file="$PWD/app/release-keystore.jks" \
-            -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
-            -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
-            -Pandroid.injected.signing.key.password="$KEY_PASSWORD" \
-            --stacktrace
+          if [ -n "$INPUT_VERSION_CODE" ]; then
+            echo "code=$INPUT_VERSION_CODE" >> "$GITHUB_OUTPUT"
+            echo "Version code (manual override): $INPUT_VERSION_CODE"
+          else
+            COMMIT_COUNT=$(git rev-list --count HEAD)
+            AUTO_CODE=$((1000 + COMMIT_COUNT))
+            echo "code=$AUTO_CODE" >> "$GITHUB_OUTPUT"
+            echo "Version code (auto): $AUTO_CODE (base 1000 + $COMMIT_COUNT commits)"
+          fi
 
-      - name: Build signed release AAB
+      - name: Set version code and build release
         env:
+          KEYSTORE_FILE: ${{ github.workspace }}/app/release-keystore.jks
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          FL_VERSION_CODE: ${{ steps.version.outputs.code }}
         run: |
-          ./gradlew bundleRelease \
-            -Pandroid.injected.signing.store.file="$PWD/app/release-keystore.jks" \
-            -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
-            -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
-            -Pandroid.injected.signing.key.password="$KEY_PASSWORD" \
-            --stacktrace
+          bundle exec fastlane set_version_code code:"$FL_VERSION_CODE"
+          bundle exec fastlane build_release skip_version_code:true
 
       - name: Clean up keystore
         if: always()
@@ -162,26 +186,23 @@ jobs:
           path: app/build/outputs/bundle/release/*.aab
           retention-days: 90
 
-      - name: Upload to Google Play
-        uses: r0adkll/upload-google-play@v1
-        with:
-          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
-          packageName: com.enflame.happy
-          releaseFiles: app/build/outputs/bundle/release/*.aab
-          track: ${{ github.event.inputs.track }}
-          whatsNewDirectory: fastlane/metadata/android/en-US/changelogs
-          status: completed
+      - name: Deploy to Google Play
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          bundle exec fastlane deploy_internal skip_build:true
         continue-on-error: true
 
       - name: Create GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION_NAME: ${{ github.event.inputs.version }}
+          VERSION_CODE: ${{ steps.version.outputs.code }}
           CHANGELOG: ${{ github.event.inputs.changelog }}
         run: |
           APK_PATH=$(find app/build/outputs/apk/release -name "*.apk" | head -1)
           gh release create "android/v${VERSION_NAME}" \
-            --title "Happy Android v${VERSION_NAME}" \
+            --title "Happy Android v${VERSION_NAME} (${VERSION_CODE})" \
             --notes "${CHANGELOG:-Bug fixes and improvements.}" \
             "$APK_PATH"
 

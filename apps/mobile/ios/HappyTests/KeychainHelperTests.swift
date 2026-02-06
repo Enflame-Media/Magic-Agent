@@ -33,10 +33,12 @@ final class KeychainHelperTests: XCTestCase {
         XCTAssertEqual(KeychainHelper.Key.machineId.rawValue, "machine_id")
         XCTAssertEqual(KeychainHelper.Key.accountId.rawValue, "account_id")
         XCTAssertEqual(KeychainHelper.Key.serverUrl.rawValue, "server_url")
+        XCTAssertEqual(KeychainHelper.Key.deviceToken.rawValue, "apns_device_token")
+        XCTAssertEqual(KeychainHelper.Key.elevenLabsApiKey.rawValue, "elevenlabs_api_key")
     }
 
     func testKeyCaseIterableCount() {
-        XCTAssertEqual(KeychainHelper.Key.allCases.count, 8)
+        XCTAssertEqual(KeychainHelper.Key.allCases.count, 10)
     }
 
     // MARK: - Save and Read (String)

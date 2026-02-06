@@ -3,6 +3,7 @@
 # GitHub Actions CI workflow for Happy Android
 # Runs build, tests, and code quality checks on pull requests and pushes to main
 #
+# Uses Fastlane lanes for centralized build process management.
 # Secrets required: none (CI only uses debug builds)
 
 name: Android CI
@@ -36,7 +37,11 @@ concurrency:
 env:
   JAVA_VERSION: "17"
   JAVA_DISTRIBUTION: "temurin"
+  RUBY_VERSION: "3.2"
   GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.parallel=true"
+  BUNDLE_GEMFILE: fastlane/Gemfile
+  FASTLANE_SKIP_UPDATE_CHECK: "1"
+  FASTLANE_HIDE_CHANGELOG: "1"
 
 jobs:
   # ---------------------------------------------------------------------------
@@ -62,11 +67,17 @@ jobs:
         with:
           cache-read-only: ${{ github.ref != 'refs/heads/main' }}
 
+      - name: Set up Ruby and install Fastlane
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
+
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
       - name: Build debug APK
-        run: ./gradlew assembleDebug --stacktrace
+        run: bundle exec fastlane build_debug
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
@@ -99,11 +110,17 @@ jobs:
         with:
           cache-read-only: ${{ github.ref != 'refs/heads/main' }}
 
+      - name: Set up Ruby and install Fastlane
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
+
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
       - name: Run unit tests
-        run: ./gradlew testDebugUnitTest --stacktrace
+        run: bundle exec fastlane test
 
       - name: Generate test coverage report
         if: always()
@@ -151,11 +168,17 @@ jobs:
         with:
           cache-read-only: ${{ github.ref != 'refs/heads/main' }}
 
+      - name: Set up Ruby and install Fastlane
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
+
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
-      - name: Run Android Lint
-        run: ./gradlew lintDebug --stacktrace
+      - name: Run lint and Detekt via Fastlane
+        run: bundle exec fastlane lint
 
       - name: Upload lint results
         if: always()
@@ -166,10 +189,6 @@ jobs:
             app/build/reports/lint-results-debug.html
             app/build/reports/lint-results-debug.xml
           retention-days: 14
-
-      - name: Run Detekt
-        run: ./gradlew detekt --stacktrace
-        continue-on-error: true
 
       - name: Upload Detekt results
         if: always()

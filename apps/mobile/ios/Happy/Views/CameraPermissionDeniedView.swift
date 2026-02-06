@@ -51,6 +51,7 @@ struct CameraPermissionDeniedView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
+                .accessibilityIdentifier("openSettingsButton")
 
                 Button("common.goBack".localized) {
                     dismiss()
@@ -62,6 +63,7 @@ struct CameraPermissionDeniedView: View {
             Spacer()
         }
         .padding()
+        .accessibilityIdentifier("cameraPermissionDeniedView")
         .navigationTitle("camera.navigationTitle".localized)
         .navigationBarTitleDisplayMode(.inline)
     }

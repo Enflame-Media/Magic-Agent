@@ -4,8 +4,16 @@
 #
 # Appfile - App metadata for Fastlane
 # For more information: https://docs.fastlane.tools/advanced/Appfile/
+#
+# IMPORTANT: Set the following environment variables in CI secrets:
+#   APPLE_ID      - Apple Developer account email
+#   ITC_TEAM_ID   - App Store Connect team ID (numeric, from App Store Connect > Users)
+#   TEAM_ID       - Apple Developer Portal team ID (from developer.apple.com > Membership)
+#
+# For local development, export these in your shell or use a .env file.
+# The placeholders below will cause Fastlane to fail clearly if env vars are missing.
 
 app_identifier("media.enflame.happy.ios")
-apple_id(ENV["APPLE_ID"] || "apple-id@enflame.media")
-itc_team_id(ENV["ITC_TEAM_ID"] || "ITC_TEAM_ID_HERE")
-team_id(ENV["TEAM_ID"] || "TEAM_ID_HERE")
+apple_id(ENV.fetch("APPLE_ID", "apple-id@enflame.media"))
+itc_team_id(ENV.fetch("ITC_TEAM_ID") { raise "ITC_TEAM_ID environment variable is required. Set it in CI secrets or export locally." })
+team_id(ENV.fetch("TEAM_ID") { raise "TEAM_ID environment variable is required. Set it in CI secrets or export locally." })

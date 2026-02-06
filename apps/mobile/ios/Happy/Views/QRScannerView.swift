@@ -62,6 +62,7 @@ struct QRScannerView: View {
                 errorView(message: message)
             }
         }
+        .accessibilityIdentifier("qrScannerView")
         .navigationTitle("scanner.title".localized)
         .navigationBarTitleDisplayMode(.inline)
         .toolbarColorScheme(.dark, for: .navigationBar)

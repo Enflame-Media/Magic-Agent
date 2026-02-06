@@ -105,4 +105,3 @@ jobs:
 
       - name: Run SwiftLint
         run: swiftlint lint --strict --reporter github-actions-logging
-        continue-on-error: true

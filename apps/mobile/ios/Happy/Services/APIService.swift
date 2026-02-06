@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftUI
 
 // MARK: - Configuration
 
@@ -45,8 +46,21 @@ actor APIService: APIServiceProtocol {
     private let baseURL: URL
     private let session: URLSession
 
-    init(baseURL: URL = APIConfiguration.baseURL, session: URLSession? = nil) {
+    /// Maximum number of retry attempts for transient failures (429, 503).
+    private let maxRetries: Int
+
+    /// Base delay in seconds for exponential backoff between retries.
+    private let baseRetryDelay: TimeInterval
+
+    init(
+        baseURL: URL = APIConfiguration.baseURL,
+        session: URLSession? = nil,
+        maxRetries: Int = 3,
+        baseRetryDelay: TimeInterval = 1.0
+    ) {
         self.baseURL = baseURL
+        self.maxRetries = maxRetries
+        self.baseRetryDelay = baseRetryDelay
 
         if let session = session {
             self.session = session
@@ -96,6 +110,20 @@ actor APIService: APIServiceProtocol {
         request.httpMethod = "PUT"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONEncoder().encode(body)
+
+        if authenticated {
+            try addAuthHeader(to: &request)
+        }
+
+        let (data, response) = try await performRequest(request)
+        try handleHTTPError(response: response)
+        return try decodeResponse(data)
+    }
+
+    func delete<T: Decodable>(_ endpoint: String, authenticated: Bool = true) async throws -> T {
+        let url = baseURL.appendingPathComponent(endpoint)
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
 
         if authenticated {
             try addAuthHeader(to: &request)
@@ -183,18 +211,63 @@ actor APIService: APIServiceProtocol {
     // MARK: - Private Helpers
 
     private func performRequest(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
-        let (data, response): (Data, URLResponse)
-        do {
-            (data, response) = try await session.data(for: request)
-        } catch {
-            throw APIError.networkError(error)
+        var lastError: Error?
+
+        for attempt in 0...maxRetries {
+            let (data, response): (Data, URLResponse)
+            do {
+                (data, response) = try await session.data(for: request)
+            } catch {
+                throw APIError.networkError(error)
+            }
+
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw APIError.invalidResponse
+            }
+
+            // Retry on 429 (rate limited) and 503 (service unavailable)
+            if isRetryableStatusCode(httpResponse.statusCode) && attempt < maxRetries {
+                let delay = retryDelay(for: attempt, response: httpResponse)
+                try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                lastError = APIError.httpError(statusCode: httpResponse.statusCode)
+                continue
+            }
+
+            return (data, httpResponse)
         }
 
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw APIError.invalidResponse
+        // Should not reach here, but handle gracefully
+        throw lastError ?? APIError.invalidResponse
+    }
+
+    /// Determines whether a status code should trigger a retry.
+    ///
+    /// - Parameter statusCode: The HTTP status code to check.
+    /// - Returns: `true` if the request should be retried.
+    private func isRetryableStatusCode(_ statusCode: Int) -> Bool {
+        statusCode == 429 || statusCode == 503
+    }
+
+    /// Calculates the retry delay using exponential backoff.
+    ///
+    /// Checks the `Retry-After` header first. If not present, uses
+    /// exponential backoff: `baseDelay * 2^attempt` with jitter.
+    ///
+    /// - Parameters:
+    ///   - attempt: The zero-based retry attempt number.
+    ///   - response: The HTTP response (checked for `Retry-After` header).
+    /// - Returns: The delay in seconds before the next retry.
+    private func retryDelay(for attempt: Int, response: HTTPURLResponse) -> TimeInterval {
+        // Respect Retry-After header if present
+        if let retryAfterString = response.value(forHTTPHeaderField: "Retry-After"),
+           let retryAfterSeconds = TimeInterval(retryAfterString) {
+            return retryAfterSeconds
         }
 
-        return (data, httpResponse)
+        // Exponential backoff: base * 2^attempt with jitter
+        let exponentialDelay = baseRetryDelay * pow(2.0, Double(attempt))
+        let jitter = Double.random(in: 0...0.5)
+        return exponentialDelay + jitter
     }
 
     private func addAuthHeader(to request: inout URLRequest) throws {
@@ -250,6 +323,7 @@ enum APIError: LocalizedError, Equatable {
     case rateLimited
     case serverError(statusCode: Int)
     case networkError(Error)
+    case retryExhausted(lastStatusCode: Int, attempts: Int)
 
     var errorDescription: String? {
         switch self {
@@ -275,6 +349,8 @@ enum APIError: LocalizedError, Equatable {
             return "Server error (\(statusCode)). Please try again later."
         case .networkError(let error):
             return "Network error: \(error.localizedDescription)"
+        case .retryExhausted(let lastStatusCode, let attempts):
+            return "Request failed after \(attempts) retries (last status: \(lastStatusCode))."
         }
     }
 
@@ -292,6 +368,8 @@ enum APIError: LocalizedError, Equatable {
             return a == b
         case (.serverError(let a), .serverError(let b)):
             return a == b
+        case (.retryExhausted(let a1, let a2), .retryExhausted(let b1, let b2)):
+            return a1 == b1 && a2 == b2
         case (.decodingError, .decodingError):
             return true
         case (.networkError, .networkError):
@@ -299,5 +377,35 @@ enum APIError: LocalizedError, Equatable {
         default:
             return false
         }
+    }
+}
+
+// MARK: - SwiftUI Environment Key
+
+/// Environment key providing `APIService` for dependency injection in SwiftUI views.
+///
+/// Usage:
+/// ```swift
+/// struct MyView: View {
+///     @Environment(\.apiService) private var apiService
+///
+///     var body: some View {
+///         Button("Fetch") {
+///             Task {
+///                 let sessions: [Session] = try await apiService.fetchSessions()
+///             }
+///         }
+///     }
+/// }
+/// ```
+private struct APIServiceKey: EnvironmentKey {
+    static let defaultValue = APIService.shared
+}
+
+extension EnvironmentValues {
+    /// The API service instance used for network requests.
+    var apiService: APIService {
+        get { self[APIServiceKey.self] }
+        set { self[APIServiceKey.self] = newValue }
     }
 }

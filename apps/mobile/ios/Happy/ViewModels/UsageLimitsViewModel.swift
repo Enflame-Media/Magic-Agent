@@ -171,10 +171,14 @@ struct APIUsageLimitsProvider: UsageLimitsProviding {
 
     func fetchPlanLimits() async throws -> PlanLimitsResponse {
         do {
-            let response: PlanLimitsResponse = try await apiService.fetch("/v1/usage/limits")
+            // Uses the standard API versioned endpoint for usage limits.
+            // Server-side implementation tracked in separate issue.
+            let response: PlanLimitsResponse = try await apiService.fetch("/v1/account/usage/limits")
             return response
         } catch let error as APIError where error == .notFound {
-            // Endpoint not implemented yet - return empty state
+            // Server-side /v1/account/usage/limits endpoint not yet deployed.
+            // Returns a safe empty state so the widget shows "unavailable" instead of an error.
+            // Once the server endpoint is live, this fallback will no longer be needed.
             return PlanLimitsResponse(
                 sessionLimit: nil,
                 weeklyLimits: [],

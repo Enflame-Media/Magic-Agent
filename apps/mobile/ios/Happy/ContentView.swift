@@ -102,10 +102,12 @@ struct WelcomeView: View {
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
             .padding(.horizontal, 40)
+            .accessibilityIdentifier("welcomeScanButton")
 
             Spacer()
         }
         .padding()
+        .accessibilityIdentifier("welcomeView")
         .navigationTitle("welcome.navigationTitle".localized)
         .navigationBarTitleDisplayMode(.inline)
         .alert("common.error".localized, isPresented: $authViewModel.showError) {

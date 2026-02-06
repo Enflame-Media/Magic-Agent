@@ -18,6 +18,23 @@ struct KeychainHelper {
 
     private static let service = "com.enflamemedia.happy"
 
+    /// Keys that store cryptographic material or sensitive credentials.
+    /// These use `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly` to prevent
+    /// iCloud Keychain sync, ensuring private keys never leave the device.
+    private static let sensitiveKeys: Set<Key> = [
+        .privateKey, .publicKey, .peerPublicKey, .authToken, .refreshToken,
+        .elevenLabsApiKey
+    ]
+
+    /// Returns the appropriate accessibility level for a given key.
+    /// Sensitive keys (cryptographic material, tokens) use `ThisDeviceOnly`
+    /// to prevent iCloud Keychain sync.
+    private static func accessibility(for key: Key) -> CFString {
+        sensitiveKeys.contains(key)
+            ? kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+            : kSecAttrAccessibleAfterFirstUnlock
+    }
+
     // MARK: - Keys
 
     enum Key: String, CaseIterable {
@@ -36,6 +53,9 @@ struct KeychainHelper {
     // MARK: - Save
 
     /// Save data to the Keychain. Replaces existing items.
+    ///
+    /// Sensitive keys (private keys, tokens) use `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`
+    /// to prevent iCloud Keychain sync. Other keys use `kSecAttrAccessibleAfterFirstUnlock`.
     static func save(_ data: Data, for key: Key) throws {
         try? delete(key)
         let query: [String: Any] = [
@@ -43,7 +63,7 @@ struct KeychainHelper {
             kSecAttrService as String: service,
             kSecAttrAccount as String: key.rawValue,
             kSecValueData as String: data,
-            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock
+            kSecAttrAccessible as String: accessibility(for: key)
         ]
         let status = SecItemAdd(query as CFDictionary, nil)
         guard status == errSecSuccess else {
