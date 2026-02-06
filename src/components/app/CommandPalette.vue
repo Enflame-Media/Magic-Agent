@@ -7,7 +7,12 @@
  * - Application-wide actions (new session, settings, etc.)
  * - Theme toggling
  *
+ * Focus trapping is handled by the underlying CommandDialog > Dialog > DialogContent
+ * chain, which uses Reka-UI's FocusScope to trap Tab/Shift+Tab within the palette
+ * and restore focus to the trigger element when closed.
+ *
  * @see HAP-918 - Desktop Enhancements - Keyboard Shortcuts
+ * @see HAP-967 - Focus trapping in modals/dialogs
  */
 
 import { computed, ref, watch } from 'vue';

@@ -5,10 +5,15 @@
  * Displays available subscription packages and allows users to purchase.
  * Uses ShadCN-Vue Dialog components with a clean, modern design.
  *
+ * Focus trapping is provided by DialogContent (Reka-UI FocusScope).
+ * Tab/Shift+Tab cycles within the dialog; focus restores on close.
+ *
  * @example
  * ```vue
  * <PaywallDialog v-model:open="showPaywall" @purchased="handlePurchased" />
  * ```
+ *
+ * @see HAP-967 - Focus trapping in modals/dialogs
  */
 
 import { computed, ref } from 'vue';

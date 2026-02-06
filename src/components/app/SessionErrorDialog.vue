@@ -5,7 +5,11 @@
  * Modal dialog displayed when a session revival fails.
  * Shows the session ID with copy button and archive option.
  *
+ * Focus trapping is provided by DialogContent (Reka-UI FocusScope).
+ * Tab/Shift+Tab cycles within the dialog; focus restores on dismiss.
+ *
  * @see HAP-736 - Handle "Method not found" errors with session revival flow
+ * @see HAP-967 - Focus trapping in modals/dialogs
  */
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
