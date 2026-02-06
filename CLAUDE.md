@@ -43,6 +43,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | Error Codes | [`docs/errors/`](./docs/errors/) | CLI error code documentation |
 | Shared Types RFC | [`docs/RFC-SHARED-TYPES-PACKAGE.md`](./docs/RFC-SHARED-TYPES-PACKAGE.md) | Design decision for @happy/protocol |
 | API Versioning | [`docs/API-VERSIONING.md`](./docs/API-VERSIONING.md) | API versioning strategy |
+| Remote Logging | [`docs/REMOTE-LOGGING.md`](./docs/REMOTE-LOGGING.md) | Development debugging feature |
+| Mutation Testing | [`docs/MUTATION-TESTING.md`](./docs/MUTATION-TESTING.md) | Mutation testing best practices |
 
 ## Monorepo Structure
 

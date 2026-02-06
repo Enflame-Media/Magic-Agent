@@ -1,41 +1,42 @@
 {
-    "name": "@happy/lint-rules",
-    "version": "0.0.1",
-    "description": "Custom oxlint/ESLint rules for the Happy monorepo",
-    "type": "module",
-    "main": "./src/index.js",
-    "exports": {
-        ".": "./src/index.js",
-        "./github-casing": "./src/rules/github-casing.js",
-        "./protocol-helpers": "./src/rules/protocol-helpers.js"
-    },
-    "files": [
-        "src"
-    ],
-    "scripts": {
-        "lint": "oxlint src/",
-        "lint:fix": "oxlint --fix src/",
-        "format": "oxfmt src/",
-        "format:check": "oxfmt --check src/",
-        "test": "vitest run",
-        "test:watch": "vitest"
-    },
-    "keywords": [
-        "eslint",
-        "oxlint",
-        "linting",
-        "happy"
-    ],
-    "author": "Enflame Media",
-    "license": "UNLICENSED",
-    "private": true,
-    "devDependencies": {
-        "@typescript-eslint/parser": "^8.52.0",
-        "eslint": "^9.39.2",
-        "oxlint": "^1.38.0",
-        "vitest": "^4.0.16"
-    },
-    "peerDependencies": {
-        "oxlint": ">=1.36.0"
-    }
+  "name": "@happy/lint-rules",
+  "version": "0.0.1",
+  "description": "Custom oxlint/ESLint rules for the Happy monorepo",
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./github-casing": "./src/rules/github-casing.js",
+    "./protocol-helpers": "./src/rules/protocol-helpers.js"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "preinstall": "node -e \"if(!process.env.INIT_CWD?.endsWith('/happy')){console.error('❌ Run yarn install from monorepo root');process.exit(1)}\"",
+    "lint": "oxlint src/",
+    "lint:fix": "oxlint --fix src/",
+    "format": "oxfmt src/",
+    "format:check": "oxfmt --check src/",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": [
+    "eslint",
+    "oxlint",
+    "linting",
+    "happy"
+  ],
+  "author": "Enflame Media",
+  "license": "UNLICENSED",
+  "private": true,
+  "devDependencies": {
+    "@typescript-eslint/parser": "^8.54.0",
+    "eslint": "^9.39.2",
+    "oxlint": "^1.43.0",
+    "vitest": "^4.0.18"
+  },
+  "peerDependencies": {
+    "oxlint": ">=1.36.0"
+  }
 }

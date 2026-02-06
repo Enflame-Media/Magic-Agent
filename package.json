@@ -8,15 +8,11 @@
     "dev/lint-rules",
     "apps/cli",
     "apps/server/workers",
-    "apps/web/react",
     "apps/web/vue",
-    "apps/admin/web",
-    "apps/admin/api",
-    "apps/macos",
-    "apps/mobile/ios",
-    "apps/mobile/android"
+    "apps/admin/*"
   ],
   "scripts": {
+    "preinstall": "node -e \"const p=require('path');if(process.cwd()!==p.dirname(p.resolve('./package.json'))){console.error('\\n❌ Run yarn install from the monorepo root:\\n   cd '+p.dirname(p.resolve('./package.json'))+'\\n');process.exit(1)}\"",
     "postinstall": "yarn workspace @happy/errors build && yarn workspace @happy/protocol build",
     "build": "turbo run build",
     "build:errors": "yarn workspace @happy/errors build",
@@ -40,21 +36,12 @@
     "deploy:stack:dev": "turbo run deploy:dev --filter=happy-server-workers --filter=happy"
   },
   "devDependencies": {
-    "oxfmt": "^0.23.0",
-    "oxlint": "^1.36.0",
-    "tsx": "^4.20.1",
-    "turbo": "^2.5.3"
+    "oxfmt": "^0.28.0",
+    "oxlint": "^1.43.0",
+    "tsx": "^4.21.0",
+    "turbo": "^2.8.3"
   },
   "engines": {
-    "node": ">=18.0.0"
-  },
-  "resolutions": {
-    "@react-navigation/native": "7.1.26",
-    "@react-navigation/core": "7.13.7",
-    "@react-navigation/elements": "2.9.3",
-    "@react-navigation/native-stack": "7.9.0",
-    "@react-navigation/bottom-tabs": "7.8.12",
-    "@react-navigation/routers": "7.5.3",
-    "miniflare/zod": "3.22.3"
+    "node": ">=22.0.0"
   }
 }
