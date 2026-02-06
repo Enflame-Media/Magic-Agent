@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Computer
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Update
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -97,6 +98,24 @@ fun SessionHeader(
                     value = formatTimestamp(session.updatedAt)
                 )
             }
+
+            // Status
+            SessionHeaderRow(
+                icon = {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                },
+                label = stringResource(R.string.session_detail_status),
+                value = {
+                    SessionStatusLabel(
+                        status = session.status
+                    )
+                }
+            )
         }
     }
 }
@@ -128,6 +147,35 @@ private fun SessionHeaderRow(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+    }
+}
+
+/**
+ * A single row in the session header displaying a label with a composable value and an icon.
+ *
+ * This overload allows rendering a custom composable (e.g., [SessionStatusLabel])
+ * instead of a plain text value.
+ */
+@Composable
+private fun SessionHeaderRow(
+    icon: @Composable () -> Unit,
+    label: String,
+    value: @Composable () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        icon()
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.weight(1f))
+        value()
     }
 }
 

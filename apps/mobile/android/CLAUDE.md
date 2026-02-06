@@ -325,6 +325,7 @@ class HomeScreenTest {
 | i18n (7 Languages) | Complete | en, es, fr, de, ja, zh-CN, ko with plurals, in-app picker (HAP-1001) |
 | CI/CD Pipeline | Complete | GitHub Actions CI + Release, Fastlane, Detekt, Dependabot (HAP-1004) |
 | Friends & Social | Complete | Friend list, requests, QR add, profiles, search, filter (HAP-1003) |
+| WebSocket Lifecycle Management | Complete | SyncLifecycleManager with ProcessLifecycleOwner (HAP-1017) |
 
 ### Next Steps
 

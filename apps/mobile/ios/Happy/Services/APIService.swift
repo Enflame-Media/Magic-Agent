@@ -128,6 +128,58 @@ actor APIService: APIServiceProtocol {
         return response.messages
     }
 
+    // MARK: - Device Token Registration
+
+    /// Register or update the APNs device token with the server.
+    ///
+    /// Sends the device token to happy-server so it can deliver push
+    /// notifications to this device. Called automatically after APNs
+    /// registration succeeds.
+    ///
+    /// - Parameter token: The hex-encoded APNs device token string.
+    func registerDeviceToken(_ token: String) async throws {
+        struct DeviceTokenRequest: Encodable {
+            let deviceToken: String
+            let platform: String
+            let bundleId: String
+        }
+
+        struct DeviceTokenResponse: Decodable {
+            let success: Bool
+        }
+
+        let body = DeviceTokenRequest(
+            deviceToken: token,
+            platform: "ios",
+            bundleId: Bundle.main.bundleIdentifier ?? "com.enflamemedia.happy"
+        )
+
+        let _: DeviceTokenResponse = try await post("/v1/devices/register", body: body)
+    }
+
+    /// Unregister the device token from the server.
+    ///
+    /// Called during logout to stop receiving push notifications.
+    ///
+    /// - Parameter token: The hex-encoded APNs device token string.
+    func unregisterDeviceToken(_ token: String) async throws {
+        struct DeviceTokenRequest: Encodable {
+            let deviceToken: String
+            let platform: String
+        }
+
+        struct DeviceTokenResponse: Decodable {
+            let success: Bool
+        }
+
+        let body = DeviceTokenRequest(
+            deviceToken: token,
+            platform: "ios"
+        )
+
+        let _: DeviceTokenResponse = try await post("/v1/devices/unregister", body: body)
+    }
+
     // MARK: - Private Helpers
 
     private func performRequest(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {

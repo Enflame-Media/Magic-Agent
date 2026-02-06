@@ -35,6 +35,7 @@ struct NotificationSettingsView: View {
                     Toggle("notifications.sessionUpdates".localized, isOn: $viewModel.sessionUpdatesEnabled)
                     Toggle("notifications.messages".localized, isOn: $viewModel.messagesEnabled)
                     Toggle("notifications.pairingRequests".localized, isOn: $viewModel.pairingEnabled)
+                    Toggle("notifications.toolApproval".localized, isOn: $viewModel.toolApprovalEnabled)
                 } header: {
                     Text("notifications.notificationTypes".localized)
                 } footer: {

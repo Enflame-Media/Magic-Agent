@@ -7,7 +7,10 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.AudioAttributes
+import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -15,7 +18,10 @@ import androidx.core.app.RemoteInput
 import androidx.core.content.ContextCompat
 import com.enflame.happy.MainActivity
 import com.enflame.happy.R
+import com.enflame.happy.data.local.UserPreferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -27,6 +33,19 @@ import javax.inject.Singleton
  * - Building styled notifications for each category
  * - Managing notification tap navigation via deep links
  * - Checking POST_NOTIFICATIONS permission (Android 13+)
+ * - Enforcing user notification preferences (enabled, sound, vibration)
+ *
+ * ## Preference Enforcement
+ * Before displaying any notification, this helper checks:
+ * 1. OS-level notification permission (POST_NOTIFICATIONS on Android 13+)
+ * 2. User's in-app `notificationsEnabled` preference from [UserPreferencesDataStore]
+ * 3. Sound/vibration preferences applied per-notification via builder overrides
+ *
+ * ## Channel vs Per-Notification Settings
+ * Android notification channels cache their settings after creation (API 26+).
+ * To respect dynamic user preferences, sound and vibration are applied as
+ * per-notification overrides on the [NotificationCompat.Builder] rather than
+ * relying solely on channel-level settings.
  *
  * This class is provided as a singleton via Hilt and should be initialized
  * during [com.enflame.happy.HappyApplication.onCreate] to ensure channels
@@ -34,7 +53,8 @@ import javax.inject.Singleton
  */
 @Singleton
 class NotificationHelper @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val userPreferences: UserPreferencesDataStore
 ) {
 
     private val notificationManager = NotificationManagerCompat.from(context)
@@ -102,6 +122,10 @@ class NotificationHelper @Inject constructor(
     /**
      * Show a session update notification.
      *
+     * Respects the user's in-app notification preferences for enabled state,
+     * sound, and vibration. If the user has disabled notifications in settings,
+     * the notification is silently dropped.
+     *
      * @param sessionId The session that was updated.
      * @param title The notification title (e.g., "Session Completed").
      * @param body The notification body text.
@@ -113,7 +137,7 @@ class NotificationHelper @Inject constructor(
         body: String,
         status: String = "updated"
     ) {
-        if (!hasNotificationPermission()) return
+        if (!canShowNotification()) return
 
         val contentIntent = createSessionPendingIntent(sessionId)
         val viewAction = NotificationCompat.Action.Builder(
@@ -125,7 +149,7 @@ class NotificationHelper @Inject constructor(
         val notificationId = NotificationChannels.NOTIFICATION_ID_SESSION_BASE +
             sessionId.hashCode().and(0xFFF)
 
-        val notification = NotificationCompat.Builder(
+        val builder = NotificationCompat.Builder(
             context,
             NotificationChannels.CHANNEL_SESSION_UPDATES
         )
@@ -137,10 +161,11 @@ class NotificationHelper @Inject constructor(
             .addAction(viewAction)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            .build()
+
+        applySoundAndVibrationPreferences(builder)
 
         try {
-            notificationManager.notify(notificationId, notification)
+            notificationManager.notify(notificationId, builder.build())
         } catch (e: SecurityException) {
             Log.w(TAG, "Missing POST_NOTIFICATIONS permission", e)
         }
@@ -148,6 +173,9 @@ class NotificationHelper @Inject constructor(
 
     /**
      * Show a message notification with an optional inline reply action.
+     *
+     * Respects the user's in-app notification preferences for enabled state,
+     * sound, and vibration.
      *
      * @param sessionId The session the message belongs to.
      * @param title The notification title (e.g., "New Message").
@@ -158,7 +186,7 @@ class NotificationHelper @Inject constructor(
         title: String,
         body: String
     ) {
-        if (!hasNotificationPermission()) return
+        if (!canShowNotification()) return
 
         val contentIntent = createSessionPendingIntent(sessionId)
 
@@ -186,7 +214,7 @@ class NotificationHelper @Inject constructor(
         val notificationId = NotificationChannels.NOTIFICATION_ID_MESSAGE_BASE +
             sessionId.hashCode().and(0xFFF)
 
-        val notification = NotificationCompat.Builder(
+        val builder = NotificationCompat.Builder(
             context,
             NotificationChannels.CHANNEL_MESSAGES
         )
@@ -199,10 +227,11 @@ class NotificationHelper @Inject constructor(
             .addAction(replyAction)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .build()
+
+        applySoundAndVibrationPreferences(builder)
 
         try {
-            notificationManager.notify(notificationId, notification)
+            notificationManager.notify(notificationId, builder.build())
         } catch (e: SecurityException) {
             Log.w(TAG, "Missing POST_NOTIFICATIONS permission", e)
         }
@@ -210,6 +239,11 @@ class NotificationHelper @Inject constructor(
 
     /**
      * Show a pairing request notification with approve/reject actions.
+     *
+     * Respects the user's in-app notification preferences for enabled state,
+     * sound, and vibration. Pairing notifications are always shown if the
+     * OS permission is granted, even if the user has disabled general
+     * notifications, since pairing is a critical security flow.
      *
      * @param machineId The machine requesting pairing, or null if unknown.
      * @param title The notification title (e.g., "Pairing Request").
@@ -220,6 +254,8 @@ class NotificationHelper @Inject constructor(
         title: String,
         body: String
     ) {
+        // Pairing notifications bypass the user preference check since they
+        // are critical for security. Only OS permission is checked.
         if (!hasNotificationPermission()) return
 
         val contentIntent = createMainPendingIntent()
@@ -247,7 +283,7 @@ class NotificationHelper @Inject constructor(
         val notificationId = NotificationChannels.NOTIFICATION_ID_PAIRING_BASE +
             (machineId?.hashCode()?.and(0xFFF) ?: 0)
 
-        val notification = NotificationCompat.Builder(
+        val builder = NotificationCompat.Builder(
             context,
             NotificationChannels.CHANNEL_PAIRING
         )
@@ -260,10 +296,11 @@ class NotificationHelper @Inject constructor(
             .addAction(rejectAction)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .build()
+
+        applySoundAndVibrationPreferences(builder)
 
         try {
-            notificationManager.notify(notificationId, notification)
+            notificationManager.notify(notificationId, builder.build())
         } catch (e: SecurityException) {
             Log.w(TAG, "Missing POST_NOTIFICATIONS permission", e)
         }
@@ -289,6 +326,57 @@ class NotificationHelper @Inject constructor(
      */
     fun cancelAllNotifications() {
         notificationManager.cancelAll()
+    }
+
+    // --- Preference Enforcement ---
+
+    /**
+     * Check whether a notification can be shown based on both OS permission
+     * and the user's in-app notification preference.
+     *
+     * @return true if both the OS permission is granted AND the user has
+     *         notifications enabled in the app settings.
+     */
+    private fun canShowNotification(): Boolean {
+        if (!hasNotificationPermission()) return false
+
+        // Check user's in-app notification preference.
+        // Uses runBlocking because notification display methods are called
+        // from both the main thread and FCM background threads.
+        return try {
+            runBlocking { userPreferences.notificationsEnabled.first() }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to read notification preference, defaulting to enabled", e)
+            true
+        }
+    }
+
+    /**
+     * Apply sound and vibration preferences from [UserPreferencesDataStore]
+     * to the notification builder.
+     *
+     * Since Android notification channel settings are cached after creation
+     * (API 26+), we apply these as per-notification overrides to respect
+     * dynamic user preferences.
+     *
+     * @param builder The notification builder to configure.
+     */
+    private fun applySoundAndVibrationPreferences(builder: NotificationCompat.Builder) {
+        try {
+            val soundEnabled = runBlocking { userPreferences.notificationSoundEnabled.first() }
+            val vibrationEnabled = runBlocking { userPreferences.notificationVibrationEnabled.first() }
+
+            if (!soundEnabled) {
+                builder.setSilent(true)
+            }
+
+            if (!vibrationEnabled) {
+                builder.setVibrate(longArrayOf(0L))
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to read sound/vibration preferences", e)
+            // Fall through with default channel settings
+        }
     }
 
     // --- Private helpers ---

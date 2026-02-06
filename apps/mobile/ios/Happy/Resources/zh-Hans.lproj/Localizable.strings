@@ -66,6 +66,7 @@
 "notifications.sessionUpdates" = "会话更新";
 "notifications.messages" = "消息";
 "notifications.pairingRequests" = "配对请求";
+"notifications.toolApproval" = "工具审批";
 "notifications.debugInfo" = "调试信息";
 "notifications.deviceToken" = "设备令牌";
 

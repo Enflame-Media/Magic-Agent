@@ -2,9 +2,12 @@ package com.enflame.happy.data.notifications
 
 import android.util.Log
 import com.enflame.happy.data.local.TokenStorage
+import com.enflame.happy.data.local.UserPreferencesDataStore
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 
 /**
@@ -12,9 +15,11 @@ import javax.inject.Inject
  *
  * Handles the complete FCM lifecycle:
  * - **Token registration**: Stores new/refreshed FCM tokens in [TokenStorage]
- *   for later server registration.
+ *   and triggers server registration via [FcmTokenRegistrationManager].
  * - **Message processing**: Routes incoming push notifications to the
  *   appropriate [NotificationHelper] method based on the message type.
+ * - **Preference enforcement**: Checks user notification preferences from
+ *   [UserPreferencesDataStore] before displaying any notification.
  *
  * ## Notification Types
  * Matches the iOS APNs notification categories for feature parity:
@@ -24,7 +29,8 @@ import javax.inject.Inject
  *
  * ## Hilt Integration
  * Annotated with [@AndroidEntryPoint] to support field injection of
- * [TokenStorage] and [NotificationHelper] singletons.
+ * [TokenStorage], [NotificationHelper], [FcmTokenRegistrationManager],
+ * and [UserPreferencesDataStore] singletons.
  *
  * ## Manifest Registration
  * Must be registered in AndroidManifest.xml:
@@ -47,6 +53,12 @@ class HappyFirebaseMessagingService : FirebaseMessagingService() {
     @Inject
     lateinit var notificationHelper: NotificationHelper
 
+    @Inject
+    lateinit var tokenRegistrationManager: FcmTokenRegistrationManager
+
+    @Inject
+    lateinit var userPreferences: UserPreferencesDataStore
+
     /**
      * Called when a new FCM registration token is generated.
      *
@@ -56,8 +68,8 @@ class HappyFirebaseMessagingService : FirebaseMessagingService() {
      * - The user clears app data
      * - The token is rotated by FCM
      *
-     * The token is stored securely in [TokenStorage] for later registration
-     * with the Happy server during or after authentication.
+     * The token is stored securely in [TokenStorage] and registered
+     * with the Happy server via [FcmTokenRegistrationManager].
      *
      * @param token The new FCM registration token.
      */
@@ -65,18 +77,17 @@ class HappyFirebaseMessagingService : FirebaseMessagingService() {
         super.onNewToken(token)
         Log.d(TAG, "FCM token refreshed")
 
-        // Store the token securely for server registration
-        tokenStorage.saveString(KEY_FCM_TOKEN, token)
-
-        // If we have an auth token, the server registration should happen
-        // automatically when the app next syncs. The SettingsViewModel or
-        // a dedicated sync worker can handle server-side registration.
+        // Register the token with the server (handles storage + retry)
+        tokenRegistrationManager.registerToken(token)
     }
 
     /**
      * Called when an FCM message is received.
      *
      * Processes both data-only messages and notification+data messages.
+     * Checks user notification preferences before displaying - if the user
+     * has disabled notifications in settings, messages are silently dropped.
+     *
      * Routes to the appropriate notification builder based on the `type`
      * field in the data payload.
      *
@@ -85,6 +96,21 @@ class HappyFirebaseMessagingService : FirebaseMessagingService() {
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
         Log.d(TAG, "FCM message received from: ${message.from}")
+
+        // Check if user has disabled notifications in app preferences.
+        // Uses runBlocking because onMessageReceived runs on a background
+        // thread and we need the preference value synchronously.
+        val notificationsEnabled = try {
+            runBlocking { userPreferences.notificationsEnabled.first() }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to read notification preference, defaulting to enabled", e)
+            true
+        }
+
+        if (!notificationsEnabled) {
+            Log.d(TAG, "Notifications disabled by user preference, dropping message")
+            return
+        }
 
         val data = message.data
         val type = data["type"]

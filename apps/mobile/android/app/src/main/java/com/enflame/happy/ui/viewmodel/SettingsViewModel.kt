@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.enflame.happy.data.local.TokenStorage
 import com.enflame.happy.data.local.UserPreferencesDataStore
+import com.enflame.happy.data.notifications.FcmTokenRegistrationManager
 import com.enflame.happy.data.notifications.NotificationHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -57,7 +58,8 @@ data class SettingsUiState(
 class SettingsViewModel @Inject constructor(
     private val userPreferences: UserPreferencesDataStore,
     private val tokenStorage: TokenStorage,
-    private val notificationHelper: NotificationHelper
+    private val notificationHelper: NotificationHelper,
+    private val fcmTokenRegistrationManager: FcmTokenRegistrationManager
 ) : ViewModel() {
 
     private val _connectionState = MutableStateFlow(
@@ -196,6 +198,8 @@ class SettingsViewModel @Inject constructor(
     fun logout(onComplete: () -> Unit) {
         viewModelScope.launch {
             try {
+                // Unregister FCM token from server before clearing credentials
+                fcmTokenRegistrationManager.unregisterCurrentToken()
                 tokenStorage.clearAll()
                 userPreferences.clearAll()
                 notificationHelper.cancelAllNotifications()

@@ -24,6 +24,7 @@ final class NotificationSettingsViewModelTests: XCTestCase {
         defaults.removeObject(forKey: "notification_session_updates")
         defaults.removeObject(forKey: "notification_messages")
         defaults.removeObject(forKey: "notification_pairing")
+        defaults.removeObject(forKey: "notification_tool_approval")
     }
 
     override func tearDown() {
@@ -32,6 +33,7 @@ final class NotificationSettingsViewModelTests: XCTestCase {
         defaults.removeObject(forKey: "notification_session_updates")
         defaults.removeObject(forKey: "notification_messages")
         defaults.removeObject(forKey: "notification_pairing")
+        defaults.removeObject(forKey: "notification_tool_approval")
         super.tearDown()
     }
 
@@ -45,6 +47,7 @@ final class NotificationSettingsViewModelTests: XCTestCase {
         XCTAssertTrue(viewModel.sessionUpdatesEnabled)
         XCTAssertTrue(viewModel.messagesEnabled)
         XCTAssertTrue(viewModel.pairingEnabled)
+        XCTAssertTrue(viewModel.toolApprovalEnabled)
         XCTAssertFalse(viewModel.isEnabled)
         XCTAssertTrue(viewModel.isNotDetermined)
         XCTAssertFalse(viewModel.isRequestingPermission)
@@ -124,11 +127,28 @@ final class NotificationSettingsViewModelTests: XCTestCase {
         viewModel.sessionUpdatesEnabled = false
         viewModel.messagesEnabled = false
         viewModel.pairingEnabled = false
+        viewModel.toolApprovalEnabled = false
 
         // Assert
         let viewModel2 = NotificationSettingsViewModel()
         XCTAssertFalse(viewModel2.sessionUpdatesEnabled)
         XCTAssertFalse(viewModel2.messagesEnabled)
         XCTAssertFalse(viewModel2.pairingEnabled)
+        XCTAssertFalse(viewModel2.toolApprovalEnabled)
+    }
+
+    func testToolApprovalPreferencePersistence() {
+        // Arrange
+        let viewModel = NotificationSettingsViewModel()
+
+        // Act: Disable tool approval
+        viewModel.toolApprovalEnabled = false
+
+        // Assert
+        let stored = UserDefaults.standard.bool(forKey: "notification_tool_approval")
+        XCTAssertFalse(stored)
+
+        let viewModel2 = NotificationSettingsViewModel()
+        XCTAssertFalse(viewModel2.toolApprovalEnabled)
     }
 }

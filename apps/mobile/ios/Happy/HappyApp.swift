@@ -13,17 +13,58 @@ import UserNotifications
 ///
 /// Happy is a native iOS client for remote control and session sharing
 /// with Claude Code, providing end-to-end encrypted communication.
+///
+/// ## App Lifecycle (HAP-1013)
+/// Observes `scenePhase` to manage the WebSocket connection lifecycle:
+/// - **Background**: Disconnects the WebSocket to conserve battery
+/// - **Foreground**: Reconnects the WebSocket if it was previously connected
 @main
 struct HappyApp: App {
 
     /// The app delegate handling UIKit lifecycle events, including APNs registration.
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
+    /// Tracks the current scene phase for lifecycle management.
+    @Environment(\.scenePhase) private var scenePhase
+
     /// The main application body defining scenes and commands.
     var body: some Scene {
         // Main window
         WindowGroup {
             ContentView()
+        }
+        .onChange(of: scenePhase) { newPhase in
+            handleScenePhaseChange(newPhase)
+        }
+    }
+
+    /// Handle scene phase transitions for WebSocket lifecycle and badge management.
+    ///
+    /// Disconnects the WebSocket when the app enters the background to save
+    /// battery, and reconnects when returning to the foreground. Also clears
+    /// the notification badge on foreground.
+    ///
+    /// - Parameter phase: The new scene phase.
+    private func handleScenePhaseChange(_ phase: ScenePhase) {
+        switch phase {
+        case .background:
+            Task {
+                await SyncService.shared.handleAppDidEnterBackground()
+            }
+        case .active:
+            // Clear badge count when app comes to foreground
+            Task { @MainActor in
+                PushNotificationService.shared.resetBadgeCount()
+            }
+            // Reconnect WebSocket on foreground
+            Task {
+                await SyncService.shared.handleAppWillEnterForeground()
+            }
+        case .inactive:
+            // No action needed for inactive state (transitional)
+            break
+        @unknown default:
+            break
         }
     }
 }

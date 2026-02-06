@@ -66,6 +66,7 @@
 "notifications.sessionUpdates" = "Sitzungsaktualisierungen";
 "notifications.messages" = "Nachrichten";
 "notifications.pairingRequests" = "Kopplungsanfragen";
+"notifications.toolApproval" = "Werkzeuggenehmigung";
 "notifications.debugInfo" = "Debug-Info";
 "notifications.deviceToken" = "Geraete-Token";
 

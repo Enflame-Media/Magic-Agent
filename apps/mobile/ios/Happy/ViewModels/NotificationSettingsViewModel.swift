@@ -52,6 +52,11 @@ final class NotificationSettingsViewModel: ObservableObject {
         didSet { savePreferences() }
     }
 
+    /// Whether tool approval notifications are enabled.
+    @Published var toolApprovalEnabled: Bool = true {
+        didSet { savePreferences() }
+    }
+
     // MARK: - Dependencies
 
     private let pushService: PushNotificationService
@@ -142,6 +147,7 @@ final class NotificationSettingsViewModel: ObservableObject {
         static let sessionUpdates = "notification_session_updates"
         static let messages = "notification_messages"
         static let pairing = "notification_pairing"
+        static let toolApproval = "notification_tool_approval"
     }
 
     /// Save notification preferences to UserDefaults.
@@ -150,6 +156,7 @@ final class NotificationSettingsViewModel: ObservableObject {
         defaults.set(sessionUpdatesEnabled, forKey: PreferenceKey.sessionUpdates)
         defaults.set(messagesEnabled, forKey: PreferenceKey.messages)
         defaults.set(pairingEnabled, forKey: PreferenceKey.pairing)
+        defaults.set(toolApprovalEnabled, forKey: PreferenceKey.toolApproval)
     }
 
     /// Load notification preferences from UserDefaults.
@@ -165,6 +172,9 @@ final class NotificationSettingsViewModel: ObservableObject {
         }
         if defaults.object(forKey: PreferenceKey.pairing) != nil {
             pairingEnabled = defaults.bool(forKey: PreferenceKey.pairing)
+        }
+        if defaults.object(forKey: PreferenceKey.toolApproval) != nil {
+            toolApprovalEnabled = defaults.bool(forKey: PreferenceKey.toolApproval)
         }
     }
 }

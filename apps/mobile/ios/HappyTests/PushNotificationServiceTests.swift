@@ -64,7 +64,8 @@ final class PushNotificationServiceTests: XCTestCase {
         let categories = [
             PushNotificationService.Category.sessionUpdate,
             PushNotificationService.Category.message,
-            PushNotificationService.Category.pairing
+            PushNotificationService.Category.pairing,
+            PushNotificationService.Category.toolApproval
         ]
 
         XCTAssertEqual(categories.count, Set(categories).count, "Category identifiers must be unique")
@@ -81,6 +82,8 @@ final class PushNotificationServiceTests: XCTestCase {
             PushNotificationService.Action.reply,
             PushNotificationService.Action.approvePairing,
             PushNotificationService.Action.rejectPairing,
+            PushNotificationService.Action.approveTool,
+            PushNotificationService.Action.rejectTool,
             PushNotificationService.Action.dismiss
         ]
 
@@ -217,6 +220,67 @@ final class PushNotificationServiceTests: XCTestCase {
         XCTAssertEqual(result, .noData)
     }
 
+    // MARK: - Tool Approval Payload Tests
+
+    func testToolApprovalPayloadParsing() async {
+        // Arrange
+        let service = PushNotificationService.shared
+        let payload: [AnyHashable: Any] = [
+            "type": "tool_approval",
+            "sessionId": "session-789",
+            "toolName": "bash",
+            "requestId": "req-001",
+            "title": "Tool Approval Required",
+            "body": "bash is requesting permission to run."
+        ]
+
+        // Act
+        let result = await service.handleRemoteNotification(payload)
+
+        // Assert
+        XCTAssertEqual(result, .newData)
+    }
+
+    func testToolApprovalWithMissingSessionId() async {
+        // Arrange
+        let service = PushNotificationService.shared
+        let payload: [AnyHashable: Any] = [
+            "type": "tool_approval",
+            "toolName": "bash"
+            // Missing sessionId
+        ]
+
+        // Act
+        let result = await service.handleRemoteNotification(payload)
+
+        // Assert
+        XCTAssertEqual(result, .noData)
+    }
+
+    func testToolApprovalWithMinimalPayload() async {
+        // Arrange
+        let service = PushNotificationService.shared
+        let payload: [AnyHashable: Any] = [
+            "type": "tool_approval",
+            "sessionId": "session-minimal"
+        ]
+
+        // Act
+        let result = await service.handleRemoteNotification(payload)
+
+        // Assert
+        XCTAssertEqual(result, .newData)
+    }
+
+    func testToolApprovalCategoryIdentifier() {
+        XCTAssertEqual(PushNotificationService.Category.toolApproval, "TOOL_APPROVAL")
+    }
+
+    func testToolApprovalActionIdentifiers() {
+        XCTAssertEqual(PushNotificationService.Action.approveTool, "APPROVE_TOOL")
+        XCTAssertEqual(PushNotificationService.Action.rejectTool, "REJECT_TOOL")
+    }
+
     // MARK: - Error Type Tests
 
     func testPushNotificationErrorDescriptions() {
@@ -268,7 +332,10 @@ final class PushNotificationServiceTests: XCTestCase {
             .navigateToSession,
             .replyToSession,
             .approvePairingRequest,
-            .rejectPairingRequest
+            .rejectPairingRequest,
+            .toolApprovalRequested,
+            .approveToolRequest,
+            .rejectToolRequest
         ]
 
         let rawNames = names.map { $0.rawValue }

@@ -2,6 +2,7 @@ package com.enflame.happy.di
 
 import com.enflame.happy.data.crypto.EncryptionService
 import com.enflame.happy.data.local.TokenStorage
+import com.enflame.happy.data.sync.SyncLifecycleManager
 import com.enflame.happy.data.sync.SyncService
 import dagger.Module
 import dagger.Provides
@@ -29,9 +30,11 @@ annotation class SyncScope
  * Hilt module providing WebSocket sync-related dependencies.
  *
  * The [SyncService] is provided as a singleton since there should be exactly one
- * WebSocket connection to the server at any time. The coroutine scope uses
- * [SupervisorJob] so that a failure in one child coroutine (e.g., ping loop)
- * does not cancel the reconnection logic.
+ * WebSocket connection to the server at any time. The [SyncLifecycleManager] is
+ * also singleton and manages the connection lifecycle based on app foreground state.
+ *
+ * The coroutine scope uses [SupervisorJob] so that a failure in one child coroutine
+ * (e.g., ping loop) does not cancel the reconnection logic.
  */
 @Module
 @InstallIn(SingletonComponent::class)
@@ -73,6 +76,28 @@ object SyncModule {
             tokenStorage = tokenStorage,
             encryptionService = encryptionService,
             json = json,
+            coroutineScope = coroutineScope
+        )
+    }
+
+    /**
+     * Provides the singleton [SyncLifecycleManager] instance.
+     *
+     * The lifecycle manager observes [ProcessLifecycleOwner][androidx.lifecycle.ProcessLifecycleOwner]
+     * to automatically disconnect the WebSocket when the app enters the background and
+     * reconnect when the app returns to the foreground.
+     *
+     * @param syncService The WebSocket sync service to manage.
+     * @param coroutineScope Dedicated sync scope for grace period timing.
+     */
+    @Provides
+    @Singleton
+    fun provideSyncLifecycleManager(
+        syncService: SyncService,
+        @SyncScope coroutineScope: CoroutineScope
+    ): SyncLifecycleManager {
+        return SyncLifecycleManager(
+            syncService = syncService,
             coroutineScope = coroutineScope
         )
     }

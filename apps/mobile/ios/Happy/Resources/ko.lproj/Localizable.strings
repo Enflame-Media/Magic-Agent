@@ -66,6 +66,7 @@
 "notifications.sessionUpdates" = "세션 업데이트";
 "notifications.messages" = "메시지";
 "notifications.pairingRequests" = "페어링 요청";
+"notifications.toolApproval" = "도구 승인";
 "notifications.debugInfo" = "디버그 정보";
 "notifications.deviceToken" = "기기 토큰";
 

@@ -66,6 +66,7 @@
 "notifications.sessionUpdates" = "Actualizaciones de sesion";
 "notifications.messages" = "Mensajes";
 "notifications.pairingRequests" = "Solicitudes de vinculacion";
+"notifications.toolApproval" = "Aprobacion de herramienta";
 "notifications.debugInfo" = "Info de depuracion";
 "notifications.deviceToken" = "Token del dispositivo";
 

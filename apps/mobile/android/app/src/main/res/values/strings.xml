@@ -77,6 +77,7 @@
     <string name="session_detail_machine">Machine</string>
     <string name="session_detail_started">Started</string>
     <string name="session_detail_updated">Last Updated</string>
+    <string name="session_detail_status">Status</string>
     <string name="session_detail_loading">Loading session…</string>
     <string name="session_detail_no_messages">No Messages Yet</string>
     <string name="session_detail_no_messages_description">Messages will appear here as the session progresses.</string>

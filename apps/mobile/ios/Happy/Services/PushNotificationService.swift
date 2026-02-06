@@ -72,6 +72,9 @@ final class PushNotificationService: NSObject, ObservableObject {
 
         /// A pairing request status change.
         static let pairing = "PAIRING"
+
+        /// A tool usage approval request.
+        static let toolApproval = "TOOL_APPROVAL"
     }
 
     /// Identifiers for notification actions.
@@ -87,6 +90,12 @@ final class PushNotificationService: NSObject, ObservableObject {
 
         /// Reject a pairing request.
         static let rejectPairing = "REJECT_PAIRING"
+
+        /// Approve a tool usage request.
+        static let approveTool = "APPROVE_TOOL"
+
+        /// Reject a tool usage request.
+        static let rejectTool = "REJECT_TOOL"
 
         /// Dismiss the notification.
         static let dismiss = "DISMISS"
@@ -166,10 +175,31 @@ final class PushNotificationService: NSObject, ObservableObject {
             options: [.customDismissAction]
         )
 
+        // Tool Approval category - Approve and Reject actions
+        let approveToolAction = UNNotificationAction(
+            identifier: Action.approveTool,
+            title: "Approve",
+            options: [.foreground]
+        )
+
+        let rejectToolAction = UNNotificationAction(
+            identifier: Action.rejectTool,
+            title: "Reject",
+            options: [.destructive]
+        )
+
+        let toolApprovalCategory = UNNotificationCategory(
+            identifier: Category.toolApproval,
+            actions: [approveToolAction, rejectToolAction, viewSessionAction],
+            intentIdentifiers: [],
+            options: [.customDismissAction]
+        )
+
         notificationCenter.setNotificationCategories([
             sessionUpdateCategory,
             messageCategory,
-            pairingCategory
+            pairingCategory,
+            toolApprovalCategory
         ])
     }
 
@@ -230,9 +260,9 @@ final class PushNotificationService: NSObject, ObservableObject {
 
     /// Process a device token received from APNs registration.
     ///
-    /// Converts the raw token data to a hex string and stores it for
-    /// server registration. The token is also persisted in the Keychain
-    /// for retrieval after app restarts.
+    /// Converts the raw token data to a hex string, stores it in the Keychain,
+    /// and registers it with happy-server via the API. Without server registration,
+    /// the server cannot deliver push notifications to this device.
     ///
     /// - Parameter tokenData: The raw device token data from APNs.
     @MainActor
@@ -249,12 +279,57 @@ final class PushNotificationService: NSObject, ObservableObject {
         print("[PushNotificationService] APNs device token: \(tokenString)")
         #endif
 
+        // Register token with happy-server so it can send push notifications
+        Task {
+            await registerTokenWithServer(tokenString)
+        }
+
         // Notify observers that a new token is available
         NotificationCenter.default.post(
             name: .deviceTokenUpdated,
             object: nil,
             userInfo: ["token": tokenString]
         )
+    }
+
+    /// Register the device token with happy-server.
+    ///
+    /// Retries up to 3 times with exponential backoff if registration fails.
+    /// Only attempts registration if the user is authenticated (has an auth token).
+    ///
+    /// - Parameter token: The hex-encoded APNs device token string.
+    private func registerTokenWithServer(_ token: String) async {
+        // Only register if the user is authenticated
+        guard KeychainHelper.exists(.authToken) else {
+            #if DEBUG
+            print("[PushNotificationService] Skipping server registration: not authenticated")
+            #endif
+            return
+        }
+
+        let maxRetries = 3
+        for attempt in 0..<maxRetries {
+            do {
+                try await APIService.shared.registerDeviceToken(token)
+                #if DEBUG
+                print("[PushNotificationService] Device token registered with server")
+                #endif
+                return
+            } catch {
+                #if DEBUG
+                print("[PushNotificationService] Server registration attempt \(attempt + 1)/\(maxRetries) failed: \(error.localizedDescription)")
+                #endif
+                if attempt < maxRetries - 1 {
+                    // Exponential backoff: 1s, 2s, 4s
+                    let delay = UInt64(pow(2.0, Double(attempt))) * 1_000_000_000
+                    try? await Task.sleep(nanoseconds: delay)
+                }
+            }
+        }
+
+        #if DEBUG
+        print("[PushNotificationService] Failed to register device token with server after \(maxRetries) attempts")
+        #endif
     }
 
     /// Handle a failed APNs registration attempt.
@@ -310,6 +385,9 @@ final class PushNotificationService: NSObject, ObservableObject {
 
         case "pairing":
             return handlePairingNotification(userInfo)
+
+        case "tool_approval":
+            return handleToolApprovalNotification(userInfo)
 
         default:
             #if DEBUG
@@ -423,12 +501,60 @@ final class PushNotificationService: NSObject, ObservableObject {
         return .newData
     }
 
+    /// Handle a tool approval notification.
+    ///
+    /// Presents a notification with approve/reject actions when a tool
+    /// in a session requests permission to execute.
+    ///
+    /// - Parameter userInfo: The notification payload.
+    /// - Returns: The fetch result.
+    private func handleToolApprovalNotification(_ userInfo: [AnyHashable: Any]) -> UIBackgroundFetchResult {
+        guard let sessionId = userInfo["sessionId"] as? String else {
+            return .noData
+        }
+
+        let toolName = userInfo["toolName"] as? String ?? "Unknown tool"
+        let title = userInfo["title"] as? String ?? "Tool Approval Required"
+        let body = userInfo["body"] as? String ?? "\(toolName) is requesting permission to run."
+        let requestId = userInfo["requestId"] as? String
+
+        NotificationCenter.default.post(
+            name: .toolApprovalRequested,
+            object: nil,
+            userInfo: [
+                "sessionId": sessionId,
+                "toolName": toolName,
+                "requestId": requestId as Any
+            ]
+        )
+
+        var notificationInfo: [String: String] = [
+            "sessionId": sessionId,
+            "toolName": toolName,
+            "type": "tool_approval"
+        ]
+        if let requestId {
+            notificationInfo["requestId"] = requestId
+        }
+
+        showLocalNotification(
+            title: title,
+            body: body,
+            category: Category.toolApproval,
+            userInfo: notificationInfo
+        )
+
+        return .newData
+    }
+
     // MARK: - Local Notifications
 
     /// Show a local notification to the user.
     ///
     /// Used to present push notification content when the app processes
     /// a silent notification, or to re-display content for background updates.
+    /// Notifications with the same `sessionId` are grouped together using
+    /// `threadIdentifier` so they stack neatly in the notification center.
     ///
     /// - Parameters:
     ///   - title: The notification title.
@@ -443,12 +569,24 @@ final class PushNotificationService: NSObject, ObservableObject {
     ) {
         guard isAuthorized else { return }
 
+        // Check notification preferences before displaying
+        if !shouldShowNotification(for: category) {
+            return
+        }
+
         let content = UNMutableNotificationContent()
         content.title = title
         content.body = body
         content.sound = .default
         content.categoryIdentifier = category
         content.userInfo = userInfo
+
+        // Group notifications by session using threadIdentifier
+        if let sessionId = userInfo["sessionId"] {
+            content.threadIdentifier = "session-\(sessionId)"
+        } else if let machineId = userInfo["machineId"] {
+            content.threadIdentifier = "machine-\(machineId)"
+        }
 
         let identifier = "\(category)_\(Date().timeIntervalSince1970)"
         let request = UNNotificationRequest(
@@ -464,13 +602,25 @@ final class PushNotificationService: NSObject, ObservableObject {
                 #endif
             }
         }
+
+        // Update badge count
+        Task { @MainActor in
+            incrementBadgeCount()
+        }
     }
 
     // MARK: - Badge Management
 
+    /// The current badge count tracked locally.
+    private var currentBadgeCount: Int = 0
+
     /// Reset the app badge count to zero.
+    ///
+    /// Should be called when the app becomes active (foreground)
+    /// to clear the badge indicator.
     @MainActor
     func resetBadgeCount() {
+        currentBadgeCount = 0
         UIApplication.shared.applicationIconBadgeNumber = 0
     }
 
@@ -479,7 +629,69 @@ final class PushNotificationService: NSObject, ObservableObject {
     /// - Parameter count: The number to display on the app icon badge.
     @MainActor
     func setBadgeCount(_ count: Int) {
+        currentBadgeCount = count
         UIApplication.shared.applicationIconBadgeNumber = count
+    }
+
+    /// Increment the badge count by one.
+    ///
+    /// Called when a new notification is received to reflect unread count.
+    @MainActor
+    func incrementBadgeCount() {
+        currentBadgeCount += 1
+        UIApplication.shared.applicationIconBadgeNumber = currentBadgeCount
+    }
+
+    // MARK: - Notification Preferences
+
+    /// User defaults keys for notification preferences.
+    private enum PreferenceKey {
+        static let sessionUpdates = "notification_session_updates"
+        static let messages = "notification_messages"
+        static let pairing = "notification_pairing"
+        static let toolApproval = "notification_tool_approval"
+    }
+
+    /// Check whether a notification should be shown based on user preferences.
+    ///
+    /// Consults the UserDefaults toggles that the NotificationSettingsView controls.
+    /// If no preference has been set for a category, defaults to showing the notification.
+    ///
+    /// - Parameter category: The notification category identifier.
+    /// - Returns: `true` if the notification should be displayed.
+    private func shouldShowNotification(for category: String) -> Bool {
+        let defaults = UserDefaults.standard
+
+        switch category {
+        case Category.sessionUpdate:
+            // Default to true if not previously set
+            if defaults.object(forKey: PreferenceKey.sessionUpdates) != nil {
+                return defaults.bool(forKey: PreferenceKey.sessionUpdates)
+            }
+            return true
+
+        case Category.message:
+            if defaults.object(forKey: PreferenceKey.messages) != nil {
+                return defaults.bool(forKey: PreferenceKey.messages)
+            }
+            return true
+
+        case Category.pairing:
+            if defaults.object(forKey: PreferenceKey.pairing) != nil {
+                return defaults.bool(forKey: PreferenceKey.pairing)
+            }
+            return true
+
+        case Category.toolApproval:
+            // Tool approval defaults to always showing (critical notification)
+            if defaults.object(forKey: PreferenceKey.toolApproval) != nil {
+                return defaults.bool(forKey: PreferenceKey.toolApproval)
+            }
+            return true
+
+        default:
+            return true
+        }
     }
 
     // MARK: - Notification Removal
@@ -582,6 +794,34 @@ extension PushNotificationService: UNUserNotificationCenterDelegate {
                 }
             }
 
+        case Action.approveTool:
+            let sessionId = userInfo["sessionId"] as? String
+            let requestId = userInfo["requestId"] as? String
+            await MainActor.run {
+                var info: [String: String] = [:]
+                if let sessionId { info["sessionId"] = sessionId }
+                if let requestId { info["requestId"] = requestId }
+                NotificationCenter.default.post(
+                    name: .approveToolRequest,
+                    object: nil,
+                    userInfo: info
+                )
+            }
+
+        case Action.rejectTool:
+            let sessionId = userInfo["sessionId"] as? String
+            let requestId = userInfo["requestId"] as? String
+            await MainActor.run {
+                var info: [String: String] = [:]
+                if let sessionId { info["sessionId"] = sessionId }
+                if let requestId { info["requestId"] = requestId }
+                NotificationCenter.default.post(
+                    name: .rejectToolRequest,
+                    object: nil,
+                    userInfo: info
+                )
+            }
+
         case UNNotificationDismissActionIdentifier:
             break // User dismissed the notification
 
@@ -622,6 +862,15 @@ extension Notification.Name {
 
     /// Posted to reject a pairing request from a notification action.
     static let rejectPairingRequest = Notification.Name("rejectPairingRequest")
+
+    /// Posted when a tool approval request notification is received.
+    static let toolApprovalRequested = Notification.Name("toolApprovalRequested")
+
+    /// Posted to approve a tool usage request from a notification action.
+    static let approveToolRequest = Notification.Name("approveToolRequest")
+
+    /// Posted to reject a tool usage request from a notification action.
+    static let rejectToolRequest = Notification.Name("rejectToolRequest")
 }
 
 // MARK: - Push Notification Errors
