@@ -3,9 +3,17 @@
  *
  * Configures global mocks and test environment.
  * @see HAP-863 - Add unit tests for artifact sync encryption
+ * @see HAP-972 - Screen reader and axe-core accessibility testing
  */
 
 import { vi, beforeEach } from 'vitest';
+import 'vitest-axe/extend-expect';
+import * as matchers from 'vitest-axe/matchers';
+import { expect } from 'vitest';
+
+// Register axe-core accessibility matchers (HAP-972)
+// Enables expect(results).toHaveNoViolations() in all tests
+expect.extend(matchers);
 
 // Mock crypto.subtle for tests that require Web Crypto API
 // happy-dom doesn't provide a complete crypto.subtle implementation
