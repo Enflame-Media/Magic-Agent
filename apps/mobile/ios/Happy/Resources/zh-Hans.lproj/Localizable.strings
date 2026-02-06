@@ -251,3 +251,169 @@
 "audioRoute.footer" = "选择音频播放位置。蓝牙设备在连接后显示。";
 "audioRoute.currentOutput" = "当前输出";
 "audioRoute.status" = "状态";
+
+// MARK: - Common (close)
+
+"common.close" = "关闭";
+
+// MARK: - Subscription / Paywall
+
+"subscription.paywall.title" = "升级";
+"subscription.paywall.headline" = "解锁完整体验";
+"subscription.paywall.subheadline" = "通过Happy订阅获得无限会话、语音功能等。";
+"subscription.billingPeriod" = "计费周期";
+"subscription.subscribe" = "订阅";
+"subscription.restore" = "恢复购买";
+"subscription.recommended" = "推荐";
+"subscription.currentPlan" = "当前方案";
+"subscription.purchaseSuccess.title" = "购买成功";
+"subscription.purchaseSuccess.message" = "谢谢！您的订阅已激活。";
+"subscription.restoreSuccess.title" = "恢复成功";
+"subscription.restoreSuccess.message" = "您的购买已恢复。";
+
+// MARK: - Subscription Legal
+
+"subscription.legal.autoRenew" = "订阅将自动续订，除非在当前周期结束前至少24小时取消。";
+"subscription.legal.terms" = "服务条款";
+"subscription.legal.privacy" = "隐私政策";
+
+// MARK: - Subscription Status
+
+"subscription.status.title" = "订阅";
+"subscription.status.currentPlan" = "当前方案";
+"subscription.status.details" = "详情";
+"subscription.status.expired" = "已过期";
+"subscription.status.actions" = "操作";
+"subscription.status.manageFooter" = "通过App Store管理您的订阅。";
+"subscription.status.gracePeriod" = "宽限期";
+"subscription.status.active" = "有效";
+"subscription.status.revoked" = "已撤销";
+"subscription.status.free" = "免费";
+"subscription.status.error" = "错误";
+
+// MARK: - Subscription Detail
+
+"subscription.detail.billingPeriod" = "计费周期";
+"subscription.detail.purchaseDate" = "购买日期";
+"subscription.detail.renewalDate" = "续订日期";
+"subscription.detail.daysRemaining" = "剩余天数";
+"subscription.detail.autoRenew" = "自动续订";
+
+// MARK: - Subscription Expired
+
+"subscription.expired.notice" = "您的订阅已过期";
+"subscription.expired.description" = "续订以继续使用高级功能。";
+"subscription.expired.renew" = "续订";
+
+// MARK: - Subscription Actions
+
+"subscription.action.upgrade" = "升级方案";
+"subscription.action.restore" = "恢复购买";
+"subscription.action.manage" = "管理订阅";
+
+// MARK: - Artifacts
+
+"artifacts.title" = "工件";
+"artifacts.searchPlaceholder" = "搜索工件";
+"artifacts.loading" = "正在加载工件...";
+"artifacts.empty" = "暂无工件";
+"artifacts.emptyDescription" = "会话中的工件将显示在这里。";
+"artifacts.filter" = "筛选";
+"artifacts.imageNotSupported" = "图片预览不可用";
+"artifacts.imageLoading" = "正在加载图片...";
+"artifacts.imageLoadError" = "无法加载图片。数据可能已损坏或格式不受支持。";
+"artifacts.searchInContent" = "在内容中搜索";
+"artifacts.searchNoResults" = "无结果";
+"artifacts.copyCode" = "复制";
+"artifacts.copied" = "已复制！";
+"artifacts.copiedToClipboard" = "已复制到剪贴板";
+"artifacts.lineCount" = "%d行";
+
+// MARK: - Friends
+
+"friends.title" = "好友";
+"friends.searchPrompt" = "搜索好友";
+"friends.loading" = "正在加载好友...";
+"friends.noFriends" = "暂无好友";
+"friends.noFriendsDescription" = "添加好友以共享会话和协作。";
+"friends.addFriend" = "添加好友";
+"friends.noMatching" = "没有匹配的好友";
+"friends.noMatchingDescription" = "请尝试调整搜索条件或筛选器。";
+"friends.success" = "成功";
+"friends.onlineCount" = "%d人在线";
+
+// MARK: - Friend Profile
+
+"friends.removeConfirmTitle" = "删除好友？";
+"friends.removeFriend" = "删除好友";
+"friends.removeConfirmMessage" = "这将从您的好友列表中删除。您可以稍后重新添加。";
+"friends.currentlyInSession" = "正在进行会话";
+"friends.statistics" = "统计";
+"friends.sharedSessions" = "共享会话";
+"friends.friendsSince" = "好友注册日";
+"friends.actions" = "操作";
+"friends.shareSession" = "共享会话";
+"friends.viewSharedSessions" = "查看共享会话";
+"friends.lastSeen" = "%@前在线";
+
+// MARK: - Add Friend
+
+"friends.addMethod" = "方式";
+"friends.addMethod.username" = "用户名";
+"friends.addMethod.qrCode" = "二维码";
+"friends.usernameInstructions" = "输入好友的用户名以发送好友请求。";
+"friends.username" = "用户名";
+"friends.usernamePlaceholder" = "输入用户名";
+"friends.messageOptional" = "留言（可选）";
+"friends.messagePlaceholder" = "打个招呼...";
+"friends.sendRequest" = "发送请求";
+"friends.qrInstructions" = "扫描好友的二维码以立即发送好友请求。";
+"friends.scanQRCode" = "扫描二维码";
+"friends.shareYourCode" = "或分享您的二维码";
+"friends.shareQRCode" = "分享我的二维码";
+"friends.scanFriendCode" = "扫描好友的二维码以连接";
+"friends.scanFriend" = "扫描好友";
+
+// MARK: - Friend Requests
+
+"friendRequests.title" = "好友请求";
+"friendRequests.noRequests" = "没有待处理的请求";
+"friendRequests.noRequestsDescription" = "您发送或收到的好友请求将显示在这里。";
+"friendRequests.incoming" = "收到的";
+"friendRequests.outgoing" = "发出的";
+"friendRequests.accept" = "接受";
+"friendRequests.decline" = "拒绝";
+"friendRequests.pending" = "待处理";
+"friendRequests.sentTo" = "已发送给用户";
+"friendRequests.timeAgo" = "前";
+
+// MARK: - Usage Limits
+
+"usageLimits.title" = "使用量";
+"usageLimits.loading" = "正在加载使用量...";
+"usageLimits.moreCount" = "还有%d项";
+"usageLimits.lastUpdated" = "更新于 %@";
+"usageLimits.resetsIn" = "%@后重置";
+"usageLimits.resetsAt" = "%@时重置";
+"usageLimits.used" = "已用";
+
+// MARK: - Usage Limits Detail
+
+"usageLimits.detail.title" = "使用量详情";
+"usageLimits.detail.sessionLimit" = "会话限制";
+"usageLimits.detail.weeklyLimits" = "每周限制";
+"usageLimits.detail.provider" = "提供商";
+"usageLimits.detail.lastUpdated" = "最后更新";
+"usageLimits.detail.info" = "使用量信息";
+"usageLimits.detail.upgradePlan" = "升级方案";
+"usageLimits.detail.upgradeFooter" = "升级您的方案以增加使用限制。";
+"usageLimits.detail.nearLimit" = "接近限制";
+
+// MARK: - Language Settings
+
+"language.title" = "语言";
+"language.system" = "系统默认";
+"language.systemDescription" = "使用设备的语言设置。";
+"language.override" = "应用语言";
+"language.overrideFooter" = "为Happy应用选择语言。这将覆盖系统语言设置。";
+"language.restartRequired" = "语言更改将在重启应用后生效。";

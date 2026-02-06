@@ -16,6 +16,8 @@ struct FriendProfileView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var showRemoveConfirmation = false
+    @State private var showShareSheet = false
+    @State private var showSharedSessions = false
 
     var body: some View {
         ScrollView {
@@ -54,23 +56,24 @@ struct FriendProfileView: View {
         } message: {
             Text("friends.removeConfirmMessage".localized)
         }
+        .sheet(isPresented: $showShareSheet) {
+            SessionShareSheet(friend: friend, viewModel: viewModel)
+        }
+        .navigationDestination(isPresented: $showSharedSessions) {
+            SharedSessionsView(friend: friend, viewModel: viewModel)
+        }
     }
 
     // MARK: - Profile Header
 
     private var profileHeader: some View {
         VStack(spacing: 16) {
-            // Large avatar
-            ZStack {
-                Circle()
-                    .fill(Color.blue.opacity(0.15))
-                    .frame(width: 80, height: 80)
-
-                Text(friend.displayName.prefix(1).uppercased())
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .foregroundStyle(.blue)
-            }
+            // Large avatar with image loading
+            AvatarImageView(
+                avatarUrl: friend.avatarUrl,
+                displayName: friend.displayName,
+                size: 80
+            )
             .overlay(alignment: .bottomTrailing) {
                 Circle()
                     .fill(statusColor)
@@ -115,7 +118,7 @@ struct FriendProfileView: View {
                     Image(systemName: "clock")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    Text("Last seen \(lastSeen, style: .relative) ago")
+                    Text(String(format: "friends.lastSeen".localized, lastSeenRelativeText(lastSeen)))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Spacer()
@@ -169,11 +172,9 @@ struct FriendProfileView: View {
             Text("friends.actions".localized)
                 .font(.headline)
 
-            // Share session button (only available when friend is online)
+            // Share session button - opens session picker sheet
             Button {
-                #if DEBUG
-                print("[FriendProfileView] Share session with \(friend.displayName)")
-                #endif
+                showShareSheet = true
             } label: {
                 Label("friends.shareSession".localized, systemImage: "square.and.arrow.up")
                     .frame(maxWidth: .infinity)
@@ -181,12 +182,10 @@ struct FriendProfileView: View {
             .buttonStyle(.borderedProminent)
             .disabled(friend.status == .offline)
 
-            // View shared sessions
+            // View shared sessions - navigates to shared sessions list
             if friend.sharedSessionCount > 0 {
                 Button {
-                    #if DEBUG
-                    print("[FriendProfileView] View shared sessions with \(friend.displayName)")
-                    #endif
+                    showSharedSessions = true
                 } label: {
                     Label("friends.viewSharedSessions".localized, systemImage: "list.bullet")
                         .frame(maxWidth: .infinity)
@@ -229,6 +228,13 @@ struct FriendProfileView: View {
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .short
         return formatter.localizedString(for: friend.friendsSince, relativeTo: Date())
+    }
+
+    private func lastSeenRelativeText(_ date: Date) -> String {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .short
+        formatter.dateTimeStyle = .named
+        return formatter.localizedString(for: date, relativeTo: Date())
     }
 }
 

@@ -251,3 +251,169 @@
 "audioRoute.footer" = "オーディオの再生先を選択します。Bluetoothデバイスは接続時に表示されます。";
 "audioRoute.currentOutput" = "現在の出力";
 "audioRoute.status" = "ステータス";
+
+// MARK: - Common (close)
+
+"common.close" = "閉じる";
+
+// MARK: - Subscription / Paywall
+
+"subscription.paywall.title" = "アップグレード";
+"subscription.paywall.headline" = "フル体験をアンロック";
+"subscription.paywall.subheadline" = "Happyサブスクリプションで無制限のセッション、音声機能などをご利用いただけます。";
+"subscription.billingPeriod" = "請求期間";
+"subscription.subscribe" = "サブスクリプション登録";
+"subscription.restore" = "購入を復元";
+"subscription.recommended" = "おすすめ";
+"subscription.currentPlan" = "現在のプラン";
+"subscription.purchaseSuccess.title" = "購入完了";
+"subscription.purchaseSuccess.message" = "ありがとうございます！サブスクリプションが有効になりました。";
+"subscription.restoreSuccess.title" = "復元完了";
+"subscription.restoreSuccess.message" = "購入が復元されました。";
+
+// MARK: - Subscription Legal
+
+"subscription.legal.autoRenew" = "サブスクリプションは、現在の期間終了の24時間前までにキャンセルしない限り、自動的に更新されます。";
+"subscription.legal.terms" = "利用規約";
+"subscription.legal.privacy" = "プライバシーポリシー";
+
+// MARK: - Subscription Status
+
+"subscription.status.title" = "サブスクリプション";
+"subscription.status.currentPlan" = "現在のプラン";
+"subscription.status.details" = "詳細";
+"subscription.status.expired" = "期限切れ";
+"subscription.status.actions" = "アクション";
+"subscription.status.manageFooter" = "App Storeからサブスクリプションを管理できます。";
+"subscription.status.gracePeriod" = "猶予期間";
+"subscription.status.active" = "有効";
+"subscription.status.revoked" = "取り消し済み";
+"subscription.status.free" = "無料";
+"subscription.status.error" = "エラー";
+
+// MARK: - Subscription Detail
+
+"subscription.detail.billingPeriod" = "請求期間";
+"subscription.detail.purchaseDate" = "購入日";
+"subscription.detail.renewalDate" = "更新日";
+"subscription.detail.daysRemaining" = "残り日数";
+"subscription.detail.autoRenew" = "自動更新";
+
+// MARK: - Subscription Expired
+
+"subscription.expired.notice" = "サブスクリプションが期限切れです";
+"subscription.expired.description" = "プレミアム機能を引き続きご利用いただくには、サブスクリプションを更新してください。";
+"subscription.expired.renew" = "サブスクリプションを更新";
+
+// MARK: - Subscription Actions
+
+"subscription.action.upgrade" = "プランをアップグレード";
+"subscription.action.restore" = "購入を復元";
+"subscription.action.manage" = "サブスクリプションを管理";
+
+// MARK: - Artifacts
+
+"artifacts.title" = "アーティファクト";
+"artifacts.searchPlaceholder" = "アーティファクトを検索";
+"artifacts.loading" = "アーティファクトを読み込み中...";
+"artifacts.empty" = "アーティファクトなし";
+"artifacts.emptyDescription" = "セッションのアーティファクトがここに表示されます。";
+"artifacts.filter" = "フィルター";
+"artifacts.imageNotSupported" = "画像プレビューは利用できません";
+"artifacts.imageLoading" = "画像を読み込み中...";
+"artifacts.imageLoadError" = "画像を読み込めませんでした。データが破損しているか、サポートされていない形式の可能性があります。";
+"artifacts.searchInContent" = "コンテンツ内を検索";
+"artifacts.searchNoResults" = "結果なし";
+"artifacts.copyCode" = "コピー";
+"artifacts.copied" = "コピーしました！";
+"artifacts.copiedToClipboard" = "クリップボードにコピーしました";
+"artifacts.lineCount" = "%d行";
+
+// MARK: - Friends
+
+"friends.title" = "フレンド";
+"friends.searchPrompt" = "フレンドを検索";
+"friends.loading" = "フレンドを読み込み中...";
+"friends.noFriends" = "まだフレンドがいません";
+"friends.noFriendsDescription" = "フレンドを追加してセッションを共有し、コラボレーションしましょう。";
+"friends.addFriend" = "フレンドを追加";
+"friends.noMatching" = "一致するフレンドなし";
+"friends.noMatchingDescription" = "検索条件やフィルターを調整してみてください。";
+"friends.success" = "成功";
+"friends.onlineCount" = "%d人オンライン";
+
+// MARK: - Friend Profile
+
+"friends.removeConfirmTitle" = "フレンドを削除しますか？";
+"friends.removeFriend" = "フレンドを削除";
+"friends.removeConfirmMessage" = "フレンドリストから削除されます。後で再度追加できます。";
+"friends.currentlyInSession" = "現在セッション中";
+"friends.statistics" = "統計";
+"friends.sharedSessions" = "共有セッション";
+"friends.friendsSince" = "フレンド登録日";
+"friends.actions" = "アクション";
+"friends.shareSession" = "セッションを共有";
+"friends.viewSharedSessions" = "共有セッションを表示";
+"friends.lastSeen" = "%@前にオンライン";
+
+// MARK: - Add Friend
+
+"friends.addMethod" = "方法";
+"friends.addMethod.username" = "ユーザー名";
+"friends.addMethod.qrCode" = "QRコード";
+"friends.usernameInstructions" = "フレンドのユーザー名を入力してフレンドリクエストを送信します。";
+"friends.username" = "ユーザー名";
+"friends.usernamePlaceholder" = "ユーザー名を入力";
+"friends.messageOptional" = "メッセージ（任意）";
+"friends.messagePlaceholder" = "挨拶を送る...";
+"friends.sendRequest" = "リクエストを送信";
+"friends.qrInstructions" = "フレンドのQRコードをスキャンして、即座にフレンドリクエストを送信します。";
+"friends.scanQRCode" = "QRコードをスキャン";
+"friends.shareYourCode" = "またはコードを共有";
+"friends.shareQRCode" = "マイQRコードを共有";
+"friends.scanFriendCode" = "フレンドのコードをスキャンして接続";
+"friends.scanFriend" = "フレンドをスキャン";
+
+// MARK: - Friend Requests
+
+"friendRequests.title" = "フレンドリクエスト";
+"friendRequests.noRequests" = "保留中のリクエストなし";
+"friendRequests.noRequestsDescription" = "送受信したフレンドリクエストがここに表示されます。";
+"friendRequests.incoming" = "受信";
+"friendRequests.outgoing" = "送信";
+"friendRequests.accept" = "承認";
+"friendRequests.decline" = "拒否";
+"friendRequests.pending" = "保留中";
+"friendRequests.sentTo" = "ユーザーに送信済み";
+"friendRequests.timeAgo" = "前";
+
+// MARK: - Usage Limits
+
+"usageLimits.title" = "使用量";
+"usageLimits.loading" = "使用量を読み込み中...";
+"usageLimits.moreCount" = "他%d件";
+"usageLimits.lastUpdated" = "更新: %@";
+"usageLimits.resetsIn" = "%@後にリセット";
+"usageLimits.resetsAt" = "%@にリセット";
+"usageLimits.used" = "使用済み";
+
+// MARK: - Usage Limits Detail
+
+"usageLimits.detail.title" = "使用量の詳細";
+"usageLimits.detail.sessionLimit" = "セッション制限";
+"usageLimits.detail.weeklyLimits" = "週間制限";
+"usageLimits.detail.provider" = "プロバイダー";
+"usageLimits.detail.lastUpdated" = "最終更新";
+"usageLimits.detail.info" = "使用量情報";
+"usageLimits.detail.upgradePlan" = "プランをアップグレード";
+"usageLimits.detail.upgradeFooter" = "プランをアップグレードして使用制限を増やしましょう。";
+"usageLimits.detail.nearLimit" = "制限に近づいています";
+
+// MARK: - Language Settings
+
+"language.title" = "言語";
+"language.system" = "システムのデフォルト";
+"language.systemDescription" = "デバイスの言語設定を使用します。";
+"language.override" = "アプリの言語";
+"language.overrideFooter" = "Happyアプリの言語を選択します。システムの言語設定を上書きします。";
+"language.restartRequired" = "言語の変更はアプリを再起動すると反映されます。";

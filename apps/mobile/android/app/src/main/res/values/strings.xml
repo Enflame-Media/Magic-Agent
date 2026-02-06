@@ -294,6 +294,54 @@
     <string name="friends_remove_confirm_title">Remove Friend?</string>
     <string name="friends_remove_confirm_message">Are you sure you want to remove %s from your friends? You will no longer see each other\'s online status.</string>
 
+    <!-- Session Sharing (HAP-1022) -->
+    <string name="share_session_dialog_title">Share Session with %s</string>
+    <string name="share_session_no_sessions">No active sessions available to share.</string>
+    <string name="share_session_select_session">Select a session to share:</string>
+    <string name="share_session_permission_label">Permission level:</string>
+    <string name="share_session_permission_view">View Only</string>
+    <string name="share_session_permission_view_description">Friend can view the session content</string>
+    <string name="share_session_permission_interact">Interact</string>
+    <string name="share_session_permission_interact_description">Friend can view and send messages</string>
+    <string name="share_session_confirm">Share Session</string>
+    <string name="shared_sessions_history_title">Shared Session History</string>
+    <string name="shared_sessions_empty">No sessions shared with this friend yet.</string>
+    <string name="shared_session_permission_label">Permission: %s</string>
+    <string name="shared_session_shared_at">Shared: %s</string>
+    <string name="shared_session_revoke">Revoke share</string>
+
+    <!-- Privacy Settings (HAP-1022) -->
+    <string name="privacy_settings_title">Privacy</string>
+    <string name="privacy_settings_description">Online status, profile visibility, friend requests</string>
+    <string name="privacy_settings_loading">Loading privacy settings\u2026</string>
+    <string name="privacy_online_status_title">Online Status</string>
+    <string name="privacy_show_online_status">Show online status</string>
+    <string name="privacy_show_online_status_description">When enabled, friends can see when you\'re online or in a session</string>
+    <string name="privacy_profile_visibility_title">Profile Visibility</string>
+    <string name="privacy_profile_visibility_description">Control who can see your full profile information</string>
+    <string name="privacy_visibility_everyone">Everyone</string>
+    <string name="privacy_visibility_everyone_description">Anyone on Happy can view your profile</string>
+    <string name="privacy_visibility_friends_only">Friends Only</string>
+    <string name="privacy_visibility_friends_only_description">Only accepted friends can see your full profile</string>
+    <string name="privacy_friend_requests_title">Friend Requests</string>
+    <string name="privacy_friend_requests_description">Control who can send you friend requests</string>
+    <string name="privacy_requests_everyone">Everyone</string>
+    <string name="privacy_requests_everyone_description">Anyone can send you a friend request</string>
+    <string name="privacy_requests_friends_of_friends">Friends of Friends</string>
+    <string name="privacy_requests_friends_of_friends_description">Only people who share a mutual friend can request</string>
+    <string name="privacy_requests_none">No One</string>
+    <string name="privacy_requests_none_description">Disable incoming friend requests entirely</string>
+
+    <!-- QR Friend Invite (HAP-1022) -->
+    <string name="qr_my_code_title">My QR Code</string>
+    <string name="qr_my_code_description">Your friend invite QR code</string>
+    <string name="qr_generating_code">Generating your invite code\u2026</string>
+    <string name="qr_show_to_friend">Show this QR code to a friend so they can add you</string>
+    <string name="qr_copy_link">Copy Link</string>
+    <string name="qr_share_link">Share Link</string>
+    <string name="qr_generate_code">Generate QR Code</string>
+    <string name="qr_scan_title">Scan a Friend\'s Code</string>
+
     <!-- Empty states -->
     <string name="no_sessions">No sessions yet</string>
     <string name="no_sessions_description">Scan a QR code from Claude Code CLI to get started</string>

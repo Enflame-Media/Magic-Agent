@@ -283,5 +283,18 @@ extension Artifact {
         sizeBytes: 215
     )
 
-    static let samples: [Artifact] = [sampleCode, sampleJSON, sampleDocument]
+    static let sampleImage = Artifact(
+        id: "artifact-004",
+        sessionId: "sample-123",
+        title: "Architecture Diagram",
+        content: "",
+        type: .image,
+        language: nil,
+        filePath: "docs/architecture.png",
+        createdAt: Date(),
+        updatedAt: Date(),
+        sizeBytes: 45_000
+    )
+
+    static let samples: [Artifact] = [sampleCode, sampleJSON, sampleDocument, sampleImage]
 }

@@ -178,6 +178,10 @@ struct SessionListView: View {
                 Label("notifications.title".localized, systemImage: "bell")
             }
 
+            NavigationLink(destination: LanguageSettingsView()) {
+                Label("language.title".localized, systemImage: "globe")
+            }
+
             Divider()
 
             Button(role: .destructive) {

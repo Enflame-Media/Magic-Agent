@@ -1,6 +1,7 @@
 package com.enflame.happy.ui.screens.friends
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,6 +13,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,6 +22,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PersonRemove
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Terminal
@@ -28,6 +32,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
@@ -35,6 +40,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -57,11 +63,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.enflame.happy.R
 import com.enflame.happy.domain.model.Friend
 import com.enflame.happy.domain.model.FriendStatus
+import com.enflame.happy.domain.model.Session
+import com.enflame.happy.domain.model.SessionShare
+import com.enflame.happy.domain.model.SharePermission
 import com.enflame.happy.ui.theme.HappyTheme
 import com.enflame.happy.ui.viewmodel.FriendsUiState
 import kotlinx.coroutines.flow.StateFlow
@@ -77,14 +87,18 @@ import java.util.Locale
  * - Name, username, and status display
  * - Last seen time for offline friends
  * - Statistics (shared sessions, friends since)
- * - Action buttons (share session, view shared sessions)
+ * - Session sharing with permission selection dialog
+ * - Shared session history with revoke capability
  * - Remove friend with confirmation dialog
  *
  * @param friend The friend to display.
  * @param uiState StateFlow of [FriendsUiState] from the ViewModel.
  * @param onRemoveFriend Callback to remove the friend.
- * @param onShareSession Callback to share a session with this friend.
- * @param onViewSharedSessions Callback to view shared sessions.
+ * @param onShowShareDialog Callback to show the session sharing dialog.
+ * @param onDismissShareDialog Callback to dismiss the session sharing dialog.
+ * @param onShareSession Callback to share a session (sessionId, friendId, permission).
+ * @param onLoadSharedSessions Callback to load shared sessions for this friend.
+ * @param onRevokeSessionShare Callback to revoke a session share (sessionId, shareId, friendId).
  * @param onDismissError Callback to dismiss error messages.
  * @param onDismissSuccess Callback to dismiss success messages.
  * @param onNavigateBack Callback for the back navigation button.
@@ -95,8 +109,11 @@ fun FriendProfileScreen(
     friend: Friend,
     uiState: StateFlow<FriendsUiState>,
     onRemoveFriend: (String) -> Unit,
-    onShareSession: () -> Unit,
-    onViewSharedSessions: () -> Unit,
+    onShowShareDialog: (String) -> Unit,
+    onDismissShareDialog: () -> Unit,
+    onShareSession: (sessionId: String, friendId: String, permission: SharePermission) -> Unit,
+    onLoadSharedSessions: (String) -> Unit,
+    onRevokeSessionShare: (sessionId: String, shareId: String, friendId: String) -> Unit,
     onDismissError: () -> Unit,
     onDismissSuccess: () -> Unit,
     onNavigateBack: () -> Unit,
@@ -105,6 +122,12 @@ fun FriendProfileScreen(
     val state by uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     var showRemoveConfirmation by rememberSaveable { mutableStateOf(false) }
+    var showSharedSessionsHistory by rememberSaveable { mutableStateOf(false) }
+
+    // Load shared sessions when screen opens
+    LaunchedEffect(friend.id) {
+        onLoadSharedSessions(friend.id)
+    }
 
     // Show error as snackbar
     val errorMessage = state.errorMessage
@@ -167,6 +190,19 @@ fun FriendProfileScreen(
         )
     }
 
+    // Session sharing dialog
+    if (state.isShareDialogVisible) {
+        ShareSessionDialog(
+            availableSessions = state.availableSessions,
+            isSharingSession = state.isSharingSession,
+            friendName = friend.displayName,
+            onShareSession = { sessionId, permission ->
+                onShareSession(sessionId, friend.id, permission)
+            },
+            onDismiss = onDismissShareDialog
+        )
+    }
+
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -209,9 +245,22 @@ fun FriendProfileScreen(
             // Actions
             ActionsSection(
                 friend = friend,
-                onShareSession = onShareSession,
-                onViewSharedSessions = onViewSharedSessions
+                onShareSession = { onShowShareDialog(friend.id) },
+                onViewSharedSessions = {
+                    showSharedSessionsHistory = !showSharedSessionsHistory
+                }
             )
+
+            // Shared sessions history (collapsible)
+            if (showSharedSessionsHistory) {
+                SharedSessionsHistorySection(
+                    sharedSessions = state.sharedSessions,
+                    isLoading = state.isLoadingSharedSessions,
+                    onRevoke = { sessionId, shareId ->
+                        onRevokeSessionShare(sessionId, shareId, friend.id)
+                    }
+                )
+            }
 
             // Danger zone - remove friend
             DangerSection(
@@ -527,6 +576,290 @@ private fun DangerSection(
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(stringResource(R.string.friends_remove_friend))
+        }
+    }
+}
+
+/**
+ * Dialog for selecting a session to share with a friend.
+ * Shows available sessions with permission level selection.
+ */
+@Composable
+private fun ShareSessionDialog(
+    availableSessions: List<Session>,
+    isSharingSession: Boolean,
+    friendName: String,
+    onShareSession: (sessionId: String, permission: SharePermission) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var selectedSessionId by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedPermission by rememberSaveable { mutableStateOf(SharePermission.VIEW) }
+
+    AlertDialog(
+        onDismissRequest = { if (!isSharingSession) onDismiss() },
+        title = {
+            Text(stringResource(R.string.share_session_dialog_title, friendName))
+        },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                if (availableSessions.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.share_session_no_sessions),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                } else {
+                    Text(
+                        text = stringResource(R.string.share_session_select_session),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    // Session list
+                    availableSessions.forEach { session ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { selectedSessionId = session.id }
+                                .padding(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = selectedSessionId == session.id,
+                                onClick = { selectedSessionId = session.id }
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = session.title
+                                        ?: stringResource(R.string.session_untitled),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = session.machineName ?: session.machineId ?: "",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+
+                    HorizontalDivider()
+
+                    // Permission selection
+                    Text(
+                        text = stringResource(R.string.share_session_permission_label),
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Medium
+                    )
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { selectedPermission = SharePermission.VIEW }
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = selectedPermission == SharePermission.VIEW,
+                            onClick = { selectedPermission = SharePermission.VIEW }
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Column {
+                            Text(
+                                text = stringResource(R.string.share_session_permission_view),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                text = stringResource(R.string.share_session_permission_view_description),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { selectedPermission = SharePermission.INTERACT }
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = selectedPermission == SharePermission.INTERACT,
+                            onClick = { selectedPermission = SharePermission.INTERACT }
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Column {
+                            Text(
+                                text = stringResource(R.string.share_session_permission_interact),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                text = stringResource(R.string.share_session_permission_interact_description),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            if (availableSessions.isNotEmpty()) {
+                TextButton(
+                    onClick = {
+                        selectedSessionId?.let { sessionId ->
+                            onShareSession(sessionId, selectedPermission)
+                        }
+                    },
+                    enabled = selectedSessionId != null && !isSharingSession
+                ) {
+                    if (isSharingSession) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+                    Text(stringResource(R.string.share_session_confirm))
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                enabled = !isSharingSession
+            ) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
+    )
+}
+
+/**
+ * Section showing the history of sessions shared with this friend.
+ */
+@Composable
+private fun SharedSessionsHistorySection(
+    sharedSessions: List<SessionShare>,
+    isLoading: Boolean,
+    onRevoke: (sessionId: String, shareId: String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = stringResource(R.string.shared_sessions_history_title),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
+        )
+
+        if (isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(modifier = Modifier.size(24.dp))
+            }
+        } else if (sharedSessions.isEmpty()) {
+            Text(
+                text = stringResource(R.string.shared_sessions_empty),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(8.dp)
+            )
+        } else {
+            sharedSessions.forEach { share ->
+                SharedSessionRow(
+                    share = share,
+                    onRevoke = { onRevoke(share.sessionId, share.id) }
+                )
+            }
+        }
+    }
+}
+
+/**
+ * A single row in the shared sessions history.
+ */
+@Composable
+private fun SharedSessionRow(
+    share: SessionShare,
+    onRevoke: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Terminal,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = share.sessionTitle ?: stringResource(R.string.session_untitled),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = stringResource(
+                        R.string.shared_session_permission_label,
+                        if (share.permission == SharePermission.VIEW) {
+                            stringResource(R.string.share_session_permission_view)
+                        } else {
+                            stringResource(R.string.share_session_permission_interact)
+                        }
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = stringResource(
+                        R.string.shared_session_shared_at,
+                        formatDate(share.sharedAt)
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            IconButton(onClick = onRevoke) {
+                Icon(
+                    imageVector = Icons.Filled.Delete,
+                    contentDescription = stringResource(R.string.shared_session_revoke),
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
         }
     }
 }

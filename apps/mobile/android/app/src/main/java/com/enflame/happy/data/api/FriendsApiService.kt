@@ -1,10 +1,14 @@
 package com.enflame.happy.data.api
 
 import com.enflame.happy.domain.model.Friend
+import com.enflame.happy.domain.model.FriendInviteLink
 import com.enflame.happy.domain.model.FriendRequest
+import com.enflame.happy.domain.model.PrivacySettings
+import com.enflame.happy.domain.model.ProcessFriendInviteRequest
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
@@ -67,6 +71,51 @@ interface FriendsApiService {
      */
     @DELETE("v1/friends/{friendId}")
     suspend fun removeFriend(@Path("friendId") friendId: String)
+
+    // --- Privacy Settings (HAP-794) ---
+
+    /**
+     * Get the current user's privacy settings.
+     *
+     * @return The current privacy settings.
+     */
+    @GET("v1/users/me/privacy")
+    suspend fun getPrivacySettings(): PrivacySettings
+
+    /**
+     * Update the current user's privacy settings.
+     *
+     * @param settings The updated privacy settings.
+     * @return The updated privacy settings as confirmed by the server.
+     */
+    @PATCH("v1/users/me/privacy")
+    suspend fun updatePrivacySettings(@Body settings: PrivacySettings): PrivacySettings
+
+    // --- Friend Invites (QR + Links) ---
+
+    /**
+     * Generate a friend invite link/code for the current user.
+     *
+     * The returned code can be encoded into a QR payload or shared as a URL.
+     *
+     * @return The generated invite link with code and URL.
+     */
+    @POST("v1/friends/invite")
+    suspend fun generateFriendInvite(): FriendInviteLink
+
+    /**
+     * Process a friend invite code (from QR scan or deep link).
+     *
+     * Creates a friend request from the invite sender to the current user,
+     * or auto-accepts if both users have invited each other.
+     *
+     * @param request The invite processing request with code and source.
+     * @return The resulting friend request.
+     */
+    @POST("v1/friends/invite/process")
+    suspend fun processFriendInvite(
+        @Body request: ProcessFriendInviteRequest
+    ): FriendRequest
 }
 
 /**

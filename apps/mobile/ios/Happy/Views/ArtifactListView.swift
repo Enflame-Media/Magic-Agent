@@ -177,7 +177,7 @@ struct ArtifactRowView: View {
                             .foregroundStyle(.secondary)
                     }
 
-                    Text("\(artifact.lineCount) lines")
+                    Text(String(format: "artifacts.lineCount".localized, artifact.lineCount))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

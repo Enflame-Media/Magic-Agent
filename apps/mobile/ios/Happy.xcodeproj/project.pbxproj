@@ -81,6 +81,7 @@
 		P91A2C3D4E5F0004 /* PaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = P91A2C3D4E5F0013 /* PaywallView.swift */; };
 		P91A2C3D4E5F0005 /* SubscriptionStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = P91A2C3D4E5F0014 /* SubscriptionStatusView.swift */; };
 		P91A2C3D4E5F0006 /* PurchaseServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = P91A2C3D4E5F0015 /* PurchaseServiceTests.swift */; };
+		U91A2C3D4E5FA001 /* LanguageSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = U91A2C3D4E5FA010 /* LanguageSettingsView.swift */; };
 		T91A2C3D4E5F0001 /* UsageData.swift in Sources */ = {isa = PBXBuildFile; fileRef = T91A2C3D4E5F0010 /* UsageData.swift */; };
 		T91A2C3D4E5F0002 /* UsageLimitsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = T91A2C3D4E5F0011 /* UsageLimitsViewModel.swift */; };
 		T91A2C3D4E5F0003 /* UsageLimitsWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = T91A2C3D4E5F0012 /* UsageLimitsWidget.swift */; };
@@ -95,6 +96,16 @@
 		W91A2C3D4E5F0002 /* VoiceChatViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = W91A2C3D4E5F0011 /* VoiceChatViewModel.swift */; };
 		W91A2C3D4E5F0003 /* VoiceChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = W91A2C3D4E5F0012 /* VoiceChatView.swift */; };
 		W91A2C3D4E5F0004 /* AudioRoutingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = W91A2C3D4E5F0013 /* AudioRoutingView.swift */; };
+		Y91A2C3D4E5F0001 /* ImageViewerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = Y91A2C3D4E5F0010 /* ImageViewerView.swift */; };
+		Y91A2C3D4E5F0002 /* MarkdownRenderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = Y91A2C3D4E5F0011 /* MarkdownRenderView.swift */; };
+		Y91A2C3D4E5F0003 /* ArtifactSearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = Y91A2C3D4E5F0012 /* ArtifactSearchView.swift */; };
+		Z91A2C3D4E5F0001 /* SharedSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = Z91A2C3D4E5F0010 /* SharedSession.swift */; };
+		Z91A2C3D4E5F0002 /* PrivacySettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = Z91A2C3D4E5F0011 /* PrivacySettings.swift */; };
+		Z91A2C3D4E5F0003 /* SessionSharingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = Z91A2C3D4E5F0012 /* SessionSharingService.swift */; };
+		Z91A2C3D4E5F0004 /* AvatarImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = Z91A2C3D4E5F0013 /* AvatarImageView.swift */; };
+		Z91A2C3D4E5F0005 /* PrivacySettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = Z91A2C3D4E5F0014 /* PrivacySettingsView.swift */; };
+		Z91A2C3D4E5F0006 /* SharedSessionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = Z91A2C3D4E5F0015 /* SharedSessionsView.swift */; };
+		Z91A2C3D4E5F0007 /* SessionShareSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = Z91A2C3D4E5F0016 /* SessionShareSheet.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -213,6 +224,7 @@
 		P91A2C3D4E5F0013 /* PaywallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallView.swift; sourceTree = "<group>"; };
 		P91A2C3D4E5F0014 /* SubscriptionStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionStatusView.swift; sourceTree = "<group>"; };
 		P91A2C3D4E5F0015 /* PurchaseServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PurchaseServiceTests.swift; sourceTree = "<group>"; };
+		U91A2C3D4E5FA010 /* LanguageSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguageSettingsView.swift; sourceTree = "<group>"; };
 		T91A2C3D4E5F0010 /* UsageData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageData.swift; sourceTree = "<group>"; };
 		T91A2C3D4E5F0011 /* UsageLimitsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageLimitsViewModel.swift; sourceTree = "<group>"; };
 		T91A2C3D4E5F0012 /* UsageLimitsWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageLimitsWidget.swift; sourceTree = "<group>"; };
@@ -227,6 +239,16 @@
 		W91A2C3D4E5F0011 /* VoiceChatViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceChatViewModel.swift; sourceTree = "<group>"; };
 		W91A2C3D4E5F0012 /* VoiceChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceChatView.swift; sourceTree = "<group>"; };
 		W91A2C3D4E5F0013 /* AudioRoutingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioRoutingView.swift; sourceTree = "<group>"; };
+		Y91A2C3D4E5F0010 /* ImageViewerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageViewerView.swift; sourceTree = "<group>"; };
+		Y91A2C3D4E5F0011 /* MarkdownRenderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownRenderView.swift; sourceTree = "<group>"; };
+		Y91A2C3D4E5F0012 /* ArtifactSearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArtifactSearchView.swift; sourceTree = "<group>"; };
+		Z91A2C3D4E5F0010 /* SharedSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedSession.swift; sourceTree = "<group>"; };
+		Z91A2C3D4E5F0011 /* PrivacySettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacySettings.swift; sourceTree = "<group>"; };
+		Z91A2C3D4E5F0012 /* SessionSharingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionSharingService.swift; sourceTree = "<group>"; };
+		Z91A2C3D4E5F0013 /* AvatarImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarImageView.swift; sourceTree = "<group>"; };
+		Z91A2C3D4E5F0014 /* PrivacySettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacySettingsView.swift; sourceTree = "<group>"; };
+		Z91A2C3D4E5F0015 /* SharedSessionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedSessionsView.swift; sourceTree = "<group>"; };
+		Z91A2C3D4E5F0016 /* SessionShareSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionShareSheet.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -342,6 +364,8 @@
 				N91A2C3D4E5F0010 /* VoiceSettings.swift */,
 				P91A2C3D4E5F0010 /* SubscriptionPlan.swift */,
 				T91A2C3D4E5F0010 /* UsageData.swift */,
+				Z91A2C3D4E5F0010 /* SharedSession.swift */,
+				Z91A2C3D4E5F0011 /* PrivacySettings.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -369,10 +393,18 @@
 				N91A2C3D4E5F0014 /* VoiceSettingsView.swift */,
 				P91A2C3D4E5F0013 /* PaywallView.swift */,
 				P91A2C3D4E5F0014 /* SubscriptionStatusView.swift */,
+				U91A2C3D4E5FA010 /* LanguageSettingsView.swift */,
 				T91A2C3D4E5F0012 /* UsageLimitsWidget.swift */,
 				T91A2C3D4E5F0013 /* UsageLimitsDetailView.swift */,
 				W91A2C3D4E5F0012 /* VoiceChatView.swift */,
 				W91A2C3D4E5F0013 /* AudioRoutingView.swift */,
+				Y91A2C3D4E5F0010 /* ImageViewerView.swift */,
+				Y91A2C3D4E5F0011 /* MarkdownRenderView.swift */,
+				Y91A2C3D4E5F0012 /* ArtifactSearchView.swift */,
+				Z91A2C3D4E5F0013 /* AvatarImageView.swift */,
+				Z91A2C3D4E5F0014 /* PrivacySettingsView.swift */,
+				Z91A2C3D4E5F0015 /* SharedSessionsView.swift */,
+				Z91A2C3D4E5F0016 /* SessionShareSheet.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -410,6 +442,7 @@
 				X91A2C3D4E5F0011 /* EntitlementService.swift */,
 				X91A2C3D4E5F0012 /* PurchaseAnalyticsService.swift */,
 				W91A2C3D4E5F0010 /* LiveKitVoiceChatService.swift */,
+				Z91A2C3D4E5F0012 /* SessionSharingService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -678,6 +711,7 @@
 				P91A2C3D4E5F0003 /* PurchaseViewModel.swift in Sources */,
 				P91A2C3D4E5F0004 /* PaywallView.swift in Sources */,
 				P91A2C3D4E5F0005 /* SubscriptionStatusView.swift in Sources */,
+				U91A2C3D4E5FA001 /* LanguageSettingsView.swift in Sources */,
 				T91A2C3D4E5F0001 /* UsageData.swift in Sources */,
 				T91A2C3D4E5F0002 /* UsageLimitsViewModel.swift in Sources */,
 				T91A2C3D4E5F0003 /* UsageLimitsWidget.swift in Sources */,
@@ -689,6 +723,16 @@
 				W91A2C3D4E5F0002 /* VoiceChatViewModel.swift in Sources */,
 				W91A2C3D4E5F0003 /* VoiceChatView.swift in Sources */,
 				W91A2C3D4E5F0004 /* AudioRoutingView.swift in Sources */,
+				Y91A2C3D4E5F0001 /* ImageViewerView.swift in Sources */,
+				Y91A2C3D4E5F0002 /* MarkdownRenderView.swift in Sources */,
+				Y91A2C3D4E5F0003 /* ArtifactSearchView.swift in Sources */,
+				Z91A2C3D4E5F0001 /* SharedSession.swift in Sources */,
+				Z91A2C3D4E5F0002 /* PrivacySettings.swift in Sources */,
+				Z91A2C3D4E5F0003 /* SessionSharingService.swift in Sources */,
+				Z91A2C3D4E5F0004 /* AvatarImageView.swift in Sources */,
+				Z91A2C3D4E5F0005 /* PrivacySettingsView.swift in Sources */,
+				Z91A2C3D4E5F0006 /* SharedSessionsView.swift in Sources */,
+				Z91A2C3D4E5F0007 /* SessionShareSheet.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -3,10 +3,16 @@ package com.enflame.happy.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.enflame.happy.domain.model.Friend
+import com.enflame.happy.domain.model.FriendInviteLink
 import com.enflame.happy.domain.model.FriendRequest
 import com.enflame.happy.domain.model.FriendRequestStatus
 import com.enflame.happy.domain.model.FriendStatus
+import com.enflame.happy.domain.model.InviteSource
+import com.enflame.happy.domain.model.Session
+import com.enflame.happy.domain.model.SessionShare
+import com.enflame.happy.domain.model.SharePermission
 import com.enflame.happy.domain.repository.FriendsRepository
+import com.enflame.happy.domain.repository.SessionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -40,6 +46,15 @@ enum class FriendFilter(val label: String) {
  * @property isSendingRequest Whether a friend request is being sent.
  * @property onlineFriendCount Number of friends currently online.
  * @property pendingRequestCount Number of pending incoming friend requests.
+ * @property isShareDialogVisible Whether the session sharing dialog is showing.
+ * @property shareTargetFriendId The friend ID to share a session with.
+ * @property availableSessions Sessions available for sharing.
+ * @property isSharingSession Whether a session share is in progress.
+ * @property sharedSessions Shared sessions with the current friend profile.
+ * @property isLoadingSharedSessions Whether shared sessions are loading.
+ * @property friendInviteLink The generated friend invite link, if available.
+ * @property isGeneratingInvite Whether an invite is being generated.
+ * @property isProcessingInvite Whether an invite code is being processed.
  */
 data class FriendsUiState(
     val isLoading: Boolean = false,
@@ -51,19 +66,30 @@ data class FriendsUiState(
     val filter: FriendFilter = FriendFilter.ALL,
     val isSendingRequest: Boolean = false,
     val onlineFriendCount: Int = 0,
-    val pendingRequestCount: Int = 0
+    val pendingRequestCount: Int = 0,
+    val isShareDialogVisible: Boolean = false,
+    val shareTargetFriendId: String? = null,
+    val availableSessions: List<Session> = emptyList(),
+    val isSharingSession: Boolean = false,
+    val sharedSessions: List<SessionShare> = emptyList(),
+    val isLoadingSharedSessions: Boolean = false,
+    val friendInviteLink: FriendInviteLink? = null,
+    val isGeneratingInvite: Boolean = false,
+    val isProcessingInvite: Boolean = false
 )
 
 /**
  * ViewModel for the Friends screens.
  *
  * Manages friends list loading, filtering, searching, friend request operations,
- * and pull-to-refresh. Observes friends and requests from the repository as
- * reactive Flows and combines with UI state for filtered results.
+ * session sharing, QR friend invites, shareable links, and pull-to-refresh.
+ * Observes friends and requests from the repository as reactive Flows and
+ * combines with UI state for filtered results.
  */
 @HiltViewModel
 class FriendsViewModel @Inject constructor(
-    private val friendsRepository: FriendsRepository
+    private val friendsRepository: FriendsRepository,
+    private val sessionRepository: SessionRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(FriendsUiState())
@@ -316,6 +342,229 @@ class FriendsViewModel @Inject constructor(
                 pendingRequestCount = pendingCount
             )
         }
+    }
+
+    // --- Session Sharing ---
+
+    /**
+     * Show the session sharing dialog for a friend.
+     * Loads available sessions from the repository.
+     *
+     * @param friendId The ID of the friend to share with.
+     */
+    fun showShareSessionDialog(friendId: String) {
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isShareDialogVisible = true,
+                    shareTargetFriendId = friendId,
+                    errorMessage = null
+                )
+            }
+            try {
+                val sessions = sessionRepository.getActiveSessions()
+                _uiState.update { it.copy(availableSessions = sessions) }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        errorMessage = e.message ?: "Failed to load sessions"
+                    )
+                }
+            }
+        }
+    }
+
+    /**
+     * Dismiss the session sharing dialog.
+     */
+    fun dismissShareSessionDialog() {
+        _uiState.update {
+            it.copy(
+                isShareDialogVisible = false,
+                shareTargetFriendId = null,
+                availableSessions = emptyList()
+            )
+        }
+    }
+
+    /**
+     * Share a session with a friend.
+     *
+     * @param sessionId The session to share.
+     * @param friendId The friend to share with.
+     * @param permission The permission level to grant.
+     */
+    fun shareSession(
+        sessionId: String,
+        friendId: String,
+        permission: SharePermission = SharePermission.VIEW
+    ) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSharingSession = true, errorMessage = null) }
+            try {
+                friendsRepository.shareSession(sessionId, friendId, permission)
+                _uiState.update {
+                    it.copy(
+                        isSharingSession = false,
+                        isShareDialogVisible = false,
+                        shareTargetFriendId = null,
+                        availableSessions = emptyList(),
+                        successMessage = "Session shared successfully"
+                    )
+                }
+                // Refresh shared sessions for the friend profile
+                loadSharedSessions(friendId)
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isSharingSession = false,
+                        errorMessage = e.message ?: "Failed to share session"
+                    )
+                }
+            }
+        }
+    }
+
+    /**
+     * Load shared sessions for a specific friend.
+     *
+     * @param friendId The friend's unique identifier.
+     */
+    fun loadSharedSessions(friendId: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingSharedSessions = true) }
+            try {
+                val sharedSessions = friendsRepository.getSharedSessions(friendId)
+                _uiState.update {
+                    it.copy(
+                        sharedSessions = sharedSessions,
+                        isLoadingSharedSessions = false
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isLoadingSharedSessions = false,
+                        errorMessage = e.message ?: "Failed to load shared sessions"
+                    )
+                }
+            }
+        }
+    }
+
+    /**
+     * Revoke a session share.
+     *
+     * @param sessionId The session ID.
+     * @param shareId The share record ID.
+     * @param friendId The friend ID (for refreshing the list).
+     */
+    fun revokeSessionShare(sessionId: String, shareId: String, friendId: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(errorMessage = null) }
+            try {
+                friendsRepository.revokeSessionShare(sessionId, shareId)
+                _uiState.update {
+                    it.copy(successMessage = "Session share revoked")
+                }
+                loadSharedSessions(friendId)
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        errorMessage = e.message ?: "Failed to revoke session share"
+                    )
+                }
+            }
+        }
+    }
+
+    // --- Friend Invites ---
+
+    /**
+     * Generate a friend invite link for sharing.
+     * The invite can be encoded as a QR code or shared as a URL.
+     */
+    fun generateFriendInvite() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isGeneratingInvite = true, errorMessage = null) }
+            try {
+                val invite = friendsRepository.generateFriendInvite()
+                _uiState.update {
+                    it.copy(
+                        friendInviteLink = invite,
+                        isGeneratingInvite = false
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isGeneratingInvite = false,
+                        errorMessage = e.message ?: "Failed to generate invite"
+                    )
+                }
+            }
+        }
+    }
+
+    /**
+     * Process a friend invite code from a QR scan.
+     *
+     * @param code The invite code extracted from the QR payload.
+     */
+    fun processFriendInviteFromQr(code: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isProcessingInvite = true, errorMessage = null) }
+            try {
+                friendsRepository.processFriendInvite(code, InviteSource.QR_CODE)
+                _uiState.update {
+                    it.copy(
+                        isProcessingInvite = false,
+                        successMessage = "Friend request sent via QR code"
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isProcessingInvite = false,
+                        errorMessage = e.message ?: "Failed to process invite"
+                    )
+                }
+            }
+        }
+    }
+
+    /**
+     * Process a friend invite code from a deep link.
+     *
+     * @param code The invite code extracted from the URL.
+     */
+    fun processFriendInviteFromLink(code: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isProcessingInvite = true, errorMessage = null) }
+            try {
+                friendsRepository.processFriendInvite(code, InviteSource.LINK)
+                _uiState.update {
+                    it.copy(
+                        isProcessingInvite = false,
+                        successMessage = "Friend request sent via invite link"
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isProcessingInvite = false,
+                        errorMessage = e.message ?: "Failed to process invite link"
+                    )
+                }
+            }
+        }
+    }
+
+    /**
+     * Clear the generated friend invite link.
+     */
+    fun clearFriendInviteLink() {
+        _uiState.update { it.copy(friendInviteLink = null) }
     }
 
     /**

@@ -251,3 +251,169 @@
 "audioRoute.footer" = "오디오 재생 위치를 선택하세요. 블루투스 기기는 연결 시 표시됩니다.";
 "audioRoute.currentOutput" = "현재 출력";
 "audioRoute.status" = "상태";
+
+// MARK: - Common (close)
+
+"common.close" = "닫기";
+
+// MARK: - Subscription / Paywall
+
+"subscription.paywall.title" = "업그레이드";
+"subscription.paywall.headline" = "전체 경험 잠금 해제";
+"subscription.paywall.subheadline" = "Happy 구독으로 무제한 세션, 음성 기능 등을 이용하세요.";
+"subscription.billingPeriod" = "결제 주기";
+"subscription.subscribe" = "구독하기";
+"subscription.restore" = "구매 복원";
+"subscription.recommended" = "추천";
+"subscription.currentPlan" = "현재 플랜";
+"subscription.purchaseSuccess.title" = "구매 완료";
+"subscription.purchaseSuccess.message" = "감사합니다! 구독이 활성화되었습니다.";
+"subscription.restoreSuccess.title" = "복원 완료";
+"subscription.restoreSuccess.message" = "구매가 복원되었습니다.";
+
+// MARK: - Subscription Legal
+
+"subscription.legal.autoRenew" = "구독은 현재 기간 종료 최소 24시간 전에 취소하지 않으면 자동으로 갱신됩니다.";
+"subscription.legal.terms" = "이용약관";
+"subscription.legal.privacy" = "개인정보 처리방침";
+
+// MARK: - Subscription Status
+
+"subscription.status.title" = "구독";
+"subscription.status.currentPlan" = "현재 플랜";
+"subscription.status.details" = "상세 정보";
+"subscription.status.expired" = "만료됨";
+"subscription.status.actions" = "작업";
+"subscription.status.manageFooter" = "App Store에서 구독을 관리하세요.";
+"subscription.status.gracePeriod" = "유예 기간";
+"subscription.status.active" = "활성";
+"subscription.status.revoked" = "취소됨";
+"subscription.status.free" = "무료";
+"subscription.status.error" = "오류";
+
+// MARK: - Subscription Detail
+
+"subscription.detail.billingPeriod" = "결제 주기";
+"subscription.detail.purchaseDate" = "구매일";
+"subscription.detail.renewalDate" = "갱신일";
+"subscription.detail.daysRemaining" = "남은 일수";
+"subscription.detail.autoRenew" = "자동 갱신";
+
+// MARK: - Subscription Expired
+
+"subscription.expired.notice" = "구독이 만료되었습니다";
+"subscription.expired.description" = "프리미엄 기능을 계속 이용하려면 구독을 갱신하세요.";
+"subscription.expired.renew" = "구독 갱신";
+
+// MARK: - Subscription Actions
+
+"subscription.action.upgrade" = "플랜 업그레이드";
+"subscription.action.restore" = "구매 복원";
+"subscription.action.manage" = "구독 관리";
+
+// MARK: - Artifacts
+
+"artifacts.title" = "아티팩트";
+"artifacts.searchPlaceholder" = "아티팩트 검색";
+"artifacts.loading" = "아티팩트 로딩 중...";
+"artifacts.empty" = "아티팩트 없음";
+"artifacts.emptyDescription" = "세션의 아티팩트가 여기에 표시됩니다.";
+"artifacts.filter" = "필터";
+"artifacts.imageNotSupported" = "이미지 미리보기를 사용할 수 없습니다";
+"artifacts.imageLoading" = "이미지 로딩 중...";
+"artifacts.imageLoadError" = "이미지를 로드할 수 없습니다. 데이터가 손상되었거나 지원되지 않는 형식일 수 있습니다.";
+"artifacts.searchInContent" = "콘텐츠에서 검색";
+"artifacts.searchNoResults" = "결과 없음";
+"artifacts.copyCode" = "복사";
+"artifacts.copied" = "복사됨!";
+"artifacts.copiedToClipboard" = "클립보드에 복사됨";
+"artifacts.lineCount" = "%d줄";
+
+// MARK: - Friends
+
+"friends.title" = "친구";
+"friends.searchPrompt" = "친구 검색";
+"friends.loading" = "친구 로딩 중...";
+"friends.noFriends" = "아직 친구가 없습니다";
+"friends.noFriendsDescription" = "친구를 추가하여 세션을 공유하고 협업하세요.";
+"friends.addFriend" = "친구 추가";
+"friends.noMatching" = "일치하는 친구 없음";
+"friends.noMatchingDescription" = "검색 조건이나 필터를 조정해 보세요.";
+"friends.success" = "성공";
+"friends.onlineCount" = "%d명 온라인";
+
+// MARK: - Friend Profile
+
+"friends.removeConfirmTitle" = "친구를 삭제하시겠습니까?";
+"friends.removeFriend" = "친구 삭제";
+"friends.removeConfirmMessage" = "친구 목록에서 삭제됩니다. 나중에 다시 추가할 수 있습니다.";
+"friends.currentlyInSession" = "현재 세션 중";
+"friends.statistics" = "통계";
+"friends.sharedSessions" = "공유 세션";
+"friends.friendsSince" = "친구 등록일";
+"friends.actions" = "작업";
+"friends.shareSession" = "세션 공유";
+"friends.viewSharedSessions" = "공유 세션 보기";
+"friends.lastSeen" = "%@ 전에 접속";
+
+// MARK: - Add Friend
+
+"friends.addMethod" = "방법";
+"friends.addMethod.username" = "사용자명";
+"friends.addMethod.qrCode" = "QR 코드";
+"friends.usernameInstructions" = "친구의 사용자명을 입력하여 친구 요청을 보내세요.";
+"friends.username" = "사용자명";
+"friends.usernamePlaceholder" = "사용자명 입력";
+"friends.messageOptional" = "메시지 (선택)";
+"friends.messagePlaceholder" = "인사하기...";
+"friends.sendRequest" = "요청 보내기";
+"friends.qrInstructions" = "친구의 QR 코드를 스캔하여 즉시 친구 요청을 보내세요.";
+"friends.scanQRCode" = "QR 코드 스캔";
+"friends.shareYourCode" = "또는 내 코드 공유";
+"friends.shareQRCode" = "내 QR 코드 공유";
+"friends.scanFriendCode" = "친구의 코드를 스캔하여 연결";
+"friends.scanFriend" = "친구 스캔";
+
+// MARK: - Friend Requests
+
+"friendRequests.title" = "친구 요청";
+"friendRequests.noRequests" = "대기 중인 요청 없음";
+"friendRequests.noRequestsDescription" = "보내거나 받은 친구 요청이 여기에 표시됩니다.";
+"friendRequests.incoming" = "받은 요청";
+"friendRequests.outgoing" = "보낸 요청";
+"friendRequests.accept" = "수락";
+"friendRequests.decline" = "거절";
+"friendRequests.pending" = "대기 중";
+"friendRequests.sentTo" = "사용자에게 전송됨";
+"friendRequests.timeAgo" = " 전";
+
+// MARK: - Usage Limits
+
+"usageLimits.title" = "사용량";
+"usageLimits.loading" = "사용량 로딩 중...";
+"usageLimits.moreCount" = "+%d개 더";
+"usageLimits.lastUpdated" = "업데이트: %@";
+"usageLimits.resetsIn" = "%@ 후 초기화";
+"usageLimits.resetsAt" = "%@에 초기화";
+"usageLimits.used" = "사용됨";
+
+// MARK: - Usage Limits Detail
+
+"usageLimits.detail.title" = "사용량 상세";
+"usageLimits.detail.sessionLimit" = "세션 제한";
+"usageLimits.detail.weeklyLimits" = "주간 제한";
+"usageLimits.detail.provider" = "제공자";
+"usageLimits.detail.lastUpdated" = "마지막 업데이트";
+"usageLimits.detail.info" = "사용량 정보";
+"usageLimits.detail.upgradePlan" = "플랜 업그레이드";
+"usageLimits.detail.upgradeFooter" = "플랜을 업그레이드하여 사용 제한을 늘리세요.";
+"usageLimits.detail.nearLimit" = "제한에 근접";
+
+// MARK: - Language Settings
+
+"language.title" = "언어";
+"language.system" = "시스템 기본값";
+"language.systemDescription" = "기기의 언어 설정을 사용합니다.";
+"language.override" = "앱 언어";
+"language.overrideFooter" = "Happy 앱의 언어를 선택하세요. 시스템 언어 설정을 덮어씁니다.";
+"language.restartRequired" = "언어 변경은 앱을 다시 시작하면 적용됩니다.";

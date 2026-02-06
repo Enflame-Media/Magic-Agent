@@ -109,6 +109,9 @@ dependencies {
     // Markdown Rendering (Markwon)
     implementation(libs.bundles.markwon)
 
+    // QR Code Generation (ZXing)
+    implementation(libs.zxing.core)
+
     // Media Session (HAP-1021: foreground service + MediaStyle notification)
     implementation(libs.androidx.media)
 

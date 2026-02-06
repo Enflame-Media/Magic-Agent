@@ -16,6 +16,7 @@ struct FriendsListView: View {
     @StateObject private var viewModel: FriendsViewModel
     @State private var showAddFriend = false
     @State private var showFriendRequests = false
+    @State private var showPrivacySettings = false
 
     init(viewModel: FriendsViewModel? = nil) {
         _viewModel = StateObject(wrappedValue: viewModel ?? FriendsViewModel())
@@ -33,6 +34,9 @@ struct FriendsListView: View {
         }
         .navigationTitle("friends.title".localized)
         .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                privacySettingsButton
+            }
             ToolbarItem(placement: .navigationBarTrailing) {
                 HStack(spacing: 12) {
                     requestsBadgeButton
@@ -72,8 +76,14 @@ struct FriendsListView: View {
                 FriendRequestView(viewModel: viewModel)
             }
         }
+        .sheet(isPresented: $showPrivacySettings) {
+            NavigationStack {
+                PrivacySettingsView(viewModel: viewModel)
+            }
+        }
         .task {
             await viewModel.loadFriends()
+            await viewModel.loadPrivacySettings()
         }
     }
 
@@ -149,7 +159,7 @@ struct FriendsListView: View {
                     Image(systemName: "circle.fill")
                         .font(.system(size: 8))
                         .foregroundStyle(.green)
-                    Text("\(viewModel.onlineFriendCount) online")
+                    Text(String(format: "friends.onlineCount".localized, viewModel.onlineFriendCount))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Spacer()
@@ -211,6 +221,14 @@ struct FriendsListView: View {
             Image(systemName: "person.badge.plus")
         }
     }
+
+    private var privacySettingsButton: some View {
+        Button {
+            showPrivacySettings = true
+        } label: {
+            Image(systemName: "lock.shield")
+        }
+    }
 }
 
 // MARK: - Friend Row View
@@ -221,16 +239,12 @@ struct FriendRowView: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            // Avatar placeholder
-            ZStack {
-                Circle()
-                    .fill(Color.blue.opacity(0.15))
-                    .frame(width: 44, height: 44)
-
-                Text(friend.displayName.prefix(1).uppercased())
-                    .font(.headline)
-                    .foregroundStyle(.blue)
-            }
+            // Avatar with image loading
+            AvatarImageView(
+                avatarUrl: friend.avatarUrl,
+                displayName: friend.displayName,
+                size: 44
+            )
             .overlay(alignment: .bottomTrailing) {
                 statusIndicator
             }

@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.RecordVoiceOver
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -97,6 +98,7 @@ fun SettingsScreen(
     viewModel: SettingsViewModel,
     onNavigateBack: () -> Unit,
     onNavigateToVoiceSettings: () -> Unit = {},
+    onNavigateToPrivacySettings: () -> Unit = {},
     onLogout: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -112,6 +114,7 @@ fun SettingsScreen(
         onCheckConnection = viewModel::checkConnection,
         onRefreshNotificationPermission = viewModel::refreshNotificationPermission,
         onNavigateToVoiceSettings = onNavigateToVoiceSettings,
+        onNavigateToPrivacySettings = onNavigateToPrivacySettings,
         onLogout = { viewModel.logout(onLogout) }
     )
 }
@@ -134,6 +137,7 @@ fun SettingsScreenContent(
     onCheckConnection: () -> Unit = {},
     onRefreshNotificationPermission: () -> Unit = {},
     onNavigateToVoiceSettings: () -> Unit = {},
+    onNavigateToPrivacySettings: () -> Unit = {},
     onLogout: () -> Unit = {}
 ) {
     var showLogoutDialog by remember { mutableStateOf(false) }
@@ -239,6 +243,14 @@ fun SettingsScreenContent(
             )
 
             VoiceSettingsNavCard(onNavigateToVoiceSettings = onNavigateToVoiceSettings)
+
+            // --- Privacy Section ---
+            SettingsSectionHeader(
+                icon = Icons.Default.Shield,
+                title = stringResource(R.string.privacy_settings_title)
+            )
+
+            PrivacySettingsNavCard(onNavigateToPrivacySettings = onNavigateToPrivacySettings)
 
             // --- Language Section ---
             SettingsSectionHeader(
@@ -810,6 +822,51 @@ private fun LanguageOptionRow(
                 imageVector = Icons.Default.Check,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+    }
+}
+
+// --- Privacy Settings Navigation Card ---
+
+@Composable
+private fun PrivacySettingsNavCard(onNavigateToPrivacySettings: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onNavigateToPrivacySettings)
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.Shield,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.privacy_settings_title),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Text(
+                    text = stringResource(R.string.privacy_settings_description),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(20.dp)
             )
         }

@@ -44,6 +44,9 @@ markwon = "4.6.2"
 # Media
 media = "1.7.0"
 
+# QR Code Generation
+zxing = "3.5.2"
+
 # Encryption
 tink = "1.12.0"
 
@@ -118,6 +121,9 @@ markwon-linkify = { group = "io.noties.markwon", name = "linkify", version.ref =
 
 # Media Session
 androidx-media = { group = "androidx.media", name = "media", version.ref = "media" }
+
+# QR Code Generation
+zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxing" }
 
 # Encryption
 tink-android = { group = "com.google.crypto.tink", name = "tink-android", version.ref = "tink" }

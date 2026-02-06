@@ -3,6 +3,7 @@ package com.enflame.happy.data.repository
 import com.enflame.happy.data.api.HappyApiService
 import com.enflame.happy.domain.model.Artifact
 import com.enflame.happy.domain.model.Session
+import com.enflame.happy.domain.model.SessionStatus
 import com.enflame.happy.domain.repository.SessionRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -58,6 +59,14 @@ class SessionRepositoryImpl @Inject constructor(
             apiService.getArtifacts(sessionId)
         } catch (e: Exception) {
             throw e
+        }
+    }
+
+    override suspend fun getActiveSessions(): List<Session> {
+        // Refresh from server to get the latest status, then filter for active sessions
+        refreshSessions()
+        return _sessions.value.filter {
+            it.status == SessionStatus.ACTIVE || it.status == SessionStatus.IDLE
         }
     }
 }

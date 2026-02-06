@@ -8,6 +8,8 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import android.content.Intent
+import androidx.compose.ui.platform.LocalContext
 import com.enflame.happy.ui.screens.artifacts.ArtifactDetailScreen
 import com.enflame.happy.ui.screens.artifacts.ArtifactListScreen
 import com.enflame.happy.ui.screens.friends.AddFriendScreen
@@ -20,11 +22,13 @@ import com.enflame.happy.ui.screens.purchases.SubscriptionStatusView
 import com.enflame.happy.ui.screens.qrscanner.QrScannerScreen
 import com.enflame.happy.ui.screens.sessions.SessionDetailScreen
 import com.enflame.happy.ui.screens.sessions.SessionListScreen
+import com.enflame.happy.ui.screens.settings.PrivacySettingsScreen
 import com.enflame.happy.ui.screens.settings.SettingsScreen
 import com.enflame.happy.ui.screens.settings.VoiceSettingsScreen
 import com.enflame.happy.ui.viewmodel.ArtifactViewModel
 import com.enflame.happy.ui.viewmodel.FriendsViewModel
 import com.enflame.happy.ui.viewmodel.PairingViewModel
+import com.enflame.happy.ui.viewmodel.PrivacySettingsViewModel
 import com.enflame.happy.ui.viewmodel.PurchaseViewModel
 import com.enflame.happy.ui.viewmodel.SessionDetailViewModel
 import com.enflame.happy.ui.viewmodel.SessionListViewModel
@@ -57,6 +61,7 @@ sealed class Screen(val route: String) {
     data object FriendProfile : Screen("friend/{friendId}") {
         fun createRoute(friendId: String) = "friend/$friendId"
     }
+    data object PrivacySettings : Screen("privacy_settings")
     data object QrScanner : Screen("qr_scanner")
     data object PairingConfirmation : Screen(
         "pairing_confirmation/{publicKey}?deviceName={deviceName}&platform={platform}"
@@ -284,9 +289,23 @@ fun HappyNavHost(navController: NavHostController) {
                 onNavigateToVoiceSettings = {
                     navController.navigate(Screen.VoiceSettings.route)
                 },
+                onNavigateToPrivacySettings = {
+                    navController.navigate(Screen.PrivacySettings.route)
+                },
                 onLogout = {
                     // After logout, navigate back to home and clear the back stack
                     navController.popBackStack(Screen.Home.route, inclusive = false)
+                }
+            )
+        }
+
+        composable(Screen.PrivacySettings.route) {
+            val privacySettingsViewModel: PrivacySettingsViewModel = hiltViewModel()
+
+            PrivacySettingsScreen(
+                viewModel = privacySettingsViewModel,
+                onNavigateBack = {
+                    navController.popBackStack()
                 }
             )
         }
@@ -356,6 +375,7 @@ fun HappyNavHost(navController: NavHostController) {
                 navController.getBackStackEntry(Screen.Friends.route)
             }
             val friendsViewModel: FriendsViewModel = hiltViewModel(parentEntry)
+            val context = LocalContext.current
 
             AddFriendScreen(
                 uiState = friendsViewModel.uiState,
@@ -365,6 +385,20 @@ fun HappyNavHost(navController: NavHostController) {
                 onDeclineRequest = friendsViewModel::declineFriendRequest,
                 onScanQrCode = {
                     navController.navigate(Screen.QrScanner.route)
+                },
+                onGenerateInvite = friendsViewModel::generateFriendInvite,
+                onShareInviteLink = {
+                    val inviteUrl = friendsViewModel.uiState.value.friendInviteLink?.url
+                    if (inviteUrl != null) {
+                        val sendIntent = Intent().apply {
+                            action = Intent.ACTION_SEND
+                            putExtra(Intent.EXTRA_TEXT, inviteUrl)
+                            type = "text/plain"
+                        }
+                        context.startActivity(
+                            Intent.createChooser(sendIntent, "Share Friend Invite")
+                        )
+                    }
                 },
                 onDismissError = friendsViewModel::dismissError,
                 onDismissSuccess = friendsViewModel::dismissSuccess,
@@ -394,14 +428,11 @@ fun HappyNavHost(navController: NavHostController) {
                     friend = friend,
                     uiState = friendsViewModel.uiState,
                     onRemoveFriend = friendsViewModel::removeFriend,
-                    onShareSession = {
-                        // Share session functionality - navigates to sessions
-                        navController.navigate(Screen.Sessions.route)
-                    },
-                    onViewSharedSessions = {
-                        // View shared sessions - navigates to sessions
-                        navController.navigate(Screen.Sessions.route)
-                    },
+                    onShowShareDialog = friendsViewModel::showShareSessionDialog,
+                    onDismissShareDialog = friendsViewModel::dismissShareSessionDialog,
+                    onShareSession = friendsViewModel::shareSession,
+                    onLoadSharedSessions = friendsViewModel::loadSharedSessions,
+                    onRevokeSessionShare = friendsViewModel::revokeSessionShare,
                     onDismissError = friendsViewModel::dismissError,
                     onDismissSuccess = friendsViewModel::dismissSuccess,
                     onNavigateBack = {

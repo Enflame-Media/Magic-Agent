@@ -251,3 +251,208 @@
 "audioRoute.footer" = "Select where audio is played. Bluetooth devices appear when connected.";
 "audioRoute.currentOutput" = "Current Output";
 "audioRoute.status" = "Status";
+
+// MARK: - Common (close)
+
+"common.close" = "Close";
+
+// MARK: - Subscription / Paywall
+
+"subscription.paywall.title" = "Upgrade";
+"subscription.paywall.headline" = "Unlock the Full Experience";
+"subscription.paywall.subheadline" = "Get unlimited sessions, voice features, and more with a Happy subscription.";
+"subscription.billingPeriod" = "Billing Period";
+"subscription.subscribe" = "Subscribe";
+"subscription.restore" = "Restore Purchases";
+"subscription.recommended" = "Recommended";
+"subscription.currentPlan" = "Current Plan";
+"subscription.purchaseSuccess.title" = "Purchase Successful";
+"subscription.purchaseSuccess.message" = "Thank you! Your subscription is now active.";
+"subscription.restoreSuccess.title" = "Restore Successful";
+"subscription.restoreSuccess.message" = "Your purchases have been restored.";
+
+// MARK: - Subscription Legal
+
+"subscription.legal.autoRenew" = "Subscriptions auto-renew unless canceled at least 24 hours before the end of the current period.";
+"subscription.legal.terms" = "Terms of Service";
+"subscription.legal.privacy" = "Privacy Policy";
+
+// MARK: - Subscription Status
+
+"subscription.status.title" = "Subscription";
+"subscription.status.currentPlan" = "Current Plan";
+"subscription.status.details" = "Details";
+"subscription.status.expired" = "Expired";
+"subscription.status.actions" = "Actions";
+"subscription.status.manageFooter" = "Manage your subscription through the App Store.";
+"subscription.status.gracePeriod" = "Grace Period";
+"subscription.status.active" = "Active";
+"subscription.status.revoked" = "Revoked";
+"subscription.status.free" = "Free";
+"subscription.status.error" = "Error";
+
+// MARK: - Subscription Detail
+
+"subscription.detail.billingPeriod" = "Billing Period";
+"subscription.detail.purchaseDate" = "Purchase Date";
+"subscription.detail.renewalDate" = "Renewal Date";
+"subscription.detail.daysRemaining" = "Days Remaining";
+"subscription.detail.autoRenew" = "Auto-Renew";
+
+// MARK: - Subscription Expired
+
+"subscription.expired.notice" = "Your subscription has expired";
+"subscription.expired.description" = "Renew your subscription to continue accessing premium features.";
+"subscription.expired.renew" = "Renew Subscription";
+
+// MARK: - Subscription Actions
+
+"subscription.action.upgrade" = "Upgrade Plan";
+"subscription.action.restore" = "Restore Purchases";
+"subscription.action.manage" = "Manage Subscription";
+
+// MARK: - Artifacts
+
+"artifacts.title" = "Artifacts";
+"artifacts.searchPlaceholder" = "Search artifacts";
+"artifacts.loading" = "Loading artifacts...";
+"artifacts.empty" = "No Artifacts";
+"artifacts.emptyDescription" = "Artifacts from your session will appear here.";
+"artifacts.filter" = "Filter";
+"artifacts.imageNotSupported" = "Image preview not available";
+"artifacts.imageLoading" = "Loading image...";
+"artifacts.imageLoadError" = "Could not load the image. The data may be corrupted or in an unsupported format.";
+"artifacts.searchInContent" = "Search in content";
+"artifacts.searchNoResults" = "No results";
+"artifacts.copyCode" = "Copy";
+"artifacts.copied" = "Copied!";
+"artifacts.copiedToClipboard" = "Copied to clipboard";
+"artifacts.lineCount" = "%d lines";
+
+// MARK: - Friends
+
+"friends.title" = "Friends";
+"friends.searchPrompt" = "Search friends";
+"friends.loading" = "Loading friends...";
+"friends.noFriends" = "No Friends Yet";
+"friends.noFriendsDescription" = "Add friends to share sessions and collaborate.";
+"friends.addFriend" = "Add Friend";
+"friends.noMatching" = "No Matching Friends";
+"friends.noMatchingDescription" = "Try adjusting your search or filter.";
+"friends.success" = "Success";
+"friends.onlineCount" = "%d online";
+
+// MARK: - Friend Profile
+
+"friends.removeConfirmTitle" = "Remove Friend?";
+"friends.removeFriend" = "Remove Friend";
+"friends.removeConfirmMessage" = "This will remove them from your friends list. You can add them back later.";
+"friends.currentlyInSession" = "Currently in a session";
+"friends.statistics" = "Statistics";
+"friends.sharedSessions" = "Shared Sessions";
+"friends.friendsSince" = "Friends Since";
+"friends.actions" = "Actions";
+"friends.shareSession" = "Share Session";
+"friends.viewSharedSessions" = "View Shared Sessions";
+"friends.lastSeen" = "Last seen %@ ago";
+
+// MARK: - Add Friend
+
+"friends.addMethod" = "Method";
+"friends.addMethod.username" = "Username";
+"friends.addMethod.qrCode" = "QR Code";
+"friends.usernameInstructions" = "Enter your friend's username to send a friend request.";
+"friends.username" = "Username";
+"friends.usernamePlaceholder" = "Enter username";
+"friends.messageOptional" = "Message (optional)";
+"friends.messagePlaceholder" = "Say hello...";
+"friends.sendRequest" = "Send Request";
+"friends.qrInstructions" = "Scan a friend's QR code to send a friend request instantly.";
+"friends.scanQRCode" = "Scan QR Code";
+"friends.shareYourCode" = "Or share your code";
+"friends.shareQRCode" = "Share My QR Code";
+"friends.scanFriendCode" = "Scan a friend's code to connect";
+"friends.scanFriend" = "Scan Friend";
+
+// MARK: - Friend Requests
+
+"friendRequests.title" = "Friend Requests";
+"friendRequests.noRequests" = "No Pending Requests";
+"friendRequests.noRequestsDescription" = "Friend requests you send or receive will appear here.";
+"friendRequests.incoming" = "Incoming";
+"friendRequests.outgoing" = "Outgoing";
+"friendRequests.accept" = "Accept";
+"friendRequests.decline" = "Decline";
+"friendRequests.pending" = "Pending";
+"friendRequests.sentTo" = "Sent to user";
+"friendRequests.timeAgo" = " ago";
+
+// MARK: - Usage Limits
+
+"usageLimits.title" = "Usage";
+"usageLimits.loading" = "Loading usage...";
+"usageLimits.moreCount" = "+%d more";
+"usageLimits.lastUpdated" = "Updated %@";
+"usageLimits.resetsIn" = "Resets in %@";
+"usageLimits.resetsAt" = "Resets at %@";
+"usageLimits.used" = "used";
+
+// MARK: - Usage Limits Detail
+
+"usageLimits.detail.title" = "Usage Details";
+"usageLimits.detail.sessionLimit" = "Session Limit";
+"usageLimits.detail.weeklyLimits" = "Weekly Limits";
+"usageLimits.detail.provider" = "Provider";
+"usageLimits.detail.lastUpdated" = "Last Updated";
+"usageLimits.detail.info" = "Usage information";
+"usageLimits.detail.upgradePlan" = "Upgrade Plan";
+"usageLimits.detail.upgradeFooter" = "Upgrade your plan to increase your usage limits.";
+"usageLimits.detail.nearLimit" = "Approaching limit";
+
+// MARK: - Language Settings
+
+"language.title" = "Language";
+"language.system" = "System Default";
+"language.systemDescription" = "Use your device's language setting.";
+"language.override" = "App Language";
+"language.overrideFooter" = "Choose a language for the Happy app. This overrides the system language setting.";
+"language.restartRequired" = "Language change will take effect when you restart the app.";
+
+// MARK: - Session Sharing
+
+"sharing.sharedWith" = "Shared with";
+"sharing.loading" = "Loading shared sessions...";
+"sharing.noSharedSessions" = "No Shared Sessions";
+"sharing.noSharedSessionsDescription" = "Sessions shared with this friend will appear here.";
+"sharing.sharedByYou" = "Shared by you";
+"sharing.sharedByFriend" = "Shared by";
+"sharing.revoke" = "Revoke";
+"sharing.revokeConfirmTitle" = "Revoke Session Sharing?";
+"sharing.revokeConfirm" = "Revoke";
+"sharing.revokeConfirmMessage" = "This friend will no longer be able to view this session.";
+"sharing.selectSession" = "Share a Session";
+"sharing.loadingSessions" = "Loading your sessions...";
+"sharing.noActiveSessions" = "No Sessions Available";
+"sharing.noActiveSessionsDescription" = "Start a Claude Code session to share it with friends.";
+"sharing.permission" = "Permission";
+"sharing.permissionHeader" = "Access Level";
+"sharing.permissionFooter" = "View Only allows the friend to read session messages. Collaborate allows interaction.";
+"sharing.selectSessionHeader" = "Choose a Session";
+"sharing.untitled" = "Untitled Session";
+
+// MARK: - Privacy Settings
+
+"privacy.title" = "Privacy Settings";
+"privacy.onlineStatus" = "Online Status";
+"privacy.onlineStatusHeader" = "Online Status Visibility";
+"privacy.onlineStatusFooter" = "Choose who can see when you are online or in a session.";
+"privacy.friendRequests" = "Friend Requests";
+"privacy.friendRequestsHeader" = "Friend Requests";
+"privacy.friendRequestsFooter" = "Choose who can send you friend requests.";
+"privacy.sharedSessions" = "Shared Sessions";
+"privacy.sharedSessionsHeader" = "Shared Sessions";
+"privacy.sharedSessionsFooter" = "Choose who can see sessions you have shared.";
+"privacy.discoverable" = "Appear in Search";
+"privacy.showEmail" = "Show Email to Friends";
+"privacy.profileHeader" = "Profile";
+"privacy.profileFooter" = "Control whether your profile appears in search results and if friends can see your email.";

@@ -327,6 +327,7 @@ class HomeScreenTest {
 | i18n (7 Languages) | Complete | en, es, fr, de, ja, zh-CN, ko with plurals, in-app picker (HAP-1001) |
 | CI/CD Pipeline | Complete | GitHub Actions CI + Release, Fastlane, Detekt, Dependabot (HAP-1004) |
 | Friends & Social | Complete | Friend list, requests, QR add, profiles, search, filter (HAP-1003) |
+| Social Features Complete | Complete | Session sharing, privacy settings, QR friend invite, shareable links, deep linking (HAP-1022) |
 | WebSocket Lifecycle Management | Complete | SyncLifecycleManager with ProcessLifecycleOwner (HAP-1017) |
 | Background Audio Service | Complete | Foreground service + MediaSession + MediaStyle notification (HAP-1021) |
 | Bluetooth Audio Routing | Complete | AudioDeviceManager + device selection UI (HAP-1021) |

@@ -51,4 +51,11 @@ interface SessionRepository {
      * @return List of artifacts for the session.
      */
     suspend fun getArtifacts(sessionId: String): List<Artifact>
+
+    /**
+     * Get all active sessions (status ACTIVE or IDLE) for sharing.
+     *
+     * @return List of currently active sessions.
+     */
+    suspend fun getActiveSessions(): List<Session>
 }

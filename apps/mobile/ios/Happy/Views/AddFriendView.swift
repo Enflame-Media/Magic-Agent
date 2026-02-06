@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 /// View for adding a friend via username search or QR code scanning.
 ///
@@ -20,7 +21,9 @@ struct AddFriendView: View {
     @State private var username: String = ""
     @State private var message: String = ""
     @State private var showQRScanner = false
+    @State private var showShareSheet = false
     @State private var selectedTab: AddFriendMethod = .username
+    @State private var qrCodeImage: UIImage?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -146,11 +149,24 @@ struct AddFriendView: View {
         VStack(spacing: 24) {
             Spacer()
 
-            // QR code illustration
+            // QR code display - show the user's own QR code
             VStack(spacing: 16) {
-                Image(systemName: "qrcode.viewfinder")
-                    .font(.system(size: 64))
-                    .foregroundStyle(.blue)
+                if let qrImage = qrCodeImage {
+                    Image(uiImage: qrImage)
+                        .interpolation(.none)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 200, height: 200)
+                        .cornerRadius(8)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.blue.opacity(0.3), lineWidth: 2)
+                        )
+                } else {
+                    Image(systemName: "qrcode.viewfinder")
+                        .font(.system(size: 64))
+                        .foregroundStyle(.blue)
+                }
 
                 Text("friends.qrInstructions".localized)
                     .font(.subheadline)
@@ -180,10 +196,7 @@ struct AddFriendView: View {
                     .foregroundStyle(.secondary)
 
                 Button {
-                    // Share QR code functionality - generates and shares the user's friend QR code
-                    #if DEBUG
-                    print("[AddFriendView] Share QR code tapped")
-                    #endif
+                    shareQRCode()
                 } label: {
                     Label("friends.shareQRCode".localized, systemImage: "square.and.arrow.up")
                         .frame(maxWidth: .infinity)
@@ -191,6 +204,7 @@ struct AddFriendView: View {
                 .buttonStyle(.bordered)
                 .controlSize(.large)
                 .padding(.horizontal, 40)
+                .disabled(qrCodeImage == nil)
             }
 
             Spacer()
@@ -202,6 +216,20 @@ struct AddFriendView: View {
                 })
             }
         }
+        .sheet(isPresented: $showShareSheet) {
+            if let qrImage = qrCodeImage {
+                ShareSheetView(activityItems: [qrImage])
+            }
+        }
+        .onAppear {
+            qrCodeImage = viewModel.generateFriendQRCode()
+        }
+    }
+
+    /// Triggers the native share sheet with the generated QR code image.
+    private func shareQRCode() {
+        guard qrCodeImage != nil else { return }
+        showShareSheet = true
     }
 }
 
@@ -209,12 +237,17 @@ struct AddFriendView: View {
 
 /// The method for adding a friend.
 enum AddFriendMethod: String, CaseIterable, Identifiable {
-    case username = "Username"
-    case qrCode = "QR Code"
+    case username
+    case qrCode
 
     var id: String { rawValue }
 
-    var title: String { rawValue }
+    var title: String {
+        switch self {
+        case .username: return "friends.addMethod.username".localized
+        case .qrCode: return "friends.addMethod.qrCode".localized
+        }
+    }
 
     var iconName: String {
         switch self {
@@ -326,6 +359,27 @@ struct FriendQRScannerView: View {
             onDismiss()
         }
     }
+}
+
+// MARK: - Share Sheet
+
+/// A UIKit wrapper for `UIActivityViewController` to present the system share sheet.
+///
+/// Used to share QR code images via Messages, AirDrop, email, etc.
+struct ShareSheetView: UIViewControllerRepresentable {
+    let activityItems: [Any]
+    var excludedActivityTypes: [UIActivity.ActivityType]? = nil
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        let controller = UIActivityViewController(
+            activityItems: activityItems,
+            applicationActivities: nil
+        )
+        controller.excludedActivityTypes = excludedActivityTypes
+        return controller
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
 // MARK: - Preview

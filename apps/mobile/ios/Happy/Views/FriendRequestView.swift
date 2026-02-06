@@ -150,7 +150,7 @@ private struct IncomingRequestRow: View {
                     Text(request.createdAt, style: .relative)
                         .font(.caption2)
                         .foregroundColor(.secondary)
-                        + Text(" ago")
+                        + Text("friendRequests.timeAgo".localized)
                         .font(.caption2)
                         .foregroundColor(.secondary)
                 }
@@ -213,7 +213,7 @@ private struct OutgoingRequestRow: View {
             }
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("Sent to user")
+                Text("friendRequests.sentTo".localized)
                     .font(.body)
                     .fontWeight(.medium)
 
@@ -224,7 +224,7 @@ private struct OutgoingRequestRow: View {
                         .font(.caption)
                         .foregroundColor(.orange)
 
-                    Text("- \(request.createdAt, style: .relative) ago")
+                    (Text("- ") + Text(request.createdAt, style: .relative) + Text("friendRequests.timeAgo".localized))
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }

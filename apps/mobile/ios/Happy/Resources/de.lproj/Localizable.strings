@@ -251,3 +251,169 @@
 "audioRoute.footer" = "Waehlen Sie aus, wo Audio abgespielt wird. Bluetooth-Geraete erscheinen wenn verbunden.";
 "audioRoute.currentOutput" = "Aktuelle Ausgabe";
 "audioRoute.status" = "Status";
+
+// MARK: - Common (close)
+
+"common.close" = "Schliessen";
+
+// MARK: - Subscription / Paywall
+
+"subscription.paywall.title" = "Upgrade";
+"subscription.paywall.headline" = "Das volle Erlebnis freischalten";
+"subscription.paywall.subheadline" = "Erhalten Sie unbegrenzte Sitzungen, Sprachfunktionen und mehr mit einem Happy-Abonnement.";
+"subscription.billingPeriod" = "Abrechnungszeitraum";
+"subscription.subscribe" = "Abonnieren";
+"subscription.restore" = "Kaeufe wiederherstellen";
+"subscription.recommended" = "Empfohlen";
+"subscription.currentPlan" = "Aktueller Plan";
+"subscription.purchaseSuccess.title" = "Kauf erfolgreich";
+"subscription.purchaseSuccess.message" = "Vielen Dank! Ihr Abonnement ist jetzt aktiv.";
+"subscription.restoreSuccess.title" = "Wiederherstellung erfolgreich";
+"subscription.restoreSuccess.message" = "Ihre Kaeufe wurden wiederhergestellt.";
+
+// MARK: - Subscription Legal
+
+"subscription.legal.autoRenew" = "Abonnements verlaengern sich automatisch, sofern sie nicht mindestens 24 Stunden vor Ende des aktuellen Zeitraums gekuendigt werden.";
+"subscription.legal.terms" = "Nutzungsbedingungen";
+"subscription.legal.privacy" = "Datenschutzrichtlinie";
+
+// MARK: - Subscription Status
+
+"subscription.status.title" = "Abonnement";
+"subscription.status.currentPlan" = "Aktueller Plan";
+"subscription.status.details" = "Details";
+"subscription.status.expired" = "Abgelaufen";
+"subscription.status.actions" = "Aktionen";
+"subscription.status.manageFooter" = "Verwalten Sie Ihr Abonnement ueber den App Store.";
+"subscription.status.gracePeriod" = "Kulanzzeit";
+"subscription.status.active" = "Aktiv";
+"subscription.status.revoked" = "Widerrufen";
+"subscription.status.free" = "Kostenlos";
+"subscription.status.error" = "Fehler";
+
+// MARK: - Subscription Detail
+
+"subscription.detail.billingPeriod" = "Abrechnungszeitraum";
+"subscription.detail.purchaseDate" = "Kaufdatum";
+"subscription.detail.renewalDate" = "Verlaengerungsdatum";
+"subscription.detail.daysRemaining" = "Verbleibende Tage";
+"subscription.detail.autoRenew" = "Automatisch verlaengern";
+
+// MARK: - Subscription Expired
+
+"subscription.expired.notice" = "Ihr Abonnement ist abgelaufen";
+"subscription.expired.description" = "Erneuern Sie Ihr Abonnement, um weiterhin auf Premium-Funktionen zuzugreifen.";
+"subscription.expired.renew" = "Abonnement erneuern";
+
+// MARK: - Subscription Actions
+
+"subscription.action.upgrade" = "Plan upgraden";
+"subscription.action.restore" = "Kaeufe wiederherstellen";
+"subscription.action.manage" = "Abonnement verwalten";
+
+// MARK: - Artifacts
+
+"artifacts.title" = "Artefakte";
+"artifacts.searchPlaceholder" = "Artefakte suchen";
+"artifacts.loading" = "Artefakte werden geladen...";
+"artifacts.empty" = "Keine Artefakte";
+"artifacts.emptyDescription" = "Artefakte aus Ihrer Sitzung werden hier angezeigt.";
+"artifacts.filter" = "Filter";
+"artifacts.imageNotSupported" = "Bildvorschau nicht verfuegbar";
+"artifacts.imageLoading" = "Bild wird geladen...";
+"artifacts.imageLoadError" = "Das Bild konnte nicht geladen werden. Die Daten sind moeglicherweise beschaedigt oder in einem nicht unterstuetzten Format.";
+"artifacts.searchInContent" = "Im Inhalt suchen";
+"artifacts.searchNoResults" = "Keine Ergebnisse";
+"artifacts.copyCode" = "Kopieren";
+"artifacts.copied" = "Kopiert!";
+"artifacts.copiedToClipboard" = "In die Zwischenablage kopiert";
+"artifacts.lineCount" = "%d Zeilen";
+
+// MARK: - Friends
+
+"friends.title" = "Freunde";
+"friends.searchPrompt" = "Freunde suchen";
+"friends.loading" = "Freunde werden geladen...";
+"friends.noFriends" = "Noch keine Freunde";
+"friends.noFriendsDescription" = "Fuegen Sie Freunde hinzu, um Sitzungen zu teilen und zusammenzuarbeiten.";
+"friends.addFriend" = "Freund hinzufuegen";
+"friends.noMatching" = "Keine passenden Freunde";
+"friends.noMatchingDescription" = "Versuchen Sie, Ihre Suche oder Ihren Filter anzupassen.";
+"friends.success" = "Erfolg";
+"friends.onlineCount" = "%d online";
+
+// MARK: - Friend Profile
+
+"friends.removeConfirmTitle" = "Freund entfernen?";
+"friends.removeFriend" = "Freund entfernen";
+"friends.removeConfirmMessage" = "Dies entfernt die Person aus Ihrer Freundesliste. Sie koennen sie spaeter wieder hinzufuegen.";
+"friends.currentlyInSession" = "Derzeit in einer Sitzung";
+"friends.statistics" = "Statistiken";
+"friends.sharedSessions" = "Geteilte Sitzungen";
+"friends.friendsSince" = "Freunde seit";
+"friends.actions" = "Aktionen";
+"friends.shareSession" = "Sitzung teilen";
+"friends.viewSharedSessions" = "Geteilte Sitzungen ansehen";
+"friends.lastSeen" = "Zuletzt gesehen vor %@";
+
+// MARK: - Add Friend
+
+"friends.addMethod" = "Methode";
+"friends.addMethod.username" = "Benutzername";
+"friends.addMethod.qrCode" = "QR-Code";
+"friends.usernameInstructions" = "Geben Sie den Benutzernamen Ihres Freundes ein, um eine Freundschaftsanfrage zu senden.";
+"friends.username" = "Benutzername";
+"friends.usernamePlaceholder" = "Benutzername eingeben";
+"friends.messageOptional" = "Nachricht (optional)";
+"friends.messagePlaceholder" = "Sag hallo...";
+"friends.sendRequest" = "Anfrage senden";
+"friends.qrInstructions" = "Scannen Sie den QR-Code eines Freundes, um sofort eine Freundschaftsanfrage zu senden.";
+"friends.scanQRCode" = "QR-Code scannen";
+"friends.shareYourCode" = "Oder teilen Sie Ihren Code";
+"friends.shareQRCode" = "Meinen QR-Code teilen";
+"friends.scanFriendCode" = "Scannen Sie den Code eines Freundes zum Verbinden";
+"friends.scanFriend" = "Freund scannen";
+
+// MARK: - Friend Requests
+
+"friendRequests.title" = "Freundschaftsanfragen";
+"friendRequests.noRequests" = "Keine ausstehenden Anfragen";
+"friendRequests.noRequestsDescription" = "Freundschaftsanfragen, die Sie senden oder erhalten, erscheinen hier.";
+"friendRequests.incoming" = "Eingehend";
+"friendRequests.outgoing" = "Ausgehend";
+"friendRequests.accept" = "Annehmen";
+"friendRequests.decline" = "Ablehnen";
+"friendRequests.pending" = "Ausstehend";
+"friendRequests.sentTo" = "Gesendet an Benutzer";
+"friendRequests.timeAgo" = " zuvor";
+
+// MARK: - Usage Limits
+
+"usageLimits.title" = "Nutzung";
+"usageLimits.loading" = "Nutzung wird geladen...";
+"usageLimits.moreCount" = "+%d weitere";
+"usageLimits.lastUpdated" = "Aktualisiert %@";
+"usageLimits.resetsIn" = "Zuruecksetzung in %@";
+"usageLimits.resetsAt" = "Zuruecksetzung um %@";
+"usageLimits.used" = "genutzt";
+
+// MARK: - Usage Limits Detail
+
+"usageLimits.detail.title" = "Nutzungsdetails";
+"usageLimits.detail.sessionLimit" = "Sitzungslimit";
+"usageLimits.detail.weeklyLimits" = "Woechentliche Limits";
+"usageLimits.detail.provider" = "Anbieter";
+"usageLimits.detail.lastUpdated" = "Zuletzt aktualisiert";
+"usageLimits.detail.info" = "Nutzungsinformationen";
+"usageLimits.detail.upgradePlan" = "Plan upgraden";
+"usageLimits.detail.upgradeFooter" = "Upgraden Sie Ihren Plan, um Ihre Nutzungslimits zu erhoehen.";
+"usageLimits.detail.nearLimit" = "Limit wird erreicht";
+
+// MARK: - Language Settings
+
+"language.title" = "Sprache";
+"language.system" = "Systemstandard";
+"language.systemDescription" = "Sprache des Geraets verwenden.";
+"language.override" = "App-Sprache";
+"language.overrideFooter" = "Waehlen Sie eine Sprache fuer die Happy-App. Dies ueberschreibt die Systemsprache.";
+"language.restartRequired" = "Die Sprachaenderung wird nach einem Neustart der App wirksam.";

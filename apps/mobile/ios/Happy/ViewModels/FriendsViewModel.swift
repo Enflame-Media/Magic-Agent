@@ -6,6 +6,8 @@
 //
 
 import Foundation
+import UIKit
+import CoreImage
 import Combine
 
 /// Protocol for the friends API operations, enabling dependency injection and testing.
@@ -22,7 +24,8 @@ protocol FriendsAPIServiceProtocol {
 /// ViewModel for the friends list and social features.
 ///
 /// Manages fetching, filtering, and real-time updates of the friend list,
-/// pending friend requests, and friend request operations.
+/// pending friend requests, friend request operations, session sharing,
+/// privacy settings, and QR code generation.
 /// Uses `ObservableObject` for iOS 16 compatibility.
 final class FriendsViewModel: ObservableObject {
 
@@ -60,6 +63,19 @@ final class FriendsViewModel: ObservableObject {
 
     /// Whether to show the confirmation alert.
     @Published var showConfirmation: Bool = false
+
+    // MARK: - Session Sharing Properties
+
+    /// Sessions shared between the current user and a specific friend.
+    @Published private(set) var sharedSessions: [SharedSession] = []
+
+    /// Whether shared sessions are being loaded.
+    @Published private(set) var isLoadingSharedSessions: Bool = false
+
+    // MARK: - Privacy Properties
+
+    /// The user's privacy settings for social features.
+    @Published var privacySettings: PrivacySettings = .default
 
     // MARK: - Computed Properties
 
@@ -116,9 +132,13 @@ final class FriendsViewModel: ObservableObject {
     // MARK: - Dependencies
 
     private let apiService: FriendsAPIServiceProtocol
+    private let sharingService: SessionSharingServiceProtocol
     private let syncService: SyncService
     private let currentUserId: String
     private var cancellables = Set<AnyCancellable>()
+
+    /// Exposes the current user ID for use in views (e.g., shared session direction).
+    var currentUserIdValue: String { currentUserId }
 
     // MARK: - Initialization
 
@@ -126,16 +146,20 @@ final class FriendsViewModel: ObservableObject {
     ///
     /// - Parameters:
     ///   - apiService: The API service for friend operations. Defaults to the shared adapter.
+    ///   - sharingService: The service for session sharing operations. Defaults to the shared adapter.
     ///   - syncService: The sync service for real-time updates. Defaults to the shared instance.
     ///   - currentUserId: The current user's ID. Defaults to the stored account ID.
     init(
         apiService: FriendsAPIServiceProtocol? = nil,
+        sharingService: SessionSharingServiceProtocol? = nil,
         syncService: SyncService = .shared,
         currentUserId: String? = nil
     ) {
         self.apiService = apiService ?? FriendsAPIServiceAdapter()
+        self.sharingService = sharingService ?? SessionSharingService()
         self.syncService = syncService
         self.currentUserId = currentUserId ?? KeychainHelper.readString(.accountId) ?? ""
+        loadCachedPrivacySettings()
     }
 
     // MARK: - Public Methods
@@ -276,7 +300,160 @@ final class FriendsViewModel: ObservableObject {
         showConfirmation = false
     }
 
+    // MARK: - Session Sharing
+
+    /// Shares a session with a friend.
+    ///
+    /// - Parameters:
+    ///   - session: The session to share.
+    ///   - friend: The friend to share with.
+    ///   - permission: The permission level to grant.
+    @MainActor
+    func shareSession(_ session: Session, withFriend friend: Friend, permission: SharedSessionPermission) async {
+        do {
+            let shared = try await sharingService.shareSession(
+                sessionId: session.id,
+                withFriendId: friend.id,
+                permission: permission
+            )
+            sharedSessions.insert(shared, at: 0)
+            confirmationMessage = "Session shared with \(friend.displayName)"
+            showConfirmation = true
+        } catch {
+            errorMessage = error.localizedDescription
+            showError = true
+        }
+    }
+
+    /// Loads sessions shared between the current user and a specific friend.
+    ///
+    /// - Parameter friendId: The friend's ID to load shared sessions for.
+    @MainActor
+    func loadSharedSessions(friendId: String) async {
+        isLoadingSharedSessions = true
+
+        do {
+            sharedSessions = try await sharingService.fetchSharedSessions(friendId: friendId)
+        } catch {
+            errorMessage = error.localizedDescription
+            showError = true
+        }
+
+        isLoadingSharedSessions = false
+    }
+
+    /// Revokes a previously shared session.
+    ///
+    /// - Parameter session: The shared session to revoke.
+    @MainActor
+    func revokeSharedSession(_ session: SharedSession) async {
+        do {
+            try await sharingService.revokeSharedSession(sharedSessionId: session.id)
+            sharedSessions.removeAll { $0.id == session.id }
+            confirmationMessage = "Session sharing revoked"
+            showConfirmation = true
+        } catch {
+            errorMessage = error.localizedDescription
+            showError = true
+        }
+    }
+
+    // MARK: - QR Code Generation
+
+    /// Generates a QR code image for the current user's friend code.
+    ///
+    /// The QR code encodes a JSON payload with the user's ID and public key,
+    /// which another user can scan to send a friend request.
+    ///
+    /// - Returns: A `UIImage` of the QR code, or nil if generation fails.
+    func generateFriendQRCode() -> UIImage? {
+        let userId = currentUserId
+        let publicKey = KeychainHelper.readString(.publicKey) ?? ""
+
+        guard !userId.isEmpty else { return nil }
+
+        let payload: [String: Any] = [
+            "userId": userId,
+            "publicKey": publicKey,
+            "type": "friend"
+        ]
+
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: payload),
+              let jsonString = String(data: jsonData, encoding: .utf8) else {
+            return nil
+        }
+
+        guard let filter = CIFilter(name: "CIQRCodeGenerator") else { return nil }
+        filter.setValue(jsonString.data(using: .utf8), forKey: "inputMessage")
+        filter.setValue("M", forKey: "inputCorrectionLevel")
+
+        guard let ciImage = filter.outputImage else { return nil }
+
+        // Scale up the QR code for better resolution
+        let scale = CGAffineTransform(scaleX: 10, y: 10)
+        let scaledImage = ciImage.transformed(by: scale)
+
+        let context = CIContext()
+        guard let cgImage = context.createCGImage(scaledImage, from: scaledImage.extent) else { return nil }
+
+        return UIImage(cgImage: cgImage)
+    }
+
+    // MARK: - Privacy Settings
+
+    /// Saves the current privacy settings to the server and local cache.
+    @MainActor
+    func savePrivacySettings() async {
+        do {
+            try await savePivacySettingsToServer(privacySettings)
+            cachePrivacySettings(privacySettings)
+            confirmationMessage = "Privacy settings saved"
+            showConfirmation = true
+        } catch {
+            errorMessage = error.localizedDescription
+            showError = true
+        }
+    }
+
+    /// Loads privacy settings from the server.
+    @MainActor
+    func loadPrivacySettings() async {
+        do {
+            struct PrivacyResponse: Decodable {
+                let settings: PrivacySettings
+            }
+            let response: PrivacyResponse = try await APIService.shared.fetch("/v1/account/privacy")
+            privacySettings = response.settings
+            cachePrivacySettings(privacySettings)
+        } catch {
+            // Fall back to cached settings (already loaded in init)
+        }
+    }
+
     // MARK: - Private Methods
+
+    /// Saves privacy settings to the server.
+    private func savePivacySettingsToServer(_ settings: PrivacySettings) async throws {
+        struct PrivacyResponse: Decodable {
+            let success: Bool
+        }
+        let _: PrivacyResponse = try await APIService.shared.post("/v1/account/privacy", body: settings)
+    }
+
+    /// Caches privacy settings to UserDefaults for offline access.
+    private func cachePrivacySettings(_ settings: PrivacySettings) {
+        if let data = try? JSONEncoder().encode(settings) {
+            UserDefaults.standard.set(data, forKey: "com.enflamemedia.happy.privacySettings")
+        }
+    }
+
+    /// Loads cached privacy settings from UserDefaults.
+    private func loadCachedPrivacySettings() {
+        if let data = UserDefaults.standard.data(forKey: "com.enflamemedia.happy.privacySettings"),
+           let settings = try? JSONDecoder().decode(PrivacySettings.self, from: data) {
+            privacySettings = settings
+        }
+    }
 
     /// Sorts friends by online status (online first), then by display name.
     private func sortFriends(_ list: [Friend]) -> [Friend] {

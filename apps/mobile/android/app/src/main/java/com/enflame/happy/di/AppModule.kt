@@ -152,8 +152,9 @@ object AppModule {
     @Provides
     @Singleton
     fun provideFriendsRepository(
-        friendsApiService: FriendsApiService
+        friendsApiService: FriendsApiService,
+        happyApiService: HappyApiService
     ): FriendsRepository {
-        return FriendsRepositoryImpl(friendsApiService)
+        return FriendsRepositoryImpl(friendsApiService, happyApiService)
     }
 }

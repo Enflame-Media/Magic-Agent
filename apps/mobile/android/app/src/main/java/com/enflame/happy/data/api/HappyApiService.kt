@@ -4,6 +4,8 @@ import com.enflame.happy.domain.model.Artifact
 import com.enflame.happy.domain.model.DeviceRegistrationRequest
 import com.enflame.happy.domain.model.DeviceRegistrationResponse
 import com.enflame.happy.domain.model.Session
+import com.enflame.happy.domain.model.SessionShare
+import com.enflame.happy.domain.model.ShareSessionRequest
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -39,6 +41,44 @@ interface HappyApiService {
      */
     @GET("v1/sessions/{sessionId}/artifacts")
     suspend fun getArtifacts(@Path("sessionId") sessionId: String): List<Artifact>
+
+    // --- Session Sharing (HAP-772) ---
+
+    /**
+     * Share a session with a friend.
+     *
+     * @param sessionId The unique identifier of the session to share.
+     * @param request The share request with friend ID and permission level.
+     * @return The created session share record.
+     */
+    @POST("v1/sessions/{sessionId}/share")
+    suspend fun shareSession(
+        @Path("sessionId") sessionId: String,
+        @Body request: ShareSessionRequest
+    ): SessionShare
+
+    /**
+     * Revoke a session share.
+     *
+     * @param sessionId The session ID.
+     * @param shareId The share record ID to revoke.
+     */
+    @DELETE("v1/sessions/{sessionId}/share/{shareId}")
+    suspend fun revokeSessionShare(
+        @Path("sessionId") sessionId: String,
+        @Path("shareId") shareId: String
+    )
+
+    /**
+     * Get all sessions shared with a specific friend.
+     *
+     * @param friendId The friend's unique identifier.
+     * @return List of session shares with this friend.
+     */
+    @GET("v1/friends/{friendId}/shared-sessions")
+    suspend fun getSharedSessions(
+        @Path("friendId") friendId: String
+    ): List<SessionShare>
 
     // --- Device Registration (Push Notifications) ---
 
