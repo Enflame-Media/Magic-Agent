@@ -450,8 +450,8 @@ describe('PlanLimitsResponseSchema', () => {
                 },
                 weeklyLimits: [
                     {
-                        id: 'opus_4_5_tokens',
-                        label: 'Opus 4.5 Tokens',
+                        id: 'opus_4_6_tokens',
+                        label: 'Opus 4.6 Tokens',
                         percentageUsed: 45.7,
                         resetsAt: 1735689600000,
                         resetDisplayType: 'countdown' as const,
