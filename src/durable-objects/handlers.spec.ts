@@ -76,11 +76,22 @@ function createMockDb() {
     }));
 
     const mockFrom = vi.fn(() => ({
-        where: vi.fn(async () => {
-            if (selectResultsQueue.length > 0 && selectCallIndex < selectResultsQueue.length) {
-                return selectResultsQueue[selectCallIndex++];
-            }
-            return selectResults;
+        where: vi.fn(() => {
+            // Create a thenable that also has .limit() for handleRequestUpdatesSince
+            const results = selectResultsQueue.length > 0 && selectCallIndex < selectResultsQueue.length
+                ? selectResultsQueue[selectCallIndex++]
+                : selectResults;
+
+            // Return a promise-like object that also has limit() method
+            const chainable = {
+                // Make it directly awaitable (for handlers that don't use .limit())
+                then: (resolve: (value: unknown[]) => void, reject?: (reason: unknown) => void) => {
+                    return Promise.resolve(results).then(resolve, reject);
+                },
+                // Support .limit() chain for handleRequestUpdatesSince
+                limit: vi.fn(async () => results),
+            };
+            return chainable;
         }),
     }));
 
@@ -2465,6 +2476,1720 @@ describe('Mutation Testing Coverage - Version Field Assertions', () => {
             expect(result.response?.body).toBeDefined();
             expect(result.response?.body?.currentVersion).toBe(17);
             expect(typeof result.response?.body?.currentData).toBe('string');
+        });
+    });
+});
+
+// =============================================================================
+// MUTATION TESTING IMPROVEMENTS - Filter Type Assertions (HAP-936)
+// =============================================================================
+
+describe('Mutation Testing Coverage - Filter Type Assertions', () => {
+    describe('handlers - Message Filter Type Verification', () => {
+        it('handleSessionMetadataUpdate should use correct filter type', async () => {
+            const mockDb = createMockDb();
+            mockDb._setSelectResults([{
+                id: 'session-1',
+                accountId: 'test-user-123',
+                metadataVersion: 1,
+                metadata: '{"old":"data"}',
+            }]);
+            mockDb._setUpdateResults([{
+                id: 'session-1',
+                metadataVersion: 2,
+                metadata: '{"new":"data"}',
+            }]);
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleSessionMetadataUpdate(ctx, {
+                sid: 'session-1',
+                metadata: '{"new":"data"}',
+                expectedVersion: 1,
+            });
+
+            expect(result.broadcast?.filter.type).toBe('all-interested-in-session');
+            expect(result.broadcast?.filter.sessionId).toBe('session-1');
+        });
+
+        it('handleSessionStateUpdate should use correct filter type', async () => {
+            const mockDb = createMockDb();
+            mockDb._setSelectResults([{
+                id: 'session-1',
+                accountId: 'test-user-123',
+                agentStateVersion: 1,
+                agentState: '{"old":"state"}',
+            }]);
+            mockDb._setUpdateResults([{
+                id: 'session-1',
+                agentStateVersion: 2,
+                agentState: '{"new":"state"}',
+            }]);
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleSessionStateUpdate(ctx, {
+                sid: 'session-1',
+                agentState: '{"new":"state"}',
+                expectedVersion: 1,
+            });
+
+            expect(result.broadcast?.filter.type).toBe('all-interested-in-session');
+            expect(result.broadcast?.filter.sessionId).toBe('session-1');
+        });
+
+        it('handleSessionAlive should use user-scoped-only filter type', async () => {
+            const mockDb = createMockDb();
+            mockDb._setSelectResults([{ id: 'session-1' }]);
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleSessionAlive(ctx, {
+                sid: 'session-1',
+                time: Date.now(),
+            });
+
+            expect(result.ephemeral?.filter.type).toBe('user-scoped-only');
+        });
+
+        it('handleSessionEnd archived should use user-scoped-only filter type', async () => {
+            const mockDb = createMockDb();
+            mockDb._queueSelectResults([
+                [{ id: 'session-1' }],
+                [{ count: 5 }], // has messages - archive
+            ]);
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleSessionEnd(ctx, {
+                sid: 'session-1',
+                time: Date.now(),
+            });
+
+            expect(result.ephemeral?.filter.type).toBe('user-scoped-only');
+        });
+
+        it('handleSessionEnd deleted should use user-scoped-only filter type', async () => {
+            const mockDb = createMockDb();
+            mockDb._queueSelectResults([
+                [{ id: 'session-1' }],
+                [{ count: 0 }], // no messages - delete
+            ]);
+            mockDb._setUpdateResults([{ seq: 1 }]);
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleSessionEnd(ctx, {
+                sid: 'session-1',
+                time: Date.now(),
+            });
+
+            expect(result.broadcast?.filter.type).toBe('user-scoped-only');
+        });
+
+        it('handleSessionMessage should use all-interested-in-session filter type', async () => {
+            const mockDb = createMockDb();
+            mockDb._mockFrom.mockImplementationOnce(() => ({
+                where: vi.fn(async () => [{ id: 'session-1', seq: 5 }]),
+            }));
+            mockDb._mockFrom.mockImplementationOnce(() => ({
+                where: vi.fn(async () => []),
+            }));
+            mockDb._setUpdateResults([{ seq: 6 }]);
+            mockDb._mockSet.mockImplementationOnce(() => ({
+                where: vi.fn(() => ({
+                    returning: vi.fn(async () => [{ seq: 10 }]),
+                })),
+            }));
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleSessionMessage(ctx, {
+                sid: 'session-1',
+                message: '{"text":"hello"}',
+            });
+
+            expect(result.broadcast?.filter.type).toBe('all-interested-in-session');
+            expect(result.broadcast?.filter.sessionId).toBe('session-1');
+        });
+
+        it('handleMachineAlive should use user-scoped-only filter type', async () => {
+            const mockDb = createMockDb();
+            mockDb._setSelectResults([{ id: 'machine-1' }]);
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleMachineAlive(ctx, {
+                machineId: 'machine-1',
+                time: Date.now(),
+            });
+
+            expect(result.ephemeral?.filter.type).toBe('user-scoped-only');
+        });
+
+        it('handleMachineMetadataUpdate should use machine-scoped-only filter type', async () => {
+            const mockDb = createMockDb();
+            mockDb._setSelectResults([{
+                id: 'machine-1',
+                metadataVersion: 1,
+                metadata: '{}',
+            }]);
+            mockDb._setUpdateResults([{ id: 'machine-1' }]);
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleMachineMetadataUpdate(ctx, {
+                machineId: 'machine-1',
+                metadata: '{"hostname":"test"}',
+                expectedVersion: 1,
+            });
+
+            expect(result.broadcast?.filter.type).toBe('machine-scoped-only');
+            expect(result.broadcast?.filter.machineId).toBe('machine-1');
+        });
+
+        it('handleMachineStateUpdate should use machine-scoped-only filter type', async () => {
+            const mockDb = createMockDb();
+            mockDb._setSelectResults([{
+                id: 'machine-1',
+                daemonStateVersion: 1,
+                daemonState: '{}',
+            }]);
+            mockDb._setUpdateResults([{ id: 'machine-1' }]);
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleMachineStateUpdate(ctx, {
+                machineId: 'machine-1',
+                daemonState: '{"status":"running"}',
+                expectedVersion: 1,
+            });
+
+            expect(result.broadcast?.filter.type).toBe('machine-scoped-only');
+            expect(result.broadcast?.filter.machineId).toBe('machine-1');
+        });
+
+        it('handleArtifactUpdate should use user-scoped-only filter type', async () => {
+            const mockDb = createMockDb();
+            mockDb._queueSelectResults([
+                [{
+                    id: 'artifact-1',
+                    accountId: 'test-user-123',
+                    header: new Uint8Array([1, 2, 3]),
+                    headerVersion: 1,
+                    body: new Uint8Array([4, 5, 6]),
+                    bodyVersion: 1,
+                    seq: 5,
+                }],
+            ]);
+            mockDb._queueUpdateResults([
+                [{
+                    id: 'artifact-1',
+                    headerVersion: 2,
+                    seq: 6,
+                }],
+                [{ seq: 10 }],
+            ]);
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleArtifactUpdate(ctx, {
+                artifactId: 'artifact-1',
+                header: { data: 'bmV3LWhlYWRlcg==', expectedVersion: 1 },
+            });
+
+            expect(result.broadcast?.filter.type).toBe('user-scoped-only');
+        });
+
+        it('handleArtifactCreate should use user-scoped-only filter type', async () => {
+            const mockDb = createMockDb();
+            mockDb._setSelectResults([]);
+            mockDb._setInsertResults([{
+                id: 'artifact-1',
+                header: new Uint8Array([1, 2, 3]),
+                headerVersion: 1,
+                body: new Uint8Array([4, 5, 6]),
+                bodyVersion: 1,
+                seq: 0,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            }]);
+            mockDb._setUpdateResults([{ seq: 1 }]);
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleArtifactCreate(ctx, {
+                id: 'artifact-1',
+                header: 'SGVhZGVy',
+                body: 'Qm9keQ==',
+                dataEncryptionKey: 'S2V5',
+            });
+
+            expect(result.broadcast?.filter.type).toBe('user-scoped-only');
+        });
+
+        it('handleArtifactDelete should use user-scoped-only filter type', async () => {
+            const mockDb = createMockDb();
+            mockDb._setSelectResults([{ id: 'artifact-1' }]);
+            mockDb._setUpdateResults([{ seq: 1 }]);
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleArtifactDelete(ctx, { artifactId: 'artifact-1' });
+
+            expect(result.broadcast?.filter.type).toBe('user-scoped-only');
+        });
+
+        it('handleUsageReport should use user-scoped-only filter type for ephemeral', async () => {
+            const mockDb = createMockDb();
+            const now = new Date();
+            mockDb._mockFrom.mockImplementationOnce(() => ({
+                where: vi.fn(async () => [{ id: 'session-1' }]),
+            }));
+            mockDb._mockFrom.mockImplementationOnce(() => ({
+                where: vi.fn(async () => []),
+            }));
+            mockDb._setInsertResults([{
+                id: 'report-1',
+                createdAt: now,
+                updatedAt: now,
+            }]);
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleUsageReport(ctx, {
+                key: 'claude-3-sonnet',
+                sessionId: 'session-1',
+                tokens: { total: 100 },
+                cost: { total: 0.01 },
+            });
+
+            expect(result.ephemeral?.filter.type).toBe('user-scoped-only');
+        });
+    });
+});
+
+// =============================================================================
+// MUTATION TESTING IMPROVEMENTS - UpdatePayload Structure (HAP-936)
+// =============================================================================
+
+describe('Mutation Testing Coverage - UpdatePayload Structure', () => {
+    describe('handlers - UpdatePayload Field Verification', () => {
+        it('handleSessionMetadataUpdate broadcast should have correct UpdatePayload structure', async () => {
+            const mockDb = createMockDb();
+            mockDb._setSelectResults([{
+                id: 'session-1',
+                accountId: 'test-user-123',
+                metadataVersion: 1,
+                metadata: '{"old":"data"}',
+            }]);
+            mockDb._setUpdateResults([{
+                id: 'session-1',
+                metadataVersion: 2,
+                metadata: '{"new":"data"}',
+            }]);
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleSessionMetadataUpdate(ctx, {
+                sid: 'session-1',
+                metadata: '{"new":"data"}',
+                expectedVersion: 1,
+            });
+
+            const data = result.broadcast?.message.data;
+            expect(data).toHaveProperty('id');
+            expect(typeof data.id).toBe('string');
+            expect(data).toHaveProperty('seq');
+            expect(typeof data.seq).toBe('number');
+            expect(data).toHaveProperty('body');
+            expect(data.body).toHaveProperty('t');
+            expect(data.body.t).toBe('update-session');
+            expect(data.body).toHaveProperty('id');
+            expect(data.body.id).toBe('session-1');
+            expect(data.body).toHaveProperty('metadata');
+            expect(data.body.metadata).toHaveProperty('value');
+            expect(data.body.metadata).toHaveProperty('version');
+            expect(data.body.metadata.value).toBe('{"new":"data"}');
+            expect(data.body.metadata.version).toBe(2);
+            expect(data).toHaveProperty('createdAt');
+            expect(typeof data.createdAt).toBe('number');
+        });
+
+        it('handleSessionStateUpdate broadcast should have correct UpdatePayload structure', async () => {
+            const mockDb = createMockDb();
+            mockDb._setSelectResults([{
+                id: 'session-1',
+                accountId: 'test-user-123',
+                agentStateVersion: 1,
+                agentState: '{"old":"state"}',
+            }]);
+            mockDb._setUpdateResults([{
+                id: 'session-1',
+                agentStateVersion: 2,
+                agentState: '{"new":"state"}',
+            }]);
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleSessionStateUpdate(ctx, {
+                sid: 'session-1',
+                agentState: '{"new":"state"}',
+                expectedVersion: 1,
+            });
+
+            const data = result.broadcast?.message.data;
+            expect(data.body.t).toBe('update-session');
+            expect(data.body).toHaveProperty('agentState');
+            expect(data.body.agentState).toHaveProperty('value');
+            expect(data.body.agentState).toHaveProperty('version');
+            expect(data.body.agentState.value).toBe('{"new":"state"}');
+            expect(data.body.agentState.version).toBe(2);
+        });
+
+        it('handleSessionMessage broadcast should have correct new-message structure', async () => {
+            const mockDb = createMockDb();
+            mockDb._mockFrom.mockImplementationOnce(() => ({
+                where: vi.fn(async () => [{ id: 'session-1', seq: 5 }]),
+            }));
+            mockDb._mockFrom.mockImplementationOnce(() => ({
+                where: vi.fn(async () => []),
+            }));
+            mockDb._setUpdateResults([{ seq: 6 }]);
+            mockDb._mockSet.mockImplementationOnce(() => ({
+                where: vi.fn(() => ({
+                    returning: vi.fn(async () => [{ seq: 10 }]),
+                })),
+            }));
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleSessionMessage(ctx, {
+                sid: 'session-1',
+                message: '{"text":"hello"}',
+                localId: 'local-123',
+            });
+
+            const data = result.broadcast?.message.data;
+            expect(data.body.t).toBe('new-message');
+            expect(data.body.sid).toBe('session-1');
+            expect(data.body.message).toHaveProperty('id');
+            expect(data.body.message).toHaveProperty('seq');
+            expect(data.body.message).toHaveProperty('content');
+            expect(data.body.message.content).toHaveProperty('t');
+            expect(data.body.message.content.t).toBe('encrypted');
+            expect(data.body.message.content).toHaveProperty('c');
+            expect(data.body.message.localId).toBe('local-123');
+            expect(data.body.message).toHaveProperty('createdAt');
+            expect(data.body.message).toHaveProperty('updatedAt');
+        });
+
+        it('handleSessionMessage broadcast message content should have encrypted format', async () => {
+            const mockDb = createMockDb();
+            mockDb._mockFrom.mockImplementationOnce(() => ({
+                where: vi.fn(async () => [{ id: 'session-1', seq: 0 }]),
+            }));
+            mockDb._mockFrom.mockImplementationOnce(() => ({
+                where: vi.fn(async () => []),
+            }));
+            mockDb._setUpdateResults([{ seq: 1 }]);
+            mockDb._mockSet.mockImplementationOnce(() => ({
+                where: vi.fn(() => ({
+                    returning: vi.fn(async () => [{ seq: 5 }]),
+                })),
+            }));
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleSessionMessage(ctx, {
+                sid: 'session-1',
+                message: 'encrypted-content-base64',
+            });
+
+            const msgContent = result.broadcast?.message.data.body.message.content;
+            expect(msgContent.t).toBe('encrypted');
+            expect(msgContent.c).toBe('encrypted-content-base64');
+        });
+
+        it('handleMachineMetadataUpdate broadcast should have correct UpdatePayload structure', async () => {
+            const mockDb = createMockDb();
+            mockDb._setSelectResults([{
+                id: 'machine-1',
+                metadataVersion: 1,
+                metadata: '{}',
+            }]);
+            mockDb._setUpdateResults([{ id: 'machine-1' }]);
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleMachineMetadataUpdate(ctx, {
+                machineId: 'machine-1',
+                metadata: '{"hostname":"test"}',
+                expectedVersion: 1,
+            });
+
+            const data = result.broadcast?.message.data;
+            expect(data.body.t).toBe('update-machine');
+            expect(data.body.machineId).toBe('machine-1');
+            expect(data.body).toHaveProperty('metadata');
+            expect(data.body.metadata).toHaveProperty('value');
+            expect(data.body.metadata).toHaveProperty('version');
+            expect(data.body.metadata.value).toBe('{"hostname":"test"}');
+            expect(data.body.metadata.version).toBe(2);
+        });
+
+        it('handleMachineStateUpdate broadcast should include activeAt', async () => {
+            const mockDb = createMockDb();
+            mockDb._setSelectResults([{
+                id: 'machine-1',
+                daemonStateVersion: 1,
+                daemonState: '{}',
+            }]);
+            mockDb._setUpdateResults([{ id: 'machine-1' }]);
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleMachineStateUpdate(ctx, {
+                machineId: 'machine-1',
+                daemonState: '{"status":"running"}',
+                expectedVersion: 1,
+            });
+
+            const data = result.broadcast?.message.data;
+            expect(data.body.t).toBe('update-machine');
+            expect(data.body.machineId).toBe('machine-1');
+            expect(data.body).toHaveProperty('daemonState');
+            expect(data.body.daemonState).toHaveProperty('value');
+            expect(data.body.daemonState).toHaveProperty('version');
+            expect(data.body).toHaveProperty('activeAt');
+            expect(typeof data.body.activeAt).toBe('number');
+        });
+
+        it('handleArtifactCreate broadcast should have correct new-artifact structure', async () => {
+            const mockDb = createMockDb();
+            mockDb._setSelectResults([]);
+            mockDb._setInsertResults([{
+                id: 'artifact-1',
+                header: new Uint8Array([1, 2, 3]),
+                headerVersion: 1,
+                body: new Uint8Array([4, 5, 6]),
+                bodyVersion: 1,
+                seq: 0,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            }]);
+            mockDb._setUpdateResults([{ seq: 1 }]);
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleArtifactCreate(ctx, {
+                id: 'artifact-1',
+                header: 'SGVhZGVy',
+                body: 'Qm9keQ==',
+                dataEncryptionKey: 'S2V5',
+            });
+
+            const data = result.broadcast?.message.data;
+            expect(data.body.t).toBe('new-artifact');
+            expect(data.body.artifactId).toBe('artifact-1');
+            expect(data.body).toHaveProperty('seq');
+            expect(data.body).toHaveProperty('header');
+            expect(data.body).toHaveProperty('headerVersion');
+            expect(data.body).toHaveProperty('body');
+            expect(data.body).toHaveProperty('bodyVersion');
+            expect(data.body).toHaveProperty('dataEncryptionKey');
+            expect(data.body).toHaveProperty('createdAt');
+            expect(data.body).toHaveProperty('updatedAt');
+        });
+
+        it('handleArtifactUpdate broadcast should have correct update-artifact structure', async () => {
+            const mockDb = createMockDb();
+            mockDb._queueSelectResults([
+                [{
+                    id: 'artifact-1',
+                    accountId: 'test-user-123',
+                    header: new Uint8Array([1, 2, 3]),
+                    headerVersion: 1,
+                    body: new Uint8Array([4, 5, 6]),
+                    bodyVersion: 1,
+                    seq: 5,
+                }],
+            ]);
+            mockDb._queueUpdateResults([
+                [{
+                    id: 'artifact-1',
+                    headerVersion: 2,
+                    bodyVersion: 2,
+                    seq: 6,
+                }],
+                [{ seq: 10 }],
+            ]);
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleArtifactUpdate(ctx, {
+                artifactId: 'artifact-1',
+                header: { data: 'bmV3LWhlYWRlcg==', expectedVersion: 1 },
+                body: { data: 'bmV3LWJvZHk=', expectedVersion: 1 },
+            });
+
+            const data = result.broadcast?.message.data;
+            expect(data.body.t).toBe('update-artifact');
+            expect(data.body.artifactId).toBe('artifact-1');
+            expect(data.body).toHaveProperty('header');
+            expect(data.body.header).toHaveProperty('value');
+            expect(data.body.header).toHaveProperty('version');
+            expect(data.body).toHaveProperty('body');
+            expect(data.body.body).toHaveProperty('value');
+            expect(data.body.body).toHaveProperty('version');
+        });
+    });
+});
+
+// =============================================================================
+// MUTATION TESTING IMPROVEMENTS - Ephemeral Event Structure (HAP-936)
+// =============================================================================
+
+describe('Mutation Testing Coverage - Ephemeral Event Structure', () => {
+    describe('handlers - Ephemeral Event Field Verification', () => {
+        it('handleSessionAlive should include sid in ephemeral data', async () => {
+            const mockDb = createMockDb();
+            mockDb._setSelectResults([{ id: 'session-1' }]);
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const time = Date.now();
+            const result = await handleSessionAlive(ctx, {
+                sid: 'session-1',
+                time: time,
+                thinking: false,
+            });
+
+            expect(result.ephemeral?.message.data.sid).toBe('session-1');
+            expect(result.ephemeral?.message.data.activeAt).toBeLessThanOrEqual(Date.now());
+            expect(result.ephemeral?.message.data.activeAt).toBeGreaterThan(Date.now() - 60000);
+        });
+
+        it('handleMachineAlive should include machineId and activeAt in ephemeral data', async () => {
+            const mockDb = createMockDb();
+            mockDb._setSelectResults([{ id: 'machine-1' }]);
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const time = Date.now();
+            const result = await handleMachineAlive(ctx, {
+                machineId: 'machine-1',
+                time: time,
+            });
+
+            expect(result.ephemeral?.message.data.machineId).toBe('machine-1');
+            expect(result.ephemeral?.message.data.activeAt).toBeLessThanOrEqual(Date.now());
+            expect(result.ephemeral?.message.data.activeAt).toBeGreaterThan(Date.now() - 60000);
+        });
+
+        it('handleSessionEnd archived should include sid and activeAt in ephemeral data', async () => {
+            const mockDb = createMockDb();
+            mockDb._queueSelectResults([
+                [{ id: 'session-1' }],
+                [{ count: 5 }],
+            ]);
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const time = Date.now();
+            const result = await handleSessionEnd(ctx, {
+                sid: 'session-1',
+                time: time,
+            });
+
+            expect(result.ephemeral?.message.data.sid).toBe('session-1');
+            expect(result.ephemeral?.message.data.activeAt).toBeLessThanOrEqual(Date.now());
+            expect(result.response?.success).toBe(true);
+            expect(result.response?.activeAt).toBeLessThanOrEqual(Date.now());
+        });
+
+        it('handleUsageReport should include all usage fields in ephemeral data', async () => {
+            const mockDb = createMockDb();
+            const now = new Date();
+            mockDb._mockFrom.mockImplementationOnce(() => ({
+                where: vi.fn(async () => [{ id: 'session-1' }]),
+            }));
+            mockDb._mockFrom.mockImplementationOnce(() => ({
+                where: vi.fn(async () => []),
+            }));
+            mockDb._setInsertResults([{
+                id: 'report-1',
+                createdAt: now,
+                updatedAt: now,
+            }]);
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleUsageReport(ctx, {
+                key: 'claude-3-opus',
+                sessionId: 'session-1',
+                tokens: { total: 500, input: 400, output: 100 },
+                cost: { total: 0.05, input: 0.04, output: 0.01 },
+            });
+
+            const data = result.ephemeral?.message.data;
+            expect(data.type).toBe('usage');
+            expect(data.sid).toBe('session-1');
+            expect(data.key).toBe('claude-3-opus');
+            expect(data.tokens).toEqual({ total: 500, input: 400, output: 100 });
+            expect(data.cost).toEqual({ total: 0.05, input: 0.04, output: 0.01 });
+            expect(data).toHaveProperty('timestamp');
+            expect(typeof data.timestamp).toBe('number');
+        });
+    });
+});
+
+// =============================================================================
+// MUTATION TESTING IMPROVEMENTS - Response Field Verification (HAP-936)
+// =============================================================================
+
+describe('Mutation Testing Coverage - Response Field Verification', () => {
+    describe('handlers - Success Response Field Verification', () => {
+        it('handleSessionMetadataUpdate success should return exact version number', async () => {
+            const mockDb = createMockDb();
+            mockDb._setSelectResults([{
+                id: 'session-1',
+                accountId: 'test-user-123',
+                metadataVersion: 5,
+                metadata: '{"old":"data"}',
+            }]);
+            mockDb._setUpdateResults([{
+                id: 'session-1',
+                metadataVersion: 6,
+                metadata: '{"new":"data"}',
+            }]);
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleSessionMetadataUpdate(ctx, {
+                sid: 'session-1',
+                metadata: '{"new":"data"}',
+                expectedVersion: 5,
+            });
+
+            expect(result.response?.result).toBe('success');
+            expect(result.response?.version).toBe(6); // expectedVersion + 1
+            expect(result.response?.metadata).toBe('{"new":"data"}');
+        });
+
+        it('handleSessionStateUpdate success should return exact version number', async () => {
+            const mockDb = createMockDb();
+            mockDb._setSelectResults([{
+                id: 'session-1',
+                accountId: 'test-user-123',
+                agentStateVersion: 3,
+                agentState: '{"old":"state"}',
+            }]);
+            mockDb._setUpdateResults([{
+                id: 'session-1',
+                agentStateVersion: 4,
+                agentState: '{"new":"state"}',
+            }]);
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleSessionStateUpdate(ctx, {
+                sid: 'session-1',
+                agentState: '{"new":"state"}',
+                expectedVersion: 3,
+            });
+
+            expect(result.response?.result).toBe('success');
+            expect(result.response?.version).toBe(4); // expectedVersion + 1
+            expect(result.response?.agentState).toBe('{"new":"state"}');
+        });
+
+        it('handleMachineMetadataUpdate success should return exact version number', async () => {
+            const mockDb = createMockDb();
+            mockDb._setSelectResults([{
+                id: 'machine-1',
+                metadataVersion: 7,
+                metadata: '{"old":"metadata"}',
+            }]);
+            mockDb._setUpdateResults([{
+                id: 'machine-1',
+                metadataVersion: 8,
+            }]);
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleMachineMetadataUpdate(ctx, {
+                machineId: 'machine-1',
+                metadata: '{"new":"metadata"}',
+                expectedVersion: 7,
+            });
+
+            expect(result.response?.result).toBe('success');
+            expect(result.response?.version).toBe(8); // expectedVersion + 1
+            expect(result.response?.metadata).toBe('{"new":"metadata"}');
+        });
+
+        it('handleMachineStateUpdate success should return exact version number', async () => {
+            const mockDb = createMockDb();
+            mockDb._setSelectResults([{
+                id: 'machine-1',
+                daemonStateVersion: 10,
+                daemonState: '{"old":"state"}',
+            }]);
+            mockDb._setUpdateResults([{
+                id: 'machine-1',
+                daemonStateVersion: 11,
+            }]);
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleMachineStateUpdate(ctx, {
+                machineId: 'machine-1',
+                daemonState: '{"new":"state"}',
+                expectedVersion: 10,
+            });
+
+            expect(result.response?.result).toBe('success');
+            expect(result.response?.version).toBe(11); // expectedVersion + 1
+            expect(result.response?.daemonState).toBe('{"new":"state"}');
+        });
+
+        it('handleArtifactRead success should return artifact with correct structure', async () => {
+            const mockDb = createMockDb();
+            const createdAt = new Date(1700000000000);
+            const updatedAt = new Date(1700001000000);
+            mockDb._setSelectResults([{
+                id: 'artifact-1',
+                header: new Uint8Array([1, 2, 3]),
+                headerVersion: 5,
+                body: new Uint8Array([4, 5, 6]),
+                bodyVersion: 3,
+                seq: 10,
+                createdAt,
+                updatedAt,
+            }]);
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleArtifactRead(ctx, { artifactId: 'artifact-1' });
+
+            expect(result.response?.result).toBe('success');
+            expect(result.response?.artifact.id).toBe('artifact-1');
+            expect(result.response?.artifact.headerVersion).toBe(5);
+            expect(result.response?.artifact.bodyVersion).toBe(3);
+            expect(result.response?.artifact.seq).toBe(10);
+            expect(result.response?.artifact.createdAt).toBe(1700000000000);
+            expect(result.response?.artifact.updatedAt).toBe(1700001000000);
+        });
+
+        it('handleAccessKeyGet success should return accessKey with correct structure', async () => {
+            const mockDb = createMockDb();
+            const createdAt = new Date(1700000000000);
+            const updatedAt = new Date(1700001000000);
+            mockDb._mockFrom.mockImplementationOnce(() => ({
+                where: vi.fn(async () => [{ id: 'session-1' }]),
+            }));
+            mockDb._mockFrom.mockImplementationOnce(() => ({
+                where: vi.fn(async () => [{ id: 'machine-1' }]),
+            }));
+            mockDb._mockFrom.mockImplementationOnce(() => ({
+                where: vi.fn(async () => [{
+                    data: 'encrypted-access-key',
+                    dataVersion: 5,
+                    createdAt,
+                    updatedAt,
+                }]),
+            }));
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleAccessKeyGet(ctx, {
+                sessionId: 'session-1',
+                machineId: 'machine-1',
+            });
+
+            expect(result.response?.ok).toBe(true);
+            expect(result.response?.accessKey.data).toBe('encrypted-access-key');
+            expect(result.response?.accessKey.dataVersion).toBe(5);
+            expect(result.response?.accessKey.createdAt).toBe(1700000000000);
+            expect(result.response?.accessKey.updatedAt).toBe(1700001000000);
+        });
+
+        it('handleUsageReport success should return reportId and timestamps', async () => {
+            const mockDb = createMockDb();
+            const createdAt = new Date(1700000000000);
+            const updatedAt = new Date(1700001000000);
+            mockDb._mockFrom.mockImplementationOnce(() => ({
+                where: vi.fn(async () => []),
+            }));
+            mockDb._setInsertResults([{
+                id: 'report-123',
+                createdAt,
+                updatedAt,
+            }]);
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleUsageReport(ctx, {
+                key: 'claude-3-sonnet',
+                tokens: { total: 100 },
+                cost: { total: 0.01 },
+            });
+
+            expect(result.response?.success).toBe(true);
+            expect(result.response?.reportId).toBe('report-123');
+            expect(result.response?.createdAt).toBe(1700000000000);
+            expect(result.response?.updatedAt).toBe(1700001000000);
+        });
+    });
+});
+
+// =============================================================================
+// MUTATION TESTING IMPROVEMENTS - handleRequestUpdatesSince Coverage (HAP-936)
+// =============================================================================
+
+import { handleRequestUpdatesSince } from './handlers';
+
+describe('Mutation Testing Coverage - handleRequestUpdatesSince', () => {
+    describe('response structure verification', () => {
+        it('should return success response with expected properties', async () => {
+            const mockDb = createMockDb();
+            mockDb._setSelectResults([]);
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleRequestUpdatesSince(ctx, {
+                sessions: 0,
+                machines: 0,
+                artifacts: 0,
+            });
+
+            expect(result.response).toHaveProperty('success');
+            expect(result.response?.success).toBe(true);
+            expect(result.response).toHaveProperty('updates');
+            expect(Array.isArray(result.response?.updates)).toBe(true);
+            expect(result.response).toHaveProperty('counts');
+        });
+
+        it('should return deletedSessions in counts', async () => {
+            const mockDb = createMockDb();
+            mockDb._setSelectResults([]);
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleRequestUpdatesSince(ctx, {
+                sessions: 0,
+                machines: 0,
+                artifacts: 0,
+            });
+
+            expect(result.response?.counts).toHaveProperty('sessions');
+            expect(result.response?.counts).toHaveProperty('deletedSessions');
+            expect(result.response?.counts).toHaveProperty('machines');
+            expect(result.response?.counts).toHaveProperty('artifacts');
+        });
+    });
+
+    describe('update type verification', () => {
+        it('should format session update with correct t field', async () => {
+            const mockDb = createMockDb();
+            const now = new Date();
+            // Mock for active sessions
+            mockDb._mockFrom.mockImplementationOnce(() => ({
+                where: vi.fn(() => ({
+                    limit: vi.fn(async () => [{
+                        id: 'session-1',
+                        seq: 5,
+                        metadata: '{"name":"Test"}',
+                        metadataVersion: 2,
+                        agentState: null,
+                        agentStateVersion: 1,
+                        updatedAt: now,
+                    }]),
+                })),
+            }));
+            // Mock for deleted sessions (empty)
+            mockDb._mockFrom.mockImplementationOnce(() => ({
+                where: vi.fn(() => ({
+                    limit: vi.fn(async () => []),
+                })),
+            }));
+            // Mock for machines (empty)
+            mockDb._mockFrom.mockImplementationOnce(() => ({
+                where: vi.fn(() => ({
+                    limit: vi.fn(async () => []),
+                })),
+            }));
+            // Mock for artifacts (empty)
+            mockDb._mockFrom.mockImplementationOnce(() => ({
+                where: vi.fn(() => ({
+                    limit: vi.fn(async () => []),
+                })),
+            }));
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleRequestUpdatesSince(ctx, {
+                sessions: 0,
+                machines: 0,
+                artifacts: 0,
+            });
+
+            expect(result.response?.success).toBe(true);
+            if (result.response?.updates.length > 0) {
+                const sessionUpdate = result.response.updates.find(
+                    (u: { type: string }) => u.type === 'update-session'
+                );
+                if (sessionUpdate) {
+                    expect(sessionUpdate.data.t).toBe('update-session');
+                }
+            }
+        });
+    });
+
+    describe('parameter validation', () => {
+        it('should return error for invalid sessions parameter type', async () => {
+            const ctx = createContext();
+
+            const result = await handleRequestUpdatesSince(ctx, {
+                sessions: 'invalid' as unknown as number,
+                machines: 0,
+                artifacts: 0,
+            });
+
+            expect(result.response?.success).toBe(false);
+            expect(result.response?.error).toContain('Invalid');
+        });
+
+        it('should return error for invalid machines parameter type', async () => {
+            const ctx = createContext();
+
+            const result = await handleRequestUpdatesSince(ctx, {
+                sessions: 0,
+                machines: 'invalid' as unknown as number,
+                artifacts: 0,
+            });
+
+            expect(result.response?.success).toBe(false);
+            expect(result.response?.error).toContain('Invalid');
+        });
+
+        it('should return error for invalid artifacts parameter type', async () => {
+            const ctx = createContext();
+
+            const result = await handleRequestUpdatesSince(ctx, {
+                sessions: 0,
+                machines: 0,
+                artifacts: 'invalid' as unknown as number,
+            });
+
+            expect(result.response?.success).toBe(false);
+            expect(result.response?.error).toContain('Invalid');
+        });
+    });
+});
+
+// =============================================================================
+// MUTATION TESTING IMPROVEMENTS - Broadcast Body t-field Assertions (HAP-936)
+// =============================================================================
+
+describe('Mutation Testing Coverage - Broadcast Body t-field Assertions', () => {
+    describe('handlers - Exact t-field Value Verification', () => {
+        it('handleSessionMetadataUpdate broadcast body.t should be exactly update-session', async () => {
+            const mockDb = createMockDb();
+            mockDb._setSelectResults([{
+                id: 'session-1',
+                accountId: 'test-user-123',
+                metadataVersion: 1,
+                metadata: '{"old":"data"}',
+            }]);
+            mockDb._setUpdateResults([{
+                id: 'session-1',
+                metadataVersion: 2,
+            }]);
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleSessionMetadataUpdate(ctx, {
+                sid: 'session-1',
+                metadata: '{"new":"data"}',
+                expectedVersion: 1,
+            });
+
+            expect(result.broadcast?.message.data.body.t).toBe('update-session');
+            expect(result.broadcast?.message.data.body.t).not.toBe('update-machine');
+            expect(result.broadcast?.message.data.body.t).not.toBe('new-message');
+        });
+
+        it('handleSessionStateUpdate broadcast body.t should be exactly update-session', async () => {
+            const mockDb = createMockDb();
+            mockDb._setSelectResults([{
+                id: 'session-1',
+                accountId: 'test-user-123',
+                agentStateVersion: 1,
+                agentState: '{"old":"state"}',
+            }]);
+            mockDb._setUpdateResults([{
+                id: 'session-1',
+                agentStateVersion: 2,
+            }]);
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleSessionStateUpdate(ctx, {
+                sid: 'session-1',
+                agentState: '{"new":"state"}',
+                expectedVersion: 1,
+            });
+
+            expect(result.broadcast?.message.data.body.t).toBe('update-session');
+            expect(result.broadcast?.message.data.body.t).not.toBe('update-machine');
+        });
+
+        it('handleSessionMessage broadcast body.t should be exactly new-message', async () => {
+            const mockDb = createMockDb();
+            mockDb._mockFrom.mockImplementationOnce(() => ({
+                where: vi.fn(async () => [{ id: 'session-1', seq: 5 }]),
+            }));
+            mockDb._mockFrom.mockImplementationOnce(() => ({
+                where: vi.fn(async () => []),
+            }));
+            mockDb._setUpdateResults([{ seq: 6 }]);
+            mockDb._mockSet.mockImplementationOnce(() => ({
+                where: vi.fn(() => ({
+                    returning: vi.fn(async () => [{ seq: 10 }]),
+                })),
+            }));
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleSessionMessage(ctx, {
+                sid: 'session-1',
+                message: '{"text":"test"}',
+            });
+
+            expect(result.broadcast?.message.data.body.t).toBe('new-message');
+            expect(result.broadcast?.message.data.body.t).not.toBe('update-session');
+        });
+
+        it('handleSessionEnd deleted broadcast body.t should be exactly delete-session', async () => {
+            const mockDb = createMockDb();
+            mockDb._queueSelectResults([
+                [{ id: 'session-1' }],
+                [{ count: 0 }],
+            ]);
+            mockDb._setUpdateResults([{ seq: 1 }]);
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleSessionEnd(ctx, {
+                sid: 'session-1',
+                time: Date.now(),
+            });
+
+            expect(result.broadcast?.message.data.body.t).toBe('delete-session');
+            expect(result.broadcast?.message.data.body.t).not.toBe('update-session');
+        });
+
+        it('handleMachineMetadataUpdate broadcast body.t should be exactly update-machine', async () => {
+            const mockDb = createMockDb();
+            mockDb._setSelectResults([{
+                id: 'machine-1',
+                metadataVersion: 1,
+                metadata: '{}',
+            }]);
+            mockDb._setUpdateResults([{
+                id: 'machine-1',
+                metadataVersion: 2,
+            }]);
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleMachineMetadataUpdate(ctx, {
+                machineId: 'machine-1',
+                metadata: '{"hostname":"test"}',
+                expectedVersion: 1,
+            });
+
+            expect(result.broadcast?.message.data.body.t).toBe('update-machine');
+            expect(result.broadcast?.message.data.body.t).not.toBe('update-session');
+        });
+
+        it('handleMachineStateUpdate broadcast body.t should be exactly update-machine', async () => {
+            const mockDb = createMockDb();
+            mockDb._setSelectResults([{
+                id: 'machine-1',
+                daemonStateVersion: 1,
+                daemonState: '{}',
+            }]);
+            mockDb._setUpdateResults([{
+                id: 'machine-1',
+                daemonStateVersion: 2,
+            }]);
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleMachineStateUpdate(ctx, {
+                machineId: 'machine-1',
+                daemonState: '{"new":"state"}',
+                expectedVersion: 1,
+            });
+
+            expect(result.broadcast?.message.data.body.t).toBe('update-machine');
+            expect(result.broadcast?.message.data.body.t).not.toBe('update-session');
+        });
+
+        it('handleArtifactCreate broadcast body.t should be exactly new-artifact', async () => {
+            const mockDb = createMockDb();
+            mockDb._setSelectResults([]);
+            mockDb._setInsertResults([{
+                id: 'artifact-1',
+                header: new Uint8Array([1, 2, 3]),
+                headerVersion: 1,
+                body: new Uint8Array([4, 5, 6]),
+                bodyVersion: 1,
+                seq: 0,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            }]);
+            mockDb._setUpdateResults([{ seq: 1 }]);
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleArtifactCreate(ctx, {
+                id: 'artifact-1',
+                header: 'SGVhZGVy',
+                body: 'Qm9keQ==',
+                dataEncryptionKey: 'S2V5',
+            });
+
+            expect(result.broadcast?.message.data.body.t).toBe('new-artifact');
+            expect(result.broadcast?.message.data.body.t).not.toBe('update-artifact');
+        });
+
+        it('handleArtifactUpdate broadcast body.t should be exactly update-artifact', async () => {
+            const mockDb = createMockDb();
+            mockDb._queueSelectResults([
+                [{
+                    id: 'artifact-1',
+                    accountId: 'test-user-123',
+                    header: new Uint8Array([1, 2, 3]),
+                    headerVersion: 1,
+                    body: new Uint8Array([4, 5, 6]),
+                    bodyVersion: 1,
+                    seq: 5,
+                }],
+            ]);
+            mockDb._queueUpdateResults([
+                [{
+                    id: 'artifact-1',
+                    headerVersion: 2,
+                    seq: 6,
+                }],
+                [{ seq: 10 }],
+            ]);
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleArtifactUpdate(ctx, {
+                artifactId: 'artifact-1',
+                header: { data: 'bmV3LWhlYWRlcg==', expectedVersion: 1 },
+            });
+
+            expect(result.broadcast?.message.data.body.t).toBe('update-artifact');
+            expect(result.broadcast?.message.data.body.t).not.toBe('new-artifact');
+        });
+
+        it('handleArtifactDelete broadcast body.t should be exactly delete-artifact', async () => {
+            const mockDb = createMockDb();
+            mockDb._setSelectResults([{ id: 'artifact-1' }]);
+            mockDb._setUpdateResults([{ seq: 1 }]);
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleArtifactDelete(ctx, { artifactId: 'artifact-1' });
+
+            expect(result.broadcast?.message.data.body.t).toBe('delete-artifact');
+            expect(result.broadcast?.message.data.body.t).not.toBe('update-artifact');
+        });
+    });
+});
+
+// =============================================================================
+// MUTATION TESTING IMPROVEMENTS - Ephemeral Event Type Assertions (HAP-936)
+// =============================================================================
+
+describe('Mutation Testing Coverage - Ephemeral Event Type Assertions', () => {
+    describe('handlers - Exact Ephemeral Type Verification', () => {
+        it('handleSessionAlive ephemeral type should be exactly activity', async () => {
+            const mockDb = createMockDb();
+            mockDb._setSelectResults([{ id: 'session-1' }]);
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleSessionAlive(ctx, {
+                sid: 'session-1',
+                time: Date.now(),
+            });
+
+            expect(result.ephemeral?.message.data.type).toBe('activity');
+            expect(result.ephemeral?.message.data.type).not.toBe('machine-activity');
+            expect(result.ephemeral?.message.data.type).not.toBe('usage');
+        });
+
+        it('handleSessionEnd archived ephemeral type should be exactly activity', async () => {
+            const mockDb = createMockDb();
+            mockDb._queueSelectResults([
+                [{ id: 'session-1' }],
+                [{ count: 5 }],
+            ]);
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleSessionEnd(ctx, {
+                sid: 'session-1',
+                time: Date.now(),
+            });
+
+            expect(result.ephemeral?.message.data.type).toBe('activity');
+            expect(result.ephemeral?.message.data.type).not.toBe('machine-activity');
+        });
+
+        it('handleMachineAlive ephemeral type should be exactly machine-activity', async () => {
+            const mockDb = createMockDb();
+            mockDb._setSelectResults([{ id: 'machine-1' }]);
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleMachineAlive(ctx, {
+                machineId: 'machine-1',
+                time: Date.now(),
+            });
+
+            expect(result.ephemeral?.message.data.type).toBe('machine-activity');
+            expect(result.ephemeral?.message.data.type).not.toBe('activity');
+        });
+
+        it('handleUsageReport ephemeral type should be exactly usage', async () => {
+            const mockDb = createMockDb();
+            const now = new Date();
+            mockDb._mockFrom.mockImplementationOnce(() => ({
+                where: vi.fn(async () => [{ id: 'session-1' }]),
+            }));
+            mockDb._mockFrom.mockImplementationOnce(() => ({
+                where: vi.fn(async () => []),
+            }));
+            mockDb._setInsertResults([{
+                id: 'report-1',
+                createdAt: now,
+                updatedAt: now,
+            }]);
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleUsageReport(ctx, {
+                key: 'claude-3-sonnet',
+                sessionId: 'session-1',
+                tokens: { total: 100 },
+                cost: { total: 0.01 },
+            });
+
+            expect(result.ephemeral?.message.data.type).toBe('usage');
+            expect(result.ephemeral?.message.data.type).not.toBe('activity');
+        });
+    });
+});
+
+// =============================================================================
+// MUTATION TESTING IMPROVEMENTS - Message Content Assertions (HAP-936)
+// =============================================================================
+
+describe('Mutation Testing Coverage - Message Content Assertions', () => {
+    describe('handlers - Message Content Structure Verification', () => {
+        it('handleSessionMessage should create message with encrypted content format', async () => {
+            const mockDb = createMockDb();
+            mockDb._mockFrom.mockImplementationOnce(() => ({
+                where: vi.fn(async () => [{ id: 'session-1', seq: 5 }]),
+            }));
+            mockDb._mockFrom.mockImplementationOnce(() => ({
+                where: vi.fn(async () => []),
+            }));
+            mockDb._setUpdateResults([{ seq: 6 }]);
+            mockDb._mockSet.mockImplementationOnce(() => ({
+                where: vi.fn(() => ({
+                    returning: vi.fn(async () => [{ seq: 10 }]),
+                })),
+            }));
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleSessionMessage(ctx, {
+                sid: 'session-1',
+                message: 'encrypted-content-string',
+            });
+
+            expect(result.broadcast?.message.data.body.message.content.t).toBe('encrypted');
+            expect(result.broadcast?.message.data.body.message.content.c).toBe('encrypted-content-string');
+        });
+
+        it('handleSessionMessage should include localId in message when provided', async () => {
+            const mockDb = createMockDb();
+            mockDb._mockFrom.mockImplementationOnce(() => ({
+                where: vi.fn(async () => [{ id: 'session-1', seq: 5 }]),
+            }));
+            mockDb._mockFrom.mockImplementationOnce(() => ({
+                where: vi.fn(async () => []),
+            }));
+            mockDb._setUpdateResults([{ seq: 6 }]);
+            mockDb._mockSet.mockImplementationOnce(() => ({
+                where: vi.fn(() => ({
+                    returning: vi.fn(async () => [{ seq: 10 }]),
+                })),
+            }));
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleSessionMessage(ctx, {
+                sid: 'session-1',
+                message: 'encrypted-content',
+                localId: 'local-id-123',
+            });
+
+            expect(result.broadcast?.message.data.body.message.localId).toBe('local-id-123');
+        });
+
+        it('handleSessionMessage should set localId to null when not provided', async () => {
+            const mockDb = createMockDb();
+            mockDb._mockFrom.mockImplementationOnce(() => ({
+                where: vi.fn(async () => [{ id: 'session-1', seq: 5 }]),
+            }));
+            mockDb._mockFrom.mockImplementationOnce(() => ({
+                where: vi.fn(async () => []),
+            }));
+            mockDb._setUpdateResults([{ seq: 6 }]);
+            mockDb._mockSet.mockImplementationOnce(() => ({
+                where: vi.fn(() => ({
+                    returning: vi.fn(async () => [{ seq: 10 }]),
+                })),
+            }));
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleSessionMessage(ctx, {
+                sid: 'session-1',
+                message: 'encrypted-content',
+            });
+
+            expect(result.broadcast?.message.data.body.message.localId).toBeNull();
+        });
+    });
+});
+
+// =============================================================================
+// MUTATION TESTING IMPROVEMENTS - Version Increment Assertions (HAP-936)
+// =============================================================================
+
+describe('Mutation Testing Coverage - Version Increment Assertions', () => {
+    describe('handlers - Exact Version Increment Verification', () => {
+        it('handleSessionMetadataUpdate should increment version by exactly 1', async () => {
+            const mockDb = createMockDb();
+            mockDb._setSelectResults([{
+                id: 'session-1',
+                accountId: 'test-user-123',
+                metadataVersion: 5,
+                metadata: '{"old":"data"}',
+            }]);
+            mockDb._setUpdateResults([{
+                id: 'session-1',
+                metadataVersion: 6,
+            }]);
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleSessionMetadataUpdate(ctx, {
+                sid: 'session-1',
+                metadata: '{"new":"data"}',
+                expectedVersion: 5,
+            });
+
+            expect(result.response?.version).toBe(6);
+            expect(result.broadcast?.message.data.body.metadata.version).toBe(6);
+        });
+
+        it('handleSessionStateUpdate should increment version by exactly 1', async () => {
+            const mockDb = createMockDb();
+            mockDb._setSelectResults([{
+                id: 'session-1',
+                accountId: 'test-user-123',
+                agentStateVersion: 8,
+                agentState: '{"old":"state"}',
+            }]);
+            mockDb._setUpdateResults([{
+                id: 'session-1',
+                agentStateVersion: 9,
+            }]);
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleSessionStateUpdate(ctx, {
+                sid: 'session-1',
+                agentState: '{"new":"state"}',
+                expectedVersion: 8,
+            });
+
+            expect(result.response?.version).toBe(9);
+            expect(result.broadcast?.message.data.body.agentState.version).toBe(9);
+        });
+
+        it('handleMachineMetadataUpdate should increment version by exactly 1', async () => {
+            const mockDb = createMockDb();
+            mockDb._setSelectResults([{
+                id: 'machine-1',
+                metadataVersion: 12,
+                metadata: '{}',
+            }]);
+            mockDb._setUpdateResults([{
+                id: 'machine-1',
+                metadataVersion: 13,
+            }]);
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleMachineMetadataUpdate(ctx, {
+                machineId: 'machine-1',
+                metadata: '{"new":"data"}',
+                expectedVersion: 12,
+            });
+
+            expect(result.response?.version).toBe(13);
+            expect(result.broadcast?.message.data.body.metadata.version).toBe(13);
+        });
+
+        it('handleMachineStateUpdate should increment version by exactly 1', async () => {
+            const mockDb = createMockDb();
+            mockDb._setSelectResults([{
+                id: 'machine-1',
+                daemonStateVersion: 15,
+                daemonState: '{}',
+            }]);
+            mockDb._setUpdateResults([{
+                id: 'machine-1',
+                daemonStateVersion: 16,
+            }]);
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleMachineStateUpdate(ctx, {
+                machineId: 'machine-1',
+                daemonState: '{"new":"state"}',
+                expectedVersion: 15,
+            });
+
+            expect(result.response?.version).toBe(16);
+            expect(result.broadcast?.message.data.body.daemonState.version).toBe(16);
+        });
+
+        it('handleArtifactUpdate should increment header version by exactly 1', async () => {
+            const mockDb = createMockDb();
+            mockDb._queueSelectResults([
+                [{
+                    id: 'artifact-1',
+                    accountId: 'test-user-123',
+                    header: new Uint8Array([1, 2, 3]),
+                    headerVersion: 20,
+                    body: new Uint8Array([4, 5, 6]),
+                    bodyVersion: 10,
+                    seq: 5,
+                }],
+            ]);
+            mockDb._queueUpdateResults([
+                [{
+                    id: 'artifact-1',
+                    headerVersion: 21,
+                    seq: 6,
+                }],
+                [{ seq: 10 }],
+            ]);
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleArtifactUpdate(ctx, {
+                artifactId: 'artifact-1',
+                header: { data: 'bmV3LWhlYWRlcg==', expectedVersion: 20 },
+            });
+
+            expect(result.response?.header?.version).toBe(21);
+            expect(result.broadcast?.message.data.body.header.version).toBe(21);
+        });
+
+        it('handleArtifactUpdate should increment body version by exactly 1', async () => {
+            const mockDb = createMockDb();
+            mockDb._queueSelectResults([
+                [{
+                    id: 'artifact-1',
+                    accountId: 'test-user-123',
+                    header: new Uint8Array([1, 2, 3]),
+                    headerVersion: 10,
+                    body: new Uint8Array([4, 5, 6]),
+                    bodyVersion: 25,
+                    seq: 5,
+                }],
+            ]);
+            mockDb._queueUpdateResults([
+                [{
+                    id: 'artifact-1',
+                    bodyVersion: 26,
+                    seq: 6,
+                }],
+                [{ seq: 10 }],
+            ]);
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleArtifactUpdate(ctx, {
+                artifactId: 'artifact-1',
+                body: { data: 'bmV3LWJvZHk=', expectedVersion: 25 },
+            });
+
+            expect(result.response?.body?.version).toBe(26);
+            expect(result.broadcast?.message.data.body.body.version).toBe(26);
+        });
+    });
+});
+
+// =============================================================================
+// MUTATION TESTING IMPROVEMENTS - Boolean Value Assertions (HAP-936)
+// =============================================================================
+
+describe('Mutation Testing Coverage - Boolean Value Assertions', () => {
+    describe('handlers - Exact Boolean Value Verification', () => {
+        it('handleSessionAlive should set active to true', async () => {
+            const mockDb = createMockDb();
+            mockDb._setSelectResults([{ id: 'session-1' }]);
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleSessionAlive(ctx, {
+                sid: 'session-1',
+                time: Date.now(),
+            });
+
+            expect(result.ephemeral?.message.data.active).toBe(true);
+            expect(result.ephemeral?.message.data.active).not.toBe(false);
+        });
+
+        it('handleSessionEnd archived should set active to false', async () => {
+            const mockDb = createMockDb();
+            mockDb._queueSelectResults([
+                [{ id: 'session-1' }],
+                [{ count: 5 }],
+            ]);
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleSessionEnd(ctx, {
+                sid: 'session-1',
+                time: Date.now(),
+            });
+
+            expect(result.ephemeral?.message.data.active).toBe(false);
+            expect(result.ephemeral?.message.data.active).not.toBe(true);
+        });
+
+        it('handleSessionEnd archived should set thinking to false', async () => {
+            const mockDb = createMockDb();
+            mockDb._queueSelectResults([
+                [{ id: 'session-1' }],
+                [{ count: 5 }],
+            ]);
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleSessionEnd(ctx, {
+                sid: 'session-1',
+                time: Date.now(),
+            });
+
+            expect(result.ephemeral?.message.data.thinking).toBe(false);
+            expect(result.ephemeral?.message.data.thinking).not.toBe(true);
+        });
+
+        it('handleMachineAlive should set active to true', async () => {
+            const mockDb = createMockDb();
+            mockDb._setSelectResults([{ id: 'machine-1' }]);
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleMachineAlive(ctx, {
+                machineId: 'machine-1',
+                time: Date.now(),
+            });
+
+            expect(result.ephemeral?.message.data.active).toBe(true);
+            expect(result.ephemeral?.message.data.active).not.toBe(false);
+        });
+
+        it('handleSessionEnd deleted should set deleted to true', async () => {
+            const mockDb = createMockDb();
+            mockDb._queueSelectResults([
+                [{ id: 'session-1' }],
+                [{ count: 0 }],
+            ]);
+            mockDb._setUpdateResults([{ seq: 1 }]);
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleSessionEnd(ctx, {
+                sid: 'session-1',
+                time: Date.now(),
+            });
+
+            expect(result.response?.deleted).toBe(true);
+            expect(result.response?.deleted).not.toBe(false);
+        });
+
+        it('handleSessionEnd archived should not have deleted flag', async () => {
+            const mockDb = createMockDb();
+            mockDb._queueSelectResults([
+                [{ id: 'session-1' }],
+                [{ count: 5 }],
+            ]);
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleSessionEnd(ctx, {
+                sid: 'session-1',
+                time: Date.now(),
+            });
+
+            expect(result.response?.deleted).toBeUndefined();
+        });
+
+        it('handleUsageReport success should return success true', async () => {
+            const mockDb = createMockDb();
+            const now = new Date();
+            mockDb._mockFrom.mockImplementationOnce(() => ({
+                where: vi.fn(async () => []),
+            }));
+            mockDb._setInsertResults([{
+                id: 'report-1',
+                createdAt: now,
+                updatedAt: now,
+            }]);
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleUsageReport(ctx, {
+                key: 'claude-3-sonnet',
+                tokens: { total: 100 },
+                cost: { total: 0.01 },
+            });
+
+            expect(result.response?.success).toBe(true);
+            expect(result.response?.success).not.toBe(false);
+        });
+
+        it('handleAccessKeyGet success should return ok true', async () => {
+            const mockDb = createMockDb();
+            mockDb._mockFrom.mockImplementationOnce(() => ({
+                where: vi.fn(async () => [{ id: 'session-1' }]),
+            }));
+            mockDb._mockFrom.mockImplementationOnce(() => ({
+                where: vi.fn(async () => [{ id: 'machine-1' }]),
+            }));
+            mockDb._mockFrom.mockImplementationOnce(() => ({
+                where: vi.fn(async () => []),
+            }));
+
+            const ctx = createContext({ db: mockDb as unknown as HandlerContext['db'] });
+
+            const result = await handleAccessKeyGet(ctx, {
+                sessionId: 'session-1',
+                machineId: 'machine-1',
+            });
+
+            expect(result.response?.ok).toBe(true);
+            expect(result.response?.ok).not.toBe(false);
         });
     });
 });

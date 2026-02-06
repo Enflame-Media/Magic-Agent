@@ -179,6 +179,38 @@ export function clearFallbackStore(): void {
     fallbackLimits.clear();
 }
 
+
+/**
+ * Get fallback max entries constant (for testing only)
+ */
+export function getFallbackMaxEntries(): number {
+    return FALLBACK_MAX_ENTRIES;
+}
+
+/**
+ * Populate fallback store with test entries (for testing only)
+ * Uses current store size as offset to ensure unique keys across multiple calls.
+ * @param count Number of entries to add
+ * @param expired Whether entries should be expired
+ */
+export function populateFallbackStore(count: number, expired: boolean = false): void {
+    const now = Date.now();
+    const offset = fallbackLimits.size;
+    for (let i = 0; i < count; i++) {
+        fallbackLimits.set(`test:key:${offset + i}`, {
+            count: 1,
+            resetAt: expired ? now - 1000 : now + 60_000,
+        });
+    }
+}
+
+/**
+ * Trigger cleanup of fallback store (for testing only)
+ */
+export function triggerFallbackCleanup(): void {
+    cleanupFallbackStore();
+}
+
 /**
  * Check and increment rate limit counter
  *

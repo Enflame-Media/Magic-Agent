@@ -22,7 +22,7 @@ workers_dev = false
 [env.dev.vars]
 ENVIRONMENT = "development"
 DEBUG_RPC_ROUTING = "false"
-HAPPY_APP_URL = "https://happy-dev.enflamemedia.com"
+HAPPY_APP_URL = "https://api-dev.magicagent.app"
 SENTRY_DSN = "https://af2fba0efa2a35d5d45cb73a04913f8c@o4509604128817152.ingest.us.sentry.io/4510650134691840"
 
 # Version metadata binding for Sentry releases
@@ -30,7 +30,7 @@ SENTRY_DSN = "https://af2fba0efa2a35d5d45cb73a04913f8c@o4509604128817152.ingest.
 binding = "CF_VERSION_METADATA"
 # Custom domain routing
 [[env.dev.routes]]
-pattern = "happy-api-dev.enflamemedia.com"
+pattern = "api-dev.magicagent.app"
 custom_domain = true
 
 # D1 Database binding (development)
@@ -116,7 +116,7 @@ SENTRY_DSN = "https://af2fba0efa2a35d5d45cb73a04913f8c@o4509604128817152.ingest.
 binding = "CF_VERSION_METADATA"
 # Custom domain routing
 [[env.prod.routes]]
-pattern = "happy-api.enflamemedia.com"
+pattern = "api.magicagent.app"
 custom_domain = true
 
 # D1 Database binding (production)

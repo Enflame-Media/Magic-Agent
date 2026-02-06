@@ -380,6 +380,8 @@ yarn test:watch
 
 This project uses [Stryker Mutator](https://stryker-mutator.io/) for mutation testing to validate test quality. Mutation testing introduces small changes (mutants) to production code and verifies that tests detect these changes. Surviving mutants indicate gaps in test coverage.
 
+> **Full Guide**: See [`docs/MUTATION-TESTING.md`](../../../docs/MUTATION-TESTING.md) for comprehensive best practices on interpreting results, fixing surviving mutants, and understanding equivalent mutants.
+
 ### Commands
 
 | Command | Purpose |

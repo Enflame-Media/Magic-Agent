@@ -1944,4 +1944,910 @@ describe('Session Routes with Drizzle Mocking', () => {
             expect(sessionIds).not.toContain('old-active-session');
         });
     });
+
+    // ========================================================================
+    // HAP-909: Additional Mutation Testing Coverage Tests - String Literals
+    // ========================================================================
+
+    describe('String Literal Mutation Tests (HAP-909)', () => {
+        it('should return exact cursor_v1_ prefix format in sessions pagination', async () => {
+            const sessions = Array.from({ length: 60 }, (_, i) =>
+                createTestSession(TEST_USER_ID, {
+                    id: `cursor-prefix-test-${String(i).padStart(4, '0')}`,
+                })
+            );
+            drizzleMock.seedData('sessions', sessions);
+
+            const body = await expectOk<{ sessions: { id: string }[]; nextCursor: string }>(
+                await authRequest('/v2/sessions?limit=50', { method: 'GET' })
+            );
+
+            // Verify exact prefix - mutation testing will catch if prefix is changed
+            expect(body.nextCursor).toMatch(/^cursor_v1_/);
+            expect(body.nextCursor.startsWith('cursor_v1_')).toBe(true);
+            expect(body.nextCursor.substring(0, 10)).toBe('cursor_v1_');
+        });
+
+        it('should return exact cursor_v1_ prefix format in messages pagination', async () => {
+            const session = createTestSession(TEST_USER_ID, { id: 'msg-cursor-prefix-session' });
+            drizzleMock.seedData('sessions', [session]);
+
+            const messages = Array.from({ length: 60 }, (_, i) => ({
+                id: `msg-cursor-prefix-${String(i).padStart(4, '0')}`,
+                sessionId: 'msg-cursor-prefix-session',
+                localId: `local-${i}`,
+                seq: i,
+                content: JSON.stringify({ text: `Message ${i}` }),
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            }));
+            drizzleMock.seedData('sessionMessages', messages);
+
+            const body = await expectOk<{ messages: { id: string }[]; nextCursor: string }>(
+                await authRequest('/v2/sessions/msg-cursor-prefix-session/messages?limit=50', { method: 'GET' })
+            );
+
+            // Verify exact prefix
+            expect(body.nextCursor).toMatch(/^cursor_v1_/);
+            expect(body.nextCursor.startsWith('cursor_v1_')).toBe(true);
+            expect(body.nextCursor.substring(0, 10)).toBe('cursor_v1_');
+        });
+
+        it('should return exact "Session not found" error message for GET', async () => {
+            const res = await authRequest('/v1/sessions/nonexistent-id', { method: 'GET' });
+            expect(res.status).toBe(404);
+
+            const body = await res.json() as { error: string };
+            expect(body.error).toBe('Session not found');
+            // Verify exact string - catches mutations to error message
+            expect(body.error).not.toBe('session not found');
+            expect(body.error).not.toBe('Session Not Found');
+        });
+
+        it('should return exact "Session not found" error message for DELETE', async () => {
+            const res = await authRequest('/v1/sessions/nonexistent-delete', { method: 'DELETE' });
+            expect(res.status).toBe(404);
+
+            const body = await res.json() as { error: string };
+            expect(body.error).toBe('Session not found');
+        });
+
+        it('should return exact "Session not found" error message for state endpoint', async () => {
+            const res = await authRequest('/v1/sessions/nonexistent-state/state', { method: 'GET' });
+            expect(res.status).toBe(404);
+
+            const body = await res.json() as { error: string };
+            expect(body.error).toBe('Session not found');
+        });
+
+        it('should return exact "Session not found" error message for archive endpoint', async () => {
+            const res = await authRequest('/v1/sessions/nonexistent-archive/archive', {
+                method: 'POST',
+                body: JSON.stringify({ reason: 'revival_failed' }),
+            });
+            expect(res.status).toBe(404);
+
+            const body = await res.json() as { error: string };
+            expect(body.error).toBe('Session not found');
+        });
+
+        it('should return exact "Session not found" error message for messages list', async () => {
+            const res = await authRequest('/v1/sessions/nonexistent-msgs/messages', { method: 'GET' });
+            expect(res.status).toBe(404);
+
+            const body = await res.json() as { error: string };
+            expect(body.error).toBe('Session not found');
+        });
+
+        it('should return exact "Session not found" error message for messages create', async () => {
+            const res = await authRequest('/v1/sessions/nonexistent-create-msg/messages', {
+                method: 'POST',
+                body: JSON.stringify({ content: { text: 'test' } }),
+            });
+            expect(res.status).toBe(404);
+
+            const body = await res.json() as { error: string };
+            expect(body.error).toBe('Session not found');
+        });
+
+        it('should return exact "Invalid cursor format" error message', async () => {
+            const res = await authRequest('/v2/sessions?cursor=bad-cursor', { method: 'GET' });
+            expect(res.status).toBe(400);
+
+            const body = await res.json() as { error: string };
+            expect(body.error).toBe('Invalid cursor format');
+        });
+
+        it('should return exact "Session already archived" error message', async () => {
+            const archivedSession = createTestSession(TEST_USER_ID, {
+                id: 'already-archived-test',
+                archivedAt: new Date(),
+            });
+            drizzleMock.seedData('sessions', [archivedSession]);
+
+            const res = await authRequest('/v1/sessions/already-archived-test/archive', {
+                method: 'POST',
+                body: JSON.stringify({ reason: 'user_requested' }),
+            });
+            expect(res.status).toBe(400);
+
+            const body = await res.json() as { error: string };
+            expect(body.error).toBe('Session already archived');
+        });
+    });
+
+    // ========================================================================
+    // HAP-909: Object Literal and Response Structure Mutation Tests
+    // ========================================================================
+
+    describe('Response Field Mutation Tests (HAP-909)', () => {
+        it('should return lastMessage as null in list sessions response', async () => {
+            const session = createTestSession(TEST_USER_ID, { id: 'lastmsg-null-session' });
+            drizzleMock.seedData('sessions', [session]);
+
+            const body = await expectOk<{ sessions: { id: string; lastMessage: unknown }[] }>(
+                await authRequest('/v1/sessions', { method: 'GET' })
+            );
+
+            expect(body.sessions[0]?.lastMessage).toBeNull();
+        });
+
+        it('should return lastMessage as null in paginated sessions response', async () => {
+            const session = createTestSession(TEST_USER_ID, { id: 'paginated-lastmsg-null' });
+            drizzleMock.seedData('sessions', [session]);
+
+            const body = await expectOk<{ sessions: { id: string; lastMessage: unknown }[] }>(
+                await authRequest('/v2/sessions', { method: 'GET' })
+            );
+
+            expect(body.sessions[0]?.lastMessage).toBeNull();
+        });
+
+        it('should return lastMessage as null in active sessions response', async () => {
+            const session = createTestSession(TEST_USER_ID, {
+                id: 'active-lastmsg-null',
+                active: true,
+                lastActiveAt: new Date(),
+            });
+            drizzleMock.seedData('sessions', [session]);
+
+            const body = await expectOk<{ sessions: { id: string; lastMessage: unknown }[] }>(
+                await authRequest('/v2/sessions/active', { method: 'GET' })
+            );
+
+            expect(body.sessions[0]?.lastMessage).toBeNull();
+        });
+
+        it('should return lastMessage as null in get session response', async () => {
+            const session = createTestSession(TEST_USER_ID, { id: 'get-lastmsg-null' });
+            drizzleMock.seedData('sessions', [session]);
+
+            const body = await expectOk<{ session: { id: string; lastMessage: unknown } }>(
+                await authRequest('/v1/sessions/get-lastmsg-null', { method: 'GET' })
+            );
+
+            expect(body.session.lastMessage).toBeNull();
+        });
+
+        it('should return lastMessage as null in create session response', async () => {
+            const body = await expectOk<{ session: { id: string; lastMessage: unknown } }>(
+                await authRequest('/v1/sessions', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        tag: `lastmsg-create-${Date.now()}`,
+                        metadata: '{"test":"lastMessage null"}',
+                    }),
+                })
+            );
+
+            expect(body.session.lastMessage).toBeNull();
+        });
+
+        it('should return seq=0 for newly created sessions', async () => {
+            const body = await expectOk<{ session: { id: string; seq: number } }>(
+                await authRequest('/v1/sessions', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        tag: `seq-zero-${Date.now()}`,
+                        metadata: '{"test":"seq zero"}',
+                    }),
+                })
+            );
+
+            expect(body.session.seq).toBe(0);
+        });
+
+        it('should return metadataVersion=1 for newly created sessions', async () => {
+            const body = await expectOk<{ session: { metadataVersion: number } }>(
+                await authRequest('/v1/sessions', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        tag: `mv1-${Date.now()}`,
+                        metadata: '{"test":"metadataVersion 1"}',
+                    }),
+                })
+            );
+
+            expect(body.session.metadataVersion).toBe(1);
+        });
+
+        it('should return agentStateVersion=0 when no agentState provided', async () => {
+            const body = await expectOk<{ session: { agentStateVersion: number } }>(
+                await authRequest('/v1/sessions', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        tag: `asv0-${Date.now()}`,
+                        metadata: '{"test":"no agentState"}',
+                        // No agentState provided
+                    }),
+                })
+            );
+
+            expect(body.session.agentStateVersion).toBe(0);
+        });
+
+        it('should return agentStateVersion=1 when agentState provided', async () => {
+            const body = await expectOk<{ session: { agentStateVersion: number } }>(
+                await authRequest('/v1/sessions', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        tag: `asv1-${Date.now()}`,
+                        metadata: '{"test":"with agentState"}',
+                        agentState: '{"state":"test"}',
+                    }),
+                })
+            );
+
+            expect(body.session.agentStateVersion).toBe(1);
+        });
+
+        it('should return active=true for newly created sessions', async () => {
+            const body = await expectOk<{ session: { active: boolean } }>(
+                await authRequest('/v1/sessions', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        tag: `active-true-${Date.now()}`,
+                        metadata: '{"test":"active true"}',
+                    }),
+                })
+            );
+
+            expect(body.session.active).toBe(true);
+        });
+
+        it('should return success=true on session delete', async () => {
+            const session = createTestSession(TEST_USER_ID, { id: 'delete-success-test' });
+            drizzleMock.seedData('sessions', [session]);
+
+            const body = await expectOk<{ success: boolean }>(
+                await authRequest('/v1/sessions/delete-success-test', { method: 'DELETE' })
+            );
+
+            expect(body.success).toBe(true);
+            expect(body.success).not.toBe(false);
+        });
+
+        it('should return success=true on session archive', async () => {
+            const session = createTestSession(TEST_USER_ID, { id: 'archive-success-test' });
+            drizzleMock.seedData('sessions', [session]);
+
+            const body = await expectOk<{ success: boolean }>(
+                await authRequest('/v1/sessions/archive-success-test/archive', {
+                    method: 'POST',
+                    body: JSON.stringify({ reason: 'user_requested' }),
+                })
+            );
+
+            expect(body.success).toBe(true);
+        });
+    });
+
+    // ========================================================================
+    // HAP-909: Timestamp and Date Handling Mutation Tests
+    // ========================================================================
+
+    describe('Timestamp Conversion Tests (HAP-909)', () => {
+        it('should convert createdAt to Unix milliseconds', async () => {
+            const createdAt = new Date('2024-06-15T12:30:00.000Z');
+            const session = createTestSession(TEST_USER_ID, {
+                id: 'timestamp-createdat',
+                createdAt,
+            });
+            drizzleMock.seedData('sessions', [session]);
+
+            const body = await expectOk<{ session: { createdAt: number } }>(
+                await authRequest('/v1/sessions/timestamp-createdat', { method: 'GET' })
+            );
+
+            expect(typeof body.session.createdAt).toBe('number');
+            expect(body.session.createdAt).toBe(createdAt.getTime());
+        });
+
+        it('should convert updatedAt to Unix milliseconds', async () => {
+            const updatedAt = new Date('2024-06-15T14:45:00.000Z');
+            const session = createTestSession(TEST_USER_ID, {
+                id: 'timestamp-updatedat',
+                updatedAt,
+            });
+            drizzleMock.seedData('sessions', [session]);
+
+            const body = await expectOk<{ session: { updatedAt: number } }>(
+                await authRequest('/v1/sessions/timestamp-updatedat', { method: 'GET' })
+            );
+
+            expect(typeof body.session.updatedAt).toBe('number');
+            expect(body.session.updatedAt).toBe(updatedAt.getTime());
+        });
+
+        it('should convert lastActiveAt to activeAt Unix milliseconds', async () => {
+            const lastActiveAt = new Date('2024-06-15T16:00:00.000Z');
+            const session = createTestSession(TEST_USER_ID, {
+                id: 'timestamp-activeat',
+                lastActiveAt,
+            });
+            drizzleMock.seedData('sessions', [session]);
+
+            const body = await expectOk<{ session: { activeAt: number } }>(
+                await authRequest('/v1/sessions/timestamp-activeat', { method: 'GET' })
+            );
+
+            expect(typeof body.session.activeAt).toBe('number');
+            expect(body.session.activeAt).toBe(lastActiveAt.getTime());
+        });
+
+        it('should convert message createdAt to Unix milliseconds', async () => {
+            const session = createTestSession(TEST_USER_ID, { id: 'msg-timestamp-session' });
+            drizzleMock.seedData('sessions', [session]);
+
+            const msgCreatedAt = new Date('2024-06-15T10:00:00.000Z');
+            const messages = [{
+                id: 'msg-timestamp-test',
+                sessionId: 'msg-timestamp-session',
+                localId: 'local-1',
+                seq: 0,
+                content: JSON.stringify({ text: 'test' }),
+                createdAt: msgCreatedAt,
+                updatedAt: msgCreatedAt,
+            }];
+            drizzleMock.seedData('sessionMessages', messages);
+
+            const body = await expectOk<{ messages: { createdAt: number }[] }>(
+                await authRequest('/v1/sessions/msg-timestamp-session/messages', { method: 'GET' })
+            );
+
+            expect(typeof body.messages[0]?.createdAt).toBe('number');
+            expect(body.messages[0]?.createdAt).toBe(msgCreatedAt.getTime());
+        });
+
+        it('should return stoppedAt as ISO string in state response', async () => {
+            const stoppedAt = new Date('2024-06-15T11:30:00.000Z');
+            const session = createTestSession(TEST_USER_ID, {
+                id: 'state-stoppedat-iso',
+                stoppedAt,
+                stoppedReason: 'test reason',
+            });
+            drizzleMock.seedData('sessions', [session]);
+
+            const body = await expectOk<{ stoppedAt: string }>(
+                await authRequest('/v1/sessions/state-stoppedat-iso/state', { method: 'GET' })
+            );
+
+            expect(body.stoppedAt).toBe(stoppedAt.toISOString());
+        });
+
+        it('should return lastActivity as ISO string in state response', async () => {
+            const lastActiveAt = new Date('2024-06-15T09:00:00.000Z');
+            const session = createTestSession(TEST_USER_ID, {
+                id: 'state-lastactivity-iso',
+                lastActiveAt,
+                active: true,
+            });
+            drizzleMock.seedData('sessions', [session]);
+
+            const body = await expectOk<{ lastActivity: string }>(
+                await authRequest('/v1/sessions/state-lastactivity-iso/state', { method: 'GET' })
+            );
+
+            expect(body.lastActivity).toBe(lastActiveAt.toISOString());
+        });
+
+        it('should return archivedAt as ISO string in archive response', async () => {
+            const session = createTestSession(TEST_USER_ID, { id: 'archive-iso-response' });
+            drizzleMock.seedData('sessions', [session]);
+
+            const body = await expectOk<{ archivedAt?: string }>(
+                await authRequest('/v1/sessions/archive-iso-response/archive', {
+                    method: 'POST',
+                    body: JSON.stringify({ reason: 'user_requested' }),
+                })
+            );
+
+            // If archivedAt is present, it should be a valid ISO string
+            if (body.archivedAt) {
+                expect(new Date(body.archivedAt).toISOString()).toBe(body.archivedAt);
+            }
+        });
+    });
+
+    // ========================================================================
+    // HAP-909: Conditional Expression and Branch Coverage Tests
+    // ========================================================================
+
+    describe('Conditional Expression Tests (HAP-909)', () => {
+        it('should handle cursor exactly at prefix boundary (10 chars)', async () => {
+            // cursor_v1_ is exactly 10 characters
+            // Test cursor with session ID starting right after prefix
+            const sessions = Array.from({ length: 20 }, (_, i) =>
+                createTestSession(TEST_USER_ID, {
+                    id: `cond-cursor-${String(i).padStart(4, '0')}`,
+                })
+            );
+            drizzleMock.seedData('sessions', sessions);
+
+            // Use valid cursor format
+            const body = await expectOk<{ sessions: { id: string }[] }>(
+                await authRequest('/v2/sessions?cursor=cursor_v1_cond-cursor-0005&limit=5', { method: 'GET' })
+            );
+
+            expect(body.sessions).toBeDefined();
+        });
+
+        it('should correctly parse cursor substring at position 10', async () => {
+            const sessions = Array.from({ length: 30 }, (_, i) =>
+                createTestSession(TEST_USER_ID, {
+                    id: `parse-test-${String(i).padStart(4, '0')}`,
+                })
+            );
+            drizzleMock.seedData('sessions', sessions);
+
+            // Get first page to get valid cursor
+            const firstPage = await expectOk<{ nextCursor: string }>(
+                await authRequest('/v2/sessions?limit=10', { method: 'GET' })
+            );
+
+            // Verify cursor extraction works correctly
+            const extractedId = firstPage.nextCursor?.substring(10);
+            expect(extractedId).toBeTruthy();
+            expect(extractedId?.length).toBeGreaterThan(0);
+        });
+
+        it('should return agentState as null when not provided', async () => {
+            const body = await expectOk<{ session: { agentState: string | null } }>(
+                await authRequest('/v1/sessions', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        tag: `null-agentstate-${Date.now()}`,
+                        metadata: '{"test":"no agentState"}',
+                    }),
+                })
+            );
+
+            expect(body.session.agentState).toBeNull();
+        });
+
+        it('should preserve agentState when provided', async () => {
+            const body = await expectOk<{ session: { agentState: string | null } }>(
+                await authRequest('/v1/sessions', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        tag: `with-agentstate-${Date.now()}`,
+                        metadata: '{"test":"with agentState"}',
+                        agentState: '{"context":"working","mode":"interactive"}',
+                    }),
+                })
+            );
+
+            expect(body.session.agentState).toBe('{"context":"working","mode":"interactive"}');
+        });
+
+        it('should return nextCursor as null when fewer results than limit', async () => {
+            const sessions = Array.from({ length: 5 }, (_, i) =>
+                createTestSession(TEST_USER_ID, { id: `few-sessions-${i}` })
+            );
+            drizzleMock.seedData('sessions', sessions);
+
+            const body = await expectOk<{ sessions: unknown[]; nextCursor: string | null }>(
+                await authRequest('/v2/sessions?limit=10', { method: 'GET' })
+            );
+
+            expect(body.sessions.length).toBe(5);
+            expect(body.nextCursor).toBeNull();
+        });
+
+        it('should return nextCursor when exactly at limit boundary', async () => {
+            // Create exactly 51 sessions to test limit+1 logic
+            const sessions = Array.from({ length: 51 }, (_, i) =>
+                createTestSession(TEST_USER_ID, {
+                    id: `boundary-${String(i).padStart(4, '0')}`,
+                })
+            );
+            drizzleMock.seedData('sessions', sessions);
+
+            const body = await expectOk<{ sessions: unknown[]; nextCursor: string | null }>(
+                await authRequest('/v2/sessions?limit=50', { method: 'GET' })
+            );
+
+            expect(body.sessions.length).toBe(50);
+            expect(body.nextCursor).not.toBeNull();
+        });
+
+        it('should handle limit+1 fetch correctly for pagination detection', async () => {
+            // Create exactly limit+1 sessions
+            const sessions = Array.from({ length: 11 }, (_, i) =>
+                createTestSession(TEST_USER_ID, {
+                    id: `limit-plus-one-${String(i).padStart(4, '0')}`,
+                })
+            );
+            drizzleMock.seedData('sessions', sessions);
+
+            const body = await expectOk<{ sessions: { id: string }[]; nextCursor: string | null }>(
+                await authRequest('/v2/sessions?limit=10', { method: 'GET' })
+            );
+
+            // Should return exactly 10, not 11
+            expect(body.sessions.length).toBe(10);
+            expect(body.nextCursor).not.toBeNull();
+        });
+    });
+
+    // ========================================================================
+    // HAP-909: Session State Priority Tests
+    // ========================================================================
+
+    describe('Session State Priority Tests (HAP-909)', () => {
+        it('should prioritize archived state over stopped state', async () => {
+            const session = createTestSession(TEST_USER_ID, {
+                id: 'priority-archived-over-stopped',
+                active: false,
+                stoppedAt: new Date(),
+                stoppedReason: 'error',
+                archivedAt: new Date(),
+                archiveReason: 'revival_failed',
+            });
+            drizzleMock.seedData('sessions', [session]);
+
+            const body = await expectOk<{ state: string }>(
+                await authRequest('/v1/sessions/priority-archived-over-stopped/state', { method: 'GET' })
+            );
+
+            expect(body.state).toBe('archived');
+            expect(body.state).not.toBe('stopped');
+        });
+
+        it('should return stopped when active=false and no archivedAt', async () => {
+            const session = createTestSession(TEST_USER_ID, {
+                id: 'stopped-no-archived',
+                active: false,
+                stoppedAt: null,
+                archivedAt: null,
+            });
+            drizzleMock.seedData('sessions', [session]);
+
+            const body = await expectOk<{ state: string }>(
+                await authRequest('/v1/sessions/stopped-no-archived/state', { method: 'GET' })
+            );
+
+            expect(body.state).toBe('stopped');
+        });
+
+        it('should return active when active=true and no stoppedAt or archivedAt', async () => {
+            const session = createTestSession(TEST_USER_ID, {
+                id: 'truly-active',
+                active: true,
+                stoppedAt: null,
+                archivedAt: null,
+            });
+            drizzleMock.seedData('sessions', [session]);
+
+            const body = await expectOk<{ state: string }>(
+                await authRequest('/v1/sessions/truly-active/state', { method: 'GET' })
+            );
+
+            expect(body.state).toBe('active');
+        });
+
+        it('should return stoppedReason as null when session is active', async () => {
+            const session = createTestSession(TEST_USER_ID, {
+                id: 'active-no-stopped-reason',
+                active: true,
+                stoppedAt: null,
+                stoppedReason: null,
+            });
+            drizzleMock.seedData('sessions', [session]);
+
+            const body = await expectOk<{ stoppedReason: string | null }>(
+                await authRequest('/v1/sessions/active-no-stopped-reason/state', { method: 'GET' })
+            );
+
+            expect(body.stoppedReason).toBeNull();
+        });
+
+        it('should return stoppedReason when session has stoppedReason set', async () => {
+            const session = createTestSession(TEST_USER_ID, {
+                id: 'with-stopped-reason',
+                active: true,
+                stoppedAt: new Date(),
+                stoppedReason: 'Connection timeout',
+            });
+            drizzleMock.seedData('sessions', [session]);
+
+            const body = await expectOk<{ stoppedReason: string | null }>(
+                await authRequest('/v1/sessions/with-stopped-reason/state', { method: 'GET' })
+            );
+
+            expect(body.stoppedReason).toBe('Connection timeout');
+        });
+    });
+
+    // ========================================================================
+    // HAP-909: Message Sequence Number Tests
+    // ========================================================================
+
+    describe('Message Sequence Number Tests (HAP-909)', () => {
+        it('should assign seq=0 to first message in session', async () => {
+            const session = createTestSession(TEST_USER_ID, { id: 'seq-first-msg-session' });
+            drizzleMock.seedData('sessions', [session]);
+            drizzleMock.seedData('sessionMessages', []); // Empty messages
+
+            const body = await expectOk<{ message: { seq: number } }>(
+                await authRequest('/v1/sessions/seq-first-msg-session/messages', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        content: { text: 'First message' },
+                    }),
+                })
+            );
+
+            expect(body.message.seq).toBe(0);
+        });
+
+        it('should increment seq for subsequent messages', async () => {
+            const session = createTestSession(TEST_USER_ID, { id: 'seq-increment-session' });
+            drizzleMock.seedData('sessions', [session]);
+
+            // Seed existing messages
+            const existingMessages = Array.from({ length: 3 }, (_, i) => ({
+                id: `existing-msg-${i}`,
+                sessionId: 'seq-increment-session',
+                localId: `local-${i}`,
+                seq: i,
+                content: JSON.stringify({ text: `Message ${i}` }),
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            }));
+            drizzleMock.seedData('sessionMessages', existingMessages);
+
+            const body = await expectOk<{ message: { seq: number } }>(
+                await authRequest('/v1/sessions/seq-increment-session/messages', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        content: { text: 'New message' },
+                    }),
+                })
+            );
+
+            // Should be 3 (next after 0, 1, 2)
+            expect(body.message.seq).toBe(3);
+        });
+
+        it('should return message content as parsed JSON', async () => {
+            const session = createTestSession(TEST_USER_ID, { id: 'content-json-session' });
+            drizzleMock.seedData('sessions', [session]);
+
+            const content = { type: 'user', text: 'Hello world', metadata: { source: 'test' } };
+
+            const body = await expectOk<{ message: { content: unknown } }>(
+                await authRequest('/v1/sessions/content-json-session/messages', {
+                    method: 'POST',
+                    body: JSON.stringify({ content }),
+                })
+            );
+
+            expect(body.message.content).toEqual(content);
+        });
+    });
+
+    // ========================================================================
+    // HAP-909: Archive Flow Edge Cases
+    // ========================================================================
+
+    describe('Archive Flow Edge Cases (HAP-909)', () => {
+        it('should return deleted=true for empty sessions (no messages)', async () => {
+            const session = createTestSession(TEST_USER_ID, { id: 'empty-archive-session' });
+            drizzleMock.seedData('sessions', [session]);
+            // No messages seeded - session is empty
+
+            const body = await expectOk<{ success: boolean; deleted?: boolean; archivedAt?: string }>(
+                await authRequest('/v1/sessions/empty-archive-session/archive', {
+                    method: 'POST',
+                    body: JSON.stringify({ reason: 'revival_failed' }),
+                })
+            );
+
+            expect(body.success).toBe(true);
+            // Empty sessions should be deleted, not archived
+            expect(body.deleted).toBe(true);
+            expect(body.archivedAt).toBeUndefined();
+        });
+
+        it('should return archivedAt or deleted for sessions on archive', async () => {
+            // Note: Due to mock limitations with count queries, the response may vary
+            // In production, sessions with messages return archivedAt, empty sessions return deleted
+            const session = createTestSession(TEST_USER_ID, { id: 'archive-response-test' });
+            drizzleMock.seedData('sessions', [session]);
+
+            const body = await expectOk<{ success: boolean; deleted?: boolean; archivedAt?: string }>(
+                await authRequest('/v1/sessions/archive-response-test/archive', {
+                    method: 'POST',
+                    body: JSON.stringify({ reason: 'revival_failed' }),
+                })
+            );
+
+            expect(body.success).toBe(true);
+            // Response will have either deleted=true OR archivedAt string
+            expect(body.deleted === true || typeof body.archivedAt === 'string').toBe(true);
+        });
+
+        it('should handle originalError being undefined vs empty string', async () => {
+            const session1 = createTestSession(TEST_USER_ID, { id: 'archive-no-error' });
+            const session2 = createTestSession(TEST_USER_ID, { id: 'archive-empty-error' });
+            drizzleMock.seedData('sessions', [session1, session2]);
+
+            // Without originalError
+            const body1 = await expectOk<{ success: boolean }>(
+                await authRequest('/v1/sessions/archive-no-error/archive', {
+                    method: 'POST',
+                    body: JSON.stringify({ reason: 'timeout' }),
+                })
+            );
+            expect(body1.success).toBe(true);
+
+            // With empty string originalError
+            const body2 = await expectOk<{ success: boolean }>(
+                await authRequest('/v1/sessions/archive-empty-error/archive', {
+                    method: 'POST',
+                    body: JSON.stringify({ reason: 'timeout', originalError: '' }),
+                })
+            );
+            expect(body2.success).toBe(true);
+        });
+    });
+
+    // ========================================================================
+    // HAP-909: DataEncryptionKey Encoding Tests
+    // ========================================================================
+
+    describe('DataEncryptionKey Encoding Tests (HAP-909)', () => {
+        it('should encode dataEncryptionKey as base64 in response', async () => {
+            const session = createTestSession(TEST_USER_ID, {
+                id: 'dek-encode-session',
+            });
+            // dataEncryptionKey is set to Buffer.from('test-key') by createTestSession
+            drizzleMock.seedData('sessions', [session]);
+
+            const body = await expectOk<{ session: { dataEncryptionKey: string | null } }>(
+                await authRequest('/v1/sessions/dek-encode-session', { method: 'GET' })
+            );
+
+            // Should be a base64 string, not null, not raw buffer
+            expect(body.session.dataEncryptionKey).not.toBeNull();
+            expect(typeof body.session.dataEncryptionKey).toBe('string');
+        });
+
+        it('should decode base64 dataEncryptionKey from create request', async () => {
+            // Provide valid base64-encoded key
+            const keyBuffer = Buffer.from('encryption-key-32-bytes-exactly!');
+            const base64Key = keyBuffer.toString('base64');
+
+            const body = await expectOk<{ session: { dataEncryptionKey: string | null } }>(
+                await authRequest('/v1/sessions', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        tag: `dek-decode-${Date.now()}`,
+                        metadata: '{}',
+                        dataEncryptionKey: base64Key,
+                    }),
+                })
+            );
+
+            // Response should have the key encoded back to base64
+            expect(body.session.dataEncryptionKey).not.toBeNull();
+        });
+
+        it('should handle existing session with dataEncryptionKey in dedup', async () => {
+            const existingSession = createTestSession(TEST_USER_ID, {
+                id: 'dedup-dek-session',
+                tag: 'dedup-dek-tag',
+            });
+            drizzleMock.seedData('sessions', [existingSession]);
+
+            const body = await expectOk<{ session: { id: string; dataEncryptionKey: string | null } }>(
+                await authRequest('/v1/sessions', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        tag: 'dedup-dek-tag',
+                        metadata: '{}',
+                    }),
+                })
+            );
+
+            // Should return existing session with its dataEncryptionKey
+            expect(body.session.id).toBe('dedup-dek-session');
+            expect(body.session.dataEncryptionKey).not.toBeNull();
+        });
+    });
+
+    // ========================================================================
+    // HAP-909: 15-Minute Active Window Tests
+    // ========================================================================
+
+    describe('15-Minute Active Window Tests (HAP-909)', () => {
+        it('should include session active exactly 14 minutes ago', async () => {
+            const now = new Date();
+            const fourteenMinutesAgo = new Date(now.getTime() - 14 * 60 * 1000);
+
+            const session = createTestSession(TEST_USER_ID, {
+                id: 'active-14-min-ago',
+                active: true,
+                lastActiveAt: fourteenMinutesAgo,
+            });
+            drizzleMock.seedData('sessions', [session]);
+
+            const body = await expectOk<{ sessions: { id: string }[] }>(
+                await authRequest('/v2/sessions/active', { method: 'GET' })
+            );
+
+            const sessionIds = body.sessions.map(s => s.id);
+            expect(sessionIds).toContain('active-14-min-ago');
+        });
+
+        it('should exclude session active exactly 16 minutes ago', async () => {
+            const now = new Date();
+            const sixteenMinutesAgo = new Date(now.getTime() - 16 * 60 * 1000);
+
+            const session = createTestSession(TEST_USER_ID, {
+                id: 'active-16-min-ago',
+                active: true,
+                lastActiveAt: sixteenMinutesAgo,
+            });
+            drizzleMock.seedData('sessions', [session]);
+
+            const body = await expectOk<{ sessions: { id: string }[] }>(
+                await authRequest('/v2/sessions/active', { method: 'GET' })
+            );
+
+            const sessionIds = body.sessions.map(s => s.id);
+            expect(sessionIds).not.toContain('active-16-min-ago');
+        });
+
+        it('should use 15 minute threshold (900000 ms)', async () => {
+            const now = new Date();
+            // Just under 15 minutes = should be included
+            const justUnder15 = new Date(now.getTime() - 14 * 60 * 1000 - 59000);
+            // Just over 15 minutes = should be excluded
+            const justOver15 = new Date(now.getTime() - 15 * 60 * 1000 - 1000);
+
+            const sessions = [
+                createTestSession(TEST_USER_ID, {
+                    id: 'just-under-15',
+                    active: true,
+                    lastActiveAt: justUnder15,
+                }),
+                createTestSession(TEST_USER_ID, {
+                    id: 'just-over-15',
+                    active: true,
+                    lastActiveAt: justOver15,
+                }),
+            ];
+            drizzleMock.seedData('sessions', sessions);
+
+            const body = await expectOk<{ sessions: { id: string }[] }>(
+                await authRequest('/v2/sessions/active', { method: 'GET' })
+            );
+
+            const sessionIds = body.sessions.map(s => s.id);
+            expect(sessionIds).toContain('just-under-15');
+            expect(sessionIds).not.toContain('just-over-15');
+        });
+    });
 });

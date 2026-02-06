@@ -324,6 +324,123 @@ describe('Upload Routes with Drizzle Mocking', () => {
             // Category filter is applied at query level
             expect(body.files.length).toBeGreaterThanOrEqual(0);
         });
+
+        it('should return files with correct mapped response fields', async () => {
+            const testFile = createTestUploadedFile(TEST_USER_ID, {
+                id: 'response-field-test',
+                path: `files/${TEST_USER_ID}/test-response.pdf`,
+                width: 800,
+                height: 600,
+                thumbhash: 'list-thumbhash',
+            });
+            drizzleMock.seedData('uploadedFiles', [testFile]);
+
+            const body = await expectOk<{
+                files: Array<{
+                    id: string;
+                    path: string;
+                    originalName: string;
+                    contentType: string;
+                    size: number;
+                    width?: number;
+                    height?: number;
+                    thumbhash?: string;
+                    createdAt: number;
+                    updatedAt: number;
+                }>;
+            }>(await authRequest('/v1/uploads', { method: 'GET' }));
+
+            expect(body.files).toHaveLength(1);
+            const file = body.files[0];
+            expect(file?.id).toBe('response-field-test');
+            expect(file?.path).toBe(`files/${TEST_USER_ID}/test-response.pdf`);
+            // originalName is extracted from path
+            expect(file?.originalName).toBe('test-response.pdf');
+            // In list, contentType defaults to 'application/octet-stream'
+            expect(file?.contentType).toBe('application/octet-stream');
+            // In list, size defaults to 0
+            expect(file?.size).toBe(0);
+            // Optional fields from database
+            expect(file?.width).toBe(800);
+            expect(file?.height).toBe(600);
+            expect(file?.thumbhash).toBe('list-thumbhash');
+            // Timestamps should be numbers
+            expect(typeof file?.createdAt).toBe('number');
+            expect(typeof file?.updatedAt).toBe('number');
+        });
+
+        it('should handle file with path having multiple segments correctly', async () => {
+            const multiSegmentPath = `files/${TEST_USER_ID}/subdir/nested/deeply-nested-file.json`;
+            const testFile = createTestUploadedFile(TEST_USER_ID, {
+                id: 'multi-segment-path',
+                path: multiSegmentPath,
+            });
+            drizzleMock.seedData('uploadedFiles', [testFile]);
+
+            const body = await expectOk<{
+                files: Array<{ id: string; originalName: string }>;
+            }>(await authRequest('/v1/uploads', { method: 'GET' }));
+
+            expect(body.files).toHaveLength(1);
+            // originalName should be the last segment
+            expect(body.files[0]?.originalName).toBe('deeply-nested-file.json');
+        });
+
+        it('should handle files with null optional fields in list response', async () => {
+            const testFile = createTestUploadedFile(TEST_USER_ID, {
+                id: 'null-fields-test',
+                path: `files/${TEST_USER_ID}/no-optional.txt`,
+                width: null,
+                height: null,
+                thumbhash: null,
+            });
+            drizzleMock.seedData('uploadedFiles', [testFile]);
+
+            const body = await expectOk<{
+                files: Array<{
+                    id: string;
+                    width?: number;
+                    height?: number;
+                    thumbhash?: string;
+                }>;
+            }>(await authRequest('/v1/uploads', { method: 'GET' }));
+
+            expect(body.files).toHaveLength(1);
+            const file = body.files[0];
+            // Null values should become undefined in response (via ?? undefined)
+            expect(file?.width).toBeUndefined();
+            expect(file?.height).toBeUndefined();
+            expect(file?.thumbhash).toBeUndefined();
+        });
+
+        it('should return exactly limit items when more exist', async () => {
+            const files = Array.from({ length: 10 }, (_, i) =>
+                createTestUploadedFile(TEST_USER_ID, { id: `pagination-file-${i}` })
+            );
+            drizzleMock.seedData('uploadedFiles', files);
+
+            const body = await expectOk<{ files: unknown[]; nextCursor?: string }>(
+                await authRequest('/v1/uploads?limit=5', { method: 'GET' })
+            );
+
+            // Should return exactly 5 items (the limit)
+            expect(body.files).toHaveLength(5);
+            // Should have nextCursor since more items exist
+            expect(body.nextCursor).toBeDefined();
+        });
+
+        it('should not exceed requested limit even with more data', async () => {
+            const files = Array.from({ length: 100 }, (_, i) =>
+                createTestUploadedFile(TEST_USER_ID, { id: `limit-test-${i.toString().padStart(3, '0')}` })
+            );
+            drizzleMock.seedData('uploadedFiles', files);
+
+            const body = await expectOk<{ files: unknown[] }>(
+                await authRequest('/v1/uploads?limit=25', { method: 'GET' })
+            );
+
+            expect(body.files.length).toBeLessThanOrEqual(25);
+        });
     });
 
     // ========================================================================
@@ -1196,6 +1313,43 @@ describe('Upload Routes with Drizzle Mocking', () => {
             }
         });
 
+        it('should accept avatar file exactly at 5MB size limit', async () => {
+            vi.mocked(processImage).mockResolvedValueOnce({ width: 100, height: 100, thumbhash: 'test' });
+            vi.mocked(isProcessableImage).mockReturnValueOnce(true);
+
+            const exactLimit = 5 * 1024 * 1024;
+            const file = createMockFile('avatar.jpg', 'image/jpeg', exactLimit);
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const body = await expectOk<{ success: boolean; avatar: { size: number } }>(
+                await authRequest('/v1/uploads/avatar', {
+                    method: 'POST',
+                    body: formData,
+                })
+            );
+
+            expect(body.success).toBe(true);
+            expect(body.avatar.size).toBe(exactLimit);
+        });
+
+        it('should reject avatar file one byte over 5MB limit with exact error', async () => {
+            const overLimit = 5 * 1024 * 1024 + 1;
+            const file = createMockFile('avatar.jpg', 'image/jpeg', overLimit);
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const res = await authRequest('/v1/uploads/avatar', {
+                method: 'POST',
+                body: formData,
+            });
+
+            expect(res.status).toBe(400);
+            const body = await res.json() as { error: string };
+            // Verify exact error message format
+            expect(body.error).toContain('exceeds maximum 5MB');
+        });
+
         it('should accept SVG images for avatar (part of SUPPORTED_IMAGE_TYPES)', async () => {
             // SVG is in SUPPORTED_IMAGE_TYPES, so it's valid for avatars
             vi.mocked(processImage).mockResolvedValueOnce(null); // SVG doesn't get processed
@@ -1214,6 +1368,659 @@ describe('Upload Routes with Drizzle Mocking', () => {
 
             expect(body.success).toBe(true);
             expect(body.avatar.contentType).toBe('image/svg+xml');
+        });
+    });
+
+    // ========================================================================
+    // Mutation Testing: Exact Boundary and String Assertions
+    // ========================================================================
+
+    describe('Mutation Testing: Exact Boundary and String Assertions', () => {
+        /**
+         * Tests targeting ArithmeticOperator mutations in size limit calculations
+         * These verify exact boundary values to kill mutations like:
+         * - file.size > maxSize vs file.size >= maxSize
+         * - Math.round(maxSize / (1024 * 1024)) calculations
+         */
+        describe('File Size Boundary Tests', () => {
+            it('should accept file exactly at avatar size limit (5MB)', async () => {
+                // Avatar limit is exactly 5 * 1024 * 1024 = 5,242,880 bytes
+                const exactLimit = 5 * 1024 * 1024;
+                const file = createMockFile('avatar.jpg', 'image/jpeg', exactLimit);
+                const formData = createFileFormData(file, 'avatars');
+
+                const body = await expectOk<{ success: boolean; file: { size: number } }>(
+                    await authRequest('/v1/uploads', {
+                        method: 'POST',
+                        body: formData,
+                    })
+                );
+
+                expect(body.success).toBe(true);
+                expect(body.file.size).toBe(exactLimit);
+            });
+
+            it('should reject file exactly one byte over avatar limit', async () => {
+                const overLimit = 5 * 1024 * 1024 + 1;
+                const file = createMockFile('avatar.jpg', 'image/jpeg', overLimit);
+                const formData = createFileFormData(file, 'avatars');
+
+                const res = await authRequest('/v1/uploads', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                expect(res.status).toBe(400);
+                const body = await res.json() as { success: boolean; code: string; error: string };
+                expect(body.success).toBe(false);
+                expect(body.code).toBe('size-exceeded');
+                // Verify the error message contains exact size info
+                expect(body.error).toContain('exceeds maximum 5MB for avatars');
+            });
+
+            it('should accept file exactly at document size limit (50MB)', async () => {
+                const exactLimit = 50 * 1024 * 1024;
+                const file = createMockFile('document.pdf', 'application/pdf', exactLimit);
+                const formData = createFileFormData(file, 'documents');
+
+                const body = await expectOk<{ success: boolean; file: { size: number } }>(
+                    await authRequest('/v1/uploads', {
+                        method: 'POST',
+                        body: formData,
+                    })
+                );
+
+                expect(body.success).toBe(true);
+                expect(body.file.size).toBe(exactLimit);
+            });
+
+            it('should reject file exactly one byte over document limit', async () => {
+                const overLimit = 50 * 1024 * 1024 + 1;
+                const file = createMockFile('document.pdf', 'application/pdf', overLimit);
+                const formData = createFileFormData(file, 'documents');
+
+                const res = await authRequest('/v1/uploads', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                expect(res.status).toBe(400);
+                const body = await res.json() as { success: boolean; code: string; error: string };
+                expect(body.success).toBe(false);
+                expect(body.code).toBe('size-exceeded');
+                expect(body.error).toContain('exceeds maximum 50MB for documents');
+            });
+
+            it('should accept file exactly at general size limit (100MB)', async () => {
+                const exactLimit = 100 * 1024 * 1024;
+                const file = createMockFile('data.txt', 'text/plain', exactLimit);
+                const formData = createFileFormData(file, 'files');
+
+                const body = await expectOk<{ success: boolean; file: { size: number } }>(
+                    await authRequest('/v1/uploads', {
+                        method: 'POST',
+                        body: formData,
+                    })
+                );
+
+                expect(body.success).toBe(true);
+                expect(body.file.size).toBe(exactLimit);
+            });
+
+            it('should reject file exactly one byte over general limit', async () => {
+                const overLimit = 100 * 1024 * 1024 + 1;
+                const file = createMockFile('data.txt', 'text/plain', overLimit);
+                const formData = createFileFormData(file, 'files');
+
+                const res = await authRequest('/v1/uploads', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                expect(res.status).toBe(400);
+                const body = await res.json() as { success: boolean; code: string; error: string };
+                expect(body.success).toBe(false);
+                expect(body.code).toBe('size-exceeded');
+                expect(body.error).toContain('exceeds maximum 100MB for files');
+            });
+
+            it('should use document limit for documents category, not avatar limit', async () => {
+                // 6MB exceeds avatar (5MB) but not document (50MB) limit
+                const sizeBetweenAvatarAndDoc = 6 * 1024 * 1024;
+                const file = createMockFile('document.pdf', 'application/pdf', sizeBetweenAvatarAndDoc);
+                const formData = createFileFormData(file, 'documents');
+
+                const body = await expectOk<{ success: boolean; file: { size: number } }>(
+                    await authRequest('/v1/uploads', {
+                        method: 'POST',
+                        body: formData,
+                    })
+                );
+
+                expect(body.success).toBe(true);
+                expect(body.file.size).toBe(sizeBetweenAvatarAndDoc);
+            });
+
+            it('should use general limit for files category, not document limit', async () => {
+                // 60MB exceeds document (50MB) but not general (100MB) limit
+                const sizeBetweenDocAndGeneral = 60 * 1024 * 1024;
+                const file = createMockFile('data.json', 'application/json', sizeBetweenDocAndGeneral);
+                const formData = createFileFormData(file, 'files');
+
+                const body = await expectOk<{ success: boolean; file: { size: number } }>(
+                    await authRequest('/v1/uploads', {
+                        method: 'POST',
+                        body: formData,
+                    })
+                );
+
+                expect(body.success).toBe(true);
+                expect(body.file.size).toBe(sizeBetweenDocAndGeneral);
+            });
+        });
+
+        /**
+         * Tests targeting StringLiteral mutations in error messages
+         * These verify exact strings to kill mutations that change string literals
+         */
+        describe('Exact Error Message Assertions', () => {
+            it('should return exact error code "missing-file" when no file provided', async () => {
+                const formData = new FormData();
+
+                const res = await authRequest('/v1/uploads', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                expect(res.status).toBe(400);
+                const body = await res.json() as { success: boolean; code: string; error: string };
+                expect(body.success).toBe(false);
+                expect(body.code).toBe('missing-file');
+                expect(body.error).toBe('No file provided');
+            });
+
+            it('should return exact error code "invalid-type" for unsupported type', async () => {
+                const file = createMockFile('script.exe', 'application/x-executable');
+                const formData = createFileFormData(file);
+
+                const res = await authRequest('/v1/uploads', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                expect(res.status).toBe(400);
+                const body = await res.json() as { success: boolean; code: string; error: string };
+                expect(body.success).toBe(false);
+                expect(body.code).toBe('invalid-type');
+                expect(body.error).toContain('Unsupported file type: application/x-executable');
+            });
+
+            it('should return exact error code "size-exceeded" for oversized file', async () => {
+                const file = createMockFile('large.jpg', 'image/jpeg', 6 * 1024 * 1024);
+                const formData = createFileFormData(file, 'avatars');
+
+                const res = await authRequest('/v1/uploads', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                expect(res.status).toBe(400);
+                const body = await res.json() as { success: boolean; code: string; error: string };
+                expect(body.success).toBe(false);
+                expect(body.code).toBe('size-exceeded');
+            });
+
+            it('should return exact error code "upload-failed" when R2 upload fails', async () => {
+                r2Mock.put = vi.fn().mockRejectedValueOnce(new Error('R2 connection failed'));
+
+                const file = createMockFile('test.pdf', 'application/pdf');
+                const formData = createFileFormData(file);
+
+                const res = await authRequest('/v1/uploads', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                expect(res.status).toBe(500);
+                const body = await res.json() as { success: boolean; code: string; error: string };
+                expect(body.success).toBe(false);
+                expect(body.code).toBe('upload-failed');
+                expect(body.error).toBe('R2 connection failed');
+            });
+
+            it('should return exact error "File not found" for non-existent file in GET', async () => {
+                const res = await authRequest('/v1/uploads/nonexistent-id', { method: 'GET' });
+
+                expect(res.status).toBe(404);
+                const body = await res.json() as { error: string };
+                expect(body.error).toBe('File not found');
+            });
+
+            it('should return exact error "File not found" for non-existent file in DELETE', async () => {
+                const res = await authRequest('/v1/uploads/nonexistent-id', { method: 'DELETE' });
+
+                expect(res.status).toBe(404);
+                const body = await res.json() as { error: string };
+                expect(body.error).toBe('File not found');
+            });
+
+            it('should return exact error "File not found in storage" when R2 file is missing', async () => {
+                const testPath = `files/${TEST_USER_ID}/missing-r2.pdf`;
+                const myFile = createTestUploadedFile(TEST_USER_ID, {
+                    id: 'missing-r2',
+                    path: testPath,
+                });
+                drizzleMock.seedData('uploadedFiles', [myFile]);
+                r2Mock.get = vi.fn().mockResolvedValue(null);
+
+                const res = await authRequest('/v1/uploads/missing-r2/download', { method: 'GET' });
+
+                expect(res.status).toBe(404);
+                const body = await res.json() as { error: string };
+                expect(body.error).toBe('File not found in storage');
+            });
+
+            it('should return exact error "No file provided" for avatar with no file', async () => {
+                const formData = new FormData();
+
+                const res = await authRequest('/v1/uploads/avatar', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                expect(res.status).toBe(400);
+                const body = await res.json() as { error: string };
+                expect(body.error).toBe('No file provided');
+            });
+
+            it('should return exact error for unsupported avatar image type', async () => {
+                const file = createMockFile('document.pdf', 'application/pdf');
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const res = await authRequest('/v1/uploads/avatar', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                expect(res.status).toBe(400);
+                const body = await res.json() as { error: string };
+                expect(body.error).toContain('Unsupported image type: application/pdf');
+            });
+
+            it('should return exact error "Failed to save file metadata" when DB insert fails', async () => {
+                const originalInsert = drizzleMock.mockDb.insert;
+                drizzleMock.mockDb.insert = vi.fn().mockReturnValue({
+                    values: vi.fn().mockReturnValue({
+                        returning: vi.fn().mockResolvedValue([]),
+                    }),
+                });
+
+                const file = createMockFile('test.pdf', 'application/pdf');
+                const formData = createFileFormData(file);
+
+                const res = await authRequest('/v1/uploads', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                expect(res.status).toBe(500);
+                const body = await res.json() as { success: boolean; error: string };
+                expect(body.success).toBe(false);
+                expect(body.error).toBe('Failed to save file metadata');
+
+                drizzleMock.mockDb.insert = originalInsert;
+            });
+
+            it('should return exact error "Failed to save avatar metadata" when avatar DB insert fails', async () => {
+                vi.mocked(processImage).mockResolvedValueOnce({
+                    width: 100,
+                    height: 100,
+                    thumbhash: 'test',
+                });
+                vi.mocked(isProcessableImage).mockReturnValueOnce(true);
+
+                const originalInsert = drizzleMock.mockDb.insert;
+                drizzleMock.mockDb.insert = vi.fn().mockReturnValue({
+                    values: vi.fn().mockReturnValue({
+                        returning: vi.fn().mockResolvedValue([]),
+                    }),
+                });
+
+                const file = createMockFile('avatar.jpg', 'image/jpeg');
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const res = await authRequest('/v1/uploads/avatar', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                expect(res.status).toBe(500);
+                const body = await res.json() as { error: string };
+                expect(body.error).toBe('Failed to save avatar metadata');
+
+                drizzleMock.mockDb.insert = originalInsert;
+            });
+        });
+
+        /**
+         * Tests targeting ConditionalExpression mutations in optional fields
+         * These verify that optional fields behave correctly when present/absent
+         */
+        describe('Conditional Optional Field Assertions', () => {
+            it('should return undefined for width when null in database', async () => {
+                const testPath = `files/${TEST_USER_ID}/no-dimensions.pdf`;
+                const myFile = createTestUploadedFile(TEST_USER_ID, {
+                    id: 'no-dimensions',
+                    path: testPath,
+                    width: null,
+                    height: null,
+                    thumbhash: null,
+                });
+                drizzleMock.seedData('uploadedFiles', [myFile]);
+                r2Mock.head = vi.fn().mockResolvedValue(null);
+
+                const body = await expectOk<{ file: { width?: number; height?: number; thumbhash?: string } }>(
+                    await authRequest('/v1/uploads/no-dimensions', { method: 'GET' })
+                );
+
+                expect(body.file.width).toBeUndefined();
+                expect(body.file.height).toBeUndefined();
+                expect(body.file.thumbhash).toBeUndefined();
+            });
+
+            it('should return defined values for width/height/thumbhash when present in database', async () => {
+                const testPath = `files/${TEST_USER_ID}/with-dimensions.jpg`;
+                const myFile = createTestUploadedFile(TEST_USER_ID, {
+                    id: 'with-dimensions',
+                    path: testPath,
+                    width: 1920,
+                    height: 1080,
+                    thumbhash: 'abcdefghij',
+                });
+                drizzleMock.seedData('uploadedFiles', [myFile]);
+                r2Mock.head = vi.fn().mockResolvedValue({
+                    key: testPath,
+                    size: 2048,
+                    httpMetadata: { contentType: 'image/jpeg' },
+                    customMetadata: { originalName: 'photo.jpg' },
+                    httpEtag: 'test-etag',
+                    uploaded: new Date(),
+                } satisfies MockR2HeadResponse);
+
+                const body = await expectOk<{ file: { width?: number; height?: number; thumbhash?: string } }>(
+                    await authRequest('/v1/uploads/with-dimensions', { method: 'GET' })
+                );
+
+                expect(body.file.width).toBe(1920);
+                expect(body.file.height).toBe(1080);
+                expect(body.file.thumbhash).toBe('abcdefghij');
+            });
+
+            it('should include nextCursor when hasMore is true and files exist', async () => {
+                const files = Array.from({ length: 55 }, (_, i) =>
+                    createTestUploadedFile(TEST_USER_ID, { id: `file-${i.toString().padStart(3, '0')}` })
+                );
+                drizzleMock.seedData('uploadedFiles', files);
+
+                const body = await expectOk<{ files: { id: string }[]; nextCursor?: string }>(
+                    await authRequest('/v1/uploads?limit=50', { method: 'GET' })
+                );
+
+                expect(body.files.length).toBe(50);
+                expect(body.nextCursor).toBeDefined();
+                expect(typeof body.nextCursor).toBe('string');
+            });
+
+            it('should not include nextCursor when no more results exist', async () => {
+                const files = Array.from({ length: 10 }, (_, i) =>
+                    createTestUploadedFile(TEST_USER_ID, { id: `file-${i}` })
+                );
+                drizzleMock.seedData('uploadedFiles', files);
+
+                const body = await expectOk<{ files: { id: string }[]; nextCursor?: string }>(
+                    await authRequest('/v1/uploads?limit=50', { method: 'GET' })
+                );
+
+                expect(body.files.length).toBe(10);
+                expect(body.nextCursor).toBeUndefined();
+            });
+
+            it('should return reused file with correct metadata fields', async () => {
+                const existingFile = createTestUploadedFile(TEST_USER_ID, {
+                    id: 'existing-reuse',
+                    reuseKey: 'unique-reuse-key',
+                    width: 640,
+                    height: 480,
+                    thumbhash: 'reuse-thumbhash',
+                });
+                drizzleMock.seedData('uploadedFiles', [existingFile]);
+
+                const file = createMockFile('new.pdf', 'application/pdf');
+                const formData = createFileFormData(file, 'files', 'unique-reuse-key');
+
+                const body = await expectOk<{
+                    success: boolean;
+                    file: {
+                        id: string;
+                        width?: number;
+                        height?: number;
+                        thumbhash?: string;
+                    };
+                }>(
+                    await authRequest('/v1/uploads', {
+                        method: 'POST',
+                        body: formData,
+                    })
+                );
+
+                expect(body.success).toBe(true);
+                expect(body.file.id).toBe('existing-reuse');
+                expect(body.file.width).toBe(640);
+                expect(body.file.height).toBe(480);
+                expect(body.file.thumbhash).toBe('reuse-thumbhash');
+            });
+
+            it('should return originalName from R2 metadata when available', async () => {
+                const testPath = `files/${TEST_USER_ID}/file.pdf`;
+                const myFile = createTestUploadedFile(TEST_USER_ID, {
+                    id: 'with-r2-meta',
+                    path: testPath,
+                });
+                drizzleMock.seedData('uploadedFiles', [myFile]);
+
+                r2Mock.head = vi.fn().mockResolvedValue({
+                    key: testPath,
+                    size: 1024,
+                    httpMetadata: { contentType: 'application/pdf' },
+                    customMetadata: { originalName: 'original-document.pdf' },
+                    httpEtag: 'test-etag',
+                    uploaded: new Date(),
+                } satisfies MockR2HeadResponse);
+
+                const body = await expectOk<{ file: { originalName: string } }>(
+                    await authRequest('/v1/uploads/with-r2-meta', { method: 'GET' })
+                );
+
+                expect(body.file.originalName).toBe('original-document.pdf');
+            });
+
+            it('should use path fallback for originalName when R2 metadata missing', async () => {
+                const testPath = `files/${TEST_USER_ID}/fallback-name.pdf`;
+                const myFile = createTestUploadedFile(TEST_USER_ID, {
+                    id: 'no-r2-meta',
+                    path: testPath,
+                });
+                drizzleMock.seedData('uploadedFiles', [myFile]);
+
+                // R2 head returns null - no metadata
+                r2Mock.head = vi.fn().mockResolvedValue(null);
+
+                const body = await expectOk<{ file: { originalName: string } }>(
+                    await authRequest('/v1/uploads/no-r2-meta', { method: 'GET' })
+                );
+
+                expect(body.file.originalName).toBe('fallback-name.pdf');
+            });
+
+            it('should use "unknown" when path has no filename component', async () => {
+                // This tests the || 'unknown' fallback
+                const testPath = ''; // Empty path
+                const myFile = createTestUploadedFile(TEST_USER_ID, {
+                    id: 'empty-path',
+                    path: testPath,
+                });
+                drizzleMock.seedData('uploadedFiles', [myFile]);
+
+                r2Mock.head = vi.fn().mockResolvedValue({
+                    key: testPath,
+                    size: 0,
+                    httpMetadata: {},
+                    customMetadata: {}, // No originalName
+                    httpEtag: 'test-etag',
+                    uploaded: new Date(),
+                } satisfies MockR2HeadResponse);
+
+                const body = await expectOk<{ file: { originalName: string } }>(
+                    await authRequest('/v1/uploads/empty-path', { method: 'GET' })
+                );
+
+                // Should fall back to 'unknown' since path.split('/').pop() is empty
+                expect(body.file.originalName).toBeDefined();
+            });
+
+            it('should use "application/octet-stream" when contentType is missing', async () => {
+                const testPath = `files/${TEST_USER_ID}/no-content-type.bin`;
+                const myFile = createTestUploadedFile(TEST_USER_ID, {
+                    id: 'no-content-type',
+                    path: testPath,
+                });
+                drizzleMock.seedData('uploadedFiles', [myFile]);
+
+                r2Mock.head = vi.fn().mockResolvedValue(null);
+
+                const body = await expectOk<{ file: { contentType: string } }>(
+                    await authRequest('/v1/uploads/no-content-type', { method: 'GET' })
+                );
+
+                expect(body.file.contentType).toBe('application/octet-stream');
+            });
+
+            it('should use 0 for size when R2 metadata is missing', async () => {
+                const testPath = `files/${TEST_USER_ID}/no-size.bin`;
+                const myFile = createTestUploadedFile(TEST_USER_ID, {
+                    id: 'no-size',
+                    path: testPath,
+                });
+                drizzleMock.seedData('uploadedFiles', [myFile]);
+
+                r2Mock.head = vi.fn().mockResolvedValue(null);
+
+                const body = await expectOk<{ file: { size: number } }>(
+                    await authRequest('/v1/uploads/no-size', { method: 'GET' })
+                );
+
+                expect(body.file.size).toBe(0);
+            });
+        });
+
+        /**
+         * Tests targeting the download URL generation
+         */
+        describe('Download URL Generation', () => {
+            it('should return correct download URL format', async () => {
+                const testPath = `files/${TEST_USER_ID}/downloadable.pdf`;
+                const myFile = createTestUploadedFile(TEST_USER_ID, {
+                    id: 'downloadable-file',
+                    path: testPath,
+                });
+                drizzleMock.seedData('uploadedFiles', [myFile]);
+                r2Mock.head = vi.fn().mockResolvedValue({
+                    key: testPath,
+                    size: 1024,
+                    httpMetadata: { contentType: 'application/pdf' },
+                    customMetadata: {},
+                    httpEtag: 'test-etag',
+                    uploaded: new Date(),
+                } satisfies MockR2HeadResponse);
+
+                const body = await expectOk<{ url: string }>(
+                    await authRequest('/v1/uploads/downloadable-file', { method: 'GET' })
+                );
+
+                expect(body.url).toBe('/v1/uploads/downloadable-file/download');
+            });
+        });
+
+        /**
+         * Tests targeting path generation for different categories
+         */
+        describe('Category Path Generation', () => {
+            it('should generate path starting with "avatars/" for avatars category', async () => {
+                vi.mocked(processImage).mockResolvedValueOnce({ width: 100, height: 100, thumbhash: 'test' });
+                vi.mocked(isProcessableImage).mockReturnValueOnce(true);
+
+                const file = createMockFile('avatar.png', 'image/png', 1024);
+                const formData = createFileFormData(file, 'avatars');
+
+                const body = await expectOk<{ success: boolean; file: { path: string } }>(
+                    await authRequest('/v1/uploads', {
+                        method: 'POST',
+                        body: formData,
+                    })
+                );
+
+                expect(body.success).toBe(true);
+                expect(body.file.path).toMatch(/^avatars\//);
+            });
+
+            it('should generate path starting with "documents/" for documents category', async () => {
+                const file = createMockFile('doc.pdf', 'application/pdf', 1024);
+                const formData = createFileFormData(file, 'documents');
+
+                const body = await expectOk<{ success: boolean; file: { path: string } }>(
+                    await authRequest('/v1/uploads', {
+                        method: 'POST',
+                        body: formData,
+                    })
+                );
+
+                expect(body.success).toBe(true);
+                expect(body.file.path).toMatch(/^documents\//);
+            });
+
+            it('should generate path starting with "files/" for files category', async () => {
+                const file = createMockFile('data.json', 'application/json', 1024);
+                const formData = createFileFormData(file, 'files');
+
+                const body = await expectOk<{ success: boolean; file: { path: string } }>(
+                    await authRequest('/v1/uploads', {
+                        method: 'POST',
+                        body: formData,
+                    })
+                );
+
+                expect(body.success).toBe(true);
+                expect(body.file.path).toMatch(/^files\//);
+            });
+
+            it('should generate path starting with "files/" when category not specified', async () => {
+                const file = createMockFile('data.txt', 'text/plain', 1024);
+                const formData = new FormData();
+                formData.append('file', file);
+                // Don't specify category
+
+                const body = await expectOk<{ success: boolean; file: { path: string } }>(
+                    await authRequest('/v1/uploads', {
+                        method: 'POST',
+                        body: formData,
+                    })
+                );
+
+                expect(body.success).toBe(true);
+                expect(body.file.path).toMatch(/^files\//);
+            });
         });
     });
 

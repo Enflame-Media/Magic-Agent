@@ -1820,4 +1820,1633 @@ describe('connect routes (HAP-909)', () => {
             expect(initEncryption).not.toHaveBeenCalled();
         });
     });
+
+    // =========================================================================
+    // HAP-909: Mutation Testing Coverage Improvements
+    // Tests specifically targeting survived mutations:
+    // - StringLiteral: Verify exact error messages and response strings
+    // - ConditionalExpression: Test all branches with boundary conditions
+    // - ObjectLiteral: Verify exact response shapes with all properties
+    // =========================================================================
+    describe('mutation testing coverage - StringLiteral mutations', () => {
+        const authHeaders = { Authorization: 'Bearer test-token' };
+
+        it('should return exact error message for missing GitHub config', async () => {
+            const { app, env } = createTestApp({
+                // No GitHub config
+            });
+
+            const response = await app.request('/v1/connect/github/params', {
+                headers: authHeaders,
+            }, env);
+            const body = await response.json() as { error: string };
+
+            // Verify EXACT error message - mutation would change this
+            expect(body).toEqual({ error: 'GitHub OAuth not configured' });
+        });
+
+        it('should return exact error message for webhook not configured', async () => {
+            const { app, env } = createTestApp({
+                // No GITHUB_WEBHOOK_SECRET
+            });
+
+            const response = await app.request('/v1/connect/github/webhook', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Hub-Signature-256': 'sha256=test',
+                    'X-GitHub-Event': 'push',
+                },
+                body: JSON.stringify({ test: true }),
+            }, env);
+            const body = await response.json() as { error: string };
+
+            // Verify EXACT error message - mutation would change this
+            expect(body).toEqual({ error: 'Webhook verification not configured' });
+        });
+
+        it('should return exact error message for missing signature header', async () => {
+            const { app, env } = createTestApp({
+                GITHUB_WEBHOOK_SECRET: 'test-secret',
+            });
+
+            // Note: Zod validation catches missing header before code runs
+            // Testing manual signature validation path
+            const response = await app.request('/v1/connect/github/webhook', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Hub-Signature-256': 'sha256=invalid',
+                    'X-GitHub-Event': 'push',
+                },
+                body: JSON.stringify({ test: true }),
+            }, env);
+            const body = await response.json() as { error: string };
+
+            // Verify EXACT error message
+            expect(body).toEqual({ error: 'Invalid signature' });
+        });
+
+        it('should return exact error message for invalid JSON payload', async () => {
+            const invalidPayload = 'not valid json{';
+            const secret = 'test-webhook-secret';
+
+            // Create valid signature for invalid JSON
+            const encoder = new TextEncoder();
+            const key = await crypto.subtle.importKey(
+                'raw',
+                encoder.encode(secret),
+                { name: 'HMAC', hash: 'SHA-256' },
+                false,
+                ['sign']
+            );
+            const signatureBuffer = await crypto.subtle.sign('HMAC', key, encoder.encode(invalidPayload));
+            const signature = 'sha256=' + Array.from(new Uint8Array(signatureBuffer))
+                .map((b) => b.toString(16).padStart(2, '0'))
+                .join('');
+
+            const { app, env } = createTestApp({
+                GITHUB_WEBHOOK_SECRET: secret,
+            });
+
+            const response = await app.request('/v1/connect/github/webhook', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Hub-Signature-256': signature,
+                    'X-GitHub-Event': 'push',
+                },
+                body: invalidPayload,
+            }, env);
+            const body = await response.json() as { error: string };
+
+            // Verify EXACT error message
+            expect(body).toEqual({ error: 'Invalid JSON payload' });
+        });
+
+        it('should return exact error message for GitHub not connected on disconnect', async () => {
+            const mockAccount = {
+                id: 'test-user-id',
+                githubUserId: null,
+                seq: 1,
+                publicKey: 'test-public-key',
+                username: null,
+                firstName: null,
+                lastName: null,
+                settings: null,
+                settingsVersion: 0,
+                feedSeq: 0,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            };
+
+            const mockDb = createMockDb({ accounts: [mockAccount] });
+            vi.mocked(getDb).mockReturnValue(mockDb as never);
+
+            const { app, env } = createTestApp();
+
+            const response = await app.request('/v1/connect/github', {
+                method: 'DELETE',
+                headers: authHeaders,
+            }, env);
+            const body = await response.json() as { error: string };
+
+            // Verify EXACT error message
+            expect(body).toEqual({ error: 'GitHub account not connected' });
+        });
+
+        it('should verify exact redirect URL for invalid_state error', async () => {
+            vi.mocked(verifyEphemeralToken).mockResolvedValue(null);
+
+            const { app, env } = createTestApp({
+                GITHUB_CLIENT_ID: 'test-client-id',
+                GITHUB_CLIENT_SECRET: 'test-client-secret',
+            });
+
+            const response = await app.request(
+                '/v1/connect/github/callback?code=test-code&state=invalid',
+                {},
+                env
+            );
+
+            // Verify EXACT redirect URL - mutations would change parts of it
+            expect(response.headers.get('Location')).toBe('https://app.happy.engineering?error=invalid_state');
+        });
+
+        it('should verify exact redirect URL for server_config error', async () => {
+            vi.mocked(verifyEphemeralToken).mockResolvedValue({
+                userId: 'test-user-id',
+                purpose: 'github-oauth-state',
+            });
+
+            const { app, env } = createTestApp({
+                // No GITHUB_CLIENT_ID or GITHUB_CLIENT_SECRET
+            });
+
+            const response = await app.request(
+                '/v1/connect/github/callback?code=test-code&state=test-state',
+                {},
+                env
+            );
+
+            // Verify EXACT redirect URL
+            expect(response.headers.get('Location')).toBe('https://app.happy.engineering?error=server_config');
+        });
+
+        it('should verify exact redirect URL for user_not_found error', async () => {
+            vi.mocked(verifyEphemeralToken).mockResolvedValue({
+                userId: 'test-user-id',
+                purpose: 'github-oauth-state',
+            });
+
+            const mockGitHubProfile = {
+                id: 12345,
+                login: 'testuser',
+                type: 'User',
+                site_admin: false,
+                avatar_url: 'https://github.com/avatars/testuser.png',
+                gravatar_id: null,
+                name: 'Test User',
+                company: null,
+                blog: null,
+                location: null,
+                email: 'test@example.com',
+                hireable: null,
+                bio: 'Test bio',
+                twitter_username: null,
+                public_repos: 10,
+                public_gists: 5,
+                followers: 100,
+                following: 50,
+                created_at: '2020-01-01T00:00:00Z',
+                updated_at: '2024-01-01T00:00:00Z',
+            };
+
+            global.fetch = vi.fn()
+                .mockResolvedValueOnce({
+                    json: async () => ({ access_token: 'test-access-token' }),
+                })
+                .mockResolvedValueOnce({
+                    ok: true,
+                    json: async () => mockGitHubProfile,
+                });
+
+            const mockDb = createMockDb({ accounts: [] });
+            mockDb.query.accounts.findFirst = vi.fn().mockResolvedValue(null);
+            vi.mocked(getDb).mockReturnValue(mockDb as never);
+
+            const { app, env } = createTestApp({
+                GITHUB_CLIENT_ID: 'test-client-id',
+                GITHUB_CLIENT_SECRET: 'test-client-secret',
+            });
+
+            const response = await app.request(
+                '/v1/connect/github/callback?code=test-code&state=test-state',
+                {},
+                env
+            );
+
+            // Verify EXACT redirect URL
+            expect(response.headers.get('Location')).toBe('https://app.happy.engineering?error=user_not_found');
+        });
+
+        it('should verify exact redirect URL for no_access_token error', async () => {
+            vi.mocked(verifyEphemeralToken).mockResolvedValue({
+                userId: 'test-user-id',
+                purpose: 'github-oauth-state',
+            });
+
+            global.fetch = vi.fn().mockResolvedValueOnce({
+                json: async () => ({}), // No access_token
+            });
+
+            const { app, env } = createTestApp({
+                GITHUB_CLIENT_ID: 'test-client-id',
+                GITHUB_CLIENT_SECRET: 'test-client-secret',
+            });
+
+            const response = await app.request(
+                '/v1/connect/github/callback?code=test-code&state=test-state',
+                {},
+                env
+            );
+
+            // Verify EXACT redirect URL
+            expect(response.headers.get('Location')).toBe('https://app.happy.engineering?error=no_access_token');
+        });
+
+        it('should verify exact redirect URL for github_user_fetch_failed error', async () => {
+            vi.mocked(verifyEphemeralToken).mockResolvedValue({
+                userId: 'test-user-id',
+                purpose: 'github-oauth-state',
+            });
+
+            global.fetch = vi.fn()
+                .mockResolvedValueOnce({
+                    json: async () => ({ access_token: 'test-access-token' }),
+                })
+                .mockResolvedValueOnce({
+                    ok: false,
+                    status: 403,
+                });
+
+            const { app, env } = createTestApp({
+                GITHUB_CLIENT_ID: 'test-client-id',
+                GITHUB_CLIENT_SECRET: 'test-client-secret',
+            });
+
+            const response = await app.request(
+                '/v1/connect/github/callback?code=test-code&state=test-state',
+                {},
+                env
+            );
+
+            // Verify EXACT redirect URL
+            expect(response.headers.get('Location')).toBe('https://app.happy.engineering?error=github_user_fetch_failed');
+        });
+
+        it('should verify exact redirect URL for server_error', async () => {
+            vi.mocked(verifyEphemeralToken).mockResolvedValue({
+                userId: 'test-user-id',
+                purpose: 'github-oauth-state',
+            });
+
+            global.fetch = vi.fn().mockRejectedValue(new Error('Network failure'));
+
+            const { app, env } = createTestApp({
+                GITHUB_CLIENT_ID: 'test-client-id',
+                GITHUB_CLIENT_SECRET: 'test-client-secret',
+            });
+
+            const response = await app.request(
+                '/v1/connect/github/callback?code=test-code&state=test-state',
+                {},
+                env
+            );
+
+            // Verify EXACT redirect URL
+            expect(response.headers.get('Location')).toBe('https://app.happy.engineering?error=server_error');
+        });
+    });
+
+    describe('mutation testing coverage - ObjectLiteral mutations', () => {
+        const authHeaders = { Authorization: 'Bearer test-token' };
+
+        it('should verify complete webhook response structure for ping', async () => {
+            const payload = JSON.stringify({ zen: 'Test' });
+            const secret = 'test-webhook-secret';
+
+            const encoder = new TextEncoder();
+            const key = await crypto.subtle.importKey(
+                'raw',
+                encoder.encode(secret),
+                { name: 'HMAC', hash: 'SHA-256' },
+                false,
+                ['sign']
+            );
+            const signatureBuffer = await crypto.subtle.sign('HMAC', key, encoder.encode(payload));
+            const signature = 'sha256=' + Array.from(new Uint8Array(signatureBuffer))
+                .map((b) => b.toString(16).padStart(2, '0'))
+                .join('');
+
+            const { app, env } = createTestApp({
+                GITHUB_WEBHOOK_SECRET: secret,
+            });
+
+            const response = await app.request('/v1/connect/github/webhook', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Hub-Signature-256': signature,
+                    'X-GitHub-Event': 'ping',
+                },
+                body: payload,
+            }, env);
+
+            const body = await response.json();
+
+            // Verify EXACT response structure - all properties
+            expect(body).toEqual({
+                received: true,
+                event: 'ping',
+                processed: true,
+                message: 'pong',
+            });
+        });
+
+        it('should verify complete webhook response structure for push', async () => {
+            const payload = JSON.stringify({ ref: 'refs/heads/main' });
+            const secret = 'test-webhook-secret';
+
+            const encoder = new TextEncoder();
+            const key = await crypto.subtle.importKey(
+                'raw',
+                encoder.encode(secret),
+                { name: 'HMAC', hash: 'SHA-256' },
+                false,
+                ['sign']
+            );
+            const signatureBuffer = await crypto.subtle.sign('HMAC', key, encoder.encode(payload));
+            const signature = 'sha256=' + Array.from(new Uint8Array(signatureBuffer))
+                .map((b) => b.toString(16).padStart(2, '0'))
+                .join('');
+
+            const { app, env } = createTestApp({
+                GITHUB_WEBHOOK_SECRET: secret,
+            });
+
+            const response = await app.request('/v1/connect/github/webhook', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Hub-Signature-256': signature,
+                    'X-GitHub-Event': 'push',
+                },
+                body: payload,
+            }, env);
+
+            const body = await response.json();
+
+            // Verify EXACT response structure
+            expect(body).toEqual({
+                received: true,
+                event: 'push',
+                processed: true,
+                message: 'push acknowledged',
+            });
+        });
+
+        it('should verify complete webhook response structure for unknown event', async () => {
+            const payload = JSON.stringify({ test: true });
+            const secret = 'test-webhook-secret';
+
+            const encoder = new TextEncoder();
+            const key = await crypto.subtle.importKey(
+                'raw',
+                encoder.encode(secret),
+                { name: 'HMAC', hash: 'SHA-256' },
+                false,
+                ['sign']
+            );
+            const signatureBuffer = await crypto.subtle.sign('HMAC', key, encoder.encode(payload));
+            const signature = 'sha256=' + Array.from(new Uint8Array(signatureBuffer))
+                .map((b) => b.toString(16).padStart(2, '0'))
+                .join('');
+
+            const { app, env } = createTestApp({
+                GITHUB_WEBHOOK_SECRET: secret,
+            });
+
+            const response = await app.request('/v1/connect/github/webhook', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Hub-Signature-256': signature,
+                    'X-GitHub-Event': 'custom_event',
+                },
+                body: payload,
+            }, env);
+
+            const body = await response.json();
+
+            // Verify EXACT response structure - processed should be false
+            expect(body).toEqual({
+                received: true,
+                event: 'custom_event',
+                processed: false,
+                message: 'event custom_event not processed',
+            });
+        });
+
+        it('should verify complete success response for AI token registration', async () => {
+            const mockDb = createMockDb();
+            mockDb.query.serviceAccountTokens.findFirst = vi.fn().mockResolvedValue(null);
+            vi.mocked(getDb).mockReturnValue(mockDb as never);
+            vi.mocked(isEncryptionInitialized).mockReturnValue(true);
+
+            const { app, env } = createTestApp();
+
+            const response = await app.request('/v1/connect/openai/register', {
+                method: 'POST',
+                headers: { ...authHeaders, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: 'sk-test' }),
+            }, env);
+
+            const body = await response.json();
+
+            // Verify EXACT response structure
+            expect(body).toEqual({ success: true });
+        });
+
+        it('should verify complete success response for AI token deletion', async () => {
+            const mockDb = createMockDb();
+            vi.mocked(getDb).mockReturnValue(mockDb as never);
+
+            const { app, env } = createTestApp();
+
+            const response = await app.request('/v1/connect/openai', {
+                method: 'DELETE',
+                headers: authHeaders,
+            }, env);
+
+            const body = await response.json();
+
+            // Verify EXACT response structure
+            expect(body).toEqual({ success: true });
+        });
+
+        it('should verify complete success response for GitHub disconnect', async () => {
+            const mockAccount = {
+                id: 'test-user-id',
+                githubUserId: '12345',
+                seq: 1,
+                publicKey: 'test-public-key',
+                username: 'testuser',
+                firstName: 'Test',
+                lastName: 'User',
+                settings: null,
+                settingsVersion: 0,
+                feedSeq: 0,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            };
+
+            const mockDb = createMockDb({ accounts: [mockAccount] });
+            vi.mocked(getDb).mockReturnValue(mockDb as never);
+
+            const { app, env } = createTestApp();
+
+            const response = await app.request('/v1/connect/github', {
+                method: 'DELETE',
+                headers: authHeaders,
+            }, env);
+
+            const body = await response.json();
+
+            // Verify EXACT response structure
+            expect(body).toEqual({ success: true });
+        });
+
+        it('should verify null token response structure', async () => {
+            const mockDb = createMockDb();
+            mockDb.query.serviceAccountTokens.findFirst = vi.fn().mockResolvedValue(null);
+            vi.mocked(getDb).mockReturnValue(mockDb as never);
+
+            const { app, env } = createTestApp();
+
+            const response = await app.request('/v1/connect/openai/token', {
+                headers: authHeaders,
+            }, env);
+
+            const body = await response.json();
+
+            // Verify EXACT response structure - token must be null, not undefined
+            expect(body).toEqual({ token: null });
+        });
+
+        it('should verify token response structure with decrypted value', async () => {
+            const existingToken = {
+                id: 'token-id',
+                accountId: 'test-user-id',
+                vendor: 'openai',
+                token: Buffer.from([1, 2, 3]),
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            };
+
+            const mockDb = createMockDb({ serviceAccountTokens: [existingToken] });
+            vi.mocked(getDb).mockReturnValue(mockDb as never);
+            vi.mocked(isEncryptionInitialized).mockReturnValue(true);
+            vi.mocked(decryptString).mockResolvedValue('sk-decrypted-token-value');
+
+            const { app, env } = createTestApp();
+
+            const response = await app.request('/v1/connect/openai/token', {
+                headers: authHeaders,
+            }, env);
+
+            const body = await response.json();
+
+            // Verify EXACT response structure
+            expect(body).toEqual({ token: 'sk-decrypted-token-value' });
+        });
+
+        it('should verify tokens list response structure', async () => {
+            const tokens = [
+                {
+                    id: 'token-1',
+                    accountId: 'test-user-id',
+                    vendor: 'openai',
+                    token: Buffer.from([1, 2, 3]),
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                },
+            ];
+
+            const mockDb = createMockDb({ serviceAccountTokens: tokens });
+            vi.mocked(getDb).mockReturnValue(mockDb as never);
+            vi.mocked(isEncryptionInitialized).mockReturnValue(true);
+            vi.mocked(decryptString).mockResolvedValue('sk-openai');
+
+            const { app, env } = createTestApp();
+
+            const response = await app.request('/v1/connect/tokens', {
+                headers: authHeaders,
+            }, env);
+
+            const body = await response.json();
+
+            // Verify EXACT response structure
+            expect(body).toEqual({
+                tokens: [
+                    { vendor: 'openai', token: 'sk-openai' },
+                ],
+            });
+        });
+    });
+
+    describe('mutation testing coverage - ConditionalExpression mutations', () => {
+        const authHeaders = { Authorization: 'Bearer test-token' };
+
+        it('should handle both cases of clientId check (present vs missing)', async () => {
+            // Case 1: clientId missing
+            {
+                const { app, env } = createTestApp({
+                    GITHUB_REDIRECT_URL: 'https://example.com/callback',
+                    // GITHUB_CLIENT_ID missing
+                });
+
+                const response = await app.request('/v1/connect/github/params', {
+                    headers: authHeaders,
+                }, env);
+
+                expect(response.status).toBe(400);
+            }
+
+            // Case 2: clientId present
+            {
+                vi.mocked(createEphemeralToken).mockResolvedValue('state-token');
+
+                const { app, env } = createTestApp({
+                    GITHUB_CLIENT_ID: 'test-client-id',
+                    GITHUB_REDIRECT_URL: 'https://example.com/callback',
+                });
+
+                const response = await app.request('/v1/connect/github/params', {
+                    headers: authHeaders,
+                }, env);
+
+                expect(response.status).toBe(200);
+            }
+        });
+
+        it('should handle both cases of redirectUri check (present vs missing)', async () => {
+            // Case 1: redirectUri missing
+            {
+                const { app, env } = createTestApp({
+                    GITHUB_CLIENT_ID: 'test-client-id',
+                    // GITHUB_REDIRECT_URL missing
+                });
+
+                const response = await app.request('/v1/connect/github/params', {
+                    headers: authHeaders,
+                }, env);
+
+                expect(response.status).toBe(400);
+            }
+
+            // Case 2: redirectUri present
+            {
+                vi.mocked(createEphemeralToken).mockResolvedValue('state-token');
+
+                const { app, env } = createTestApp({
+                    GITHUB_CLIENT_ID: 'test-client-id',
+                    GITHUB_REDIRECT_URL: 'https://example.com/callback',
+                });
+
+                const response = await app.request('/v1/connect/github/params', {
+                    headers: authHeaders,
+                }, env);
+
+                expect(response.status).toBe(200);
+            }
+        });
+
+        it('should handle verifyEphemeralToken returning null vs valid token', async () => {
+            // Case 1: null token
+            {
+                vi.mocked(verifyEphemeralToken).mockResolvedValue(null);
+
+                const { app, env } = createTestApp({
+                    GITHUB_CLIENT_ID: 'test-client-id',
+                    GITHUB_CLIENT_SECRET: 'test-secret',
+                });
+
+                const response = await app.request(
+                    '/v1/connect/github/callback?code=test&state=invalid',
+                    {},
+                    env
+                );
+
+                expect(response.status).toBe(302);
+                expect(response.headers.get('Location')).toContain('error=invalid_state');
+            }
+
+            // Case 2: valid token with wrong purpose
+            {
+                vi.mocked(verifyEphemeralToken).mockResolvedValue({
+                    userId: 'test-user-id',
+                    purpose: 'different-purpose',
+                });
+
+                const { app, env } = createTestApp({
+                    GITHUB_CLIENT_ID: 'test-client-id',
+                    GITHUB_CLIENT_SECRET: 'test-secret',
+                });
+
+                const response = await app.request(
+                    '/v1/connect/github/callback?code=test&state=test',
+                    {},
+                    env
+                );
+
+                expect(response.status).toBe(302);
+                expect(response.headers.get('Location')).toContain('error=invalid_state');
+            }
+        });
+
+        it('should handle tokenData.error presence check', async () => {
+            vi.mocked(verifyEphemeralToken).mockResolvedValue({
+                userId: 'test-user-id',
+                purpose: 'github-oauth-state',
+            });
+
+            // Case 1: error present in token response
+            global.fetch = vi.fn().mockResolvedValueOnce({
+                json: async () => ({
+                    error: 'bad_verification_code',
+                    error_description: 'The code is incorrect',
+                }),
+            });
+
+            const { app, env } = createTestApp({
+                GITHUB_CLIENT_ID: 'test-client-id',
+                GITHUB_CLIENT_SECRET: 'test-secret',
+            });
+
+            const response = await app.request(
+                '/v1/connect/github/callback?code=test&state=test',
+                {},
+                env
+            );
+
+            expect(response.status).toBe(302);
+            expect(response.headers.get('Location')).toContain('error=bad_verification_code');
+        });
+
+        it('should handle accessToken presence check', async () => {
+            vi.mocked(verifyEphemeralToken).mockResolvedValue({
+                userId: 'test-user-id',
+                purpose: 'github-oauth-state',
+            });
+
+            // Case 1: access_token missing (empty object)
+            global.fetch = vi.fn().mockResolvedValueOnce({
+                json: async () => ({}),
+            });
+
+            const { app, env } = createTestApp({
+                GITHUB_CLIENT_ID: 'test-client-id',
+                GITHUB_CLIENT_SECRET: 'test-secret',
+            });
+
+            const response = await app.request(
+                '/v1/connect/github/callback?code=test&state=test',
+                {},
+                env
+            );
+
+            expect(response.status).toBe(302);
+            expect(response.headers.get('Location')).toContain('error=no_access_token');
+        });
+
+        it('should handle userResponse.ok check', async () => {
+            vi.mocked(verifyEphemeralToken).mockResolvedValue({
+                userId: 'test-user-id',
+                purpose: 'github-oauth-state',
+            });
+
+            // Case: userResponse.ok is false
+            global.fetch = vi.fn()
+                .mockResolvedValueOnce({
+                    json: async () => ({ access_token: 'test-token' }),
+                })
+                .mockResolvedValueOnce({
+                    ok: false,
+                    status: 401,
+                });
+
+            const { app, env } = createTestApp({
+                GITHUB_CLIENT_ID: 'test-client-id',
+                GITHUB_CLIENT_SECRET: 'test-secret',
+            });
+
+            const response = await app.request(
+                '/v1/connect/github/callback?code=test&state=test',
+                {},
+                env
+            );
+
+            expect(response.status).toBe(302);
+            expect(response.headers.get('Location')).toContain('error=github_user_fetch_failed');
+        });
+
+        it('should handle existingAccount check (found vs not found)', async () => {
+            vi.mocked(verifyEphemeralToken).mockResolvedValue({
+                userId: 'test-user-id',
+                purpose: 'github-oauth-state',
+            });
+
+            const mockGitHubProfile = {
+                id: 12345,
+                login: 'testuser',
+                type: 'User',
+                site_admin: false,
+                avatar_url: 'https://github.com/avatars/testuser.png',
+                gravatar_id: null,
+                name: 'Test User',
+                company: null,
+                blog: null,
+                location: null,
+                email: 'test@example.com',
+                hireable: null,
+                bio: null,
+                twitter_username: null,
+                public_repos: 10,
+                public_gists: 5,
+                followers: 100,
+                following: 50,
+                created_at: '2020-01-01T00:00:00Z',
+                updated_at: '2024-01-01T00:00:00Z',
+            };
+
+            global.fetch = vi.fn()
+                .mockResolvedValueOnce({
+                    json: async () => ({ access_token: 'test-token' }),
+                })
+                .mockResolvedValueOnce({
+                    ok: true,
+                    json: async () => mockGitHubProfile,
+                });
+
+            // Case: existingAccount is null
+            const mockDb = createMockDb({ accounts: [] });
+            mockDb.query.accounts.findFirst = vi.fn().mockResolvedValue(null);
+            vi.mocked(getDb).mockReturnValue(mockDb as never);
+
+            const { app, env } = createTestApp({
+                GITHUB_CLIENT_ID: 'test-client-id',
+                GITHUB_CLIENT_SECRET: 'test-secret',
+            });
+
+            const response = await app.request(
+                '/v1/connect/github/callback?code=test&state=test',
+                {},
+                env
+            );
+
+            expect(response.status).toBe(302);
+            expect(response.headers.get('Location')).toContain('error=user_not_found');
+        });
+
+        it('should handle signature format check (sha256= prefix)', async () => {
+            const { app, env } = createTestApp({
+                GITHUB_WEBHOOK_SECRET: 'test-secret',
+            });
+
+            // Case: signature without sha256= prefix
+            const response = await app.request('/v1/connect/github/webhook', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Hub-Signature-256': 'wrongprefix=abc123',
+                    'X-GitHub-Event': 'push',
+                },
+                body: JSON.stringify({ test: true }),
+            }, env);
+
+            expect(response.status).toBe(401);
+            const body = await response.json() as { error: string };
+            expect(body.error).toBe('Invalid signature');
+        });
+
+        it('should handle account.githubUserId check in disconnect', async () => {
+            // Case 1: githubUserId is null
+            {
+                const mockAccount = {
+                    id: 'test-user-id',
+                    githubUserId: null,
+                    seq: 1,
+                    publicKey: 'test-key',
+                    username: null,
+                    firstName: null,
+                    lastName: null,
+                    settings: null,
+                    settingsVersion: 0,
+                    feedSeq: 0,
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                };
+
+                const mockDb = createMockDb({ accounts: [mockAccount] });
+                vi.mocked(getDb).mockReturnValue(mockDb as never);
+
+                const { app, env } = createTestApp();
+
+                const response = await app.request('/v1/connect/github', {
+                    method: 'DELETE',
+                    headers: authHeaders,
+                }, env);
+
+                expect(response.status).toBe(404);
+            }
+
+            // Case 2: githubUserId is present
+            {
+                const mockAccount = {
+                    id: 'test-user-id',
+                    githubUserId: '12345',
+                    seq: 1,
+                    publicKey: 'test-key',
+                    username: 'testuser',
+                    firstName: 'Test',
+                    lastName: 'User',
+                    settings: null,
+                    settingsVersion: 0,
+                    feedSeq: 0,
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                };
+
+                const mockDb = createMockDb({ accounts: [mockAccount] });
+                vi.mocked(getDb).mockReturnValue(mockDb as never);
+
+                const { app, env } = createTestApp();
+
+                const response = await app.request('/v1/connect/github', {
+                    method: 'DELETE',
+                    headers: authHeaders,
+                }, env);
+
+                expect(response.status).toBe(200);
+            }
+        });
+
+        it('should handle serviceToken existence check in get token', async () => {
+            // Case 1: serviceToken not found
+            {
+                const mockDb = createMockDb();
+                mockDb.query.serviceAccountTokens.findFirst = vi.fn().mockResolvedValue(null);
+                vi.mocked(getDb).mockReturnValue(mockDb as never);
+
+                const { app, env } = createTestApp();
+
+                const response = await app.request('/v1/connect/openai/token', {
+                    headers: authHeaders,
+                }, env);
+
+                const body = await response.json() as { token: string | null };
+                expect(body.token).toBeNull();
+            }
+
+            // Case 2: serviceToken found
+            {
+                const existingToken = {
+                    id: 'token-id',
+                    accountId: 'test-user-id',
+                    vendor: 'openai',
+                    token: Buffer.from([1, 2, 3]),
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                };
+
+                const mockDb = createMockDb({ serviceAccountTokens: [existingToken] });
+                vi.mocked(getDb).mockReturnValue(mockDb as never);
+                vi.mocked(isEncryptionInitialized).mockReturnValue(true);
+                vi.mocked(decryptString).mockResolvedValue('sk-test');
+
+                const { app, env } = createTestApp();
+
+                const response = await app.request('/v1/connect/openai/token', {
+                    headers: authHeaders,
+                }, env);
+
+                const body = await response.json() as { token: string | null };
+                expect(body.token).toBe('sk-test');
+            }
+        });
+
+        it('should handle existing token check in registration (update vs insert)', async () => {
+            vi.mocked(isEncryptionInitialized).mockReturnValue(true);
+
+            // Case 1: No existing token - should insert
+            {
+                const mockDb = createMockDb();
+                mockDb.query.serviceAccountTokens.findFirst = vi.fn().mockResolvedValue(null);
+                vi.mocked(getDb).mockReturnValue(mockDb as never);
+
+                const { app, env } = createTestApp();
+
+                await app.request('/v1/connect/openai/register', {
+                    method: 'POST',
+                    headers: { ...authHeaders, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: 'sk-new' }),
+                }, env);
+
+                expect(mockDb.insert).toHaveBeenCalled();
+                expect(mockDb.update).not.toHaveBeenCalled();
+            }
+
+            // Case 2: Existing token - should update
+            {
+                const existingToken = {
+                    id: 'token-id',
+                    accountId: 'test-user-id',
+                    vendor: 'openai',
+                    token: Buffer.from([1, 2, 3]),
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                };
+
+                const mockDb = createMockDb({ serviceAccountTokens: [existingToken] });
+                vi.mocked(getDb).mockReturnValue(mockDb as never);
+
+                const { app, env } = createTestApp();
+
+                await app.request('/v1/connect/openai/register', {
+                    method: 'POST',
+                    headers: { ...authHeaders, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: 'sk-updated' }),
+                }, env);
+
+                expect(mockDb.update).toHaveBeenCalled();
+            }
+        });
+
+        it('should handle isEncryptionInitialized check (true vs false)', async () => {
+            const mockDb = createMockDb();
+            mockDb.query.serviceAccountTokens.findFirst = vi.fn().mockResolvedValue(null);
+            vi.mocked(getDb).mockReturnValue(mockDb as never);
+
+            // Case 1: Encryption not initialized - should call initEncryption
+            {
+                vi.clearAllMocks();
+                setupAuthenticatedUser();
+                vi.mocked(isEncryptionInitialized).mockReturnValue(false);
+
+                const { app, env } = createTestApp();
+
+                await app.request('/v1/connect/openai/register', {
+                    method: 'POST',
+                    headers: { ...authHeaders, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: 'sk-test' }),
+                }, env);
+
+                expect(initEncryption).toHaveBeenCalled();
+            }
+
+            // Case 2: Encryption already initialized - should NOT call initEncryption
+            {
+                vi.clearAllMocks();
+                setupAuthenticatedUser();
+                vi.mocked(isEncryptionInitialized).mockReturnValue(true);
+                vi.mocked(getDb).mockReturnValue(mockDb as never);
+
+                const { app, env } = createTestApp();
+
+                await app.request('/v1/connect/openai/register', {
+                    method: 'POST',
+                    headers: { ...authHeaders, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: 'sk-test' }),
+                }, env);
+
+                expect(initEncryption).not.toHaveBeenCalled();
+            }
+        });
+    });
+
+    describe('mutation testing coverage - webhook event processing', () => {
+        /**
+         * Helper to create valid webhook signature
+         */
+        async function createSignature(payload: string, secret: string): Promise<string> {
+            const encoder = new TextEncoder();
+            const key = await crypto.subtle.importKey(
+                'raw',
+                encoder.encode(secret),
+                { name: 'HMAC', hash: 'SHA-256' },
+                false,
+                ['sign']
+            );
+            const signatureBuffer = await crypto.subtle.sign('HMAC', key, encoder.encode(payload));
+            return 'sha256=' + Array.from(new Uint8Array(signatureBuffer))
+                .map((b) => b.toString(16).padStart(2, '0'))
+                .join('');
+        }
+
+        it('should return exact message for installation event', async () => {
+            const payload = JSON.stringify({ action: 'created' });
+            const secret = 'test-secret';
+            const signature = await createSignature(payload, secret);
+
+            const { app, env } = createTestApp({
+                GITHUB_WEBHOOK_SECRET: secret,
+            });
+
+            const response = await app.request('/v1/connect/github/webhook', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Hub-Signature-256': signature,
+                    'X-GitHub-Event': 'installation',
+                },
+                body: payload,
+            }, env);
+
+            const body = await response.json() as { message: string };
+            expect(body.message).toBe('installation acknowledged');
+        });
+
+        it('should return exact message for installation_repositories event', async () => {
+            const payload = JSON.stringify({ action: 'added' });
+            const secret = 'test-secret';
+            const signature = await createSignature(payload, secret);
+
+            const { app, env } = createTestApp({
+                GITHUB_WEBHOOK_SECRET: secret,
+            });
+
+            const response = await app.request('/v1/connect/github/webhook', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Hub-Signature-256': signature,
+                    'X-GitHub-Event': 'installation_repositories',
+                },
+                body: payload,
+            }, env);
+
+            const body = await response.json() as { message: string };
+            expect(body.message).toBe('installation_repositories acknowledged');
+        });
+
+        it('should return exact message for repository event', async () => {
+            const payload = JSON.stringify({ action: 'created' });
+            const secret = 'test-secret';
+            const signature = await createSignature(payload, secret);
+
+            const { app, env } = createTestApp({
+                GITHUB_WEBHOOK_SECRET: secret,
+            });
+
+            const response = await app.request('/v1/connect/github/webhook', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Hub-Signature-256': signature,
+                    'X-GitHub-Event': 'repository',
+                },
+                body: payload,
+            }, env);
+
+            const body = await response.json() as { message: string };
+            expect(body.message).toBe('repository acknowledged');
+        });
+
+        it('should return exact message for pull_request event', async () => {
+            const payload = JSON.stringify({ action: 'opened' });
+            const secret = 'test-secret';
+            const signature = await createSignature(payload, secret);
+
+            const { app, env } = createTestApp({
+                GITHUB_WEBHOOK_SECRET: secret,
+            });
+
+            const response = await app.request('/v1/connect/github/webhook', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Hub-Signature-256': signature,
+                    'X-GitHub-Event': 'pull_request',
+                },
+                body: payload,
+            }, env);
+
+            const body = await response.json() as { message: string };
+            expect(body.message).toBe('pull_request acknowledged');
+        });
+
+        it('should return exact message for issues event', async () => {
+            const payload = JSON.stringify({ action: 'opened' });
+            const secret = 'test-secret';
+            const signature = await createSignature(payload, secret);
+
+            const { app, env } = createTestApp({
+                GITHUB_WEBHOOK_SECRET: secret,
+            });
+
+            const response = await app.request('/v1/connect/github/webhook', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Hub-Signature-256': signature,
+                    'X-GitHub-Event': 'issues',
+                },
+                body: payload,
+            }, env);
+
+            const body = await response.json() as { message: string };
+            expect(body.message).toBe('issues acknowledged');
+        });
+
+        it('should return exact message for issue_comment event', async () => {
+            const payload = JSON.stringify({ action: 'created' });
+            const secret = 'test-secret';
+            const signature = await createSignature(payload, secret);
+
+            const { app, env } = createTestApp({
+                GITHUB_WEBHOOK_SECRET: secret,
+            });
+
+            const response = await app.request('/v1/connect/github/webhook', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Hub-Signature-256': signature,
+                    'X-GitHub-Event': 'issue_comment',
+                },
+                body: payload,
+            }, env);
+
+            const body = await response.json() as { message: string };
+            expect(body.message).toBe('issue_comment acknowledged');
+        });
+    });
+
+    describe('mutation testing coverage - OAuth URL construction', () => {
+        const authHeaders = { Authorization: 'Bearer test-token' };
+
+        it('should construct OAuth URL with exact base URL', async () => {
+            vi.mocked(createEphemeralToken).mockResolvedValue('state-token');
+
+            const { app, env } = createTestApp({
+                GITHUB_CLIENT_ID: 'client-123',
+                GITHUB_REDIRECT_URL: 'https://example.com/callback',
+            });
+
+            const response = await app.request('/v1/connect/github/params', {
+                headers: authHeaders,
+            }, env);
+
+            const body = await response.json() as { url: string };
+
+            // Verify exact base URL - mutation would change this
+            expect(body.url.startsWith('https://github.com/login/oauth/authorize')).toBe(true);
+        });
+
+        it('should include exact client_id parameter', async () => {
+            vi.mocked(createEphemeralToken).mockResolvedValue('state-token');
+
+            const { app, env } = createTestApp({
+                GITHUB_CLIENT_ID: 'my-client-id-123',
+                GITHUB_REDIRECT_URL: 'https://example.com/callback',
+            });
+
+            const response = await app.request('/v1/connect/github/params', {
+                headers: authHeaders,
+            }, env);
+
+            const body = await response.json() as { url: string };
+            const url = new URL(body.url);
+
+            expect(url.searchParams.get('client_id')).toBe('my-client-id-123');
+        });
+
+        it('should include exact redirect_uri parameter', async () => {
+            vi.mocked(createEphemeralToken).mockResolvedValue('state-token');
+
+            const { app, env } = createTestApp({
+                GITHUB_CLIENT_ID: 'client-123',
+                GITHUB_REDIRECT_URL: 'https://my-app.example.com/auth/callback',
+            });
+
+            const response = await app.request('/v1/connect/github/params', {
+                headers: authHeaders,
+            }, env);
+
+            const body = await response.json() as { url: string };
+            const url = new URL(body.url);
+
+            expect(url.searchParams.get('redirect_uri')).toBe('https://my-app.example.com/auth/callback');
+        });
+
+        it('should include exact scope parameter', async () => {
+            vi.mocked(createEphemeralToken).mockResolvedValue('state-token');
+
+            const { app, env } = createTestApp({
+                GITHUB_CLIENT_ID: 'client-123',
+                GITHUB_REDIRECT_URL: 'https://example.com/callback',
+            });
+
+            const response = await app.request('/v1/connect/github/params', {
+                headers: authHeaders,
+            }, env);
+
+            const body = await response.json() as { url: string };
+            const url = new URL(body.url);
+
+            // Verify exact scope string - mutations would change this
+            expect(url.searchParams.get('scope')).toBe('read:user,user:email,read:org,codespace');
+        });
+
+        it('should include exact state parameter from token', async () => {
+            vi.mocked(createEphemeralToken).mockResolvedValue('my-state-token-123');
+
+            const { app, env } = createTestApp({
+                GITHUB_CLIENT_ID: 'client-123',
+                GITHUB_REDIRECT_URL: 'https://example.com/callback',
+            });
+
+            const response = await app.request('/v1/connect/github/params', {
+                headers: authHeaders,
+            }, env);
+
+            const body = await response.json() as { url: string };
+            const url = new URL(body.url);
+
+            expect(url.searchParams.get('state')).toBe('my-state-token-123');
+        });
+    });
+
+    describe('mutation testing coverage - separateName edge cases', () => {
+        it('should handle name with leading/trailing spaces', async () => {
+            vi.mocked(verifyEphemeralToken).mockResolvedValue({
+                userId: 'test-user-id',
+                purpose: 'github-oauth-state',
+            });
+
+            const profileWithSpacedName = {
+                id: 12345,
+                login: 'testuser',
+                type: 'User',
+                site_admin: false,
+                avatar_url: 'https://github.com/avatars/testuser.png',
+                gravatar_id: null,
+                name: '  John Doe  ', // Leading/trailing spaces
+                company: null,
+                blog: null,
+                location: null,
+                email: 'test@example.com',
+                hireable: null,
+                bio: null,
+                twitter_username: null,
+                public_repos: 10,
+                public_gists: 5,
+                followers: 100,
+                following: 50,
+                created_at: '2020-01-01T00:00:00Z',
+                updated_at: '2024-01-01T00:00:00Z',
+            };
+
+            global.fetch = vi.fn()
+                .mockResolvedValueOnce({
+                    json: async () => ({ access_token: 'test-token' }),
+                })
+                .mockResolvedValueOnce({
+                    ok: true,
+                    json: async () => profileWithSpacedName,
+                });
+
+            const mockAccount = {
+                id: 'test-user-id',
+                githubUserId: null,
+                seq: 1,
+                publicKey: 'test-key',
+                username: null,
+                firstName: null,
+                lastName: null,
+                settings: null,
+                settingsVersion: 0,
+                feedSeq: 0,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            };
+
+            const mockDb = createMockDb({ accounts: [mockAccount] });
+            mockDb.query.accounts.findFirst = vi.fn()
+                .mockResolvedValueOnce(mockAccount)
+                .mockResolvedValueOnce(null);
+            vi.mocked(getDb).mockReturnValue(mockDb as never);
+
+            const { app, env } = createTestApp({
+                GITHUB_CLIENT_ID: 'client-123',
+                GITHUB_CLIENT_SECRET: 'secret-456',
+            });
+
+            const response = await app.request(
+                '/v1/connect/github/callback?code=test&state=test',
+                {},
+                env
+            );
+
+            // Should succeed - name parsing handles whitespace
+            expect(response.status).toBe(302);
+            expect(response.headers.get('Location')).toContain('github=connected');
+        });
+
+        it('should handle empty string name', async () => {
+            vi.mocked(verifyEphemeralToken).mockResolvedValue({
+                userId: 'test-user-id',
+                purpose: 'github-oauth-state',
+            });
+
+            const profileWithEmptyName = {
+                id: 12345,
+                login: 'testuser',
+                type: 'User',
+                site_admin: false,
+                avatar_url: 'https://github.com/avatars/testuser.png',
+                gravatar_id: null,
+                name: '', // Empty string
+                company: null,
+                blog: null,
+                location: null,
+                email: 'test@example.com',
+                hireable: null,
+                bio: null,
+                twitter_username: null,
+                public_repos: 10,
+                public_gists: 5,
+                followers: 100,
+                following: 50,
+                created_at: '2020-01-01T00:00:00Z',
+                updated_at: '2024-01-01T00:00:00Z',
+            };
+
+            global.fetch = vi.fn()
+                .mockResolvedValueOnce({
+                    json: async () => ({ access_token: 'test-token' }),
+                })
+                .mockResolvedValueOnce({
+                    ok: true,
+                    json: async () => profileWithEmptyName,
+                });
+
+            const mockAccount = {
+                id: 'test-user-id',
+                githubUserId: null,
+                seq: 1,
+                publicKey: 'test-key',
+                username: null,
+                firstName: null,
+                lastName: null,
+                settings: null,
+                settingsVersion: 0,
+                feedSeq: 0,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            };
+
+            const mockDb = createMockDb({ accounts: [mockAccount] });
+            mockDb.query.accounts.findFirst = vi.fn()
+                .mockResolvedValueOnce(mockAccount)
+                .mockResolvedValueOnce(null);
+            vi.mocked(getDb).mockReturnValue(mockDb as never);
+
+            const { app, env } = createTestApp({
+                GITHUB_CLIENT_ID: 'client-123',
+                GITHUB_CLIENT_SECRET: 'secret-456',
+            });
+
+            const response = await app.request(
+                '/v1/connect/github/callback?code=test&state=test',
+                {},
+                env
+            );
+
+            // Should succeed - empty name is handled
+            expect(response.status).toBe(302);
+            expect(response.headers.get('Location')).toContain('github=connected');
+        });
+    });
+
+    describe('mutation testing coverage - existing GitHub user handling', () => {
+        it('should update existing GitHub user record', async () => {
+            vi.mocked(verifyEphemeralToken).mockResolvedValue({
+                userId: 'test-user-id',
+                purpose: 'github-oauth-state',
+            });
+
+            const mockGitHubProfile = {
+                id: 12345,
+                login: 'testuser',
+                type: 'User',
+                site_admin: false,
+                avatar_url: 'https://github.com/avatars/testuser.png',
+                gravatar_id: null,
+                name: 'Test User',
+                company: null,
+                blog: null,
+                location: null,
+                email: 'test@example.com',
+                hireable: null,
+                bio: null,
+                twitter_username: null,
+                public_repos: 10,
+                public_gists: 5,
+                followers: 100,
+                following: 50,
+                created_at: '2020-01-01T00:00:00Z',
+                updated_at: '2024-01-01T00:00:00Z',
+            };
+
+            global.fetch = vi.fn()
+                .mockResolvedValueOnce({
+                    json: async () => ({ access_token: 'test-token' }),
+                })
+                .mockResolvedValueOnce({
+                    ok: true,
+                    json: async () => mockGitHubProfile,
+                });
+
+            const mockAccount = {
+                id: 'test-user-id',
+                githubUserId: null,
+                seq: 1,
+                publicKey: 'test-key',
+                username: null,
+                firstName: null,
+                lastName: null,
+                settings: null,
+                settingsVersion: 0,
+                feedSeq: 0,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            };
+
+            const existingGithubUser = {
+                id: '12345',
+                profile: { login: 'old-profile' },
+                token: Buffer.from([1, 2, 3]),
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            };
+
+            const mockDb = createMockDb({
+                accounts: [mockAccount],
+                githubUsers: [existingGithubUser],
+            });
+            mockDb.query.accounts.findFirst = vi.fn()
+                .mockResolvedValueOnce(mockAccount)
+                .mockResolvedValueOnce(null);
+            mockDb.query.githubUsers.findFirst = vi.fn().mockResolvedValue(existingGithubUser);
+            vi.mocked(getDb).mockReturnValue(mockDb as never);
+
+            const { app, env } = createTestApp({
+                GITHUB_CLIENT_ID: 'client-123',
+                GITHUB_CLIENT_SECRET: 'secret-456',
+            });
+
+            const response = await app.request(
+                '/v1/connect/github/callback?code=test&state=test',
+                {},
+                env
+            );
+
+            expect(response.status).toBe(302);
+            expect(response.headers.get('Location')).toContain('github=connected');
+            // Should have called update for existing GitHub user
+            expect(mockDb.update).toHaveBeenCalled();
+        });
+
+        it('should insert new GitHub user record when not exists', async () => {
+            vi.mocked(verifyEphemeralToken).mockResolvedValue({
+                userId: 'test-user-id',
+                purpose: 'github-oauth-state',
+            });
+
+            const mockGitHubProfile = {
+                id: 12345,
+                login: 'testuser',
+                type: 'User',
+                site_admin: false,
+                avatar_url: 'https://github.com/avatars/testuser.png',
+                gravatar_id: null,
+                name: 'Test User',
+                company: null,
+                blog: null,
+                location: null,
+                email: 'test@example.com',
+                hireable: null,
+                bio: null,
+                twitter_username: null,
+                public_repos: 10,
+                public_gists: 5,
+                followers: 100,
+                following: 50,
+                created_at: '2020-01-01T00:00:00Z',
+                updated_at: '2024-01-01T00:00:00Z',
+            };
+
+            global.fetch = vi.fn()
+                .mockResolvedValueOnce({
+                    json: async () => ({ access_token: 'test-token' }),
+                })
+                .mockResolvedValueOnce({
+                    ok: true,
+                    json: async () => mockGitHubProfile,
+                });
+
+            const mockAccount = {
+                id: 'test-user-id',
+                githubUserId: null,
+                seq: 1,
+                publicKey: 'test-key',
+                username: null,
+                firstName: null,
+                lastName: null,
+                settings: null,
+                settingsVersion: 0,
+                feedSeq: 0,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            };
+
+            const mockDb = createMockDb({
+                accounts: [mockAccount],
+                githubUsers: [], // No existing GitHub user
+            });
+            mockDb.query.accounts.findFirst = vi.fn()
+                .mockResolvedValueOnce(mockAccount)
+                .mockResolvedValueOnce(null);
+            mockDb.query.githubUsers.findFirst = vi.fn().mockResolvedValue(null);
+            vi.mocked(getDb).mockReturnValue(mockDb as never);
+
+            const { app, env } = createTestApp({
+                GITHUB_CLIENT_ID: 'client-123',
+                GITHUB_CLIENT_SECRET: 'secret-456',
+            });
+
+            const response = await app.request(
+                '/v1/connect/github/callback?code=test&state=test',
+                {},
+                env
+            );
+
+            expect(response.status).toBe(302);
+            expect(response.headers.get('Location')).toContain('github=connected');
+            // Should have called insert for new GitHub user
+            expect(mockDb.insert).toHaveBeenCalled();
+        });
+    });
 });
