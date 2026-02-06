@@ -943,13 +943,9 @@ describe('Sharing Routes (HAP-910)', () => {
     // POST /v1/sessions/shared/:token - Access Shared Session via URL
     // ============================================================================
 
-    // Note: Due to middleware ordering in index.ts, the sessions routes auth middleware
-    // (/v1/sessions/*) catches this endpoint even though sharing routes intends it to be public.
-    // Tests use authenticated requests until this is fixed in the route configuration.
     describe('POST /v1/sessions/shared/:token - Access Shared Session', () => {
         it('should return 404 for invalid token', async () => {
-            // Use authRequest since sessions routes apply auth middleware to /v1/sessions/*
-            const res = await authRequest('/v1/sessions/shared/invalid-token', {
+            const res = await unauthRequest('/v1/sessions/shared/invalid-token', {
                 method: 'POST',
                 body: JSON.stringify({}),
             });
@@ -973,7 +969,7 @@ describe('Sharing Routes (HAP-910)', () => {
                     metadata: string;
                     permission: string;
                 };
-            }>(await authRequest('/v1/sessions/shared/valid-share-token', {
+            }>(await unauthRequest('/v1/sessions/shared/valid-share-token', {
                 method: 'POST',
                 body: JSON.stringify({}),
             }));
@@ -994,7 +990,7 @@ describe('Sharing Routes (HAP-910)', () => {
             });
             drizzleMock.seedData('sessionShareUrls', [shareUrl]);
 
-            const res = await authRequest('/v1/sessions/shared/password-protected-token', {
+            const res = await unauthRequest('/v1/sessions/shared/password-protected-token', {
                 method: 'POST',
                 body: JSON.stringify({}),
             });
@@ -1017,7 +1013,7 @@ describe('Sharing Routes (HAP-910)', () => {
             });
             drizzleMock.seedData('sessionShareUrls', [shareUrl]);
 
-            const res = await authRequest('/v1/sessions/shared/expired-token', {
+            const res = await unauthRequest('/v1/sessions/shared/expired-token', {
                 method: 'POST',
                 body: JSON.stringify({}),
             });
@@ -1031,7 +1027,7 @@ describe('Sharing Routes (HAP-910)', () => {
             });
             drizzleMock.seedData('sessionShareUrls', [shareUrl]);
 
-            const res = await authRequest('/v1/sessions/shared/orphan-token', {
+            const res = await unauthRequest('/v1/sessions/shared/orphan-token', {
                 method: 'POST',
                 body: JSON.stringify({}),
             });
@@ -1051,12 +1047,42 @@ describe('Sharing Routes (HAP-910)', () => {
 
             const body = await expectOk<{
                 session: { permission: string };
-            }>(await authRequest('/v1/sessions/shared/chat-enabled-token', {
+            }>(await unauthRequest('/v1/sessions/shared/chat-enabled-token', {
                 method: 'POST',
                 body: JSON.stringify({}),
             }));
 
             expect(body.session.permission).toBe('view_and_chat');
+        });
+
+        it('should allow unauthenticated access to shared session with valid token', async () => {
+            const session = createTestSession(TEST_USER_ID, { id: 'session-1', metadata: '{"name":"Public"}' });
+            drizzleMock.seedData('sessions', [session]);
+
+            const shareUrl = createTestShareUrl('session-1', {
+                token: 'public-access-token',
+                passwordHash: null,
+                permission: 'view_only',
+            });
+            drizzleMock.seedData('sessionShareUrls', [shareUrl]);
+
+            // Explicitly verify no Authorization header is needed
+            const res = await unauthRequest('/v1/sessions/shared/public-access-token', {
+                method: 'POST',
+                body: JSON.stringify({}),
+            });
+
+            expect(res.status).toBe(200);
+            const body = await res.json() as {
+                session: {
+                    id: string;
+                    metadata: string;
+                    permission: string;
+                };
+            };
+            expect(body.session.id).toBe('session-1');
+            expect(body.session.metadata).toBe('{"name":"Public"}');
+            expect(body.session.permission).toBe('view_only');
         });
     });
 
