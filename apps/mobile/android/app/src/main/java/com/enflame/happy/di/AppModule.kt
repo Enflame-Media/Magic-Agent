@@ -1,7 +1,14 @@
 package com.enflame.happy.di
 
 import android.content.Context
+import com.enflame.happy.data.api.AuthApiService
+import com.enflame.happy.data.api.FriendsApiService
 import com.enflame.happy.data.api.HappyApiService
+import com.enflame.happy.data.local.TokenStorage
+import com.enflame.happy.data.repository.AuthRepositoryImpl
+import com.enflame.happy.data.repository.FriendsRepositoryImpl
+import com.enflame.happy.domain.repository.AuthRepository
+import com.enflame.happy.domain.repository.FriendsRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -98,5 +105,55 @@ object AppModule {
     @Singleton
     fun provideHappyApiService(retrofit: Retrofit): HappyApiService {
         return retrofit.create(HappyApiService::class.java)
+    }
+
+    /**
+     * Provides Auth API service for pairing endpoints.
+     */
+    @Provides
+    @Singleton
+    fun provideAuthApiService(retrofit: Retrofit): AuthApiService {
+        return retrofit.create(AuthApiService::class.java)
+    }
+
+    /**
+     * Provides secure token storage backed by Android Keystore.
+     */
+    @Provides
+    @Singleton
+    fun provideTokenStorage(@ApplicationContext context: Context): TokenStorage {
+        return TokenStorage(context)
+    }
+
+    /**
+     * Provides Auth repository implementation for pairing flow.
+     */
+    @Provides
+    @Singleton
+    fun provideAuthRepository(
+        authApiService: AuthApiService,
+        tokenStorage: TokenStorage
+    ): AuthRepository {
+        return AuthRepositoryImpl(authApiService, tokenStorage)
+    }
+
+    /**
+     * Provides Friends API service for social feature endpoints.
+     */
+    @Provides
+    @Singleton
+    fun provideFriendsApiService(retrofit: Retrofit): FriendsApiService {
+        return retrofit.create(FriendsApiService::class.java)
+    }
+
+    /**
+     * Provides Friends repository implementation for social features.
+     */
+    @Provides
+    @Singleton
+    fun provideFriendsRepository(
+        friendsApiService: FriendsApiService
+    ): FriendsRepository {
+        return FriendsRepositoryImpl(friendsApiService)
     }
 }

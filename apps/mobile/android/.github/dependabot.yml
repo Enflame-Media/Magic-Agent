@@ -1,0 +1,82 @@
+# Copyright (c) 2024-2026 Enflame Media. All rights reserved.
+#
+# Dependabot configuration for Happy Android
+# Automatically creates PRs for dependency updates
+
+version: 2
+
+updates:
+  # Gradle dependencies (libs.versions.toml and build.gradle.kts)
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "America/New_York"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "android"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    reviewers:
+      - "Enflame-Media/android"
+    groups:
+      # Group Compose-related updates together
+      compose:
+        patterns:
+          - "androidx.compose*"
+          - "compose*"
+      # Group AndroidX updates together
+      androidx:
+        patterns:
+          - "androidx.*"
+        exclude-patterns:
+          - "androidx.compose*"
+      # Group networking libraries together
+      networking:
+        patterns:
+          - "com.squareup.retrofit2*"
+          - "com.squareup.okhttp3*"
+      # Group Hilt/Dagger updates together
+      hilt:
+        patterns:
+          - "com.google.dagger*"
+      # Group testing libraries together
+      testing:
+        patterns:
+          - "junit*"
+          - "io.mockk*"
+          - "androidx.test*"
+          - "androidx.espresso*"
+
+  # GitHub Actions workflow dependencies
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "America/New_York"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "ci"
+    commit-message:
+      prefix: "chore(ci)"
+      include: "scope"
+
+  # Bundler (Fastlane) dependencies
+  - package-ecosystem: "bundler"
+    directory: "/fastlane"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "fastlane"
+    commit-message:
+      prefix: "chore(fastlane)"
+      include: "scope"

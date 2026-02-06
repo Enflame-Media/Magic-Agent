@@ -129,3 +129,4 @@
 # Keep domain models for serialization
 -keep class com.enflame.happy.domain.model.** { *; }
 -keep class com.enflame.happy.data.api.** { *; }
+-keep class com.enflame.happy.data.local.** { *; }

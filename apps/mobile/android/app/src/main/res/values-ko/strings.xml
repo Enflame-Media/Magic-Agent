@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App name -->
+    <string name="app_name">Happy</string>
+
+    <!-- Home screen -->
+    <string name="welcome_title">Happy\uc5d0 \uc624\uc2e0 \uac83\uc744 \ud658\uc601\ud569\ub2c8\ub2e4</string>
+    <string name="welcome_subtitle">Claude Code \uc6d0\uaca9 \uc81c\uc5b4</string>
+    <string name="scan_qr_code">QR \ucf54\ub4dc \uc2a4\uce94</string>
+    <string name="view_sessions">\uc138\uc158 \ubcf4\uae30</string>
+
+    <!-- Navigation -->
+    <string name="settings">\uc124\uc815</string>
+    <string name="sessions">\uc138\uc158</string>
+    <string name="session_detail">\uc138\uc158 \uc0c1\uc138</string>
+
+    <!-- Common actions -->
+    <string name="ok">\ud655\uc778</string>
+    <string name="cancel">\ucde8\uc18c</string>
+    <string name="retry">\ub2e4\uc2dc \uc2dc\ub3c4</string>
+    <string name="close">\ub2eb\uae30</string>
+
+    <!-- QR Scanner -->
+    <string name="qr_scanner_title">QR \ucf54\ub4dc \uc2a4\uce94</string>
+    <string name="qr_scanner_instruction">Claude Code CLI\uc5d0 \ud45c\uc2dc\ub41c QR \ucf54\ub4dc\uc5d0 \uce74\uba54\ub77c\ub97c \ud5a5\ud558\uc138\uc694</string>
+    <string name="qr_scanner_processing">QR \ucf54\ub4dc \ucc98\ub9ac \uc911\u2026</string>
+    <string name="qr_scanner_permission_title">\uce74\uba54\ub77c \uc811\uadfc \uad8c\ud55c \ud544\uc694</string>
+    <string name="qr_scanner_permission_description">Happy\ub294 \uae30\uae30 \ud398\uc5b4\ub9c1\uc744 \uc704\ud574 Claude Code CLI\uc758 QR \ucf54\ub4dc\ub97c \uc2a4\uce94\ud558\uae30 \uc704\ud574 \uce74\uba54\ub77c \uc811\uadfc \uad8c\ud55c\uc774 \ud544\uc694\ud569\ub2c8\ub2e4.</string>
+    <string name="qr_scanner_permission_rationale">\uce74\uba54\ub77c \uad8c\ud55c\uc774 \uac70\ubd80\ub418\uc5c8\uc2b5\ub2c8\ub2e4. Happy\ub294 \ud398\uc5b4\ub9c1\uc744 \uc704\ud574 QR \ucf54\ub4dc\ub97c \uc2a4\uce94\ud558\uae30 \uc704\ud574 \uce74\uba54\ub77c \uc811\uadfc \uad8c\ud55c\uc774 \ud544\uc694\ud569\ub2c8\ub2e4. \uacc4\uc18d\ud558\ub824\uba74 \uce74\uba54\ub77c \uc811\uadfc \uad8c\ud55c\uc744 \ubd80\uc5ec\ud574 \uc8fc\uc138\uc694.</string>
+    <string name="qr_scanner_grant_permission">\uce74\uba54\ub77c \uc811\uadfc \uad8c\ud55c \ubd80\uc5ec</string>
+    <string name="qr_scanner_error_title">\uc798\ubabb\ub41c QR \ucf54\ub4dc</string>
+    <string name="qr_scanner_scan_again">\ub2e4\uc2dc \uc2a4\uce94</string>
+
+    <!-- Pairing Confirmation -->
+    <string name="pairing_title">\ud398\uc5b4\ub9c1 \ud655\uc778</string>
+    <string name="pairing_qr_scanned">QR \ucf54\ub4dc \uc2a4\uce94 \uc644\ub8cc</string>
+    <string name="pairing_confirm_description">\uc544\ub798 \uae30\uae30 \uc138\ubd80 \uc815\ubcf4\ub97c \ud655\uc778\ud558\uace0 \ubcf4\uc548 \uc5f0\uacb0\uc744 \uc124\uc815\ud558\ub824\uba74 \ud655\uc778\ud558\uc138\uc694.</string>
+    <string name="pairing_device_name">\uae30\uae30</string>
+    <string name="pairing_public_key">\uacf5\uac1c \ud0a4</string>
+    <string name="pairing_confirm_button">\ud398\uc5b4\ub9c1 \ud655\uc778</string>
+    <string name="pairing_in_progress">\ud398\uc5b4\ub9c1 \uc9c4\ud589 \uc911</string>
+    <string name="pairing_in_progress_description">CLI \uae30\uae30\uc640 \ubcf4\uc548 \uc5f0\uacb0\uc744 \uc124\uc815\ud558\uace0 \uc788\uc2b5\ub2c8\ub2e4. \uc7a0\uc2dc\ub9cc \uae30\ub2e4\ub824 \uc8fc\uc138\uc694.</string>
+    <string name="pairing_failed">\ud398\uc5b4\ub9c1 \uc2e4\ud328</string>
+
+    <!-- Error messages -->
+    <string name="error_generic">\ubb38\uc81c\uac00 \ubc1c\uc0dd\ud588\uc2b5\ub2c8\ub2e4</string>
+    <string name="error_network">\ub124\ud2b8\uc6cc\ud06c \uc624\ub958. \uc5f0\uacb0\uc744 \ud655\uc778\ud574 \uc8fc\uc138\uc694.</string>
+    <string name="error_server">\uc11c\ubc84 \uc624\ub958. \ub098\uc911\uc5d0 \ub2e4\uc2dc \uc2dc\ub3c4\ud574 \uc8fc\uc138\uc694.</string>
+
+    <!-- Session List -->
+    <string name="session_untitled">\uc81c\ubaa9 \uc5c6\ub294 \uc138\uc158</string>
+    <string name="session_search">\uc138\uc158 \uac80\uc0c9</string>
+    <string name="session_search_placeholder">\uc81c\ubaa9 \ub610\ub294 \uae30\uae30 \uc774\ub984\uc73c\ub85c \uac80\uc0c9</string>
+    <string name="session_message_count">%d\uac1c \uba54\uc2dc\uc9c0</string>
+    <string name="session_no_matching">\uc77c\uce58\ud558\ub294 \uc138\uc158 \uc5c6\uc74c</string>
+    <string name="session_no_matching_description">\uac80\uc0c9 \uc870\uac74\uc774\ub098 \ud544\ud130\ub97c \uc870\uc815\ud574 \ubcf4\uc138\uc694</string>
+
+    <!-- Session Status -->
+    <string name="session_status_active">\ud65c\uc131</string>
+    <string name="session_status_idle">\ub300\uae30</string>
+    <string name="session_status_completed">\uc644\ub8cc</string>
+    <string name="session_status_disconnected">\uc5f0\uacb0 \ub04a\uae40</string>
+    <string name="session_status_unknown">\uc54c \uc218 \uc5c6\uc74c</string>
+
+    <!-- Connection Status -->
+    <string name="session_connection_connected">\uc5f0\uacb0\ub428</string>
+    <string name="session_connection_disconnected">\uc5f0\uacb0 \ub04a\uae40</string>
+    <string name="session_connection_reconnecting">\uc7ac\uc5f0\uacb0 \uc911</string>
+
+    <!-- Session Detail -->
+    <string name="session_detail_back">\ub4a4\ub85c</string>
+    <string name="session_detail_more_options">\ub354 \ub9ce\uc740 \uc635\uc158</string>
+    <string name="session_detail_share">\uacf5\uc720</string>
+    <string name="session_detail_delete">\uc0ad\uc81c</string>
+    <string name="session_detail_delete_title">\uc138\uc158 \uc0ad\uc81c</string>
+    <string name="session_detail_delete_message">\uc774 \uc138\uc158\uc744 \uc0ad\uc81c\ud558\uc2dc\uaca0\uc2b5\ub2c8\uae4c? \uc774 \uc791\uc5c5\uc740 \ucde8\uc18c\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4.</string>
+    <string name="session_detail_machine">\uae30\uae30</string>
+    <string name="session_detail_started">\uc2dc\uc791</string>
+    <string name="session_detail_updated">\ub9c8\uc9c0\ub9c9 \uc5c5\ub370\uc774\ud2b8</string>
+    <string name="session_detail_loading">\uc138\uc158 \ub85c\ub529 \uc911\u2026</string>
+    <string name="session_detail_no_messages">\uba54\uc2dc\uc9c0 \uc5c6\uc74c</string>
+    <string name="session_detail_no_messages_description">\uc138\uc158\uc774 \uc9c4\ud589\ub418\uba74 \uc5ec\uae30\uc5d0 \uba54\uc2dc\uc9c0\uac00 \ud45c\uc2dc\ub429\ub2c8\ub2e4.</string>
+    <string name="session_detail_waiting">\ud65c\ub3d9 \ub300\uae30 \uc911\u2026</string>
+    <string name="session_detail_tool_uses">%d\ud68c \ub3c4\uad6c \uc0ac\uc6a9</string>
+    <string name="session_detail_expand">\ud3bc\uce58\uae30</string>
+    <string name="session_detail_collapse">\uc811\uae30</string>
+    <string name="session_detail_copied">\uba54\uc2dc\uc9c0\uac00 \ud074\ub9bd\ubcf4\ub4dc\uc5d0 \ubcf5\uc0ac\ub418\uc5c8\uc2b5\ub2c8\ub2e4</string>
+
+    <!-- Settings screen -->
+    <string name="settings_server_connection">\uc11c\ubc84 \uc5f0\uacb0</string>
+    <string name="settings_server_url">\uc11c\ubc84 URL</string>
+    <string name="settings_checking_connection">\uc5f0\uacb0 \ud655\uc778 \uc911\u2026</string>
+    <string name="settings_connected">\uc5f0\uacb0\ub428</string>
+    <string name="settings_not_connected">\uc5f0\uacb0\ub418\uc9c0 \uc54a\uc74c</string>
+    <string name="settings_check_connection">\uc5f0\uacb0 \ud655\uc778</string>
+    <string name="settings_notifications">\uc54c\ub9bc</string>
+    <string name="settings_enable_notifications">\uc54c\ub9bc \ud65c\uc131\ud654</string>
+    <string name="settings_notification_sound">\uc18c\ub9ac</string>
+    <string name="settings_notification_vibration">\uc9c4\ub3d9</string>
+    <string name="settings_notification_permission_required">\uc54c\ub9bc \uad8c\ud55c \ud544\uc694</string>
+    <string name="settings_tap_to_enable">\ud0ed\ud558\uc5ec \uc54c\ub9bc \uad8c\ud55c \ubd80\uc5ec</string>
+    <string name="settings_system_notification_settings">\uc2dc\uc2a4\ud15c \uc54c\ub9bc \uc124\uc815</string>
+    <string name="settings_theme">\ud14c\ub9c8</string>
+    <string name="settings_theme_system">\uc2dc\uc2a4\ud15c</string>
+    <string name="settings_theme_light">\ub77c\uc774\ud2b8</string>
+    <string name="settings_theme_dark">\ub2e4\ud06c</string>
+    <string name="settings_about">\uc815\ubcf4</string>
+    <string name="settings_app_version">\uc571 \ubc84\uc804</string>
+    <string name="settings_licenses">\uc624\ud508 \uc18c\uc2a4 \ub77c\uc774\uc120\uc2a4</string>
+    <string name="settings_copyright">\u00a9 2024\u20132026 Enflame Media. All rights reserved.</string>
+    <string name="settings_account">\uacc4\uc815</string>
+    <string name="settings_logout">\ub85c\uadf8\uc544\uc6c3</string>
+    <string name="settings_logout_title">\ub85c\uadf8\uc544\uc6c3</string>
+    <string name="settings_logout_message">\ub85c\uadf8\uc544\uc6c3\ud558\uc2dc\uaca0\uc2b5\ub2c8\uae4c? \uc800\uc7a5\ub41c \ubaa8\ub4e0 \uc790\uaca9 \uc99d\uba85\uacfc \uae30\ubcf8 \uc124\uc815\uc774 \uc0ad\uc81c\ub429\ub2c8\ub2e4.</string>
+
+    <!-- Language settings -->
+    <string name="settings_language">\uc5b8\uc5b4</string>
+    <string name="settings_language_system">\uc2dc\uc2a4\ud15c \uae30\ubcf8\uac12</string>
+    <string name="settings_language_en">English</string>
+    <string name="settings_language_es">Espa\u00f1ol</string>
+    <string name="settings_language_fr">Fran\u00e7ais</string>
+    <string name="settings_language_de">Deutsch</string>
+    <string name="settings_language_ja">\u65e5\u672c\u8a9e</string>
+    <string name="settings_language_zh">\u7b80\u4f53\u4e2d\u6587</string>
+    <string name="settings_language_ko">\ud55c\uad6d\uc5b4</string>
+    <string name="settings_language_changed">\uc5b8\uc5b4\uac00 \ubcc0\uacbd\ub418\uc5c8\uc2b5\ub2c8\ub2e4. \uc644\uc804\ud788 \uc801\uc6a9\ud558\ub824\uba74 \uc571\uc744 \uc7ac\uc2dc\uc791\ud558\uc138\uc694.</string>
+    <string name="settings_language_current">\ud604\uc7ac: %s</string>
+
+    <!-- Voice Settings -->
+    <string name="voice_settings_title">\uc74c\uc131 \uc124\uc815</string>
+    <string name="voice_settings_provider">\uc81c\uacf5\uc5c5\uccb4</string>
+    <string name="voice_settings_voice">\uc74c\uc131</string>
+    <string name="voice_settings_playback">\uc7ac\uc0dd</string>
+    <string name="voice_settings_behavior">\ub3d9\uc791</string>
+    <string name="voice_settings_api_key">API \ud0a4</string>
+    <string name="voice_settings_test">\ud14c\uc2a4\ud2b8</string>
+    <string name="voice_settings_selected">\uc120\ud0dd\ub428</string>
+    <string name="voice_settings_speed">\uc18d\ub3c4</string>
+    <string name="voice_settings_volume">\uc74c\ub7c9</string>
+    <string name="voice_settings_auto_play">\uc0c8 \uba54\uc2dc\uc9c0 \uc790\ub3d9 \uc77d\uae30</string>
+    <string name="voice_settings_skip_tool_outputs">\ub3c4\uad6c \ucd9c\ub825 \uac74\ub108\ub6f0\uae30</string>
+    <string name="voice_settings_behavior_footer">\uc790\ub3d9 \uc77d\uae30\uac00 \ud65c\uc131\ud654\ub418\uba74 \uc0c8\ub85c\uc6b4 \uc5b4\uc2dc\uc2a4\ud134\ud2b8 \uba54\uc2dc\uc9c0\uac00 \uc790\ub3d9\uc73c\ub85c \uc74c\uc131\uc73c\ub85c \uc77d\ud798\ub2c8\ub2e4.</string>
+    <string name="voice_settings_system_default">\uae30\uae30 \uae30\ubcf8 \uc74c\uc131</string>
+    <string name="voice_settings_system_description">Android \uc2dc\uc2a4\ud15c \uc124\uc815\uc5d0\uc11c \uad6c\uc131\ub41c \uae30\ubcf8 \ud14d\uc2a4\ud2b8 \uc74c\uc131 \ubcc0\ud658 \uc74c\uc131\uc744 \uc0ac\uc6a9\ud569\ub2c8\ub2e4.</string>
+    <string name="voice_settings_api_key_configured">API \ud0a4 \uad6c\uc131\ub428</string>
+    <string name="voice_settings_api_key_required">\uace0\ud488\uc9c8 AI \uc74c\uc131\uc5d0\ub294 ElevenLabs API \ud0a4\uac00 \ud544\uc694\ud569\ub2c8\ub2e4.</string>
+    <string name="voice_settings_api_key_placeholder">ElevenLabs API \ud0a4</string>
+    <string name="voice_settings_api_key_footer">API \ud0a4\ub294 \uc554\ud638\ud654\ub41c \uc800\uc7a5\uc18c\uc5d0 \uc548\uc804\ud558\uac8c \uc800\uc7a5\ub429\ub2c8\ub2e4. elevenlabs.io\uc5d0\uc11c \uc5bb\uc73c\uc138\uc694.</string>
+    <string name="voice_settings_add_api_key">API \ud0a4 \ucd94\uac00</string>
+    <string name="voice_settings_save_api_key">API \ud0a4 \uc800\uc7a5</string>
+    <string name="voice_settings_remove_api_key">API \ud0a4 \uc81c\uac70</string>
+    <string name="voice_settings_remove_api_key_confirm">API \ud0a4\ub97c \uc81c\uac70\ud558\uc2dc\uaca0\uc2b5\ub2c8\uae4c?</string>
+    <string name="voice_settings_remove_api_key_message">\uc800\uc7a5\ub41c ElevenLabs API \ud0a4\uac00 \uc81c\uac70\ub429\ub2c8\ub2e4. \ub098\uc911\uc5d0 \uc0c8 \ud0a4\ub97c \ucd94\uac00\ud560 \uc218 \uc788\uc2b5\ub2c8\ub2e4.</string>
+    <string name="voice_settings_test_voice">\uc74c\uc131 \ud14c\uc2a4\ud2b8</string>
+    <string name="voice_settings_stop">\uc815\uc9c0</string>
+    <string name="voice_settings_loading">\uc624\ub514\uc624 \ub85c\ub529 \uc911\u2026</string>
+
+    <!-- Notification channels -->
+    <string name="notification_channel_session_updates">\uc138\uc158 \uc5c5\ub370\uc774\ud2b8</string>
+    <string name="notification_channel_messages">\uba54\uc2dc\uc9c0</string>
+    <string name="notification_channel_pairing">\ud398\uc5b4\ub9c1 \uc694\uccad</string>
+
+    <!-- Paywall screen -->
+    <string name="paywall_title">\uad6c\ub3c5 \ud50c\ub79c</string>
+    <string name="paywall_headline">\uc804\uccb4 \uacbd\ud5d8 \uc7a0\uae08 \ud574\uc81c</string>
+    <string name="paywall_subheadline">\ubb34\uc81c\ud55c \uc138\uc158, \ub2e4\uc911 \uae30\uae30 \uc9c0\uc6d0 \ub4f1\uc744 \uc5bb\uc73c\uc138\uc694.</string>
+    <string name="paywall_recommended">\ucd94\ucc9c</string>
+    <string name="paywall_current_plan">\ud604\uc7ac \ud50c\ub79c</string>
+    <string name="paywall_subscribe">\uad6c\ub3c5</string>
+    <string name="paywall_restore_purchases">\uad6c\ub9e4 \ubcf5\uc6d0</string>
+    <string name="paywall_auto_renew_notice">\uad6c\ub3c5\uc740 \ucde8\uc18c\ud560 \ub54c\uae4c\uc9c0 \uc790\ub3d9 \uac31\uc2e0\ub429\ub2c8\ub2e4. Google Play\uc5d0\uc11c \uc5b8\uc81c\ub4e0\uc9c0 \ucde8\uc18c\ud560 \uc218 \uc788\uc2b5\ub2c8\ub2e4.</string>
+    <string name="paywall_terms">\uc774\uc6a9 \uc57d\uad00</string>
+    <string name="paywall_privacy">\uac1c\uc778\uc815\ubcf4 \ucc98\ub9ac\ubc29\uce68</string>
+    <string name="paywall_purchase_success_title">\uad6c\ub9e4 \uc131\uacf5</string>
+    <string name="paywall_purchase_success_message">\uad6c\ub3c5\ud574 \uc8fc\uc154\uc11c \uac10\uc0ac\ud569\ub2c8\ub2e4! \uc774\uc81c \ubaa8\ub4e0 \uae30\ub2a5\uc5d0 \uc644\uc804\ud788 \uc561\uc138\uc2a4\ud560 \uc218 \uc788\uc2b5\ub2c8\ub2e4.</string>
+    <string name="paywall_restore_success_title">\uad6c\ub9e4 \ubcf5\uc6d0 \uc644\ub8cc</string>
+    <string name="paywall_restore_success_message">\uad6c\ub3c5\uc774 \uc131\uacf5\uc801\uc73c\ub85c \ubcf5\uc6d0\ub418\uc5c8\uc2b5\ub2c8\ub2e4.</string>
+
+    <!-- Subscription status screen -->
+    <string name="subscription_status_title">\uad6c\ub3c5</string>
+    <string name="subscription_details">\uad6c\ub3c5 \uc138\ubd80 \uc815\ubcf4</string>
+    <string name="subscription_billing_period">\uacb0\uc81c \uae30\uac04</string>
+    <string name="subscription_purchase_date">\uad6c\ub9e4\uc77c</string>
+    <string name="subscription_renewal_date">\uac31\uc2e0\uc77c</string>
+    <string name="subscription_days_remaining">\ub0a8\uc740 \uc77c\uc218</string>
+    <string name="subscription_auto_renew">\uc790\ub3d9 \uac31\uc2e0</string>
+    <string name="subscription_enabled">\ud65c\uc131\ud654\ub428</string>
+    <string name="subscription_disabled">\ube44\ud65c\uc131\ud654\ub428</string>
+    <string name="subscription_actions">\uc791\uc5c5</string>
+    <string name="subscription_upgrade">\ud50c\ub79c \uc5c5\uadf8\ub808\uc774\ub4dc</string>
+    <string name="subscription_restore">\uad6c\ub9e4 \ubcf5\uc6d0</string>
+    <string name="subscription_manage">\uad6c\ub3c5 \uad00\ub9ac</string>
+    <string name="subscription_manage_footer">Google Play\ub97c \uc5f4\uc5b4 \uad6c\ub3c5 \uad00\ub9ac, \ud50c\ub79c \ubcc0\uacbd \ub610\ub294 \ucde8\uc18c\ub97c \ud569\ub2c8\ub2e4.</string>
+    <string name="subscription_refresh">\uc0c8\ub85c\uace0\uce68</string>
+    <string name="subscription_expired_notice">\uad6c\ub3c5 \ub9cc\ub8cc</string>
+    <string name="subscription_expired_description">\uad6c\ub3c5\uc774 \ub9cc\ub8cc\ub418\uc5c8\uc2b5\ub2c8\ub2e4. \ud504\ub9ac\ubbf8\uc5c4 \uae30\ub2a5\uc5d0 \ub2e4\uc2dc \uc561\uc138\uc2a4\ud558\ub824\uba74 \uac31\uc2e0\ud558\uc138\uc694.</string>
+    <string name="subscription_renew">\uad6c\ub3c5 \uac31\uc2e0</string>
+
+    <!-- Subscription status badges -->
+    <string name="subscription_active">\ud65c\uc131</string>
+    <string name="subscription_expired">\ub9cc\ub8cc</string>
+    <string name="subscription_revoked">\ucde8\uc18c\ub428</string>
+    <string name="subscription_free">\ubb34\ub8cc</string>
+    <string name="subscription_error">\uc624\ub958</string>
+    <string name="subscription_grace_period">\uc720\uc608 \uae30\uac04</string>
+
+    <!-- Artifacts -->
+    <string name="artifacts_title">\uc544\ud2f0\ud329\ud2b8</string>
+    <string name="artifacts_search">\uc544\ud2f0\ud329\ud2b8 \uac80\uc0c9</string>
+    <string name="artifacts_search_placeholder">\uc81c\ubaa9 \ub610\ub294 \ud30c\uc77c\uba85\uc73c\ub85c \uac80\uc0c9</string>
+    <string name="artifacts_loading">\uc544\ud2f0\ud329\ud2b8 \ub85c\ub529 \uc911\u2026</string>
+    <string name="artifacts_empty">\uc544\ud2f0\ud329\ud2b8 \uc5c6\uc74c</string>
+    <string name="artifacts_empty_description">\uc138\uc158 \uc911 Claude Code\uac00 \ud30c\uc77c\uc744 \uc0dd\uc131\ud558\uba74 \uc5ec\uae30\uc5d0 \uc544\ud2f0\ud329\ud2b8\uac00 \ud45c\uc2dc\ub429\ub2c8\ub2e4.</string>
+    <string name="artifacts_no_matching">\uc77c\uce58\ud558\ub294 \uc544\ud2f0\ud329\ud2b8 \uc5c6\uc74c</string>
+    <string name="artifacts_no_matching_description">\uac80\uc0c9 \uc870\uac74\uc774\ub098 \ud544\ud130\ub97c \uc870\uc815\ud574 \ubcf4\uc138\uc694</string>
+    <string name="artifacts_line_count">%d\ud589</string>
+    <string name="artifacts_copy">\ud074\ub9bd\ubcf4\ub4dc\uc5d0 \ubcf5\uc0ac</string>
+    <string name="artifacts_share">\uacf5\uc720</string>
+    <string name="artifacts_toggle_line_numbers">\ud589 \ubc88\ud638 \ud45c\uc2dc/\uc228\uae30\uae30</string>
+    <string name="artifacts_image_not_supported">\uc774\ubbf8\uc9c0 \ubbf8\ub9ac\ubcf4\uae30\ub294 \uc544\uc9c1 \uc9c0\uc6d0\ub418\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4</string>
+    <string name="artifacts_view_artifacts">\uc544\ud2f0\ud329\ud2b8 \ubcf4\uae30</string>
+
+    <!-- Empty states -->
+    <string name="no_sessions">\uc138\uc158 \uc5c6\uc74c</string>
+    <string name="no_sessions_description">Claude Code CLI\uc758 QR \ucf54\ub4dc\ub97c \uc2a4\uce94\ud558\uc5ec \uc2dc\uc791\ud558\uc138\uc694</string>
+</resources>

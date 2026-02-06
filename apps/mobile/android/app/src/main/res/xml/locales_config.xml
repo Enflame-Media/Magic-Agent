@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Per-app language preferences configuration for Android 13+ (API 33).
+  This file declares all supported languages so the system Settings app
+  can show them in the per-app language picker.
+
+  See: https://developer.android.com/guide/topics/resources/app-languages
+-->
+<locale-config xmlns:android="http://schemas.android.com/apk/res/android">
+    <locale android:name="en" />
+    <locale android:name="es" />
+    <locale android:name="fr" />
+    <locale android:name="de" />
+    <locale android:name="ja" />
+    <locale android:name="zh-CN" />
+    <locale android:name="ko" />
+</locale-config>

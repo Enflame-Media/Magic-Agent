@@ -1,5 +1,6 @@
 package com.enflame.happy.data.api
 
+import com.enflame.happy.domain.model.Artifact
 import com.enflame.happy.domain.model.Session
 import retrofit2.http.GET
 import retrofit2.http.Path
@@ -26,10 +27,17 @@ interface HappyApiService {
     @GET("v1/sessions/{sessionId}")
     suspend fun getSession(@Path("sessionId") sessionId: String): Session
 
+    /**
+     * Get artifacts for a specific session.
+     *
+     * @param sessionId The unique identifier of the session.
+     */
+    @GET("v1/sessions/{sessionId}/artifacts")
+    suspend fun getArtifacts(@Path("sessionId") sessionId: String): List<Artifact>
+
     // Additional endpoints will be added as development progresses:
     // - POST /v1/sessions - Create session
     // - PUT /v1/sessions/{sessionId} - Update session
     // - DELETE /v1/sessions/{sessionId} - Delete session
     // - POST /v1/sessions/{sessionId}/messages - Send message
-    // - GET /v1/sessions/{sessionId}/artifacts - Get artifacts
 }

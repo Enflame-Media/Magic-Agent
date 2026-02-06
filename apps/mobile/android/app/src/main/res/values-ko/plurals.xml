@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Session count plurals (Korean has no singular/plural distinction) -->
+    <plurals name="session_count">
+        <item quantity="other">%d\uac1c \uc138\uc158</item>
+    </plurals>
+
+    <!-- Message count plurals -->
+    <plurals name="message_count">
+        <item quantity="other">%d\uac1c \uba54\uc2dc\uc9c0</item>
+    </plurals>
+
+    <!-- Tool use count plurals -->
+    <plurals name="tool_use_count">
+        <item quantity="other">%d\ud68c \ub3c4\uad6c \uc0ac\uc6a9</item>
+    </plurals>
+
+    <!-- Time duration plurals -->
+    <plurals name="minutes_ago">
+        <item quantity="other">%d\ubd84 \uc804</item>
+    </plurals>
+
+    <plurals name="hours_ago">
+        <item quantity="other">%d\uc2dc\uac04 \uc804</item>
+    </plurals>
+
+    <plurals name="days_ago">
+        <item quantity="other">%d\uc77c \uc804</item>
+    </plurals>
+</resources>

@@ -1,0 +1,9 @@
+# frozen_string_literal: true
+
+# Copyright (c) 2024-2026 Enflame Media. All rights reserved.
+#
+# Gemfile for Happy Android - Fastlane dependencies
+
+source "https://rubygems.org"
+
+gem "fastlane", "~> 2.225"

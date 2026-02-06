@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App name -->
+    <string name="app_name">Happy</string>
+
+    <!-- Home screen -->
+    <string name="welcome_title">Willkommen bei Happy</string>
+    <string name="welcome_subtitle">Fernsteuerung f\u00fcr Claude Code</string>
+    <string name="scan_qr_code">QR-Code scannen</string>
+    <string name="view_sessions">Sitzungen anzeigen</string>
+
+    <!-- Navigation -->
+    <string name="settings">Einstellungen</string>
+    <string name="sessions">Sitzungen</string>
+    <string name="session_detail">Sitzungsdetails</string>
+
+    <!-- Common actions -->
+    <string name="ok">OK</string>
+    <string name="cancel">Abbrechen</string>
+    <string name="retry">Erneut versuchen</string>
+    <string name="close">Schlie\u00dfen</string>
+
+    <!-- QR Scanner -->
+    <string name="qr_scanner_title">QR-Code scannen</string>
+    <string name="qr_scanner_instruction">Richten Sie Ihre Kamera auf den QR-Code in Claude Code CLI</string>
+    <string name="qr_scanner_processing">QR-Code wird verarbeitet\u2026</string>
+    <string name="qr_scanner_permission_title">Kamerazugriff erforderlich</string>
+    <string name="qr_scanner_permission_description">Happy ben\u00f6tigt Kamerazugriff, um QR-Codes von Claude Code CLI f\u00fcr die Ger\u00e4tekopplung zu scannen.</string>
+    <string name="qr_scanner_permission_rationale">Die Kameraerlaubnis wurde verweigert. Happy ben\u00f6tigt Kamerazugriff, um QR-Codes f\u00fcr die Kopplung zu scannen. Bitte gew\u00e4hren Sie den Kamerazugriff, um fortzufahren.</string>
+    <string name="qr_scanner_grant_permission">Kamerazugriff gew\u00e4hren</string>
+    <string name="qr_scanner_error_title">Ung\u00fcltiger QR-Code</string>
+    <string name="qr_scanner_scan_again">Erneut scannen</string>
+
+    <!-- Pairing Confirmation -->
+    <string name="pairing_title">Kopplung best\u00e4tigen</string>
+    <string name="pairing_qr_scanned">QR-Code gescannt</string>
+    <string name="pairing_confirm_description">\u00dcberpr\u00fcfen Sie die Ger\u00e4tedetails unten und best\u00e4tigen Sie, um eine sichere Verbindung herzustellen.</string>
+    <string name="pairing_device_name">Ger\u00e4t</string>
+    <string name="pairing_public_key">\u00d6ffentlicher Schl\u00fcssel</string>
+    <string name="pairing_confirm_button">Kopplung best\u00e4tigen</string>
+    <string name="pairing_in_progress">Kopplung l\u00e4uft</string>
+    <string name="pairing_in_progress_description">Eine sichere Verbindung mit dem CLI-Ger\u00e4t wird hergestellt. Dies kann einen Moment dauern.</string>
+    <string name="pairing_failed">Kopplung fehlgeschlagen</string>
+
+    <!-- Error messages -->
+    <string name="error_generic">Etwas ist schiefgelaufen</string>
+    <string name="error_network">Netzwerkfehler. Bitte \u00fcberpr\u00fcfen Sie Ihre Verbindung.</string>
+    <string name="error_server">Serverfehler. Bitte versuchen Sie es sp\u00e4ter erneut.</string>
+
+    <!-- Session List -->
+    <string name="session_untitled">Unbenannte Sitzung</string>
+    <string name="session_search">Sitzungen suchen</string>
+    <string name="session_search_placeholder">Nach Titel oder Maschinenname suchen</string>
+    <string name="session_message_count">%d Nachrichten</string>
+    <string name="session_no_matching">Keine passenden Sitzungen</string>
+    <string name="session_no_matching_description">Versuchen Sie, Ihre Suche oder Filterkriterien anzupassen</string>
+
+    <!-- Session Status -->
+    <string name="session_status_active">Aktiv</string>
+    <string name="session_status_idle">Inaktiv</string>
+    <string name="session_status_completed">Abgeschlossen</string>
+    <string name="session_status_disconnected">Getrennt</string>
+    <string name="session_status_unknown">Unbekannt</string>
+
+    <!-- Connection Status -->
+    <string name="session_connection_connected">Verbunden</string>
+    <string name="session_connection_disconnected">Getrennt</string>
+    <string name="session_connection_reconnecting">Wiederverbindung</string>
+
+    <!-- Session Detail -->
+    <string name="session_detail_back">Zur\u00fcck</string>
+    <string name="session_detail_more_options">Weitere Optionen</string>
+    <string name="session_detail_share">Teilen</string>
+    <string name="session_detail_delete">L\u00f6schen</string>
+    <string name="session_detail_delete_title">Sitzung l\u00f6schen</string>
+    <string name="session_detail_delete_message">Sind Sie sicher, dass Sie diese Sitzung l\u00f6schen m\u00f6chten? Diese Aktion kann nicht r\u00fcckg\u00e4ngig gemacht werden.</string>
+    <string name="session_detail_machine">Ger\u00e4t</string>
+    <string name="session_detail_started">Gestartet</string>
+    <string name="session_detail_updated">Zuletzt aktualisiert</string>
+    <string name="session_detail_loading">Sitzung wird geladen\u2026</string>
+    <string name="session_detail_no_messages">Noch keine Nachrichten</string>
+    <string name="session_detail_no_messages_description">Nachrichten erscheinen hier, wenn die Sitzung fortschreitet.</string>
+    <string name="session_detail_waiting">Warte auf Aktivit\u00e4t\u2026</string>
+    <string name="session_detail_tool_uses">%d Werkzeugnutzung(en)</string>
+    <string name="session_detail_expand">Erweitern</string>
+    <string name="session_detail_collapse">Reduzieren</string>
+    <string name="session_detail_copied">Nachricht in die Zwischenablage kopiert</string>
+
+    <!-- Settings screen -->
+    <string name="settings_server_connection">Serververbindung</string>
+    <string name="settings_server_url">Server-URL</string>
+    <string name="settings_checking_connection">Verbindung wird \u00fcberpr\u00fcft\u2026</string>
+    <string name="settings_connected">Verbunden</string>
+    <string name="settings_not_connected">Nicht verbunden</string>
+    <string name="settings_check_connection">Verbindung pr\u00fcfen</string>
+    <string name="settings_notifications">Benachrichtigungen</string>
+    <string name="settings_enable_notifications">Benachrichtigungen aktivieren</string>
+    <string name="settings_notification_sound">Ton</string>
+    <string name="settings_notification_vibration">Vibration</string>
+    <string name="settings_notification_permission_required">Benachrichtigungsberechtigung erforderlich</string>
+    <string name="settings_tap_to_enable">Tippen, um Benachrichtigungsberechtigung zu erteilen</string>
+    <string name="settings_system_notification_settings">System-Benachrichtigungseinstellungen</string>
+    <string name="settings_theme">Design</string>
+    <string name="settings_theme_system">System</string>
+    <string name="settings_theme_light">Hell</string>
+    <string name="settings_theme_dark">Dunkel</string>
+    <string name="settings_about">\u00dcber</string>
+    <string name="settings_app_version">App-Version</string>
+    <string name="settings_licenses">Open-Source-Lizenzen</string>
+    <string name="settings_copyright">\u00a9 2024\u20132026 Enflame Media. Alle Rechte vorbehalten.</string>
+    <string name="settings_account">Konto</string>
+    <string name="settings_logout">Abmelden</string>
+    <string name="settings_logout_title">Abmelden</string>
+    <string name="settings_logout_message">Sind Sie sicher, dass Sie sich abmelden m\u00f6chten? Dadurch werden alle gespeicherten Anmeldedaten und Einstellungen gel\u00f6scht.</string>
+
+    <!-- Language settings -->
+    <string name="settings_language">Sprache</string>
+    <string name="settings_language_system">Systemstandard</string>
+    <string name="settings_language_en">English</string>
+    <string name="settings_language_es">Espa\u00f1ol</string>
+    <string name="settings_language_fr">Fran\u00e7ais</string>
+    <string name="settings_language_de">Deutsch</string>
+    <string name="settings_language_ja">\u65e5\u672c\u8a9e</string>
+    <string name="settings_language_zh">\u7b80\u4f53\u4e2d\u6587</string>
+    <string name="settings_language_ko">\ud55c\uad6d\uc5b4</string>
+    <string name="settings_language_changed">Sprache ge\u00e4ndert. Starten Sie die App neu f\u00fcr volle Wirkung.</string>
+    <string name="settings_language_current">Aktuell: %s</string>
+
+    <!-- Voice Settings -->
+    <string name="voice_settings_title">Spracheinstellungen</string>
+    <string name="voice_settings_provider">Anbieter</string>
+    <string name="voice_settings_voice">Stimme</string>
+    <string name="voice_settings_playback">Wiedergabe</string>
+    <string name="voice_settings_behavior">Verhalten</string>
+    <string name="voice_settings_api_key">API-Schl\u00fcssel</string>
+    <string name="voice_settings_test">Testen</string>
+    <string name="voice_settings_selected">Ausgew\u00e4hlt</string>
+    <string name="voice_settings_speed">Geschwindigkeit</string>
+    <string name="voice_settings_volume">Lautst\u00e4rke</string>
+    <string name="voice_settings_auto_play">Neue Nachrichten automatisch vorlesen</string>
+    <string name="voice_settings_skip_tool_outputs">Werkzeugausgaben \u00fcberspringen</string>
+    <string name="voice_settings_behavior_footer">Wenn automatisches Vorlesen aktiviert ist, werden neue Assistentennachrichten automatisch laut vorgelesen.</string>
+    <string name="voice_settings_system_default">Standard-Ger\u00e4testimme</string>
+    <string name="voice_settings_system_description">Verwendet die Standard-Text-zu-Sprache-Stimme, die in Ihren Android-Systemeinstellungen konfiguriert ist.</string>
+    <string name="voice_settings_api_key_configured">API-Schl\u00fcssel konfiguriert</string>
+    <string name="voice_settings_api_key_required">Ein ElevenLabs API-Schl\u00fcssel ist f\u00fcr hochwertige KI-Stimmen erforderlich.</string>
+    <string name="voice_settings_api_key_placeholder">ElevenLabs API-Schl\u00fcssel</string>
+    <string name="voice_settings_api_key_footer">Ihr API-Schl\u00fcssel wird sicher in verschl\u00fcsseltem Speicher gespeichert. Holen Sie sich einen auf elevenlabs.io.</string>
+    <string name="voice_settings_add_api_key">API-Schl\u00fcssel hinzuf\u00fcgen</string>
+    <string name="voice_settings_save_api_key">API-Schl\u00fcssel speichern</string>
+    <string name="voice_settings_remove_api_key">API-Schl\u00fcssel entfernen</string>
+    <string name="voice_settings_remove_api_key_confirm">API-Schl\u00fcssel entfernen?</string>
+    <string name="voice_settings_remove_api_key_message">Dadurch wird der gespeicherte ElevenLabs API-Schl\u00fcssel entfernt. Sie k\u00f6nnen sp\u00e4ter einen neuen hinzuf\u00fcgen.</string>
+    <string name="voice_settings_test_voice">Stimme testen</string>
+    <string name="voice_settings_stop">Stopp</string>
+    <string name="voice_settings_loading">Audio wird geladen\u2026</string>
+
+    <!-- Notification channels -->
+    <string name="notification_channel_session_updates">Sitzungsaktualisierungen</string>
+    <string name="notification_channel_messages">Nachrichten</string>
+    <string name="notification_channel_pairing">Kopplungsanfragen</string>
+
+    <!-- Paywall screen -->
+    <string name="paywall_title">Abonnementpl\u00e4ne</string>
+    <string name="paywall_headline">Schalten Sie das volle Erlebnis frei</string>
+    <string name="paywall_subheadline">Erhalten Sie unbegrenzte Sitzungen, Multi-Ger\u00e4t-Unterst\u00fctzung und mehr.</string>
+    <string name="paywall_recommended">Empfohlen</string>
+    <string name="paywall_current_plan">Aktueller Plan</string>
+    <string name="paywall_subscribe">Abonnieren</string>
+    <string name="paywall_restore_purchases">K\u00e4ufe wiederherstellen</string>
+    <string name="paywall_auto_renew_notice">Abonnements verl\u00e4ngern sich automatisch bis zur K\u00fcndigung. Jederzeit \u00fcber Google Play k\u00fcndbar.</string>
+    <string name="paywall_terms">Nutzungsbedingungen</string>
+    <string name="paywall_privacy">Datenschutzrichtlinie</string>
+    <string name="paywall_purchase_success_title">Kauf erfolgreich</string>
+    <string name="paywall_purchase_success_message">Vielen Dank f\u00fcr Ihr Abonnement! Sie haben jetzt vollen Zugriff auf alle Funktionen.</string>
+    <string name="paywall_restore_success_title">K\u00e4ufe wiederhergestellt</string>
+    <string name="paywall_restore_success_message">Ihr Abonnement wurde erfolgreich wiederhergestellt.</string>
+
+    <!-- Subscription status screen -->
+    <string name="subscription_status_title">Abonnement</string>
+    <string name="subscription_details">Abonnementdetails</string>
+    <string name="subscription_billing_period">Abrechnungszeitraum</string>
+    <string name="subscription_purchase_date">Kaufdatum</string>
+    <string name="subscription_renewal_date">Verl\u00e4ngerungsdatum</string>
+    <string name="subscription_days_remaining">Verbleibende Tage</string>
+    <string name="subscription_auto_renew">Automatische Verl\u00e4ngerung</string>
+    <string name="subscription_enabled">Aktiviert</string>
+    <string name="subscription_disabled">Deaktiviert</string>
+    <string name="subscription_actions">Aktionen</string>
+    <string name="subscription_upgrade">Plan upgraden</string>
+    <string name="subscription_restore">K\u00e4ufe wiederherstellen</string>
+    <string name="subscription_manage">Abonnement verwalten</string>
+    <string name="subscription_manage_footer">\u00d6ffnet Google Play zum Verwalten Ihres Abonnements, Planwechsel oder K\u00fcndigung.</string>
+    <string name="subscription_refresh">Aktualisieren</string>
+    <string name="subscription_expired_notice">Abonnement abgelaufen</string>
+    <string name="subscription_expired_description">Ihr Abonnement ist abgelaufen. Erneuern Sie es, um wieder Zugang zu Premium-Funktionen zu erhalten.</string>
+    <string name="subscription_renew">Abonnement erneuern</string>
+
+    <!-- Subscription status badges -->
+    <string name="subscription_active">Aktiv</string>
+    <string name="subscription_expired">Abgelaufen</string>
+    <string name="subscription_revoked">Widerrufen</string>
+    <string name="subscription_free">Kostenlos</string>
+    <string name="subscription_error">Fehler</string>
+    <string name="subscription_grace_period">Kulanzfrist</string>
+
+    <!-- Artifacts -->
+    <string name="artifacts_title">Artefakte</string>
+    <string name="artifacts_search">Artefakte suchen</string>
+    <string name="artifacts_search_placeholder">Nach Titel oder Dateiname suchen</string>
+    <string name="artifacts_loading">Artefakte werden geladen\u2026</string>
+    <string name="artifacts_empty">Keine Artefakte</string>
+    <string name="artifacts_empty_description">Artefakte erscheinen hier, wenn Claude Code w\u00e4hrend der Sitzung Dateien erstellt.</string>
+    <string name="artifacts_no_matching">Keine passenden Artefakte</string>
+    <string name="artifacts_no_matching_description">Versuchen Sie, Ihre Suche oder Filterkriterien anzupassen</string>
+    <string name="artifacts_line_count">%d Zeilen</string>
+    <string name="artifacts_copy">In die Zwischenablage kopieren</string>
+    <string name="artifacts_share">Teilen</string>
+    <string name="artifacts_toggle_line_numbers">Zeilennummern ein-/ausblenden</string>
+    <string name="artifacts_image_not_supported">Bildvorschau wird noch nicht unterst\u00fctzt</string>
+    <string name="artifacts_view_artifacts">Artefakte anzeigen</string>
+
+    <!-- Empty states -->
+    <string name="no_sessions">Noch keine Sitzungen</string>
+    <string name="no_sessions_description">Scannen Sie einen QR-Code von Claude Code CLI, um zu beginnen</string>
+</resources>

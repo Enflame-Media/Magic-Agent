@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App name -->
+    <string name="app_name">Happy</string>
+
+    <!-- Home screen -->
+    <string name="welcome_title">Happy\u3078\u3088\u3046\u3053\u305d</string>
+    <string name="welcome_subtitle">Claude Code\u306e\u30ea\u30e2\u30fc\u30c8\u30b3\u30f3\u30c8\u30ed\u30fc\u30eb</string>
+    <string name="scan_qr_code">QR\u30b3\u30fc\u30c9\u3092\u30b9\u30ad\u30e3\u30f3</string>
+    <string name="view_sessions">\u30bb\u30c3\u30b7\u30e7\u30f3\u3092\u8868\u793a</string>
+
+    <!-- Navigation -->
+    <string name="settings">\u8a2d\u5b9a</string>
+    <string name="sessions">\u30bb\u30c3\u30b7\u30e7\u30f3</string>
+    <string name="session_detail">\u30bb\u30c3\u30b7\u30e7\u30f3\u8a73\u7d30</string>
+
+    <!-- Common actions -->
+    <string name="ok">OK</string>
+    <string name="cancel">\u30ad\u30e3\u30f3\u30bb\u30eb</string>
+    <string name="retry">\u518d\u8a66\u884c</string>
+    <string name="close">\u9589\u3058\u308b</string>
+
+    <!-- QR Scanner -->
+    <string name="qr_scanner_title">QR\u30b3\u30fc\u30c9\u3092\u30b9\u30ad\u30e3\u30f3</string>
+    <string name="qr_scanner_instruction">Claude Code CLI\u306b\u8868\u793a\u3055\u308c\u3066\u3044\u308bQR\u30b3\u30fc\u30c9\u306b\u30ab\u30e1\u30e9\u3092\u5411\u3051\u3066\u304f\u3060\u3055\u3044</string>
+    <string name="qr_scanner_processing">QR\u30b3\u30fc\u30c9\u3092\u51e6\u7406\u4e2d\u2026</string>
+    <string name="qr_scanner_permission_title">\u30ab\u30e1\u30e9\u3078\u306e\u30a2\u30af\u30bb\u30b9\u304c\u5fc5\u8981\u3067\u3059</string>
+    <string name="qr_scanner_permission_description">Happy\u306f\u30c7\u30d0\u30a4\u30b9\u306e\u30da\u30a2\u30ea\u30f3\u30b0\u306e\u305f\u3081\u306bClaude Code CLI\u306eQR\u30b3\u30fc\u30c9\u3092\u30b9\u30ad\u30e3\u30f3\u3059\u308b\u305f\u3081\u306b\u30ab\u30e1\u30e9\u3078\u306e\u30a2\u30af\u30bb\u30b9\u304c\u5fc5\u8981\u3067\u3059\u3002</string>
+    <string name="qr_scanner_permission_rationale">\u30ab\u30e1\u30e9\u306e\u8a31\u53ef\u304c\u62d2\u5426\u3055\u308c\u307e\u3057\u305f\u3002Happy\u306f\u30da\u30a2\u30ea\u30f3\u30b0\u306e\u305f\u3081\u306bQR\u30b3\u30fc\u30c9\u3092\u30b9\u30ad\u30e3\u30f3\u3059\u308b\u305f\u3081\u306b\u30ab\u30e1\u30e9\u3078\u306e\u30a2\u30af\u30bb\u30b9\u304c\u5fc5\u8981\u3067\u3059\u3002\u7d9a\u884c\u3059\u308b\u306b\u306f\u30ab\u30e1\u30e9\u3078\u306e\u30a2\u30af\u30bb\u30b9\u3092\u8a31\u53ef\u3057\u3066\u304f\u3060\u3055\u3044\u3002</string>
+    <string name="qr_scanner_grant_permission">\u30ab\u30e1\u30e9\u3078\u306e\u30a2\u30af\u30bb\u30b9\u3092\u8a31\u53ef</string>
+    <string name="qr_scanner_error_title">\u7121\u52b9\u306aQR\u30b3\u30fc\u30c9</string>
+    <string name="qr_scanner_scan_again">\u518d\u30b9\u30ad\u30e3\u30f3</string>
+
+    <!-- Pairing Confirmation -->
+    <string name="pairing_title">\u30da\u30a2\u30ea\u30f3\u30b0\u306e\u78ba\u8a8d</string>
+    <string name="pairing_qr_scanned">QR\u30b3\u30fc\u30c9\u3092\u30b9\u30ad\u30e3\u30f3\u3057\u307e\u3057\u305f</string>
+    <string name="pairing_confirm_description">\u4ee5\u4e0b\u306e\u30c7\u30d0\u30a4\u30b9\u8a73\u7d30\u3092\u78ba\u8a8d\u3057\u3001\u30bb\u30ad\u30e5\u30a2\u306a\u63a5\u7d9a\u3092\u78ba\u7acb\u3059\u308b\u305f\u3081\u306b\u78ba\u8a8d\u3057\u3066\u304f\u3060\u3055\u3044\u3002</string>
+    <string name="pairing_device_name">\u30c7\u30d0\u30a4\u30b9</string>
+    <string name="pairing_public_key">\u516c\u958b\u9375</string>
+    <string name="pairing_confirm_button">\u30da\u30a2\u30ea\u30f3\u30b0\u3092\u78ba\u8a8d</string>
+    <string name="pairing_in_progress">\u30da\u30a2\u30ea\u30f3\u30b0\u4e2d</string>
+    <string name="pairing_in_progress_description">CLI\u30c7\u30d0\u30a4\u30b9\u3068\u306e\u30bb\u30ad\u30e5\u30a2\u306a\u63a5\u7d9a\u3092\u78ba\u7acb\u3057\u3066\u3044\u307e\u3059\u3002\u3057\u3070\u3089\u304f\u304a\u5f85\u3061\u304f\u3060\u3055\u3044\u3002</string>
+    <string name="pairing_failed">\u30da\u30a2\u30ea\u30f3\u30b0\u5931\u6557</string>
+
+    <!-- Error messages -->
+    <string name="error_generic">\u554f\u984c\u304c\u767a\u751f\u3057\u307e\u3057\u305f</string>
+    <string name="error_network">\u30cd\u30c3\u30c8\u30ef\u30fc\u30af\u30a8\u30e9\u30fc\u3002\u63a5\u7d9a\u3092\u78ba\u8a8d\u3057\u3066\u304f\u3060\u3055\u3044\u3002</string>
+    <string name="error_server">\u30b5\u30fc\u30d0\u30fc\u30a8\u30e9\u30fc\u3002\u5f8c\u3067\u3082\u3046\u4e00\u5ea6\u304a\u8a66\u3057\u304f\u3060\u3055\u3044\u3002</string>
+
+    <!-- Session List -->
+    <string name="session_untitled">\u7121\u984c\u306e\u30bb\u30c3\u30b7\u30e7\u30f3</string>
+    <string name="session_search">\u30bb\u30c3\u30b7\u30e7\u30f3\u3092\u691c\u7d22</string>
+    <string name="session_search_placeholder">\u30bf\u30a4\u30c8\u30eb\u307e\u305f\u306f\u30de\u30b7\u30f3\u540d\u3067\u691c\u7d22</string>
+    <string name="session_message_count">%d\u4ef6\u306e\u30e1\u30c3\u30bb\u30fc\u30b8</string>
+    <string name="session_no_matching">\u4e00\u81f4\u3059\u308b\u30bb\u30c3\u30b7\u30e7\u30f3\u304c\u3042\u308a\u307e\u305b\u3093</string>
+    <string name="session_no_matching_description">\u691c\u7d22\u6761\u4ef6\u3084\u30d5\u30a3\u30eb\u30bf\u30fc\u3092\u8abf\u6574\u3057\u3066\u307f\u3066\u304f\u3060\u3055\u3044</string>
+
+    <!-- Session Status -->
+    <string name="session_status_active">\u30a2\u30af\u30c6\u30a3\u30d6</string>
+    <string name="session_status_idle">\u30a2\u30a4\u30c9\u30eb</string>
+    <string name="session_status_completed">\u5b8c\u4e86</string>
+    <string name="session_status_disconnected">\u5207\u65ad</string>
+    <string name="session_status_unknown">\u4e0d\u660e</string>
+
+    <!-- Connection Status -->
+    <string name="session_connection_connected">\u63a5\u7d9a\u6e08\u307f</string>
+    <string name="session_connection_disconnected">\u5207\u65ad</string>
+    <string name="session_connection_reconnecting">\u518d\u63a5\u7d9a\u4e2d</string>
+
+    <!-- Session Detail -->
+    <string name="session_detail_back">\u623b\u308b</string>
+    <string name="session_detail_more_options">\u305d\u306e\u4ed6\u306e\u30aa\u30d7\u30b7\u30e7\u30f3</string>
+    <string name="session_detail_share">\u5171\u6709</string>
+    <string name="session_detail_delete">\u524a\u9664</string>
+    <string name="session_detail_delete_title">\u30bb\u30c3\u30b7\u30e7\u30f3\u3092\u524a\u9664</string>
+    <string name="session_detail_delete_message">\u3053\u306e\u30bb\u30c3\u30b7\u30e7\u30f3\u3092\u524a\u9664\u3057\u3066\u3082\u3088\u308d\u3057\u3044\u3067\u3059\u304b\uff1f\u3053\u306e\u64cd\u4f5c\u306f\u53d6\u308a\u6d88\u3059\u3053\u3068\u304c\u3067\u304d\u307e\u305b\u3093\u3002</string>
+    <string name="session_detail_machine">\u30de\u30b7\u30f3</string>
+    <string name="session_detail_started">\u958b\u59cb</string>
+    <string name="session_detail_updated">\u6700\u7d42\u66f4\u65b0</string>
+    <string name="session_detail_loading">\u30bb\u30c3\u30b7\u30e7\u30f3\u3092\u8aad\u307f\u8fbc\u307f\u4e2d\u2026</string>
+    <string name="session_detail_no_messages">\u30e1\u30c3\u30bb\u30fc\u30b8\u306f\u307e\u3060\u3042\u308a\u307e\u305b\u3093</string>
+    <string name="session_detail_no_messages_description">\u30bb\u30c3\u30b7\u30e7\u30f3\u304c\u9032\u3080\u306b\u3064\u308c\u3066\u30e1\u30c3\u30bb\u30fc\u30b8\u304c\u3053\u3053\u306b\u8868\u793a\u3055\u308c\u307e\u3059\u3002</string>
+    <string name="session_detail_waiting">\u30a2\u30af\u30c6\u30a3\u30d3\u30c6\u30a3\u3092\u5f85\u6a5f\u4e2d\u2026</string>
+    <string name="session_detail_tool_uses">%d\u4ef6\u306e\u30c4\u30fc\u30eb\u4f7f\u7528</string>
+    <string name="session_detail_expand">\u5c55\u958b</string>
+    <string name="session_detail_collapse">\u6298\u308a\u305f\u305f\u307f</string>
+    <string name="session_detail_copied">\u30e1\u30c3\u30bb\u30fc\u30b8\u3092\u30af\u30ea\u30c3\u30d7\u30dc\u30fc\u30c9\u306b\u30b3\u30d4\u30fc\u3057\u307e\u3057\u305f</string>
+
+    <!-- Settings screen -->
+    <string name="settings_server_connection">\u30b5\u30fc\u30d0\u30fc\u63a5\u7d9a</string>
+    <string name="settings_server_url">\u30b5\u30fc\u30d0\u30fcURL</string>
+    <string name="settings_checking_connection">\u63a5\u7d9a\u3092\u78ba\u8a8d\u4e2d\u2026</string>
+    <string name="settings_connected">\u63a5\u7d9a\u6e08\u307f</string>
+    <string name="settings_not_connected">\u672a\u63a5\u7d9a</string>
+    <string name="settings_check_connection">\u63a5\u7d9a\u3092\u78ba\u8a8d</string>
+    <string name="settings_notifications">\u901a\u77e5</string>
+    <string name="settings_enable_notifications">\u901a\u77e5\u3092\u6709\u52b9\u306b\u3059\u308b</string>
+    <string name="settings_notification_sound">\u30b5\u30a6\u30f3\u30c9</string>
+    <string name="settings_notification_vibration">\u30d0\u30a4\u30d6\u30ec\u30fc\u30b7\u30e7\u30f3</string>
+    <string name="settings_notification_permission_required">\u901a\u77e5\u306e\u8a31\u53ef\u304c\u5fc5\u8981\u3067\u3059</string>
+    <string name="settings_tap_to_enable">\u30bf\u30c3\u30d7\u3057\u3066\u901a\u77e5\u306e\u8a31\u53ef\u3092\u4ed8\u4e0e</string>
+    <string name="settings_system_notification_settings">\u30b7\u30b9\u30c6\u30e0\u901a\u77e5\u8a2d\u5b9a</string>
+    <string name="settings_theme">\u30c6\u30fc\u30de</string>
+    <string name="settings_theme_system">\u30b7\u30b9\u30c6\u30e0</string>
+    <string name="settings_theme_light">\u30e9\u30a4\u30c8</string>
+    <string name="settings_theme_dark">\u30c0\u30fc\u30af</string>
+    <string name="settings_about">\u30a2\u30d7\u30ea\u306b\u3064\u3044\u3066</string>
+    <string name="settings_app_version">\u30a2\u30d7\u30ea\u30d0\u30fc\u30b8\u30e7\u30f3</string>
+    <string name="settings_licenses">\u30aa\u30fc\u30d7\u30f3\u30bd\u30fc\u30b9\u30e9\u30a4\u30bb\u30f3\u30b9</string>
+    <string name="settings_copyright">\u00a9 2024\u20132026 Enflame Media. All rights reserved.</string>
+    <string name="settings_account">\u30a2\u30ab\u30a6\u30f3\u30c8</string>
+    <string name="settings_logout">\u30ed\u30b0\u30a2\u30a6\u30c8</string>
+    <string name="settings_logout_title">\u30ed\u30b0\u30a2\u30a6\u30c8</string>
+    <string name="settings_logout_message">\u30ed\u30b0\u30a2\u30a6\u30c8\u3057\u3066\u3082\u3088\u308d\u3057\u3044\u3067\u3059\u304b\uff1f\u4fdd\u5b58\u3055\u308c\u305f\u3059\u3079\u3066\u306e\u8cc7\u683c\u60c5\u5831\u3068\u8a2d\u5b9a\u304c\u524a\u9664\u3055\u308c\u307e\u3059\u3002</string>
+
+    <!-- Language settings -->
+    <string name="settings_language">\u8a00\u8a9e</string>
+    <string name="settings_language_system">\u30b7\u30b9\u30c6\u30e0\u30c7\u30d5\u30a9\u30eb\u30c8</string>
+    <string name="settings_language_en">English</string>
+    <string name="settings_language_es">Espa\u00f1ol</string>
+    <string name="settings_language_fr">Fran\u00e7ais</string>
+    <string name="settings_language_de">Deutsch</string>
+    <string name="settings_language_ja">\u65e5\u672c\u8a9e</string>
+    <string name="settings_language_zh">\u7b80\u4f53\u4e2d\u6587</string>
+    <string name="settings_language_ko">\ud55c\uad6d\uc5b4</string>
+    <string name="settings_language_changed">\u8a00\u8a9e\u304c\u5909\u66f4\u3055\u308c\u307e\u3057\u305f\u3002\u5b8c\u5168\u306b\u53cd\u6620\u3059\u308b\u306b\u306f\u30a2\u30d7\u30ea\u3092\u518d\u8d77\u52d5\u3057\u3066\u304f\u3060\u3055\u3044\u3002</string>
+    <string name="settings_language_current">\u73fe\u5728: %s</string>
+
+    <!-- Voice Settings -->
+    <string name="voice_settings_title">\u97f3\u58f0\u8a2d\u5b9a</string>
+    <string name="voice_settings_provider">\u30d7\u30ed\u30d0\u30a4\u30c0\u30fc</string>
+    <string name="voice_settings_voice">\u97f3\u58f0</string>
+    <string name="voice_settings_playback">\u518d\u751f</string>
+    <string name="voice_settings_behavior">\u52d5\u4f5c</string>
+    <string name="voice_settings_api_key">API\u30ad\u30fc</string>
+    <string name="voice_settings_test">\u30c6\u30b9\u30c8</string>
+    <string name="voice_settings_selected">\u9078\u629e\u6e08\u307f</string>
+    <string name="voice_settings_speed">\u901f\u5ea6</string>
+    <string name="voice_settings_volume">\u97f3\u91cf</string>
+    <string name="voice_settings_auto_play">\u65b0\u3057\u3044\u30e1\u30c3\u30bb\u30fc\u30b8\u3092\u81ea\u52d5\u8aad\u307f\u4e0a\u3052</string>
+    <string name="voice_settings_skip_tool_outputs">\u30c4\u30fc\u30eb\u51fa\u529b\u3092\u30b9\u30ad\u30c3\u30d7</string>
+    <string name="voice_settings_behavior_footer">\u81ea\u52d5\u8aad\u307f\u4e0a\u3052\u304c\u6709\u52b9\u306e\u5834\u5408\u3001\u65b0\u3057\u3044\u30a2\u30b7\u30b9\u30bf\u30f3\u30c8\u30e1\u30c3\u30bb\u30fc\u30b8\u306f\u81ea\u52d5\u7684\u306b\u58f0\u306b\u51fa\u3057\u3066\u8aad\u307f\u4e0a\u3052\u3089\u308c\u307e\u3059\u3002</string>
+    <string name="voice_settings_system_default">\u30c7\u30d0\u30a4\u30b9\u306e\u30c7\u30d5\u30a9\u30eb\u30c8\u97f3\u58f0</string>
+    <string name="voice_settings_system_description">Android\u30b7\u30b9\u30c6\u30e0\u8a2d\u5b9a\u3067\u8a2d\u5b9a\u3055\u308c\u305f\u30c7\u30d5\u30a9\u30eb\u30c8\u306e\u30c6\u30ad\u30b9\u30c8\u8aad\u307f\u4e0a\u3052\u97f3\u58f0\u3092\u4f7f\u7528\u3057\u307e\u3059\u3002</string>
+    <string name="voice_settings_api_key_configured">API\u30ad\u30fc\u8a2d\u5b9a\u6e08\u307f</string>
+    <string name="voice_settings_api_key_required">\u9ad8\u54c1\u8cea\u306aAI\u97f3\u58f0\u306b\u306fElevenLabs API\u30ad\u30fc\u304c\u5fc5\u8981\u3067\u3059\u3002</string>
+    <string name="voice_settings_api_key_placeholder">ElevenLabs API\u30ad\u30fc</string>
+    <string name="voice_settings_api_key_footer">API\u30ad\u30fc\u306f\u6697\u53f7\u5316\u3055\u308c\u305f\u30b9\u30c8\u30ec\u30fc\u30b8\u306b\u5b89\u5168\u306b\u4fdd\u5b58\u3055\u308c\u307e\u3059\u3002elevenlabs.io\u3067\u53d6\u5f97\u3067\u304d\u307e\u3059\u3002</string>
+    <string name="voice_settings_add_api_key">API\u30ad\u30fc\u3092\u8ffd\u52a0</string>
+    <string name="voice_settings_save_api_key">API\u30ad\u30fc\u3092\u4fdd\u5b58</string>
+    <string name="voice_settings_remove_api_key">API\u30ad\u30fc\u3092\u524a\u9664</string>
+    <string name="voice_settings_remove_api_key_confirm">API\u30ad\u30fc\u3092\u524a\u9664\u3057\u307e\u3059\u304b\uff1f</string>
+    <string name="voice_settings_remove_api_key_message">\u4fdd\u5b58\u3055\u308c\u305fElevenLabs API\u30ad\u30fc\u304c\u524a\u9664\u3055\u308c\u307e\u3059\u3002\u5f8c\u3067\u65b0\u3057\u3044\u30ad\u30fc\u3092\u8ffd\u52a0\u3067\u304d\u307e\u3059\u3002</string>
+    <string name="voice_settings_test_voice">\u97f3\u58f0\u3092\u30c6\u30b9\u30c8</string>
+    <string name="voice_settings_stop">\u505c\u6b62</string>
+    <string name="voice_settings_loading">\u30aa\u30fc\u30c7\u30a3\u30aa\u3092\u8aad\u307f\u8fbc\u307f\u4e2d\u2026</string>
+
+    <!-- Notification channels -->
+    <string name="notification_channel_session_updates">\u30bb\u30c3\u30b7\u30e7\u30f3\u66f4\u65b0</string>
+    <string name="notification_channel_messages">\u30e1\u30c3\u30bb\u30fc\u30b8</string>
+    <string name="notification_channel_pairing">\u30da\u30a2\u30ea\u30f3\u30b0\u30ea\u30af\u30a8\u30b9\u30c8</string>
+
+    <!-- Paywall screen -->
+    <string name="paywall_title">\u30b5\u30d6\u30b9\u30af\u30ea\u30d7\u30b7\u30e7\u30f3\u30d7\u30e9\u30f3</string>
+    <string name="paywall_headline">\u30d5\u30eb\u4f53\u9a13\u3092\u30a2\u30f3\u30ed\u30c3\u30af</string>
+    <string name="paywall_subheadline">\u7121\u5236\u9650\u306e\u30bb\u30c3\u30b7\u30e7\u30f3\u3001\u30de\u30eb\u30c1\u30c7\u30d0\u30a4\u30b9\u30b5\u30dd\u30fc\u30c8\u306a\u3069\u3092\u5165\u624b\u3057\u307e\u3057\u3087\u3046\u3002</string>
+    <string name="paywall_recommended">\u304a\u3059\u3059\u3081</string>
+    <string name="paywall_current_plan">\u73fe\u5728\u306e\u30d7\u30e9\u30f3</string>
+    <string name="paywall_subscribe">\u8cfc\u8aad\u3059\u308b</string>
+    <string name="paywall_restore_purchases">\u8cfc\u5165\u3092\u5fa9\u5143</string>
+    <string name="paywall_auto_renew_notice">\u30b5\u30d6\u30b9\u30af\u30ea\u30d7\u30b7\u30e7\u30f3\u306f\u30ad\u30e3\u30f3\u30bb\u30eb\u3059\u308b\u307e\u3067\u81ea\u52d5\u66f4\u65b0\u3055\u308c\u307e\u3059\u3002Google Play\u3067\u3044\u3064\u3067\u3082\u30ad\u30e3\u30f3\u30bb\u30eb\u3067\u304d\u307e\u3059\u3002</string>
+    <string name="paywall_terms">\u5229\u7528\u898f\u7d04</string>
+    <string name="paywall_privacy">\u30d7\u30e9\u30a4\u30d0\u30b7\u30fc\u30dd\u30ea\u30b7\u30fc</string>
+    <string name="paywall_purchase_success_title">\u8cfc\u5165\u6210\u529f</string>
+    <string name="paywall_purchase_success_message">\u3054\u8cfc\u8aad\u3042\u308a\u304c\u3068\u3046\u3054\u3056\u3044\u307e\u3059\uff01\u3059\u3079\u3066\u306e\u6a5f\u80fd\u306b\u30d5\u30eb\u30a2\u30af\u30bb\u30b9\u3067\u304d\u308b\u3088\u3046\u306b\u306a\u308a\u307e\u3057\u305f\u3002</string>
+    <string name="paywall_restore_success_title">\u8cfc\u5165\u304c\u5fa9\u5143\u3055\u308c\u307e\u3057\u305f</string>
+    <string name="paywall_restore_success_message">\u30b5\u30d6\u30b9\u30af\u30ea\u30d7\u30b7\u30e7\u30f3\u304c\u6b63\u5e38\u306b\u5fa9\u5143\u3055\u308c\u307e\u3057\u305f\u3002</string>
+
+    <!-- Subscription status screen -->
+    <string name="subscription_status_title">\u30b5\u30d6\u30b9\u30af\u30ea\u30d7\u30b7\u30e7\u30f3</string>
+    <string name="subscription_details">\u30b5\u30d6\u30b9\u30af\u30ea\u30d7\u30b7\u30e7\u30f3\u8a73\u7d30</string>
+    <string name="subscription_billing_period">\u8acb\u6c42\u671f\u9593</string>
+    <string name="subscription_purchase_date">\u8cfc\u5165\u65e5</string>
+    <string name="subscription_renewal_date">\u66f4\u65b0\u65e5</string>
+    <string name="subscription_days_remaining">\u6b8b\u308a\u65e5\u6570</string>
+    <string name="subscription_auto_renew">\u81ea\u52d5\u66f4\u65b0</string>
+    <string name="subscription_enabled">\u6709\u52b9</string>
+    <string name="subscription_disabled">\u7121\u52b9</string>
+    <string name="subscription_actions">\u30a2\u30af\u30b7\u30e7\u30f3</string>
+    <string name="subscription_upgrade">\u30d7\u30e9\u30f3\u3092\u30a2\u30c3\u30d7\u30b0\u30ec\u30fc\u30c9</string>
+    <string name="subscription_restore">\u8cfc\u5165\u3092\u5fa9\u5143</string>
+    <string name="subscription_manage">\u30b5\u30d6\u30b9\u30af\u30ea\u30d7\u30b7\u30e7\u30f3\u3092\u7ba1\u7406</string>
+    <string name="subscription_manage_footer">Google Play\u3092\u958b\u3044\u3066\u30b5\u30d6\u30b9\u30af\u30ea\u30d7\u30b7\u30e7\u30f3\u306e\u7ba1\u7406\u3001\u30d7\u30e9\u30f3\u5909\u66f4\u3001\u30ad\u30e3\u30f3\u30bb\u30eb\u3092\u884c\u3044\u307e\u3059\u3002</string>
+    <string name="subscription_refresh">\u66f4\u65b0</string>
+    <string name="subscription_expired_notice">\u30b5\u30d6\u30b9\u30af\u30ea\u30d7\u30b7\u30e7\u30f3\u671f\u9650\u5207\u308c</string>
+    <string name="subscription_expired_description">\u30b5\u30d6\u30b9\u30af\u30ea\u30d7\u30b7\u30e7\u30f3\u304c\u671f\u9650\u5207\u308c\u3067\u3059\u3002\u30d7\u30ec\u30df\u30a2\u30e0\u6a5f\u80fd\u3078\u306e\u30a2\u30af\u30bb\u30b9\u3092\u56de\u5fa9\u3059\u308b\u306b\u306f\u66f4\u65b0\u3057\u3066\u304f\u3060\u3055\u3044\u3002</string>
+    <string name="subscription_renew">\u30b5\u30d6\u30b9\u30af\u30ea\u30d7\u30b7\u30e7\u30f3\u3092\u66f4\u65b0</string>
+
+    <!-- Subscription status badges -->
+    <string name="subscription_active">\u6709\u52b9</string>
+    <string name="subscription_expired">\u671f\u9650\u5207\u308c</string>
+    <string name="subscription_revoked">\u53d6\u308a\u6d88\u3057\u6e08\u307f</string>
+    <string name="subscription_free">\u7121\u6599</string>
+    <string name="subscription_error">\u30a8\u30e9\u30fc</string>
+    <string name="subscription_grace_period">\u7336\u4e88\u671f\u9593</string>
+
+    <!-- Artifacts -->
+    <string name="artifacts_title">\u30a2\u30fc\u30c6\u30a3\u30d5\u30a1\u30af\u30c8</string>
+    <string name="artifacts_search">\u30a2\u30fc\u30c6\u30a3\u30d5\u30a1\u30af\u30c8\u3092\u691c\u7d22</string>
+    <string name="artifacts_search_placeholder">\u30bf\u30a4\u30c8\u30eb\u307e\u305f\u306f\u30d5\u30a1\u30a4\u30eb\u540d\u3067\u691c\u7d22</string>
+    <string name="artifacts_loading">\u30a2\u30fc\u30c6\u30a3\u30d5\u30a1\u30af\u30c8\u3092\u8aad\u307f\u8fbc\u307f\u4e2d\u2026</string>
+    <string name="artifacts_empty">\u30a2\u30fc\u30c6\u30a3\u30d5\u30a1\u30af\u30c8\u306a\u3057</string>
+    <string name="artifacts_empty_description">\u30bb\u30c3\u30b7\u30e7\u30f3\u4e2d\u306bClaude Code\u304c\u30d5\u30a1\u30a4\u30eb\u3092\u4f5c\u6210\u3059\u308b\u3068\u3001\u3053\u3053\u306b\u30a2\u30fc\u30c6\u30a3\u30d5\u30a1\u30af\u30c8\u304c\u8868\u793a\u3055\u308c\u307e\u3059\u3002</string>
+    <string name="artifacts_no_matching">\u4e00\u81f4\u3059\u308b\u30a2\u30fc\u30c6\u30a3\u30d5\u30a1\u30af\u30c8\u306a\u3057</string>
+    <string name="artifacts_no_matching_description">\u691c\u7d22\u6761\u4ef6\u3084\u30d5\u30a3\u30eb\u30bf\u30fc\u3092\u8abf\u6574\u3057\u3066\u307f\u3066\u304f\u3060\u3055\u3044</string>
+    <string name="artifacts_line_count">%d\u884c</string>
+    <string name="artifacts_copy">\u30af\u30ea\u30c3\u30d7\u30dc\u30fc\u30c9\u306b\u30b3\u30d4\u30fc</string>
+    <string name="artifacts_share">\u5171\u6709</string>
+    <string name="artifacts_toggle_line_numbers">\u884c\u756a\u53f7\u306e\u8868\u793a/\u975e\u8868\u793a</string>
+    <string name="artifacts_image_not_supported">\u753b\u50cf\u30d7\u30ec\u30d3\u30e5\u30fc\u306f\u307e\u3060\u30b5\u30dd\u30fc\u30c8\u3055\u308c\u3066\u3044\u307e\u305b\u3093</string>
+    <string name="artifacts_view_artifacts">\u30a2\u30fc\u30c6\u30a3\u30d5\u30a1\u30af\u30c8\u3092\u8868\u793a</string>
+
+    <!-- Empty states -->
+    <string name="no_sessions">\u30bb\u30c3\u30b7\u30e7\u30f3\u306f\u307e\u3060\u3042\u308a\u307e\u305b\u3093</string>
+    <string name="no_sessions_description">Claude Code CLI\u306eQR\u30b3\u30fc\u30c9\u3092\u30b9\u30ad\u30e3\u30f3\u3057\u3066\u958b\u59cb\u3057\u3066\u304f\u3060\u3055\u3044</string>
+</resources>

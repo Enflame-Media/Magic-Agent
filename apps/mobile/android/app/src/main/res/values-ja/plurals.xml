@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Session count plurals (Japanese has no singular/plural distinction) -->
+    <plurals name="session_count">
+        <item quantity="other">%d\u4ef6\u306e\u30bb\u30c3\u30b7\u30e7\u30f3</item>
+    </plurals>
+
+    <!-- Message count plurals -->
+    <plurals name="message_count">
+        <item quantity="other">%d\u4ef6\u306e\u30e1\u30c3\u30bb\u30fc\u30b8</item>
+    </plurals>
+
+    <!-- Tool use count plurals -->
+    <plurals name="tool_use_count">
+        <item quantity="other">%d\u4ef6\u306e\u30c4\u30fc\u30eb\u4f7f\u7528</item>
+    </plurals>
+
+    <!-- Time duration plurals -->
+    <plurals name="minutes_ago">
+        <item quantity="other">%d\u5206\u524d</item>
+    </plurals>
+
+    <plurals name="hours_ago">
+        <item quantity="other">%d\u6642\u9593\u524d</item>
+    </plurals>
+
+    <plurals name="days_ago">
+        <item quantity="other">%d\u65e5\u524d</item>
+    </plurals>
+</resources>

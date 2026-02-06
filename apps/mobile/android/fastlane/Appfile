@@ -1,0 +1,10 @@
+# frozen_string_literal: true
+
+# Copyright (c) 2024-2026 Enflame Media. All rights reserved.
+#
+# Appfile - App metadata for Fastlane
+# For more information: https://docs.fastlane.tools/advanced/Appfile/
+
+package_name("com.enflame.happy")
+
+json_key_file(ENV["PLAY_SERVICE_ACCOUNT_JSON"] || "fastlane/play-store-credentials.json")

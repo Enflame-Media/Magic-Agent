@@ -1,0 +1,218 @@
+# frozen_string_literal: true
+
+# Copyright (c) 2024-2026 Enflame Media. All rights reserved.
+#
+# Fastfile - Automated build, test, and deployment lanes for Happy Android
+# For more information: https://docs.fastlane.tools/
+
+default_platform(:android)
+
+# ---------------------------------------------------------------------------
+# Constants
+# ---------------------------------------------------------------------------
+PACKAGE_NAME = "com.enflame.happy"
+
+platform :android do
+  # -------------------------------------------------------------------------
+  # Before all lanes
+  # -------------------------------------------------------------------------
+  before_all do
+    setup_ci if ENV["CI"]
+  end
+
+  # -------------------------------------------------------------------------
+  # Lane: test
+  # -------------------------------------------------------------------------
+  desc "Run unit tests"
+  lane :test do
+    gradle(
+      task: "testDebugUnitTest",
+      flags: "--stacktrace"
+    )
+    UI.success("All unit tests passed")
+  end
+
+  # -------------------------------------------------------------------------
+  # Lane: build_debug
+  # -------------------------------------------------------------------------
+  desc "Build debug APK"
+  lane :build_debug do
+    gradle(
+      task: "assembleDebug",
+      flags: "--stacktrace"
+    )
+    UI.success("Debug APK built successfully")
+  end
+
+  # -------------------------------------------------------------------------
+  # Lane: build_release
+  # -------------------------------------------------------------------------
+  desc "Build signed release APK and AAB"
+  lane :build_release do |options|
+    # Ensure signing config is available
+    ensure_env_vars(
+      env_vars: ["KEYSTORE_FILE", "KEYSTORE_PASSWORD", "KEY_ALIAS", "KEY_PASSWORD"]
+    ) unless options[:skip_signing_check]
+
+    # Build signed release APK
+    gradle(
+      task: "assembleRelease",
+      flags: "--stacktrace",
+      properties: {
+        "android.injected.signing.store.file" => ENV["KEYSTORE_FILE"],
+        "android.injected.signing.store.password" => ENV["KEYSTORE_PASSWORD"],
+        "android.injected.signing.key.alias" => ENV["KEY_ALIAS"],
+        "android.injected.signing.key.password" => ENV["KEY_PASSWORD"]
+      }
+    )
+
+    # Build signed release AAB (for Play Store)
+    gradle(
+      task: "bundleRelease",
+      flags: "--stacktrace",
+      properties: {
+        "android.injected.signing.store.file" => ENV["KEYSTORE_FILE"],
+        "android.injected.signing.store.password" => ENV["KEYSTORE_PASSWORD"],
+        "android.injected.signing.key.alias" => ENV["KEY_ALIAS"],
+        "android.injected.signing.key.password" => ENV["KEY_PASSWORD"]
+      }
+    )
+
+    UI.success("Release APK and AAB built successfully")
+  end
+
+  # -------------------------------------------------------------------------
+  # Lane: deploy_internal
+  # -------------------------------------------------------------------------
+  desc "Deploy to Google Play internal testing track"
+  lane :deploy_internal do |options|
+    ensure_env_vars(
+      env_vars: ["PLAY_SERVICE_ACCOUNT_JSON"]
+    )
+
+    # Build release first if not already built
+    build_release unless options[:skip_build]
+
+    # Upload AAB to Google Play internal testing track
+    upload_to_play_store(
+      package_name: PACKAGE_NAME,
+      track: "internal",
+      aab: "app/build/outputs/bundle/release/app-release.aab",
+      json_key: ENV["PLAY_SERVICE_ACCOUNT_JSON"],
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      release_status: "completed"
+    )
+
+    UI.success("Successfully deployed to Google Play internal testing!")
+  end
+
+  # -------------------------------------------------------------------------
+  # Lane: deploy_beta
+  # -------------------------------------------------------------------------
+  desc "Promote internal build to beta (open testing) track"
+  lane :deploy_beta do
+    ensure_env_vars(
+      env_vars: ["PLAY_SERVICE_ACCOUNT_JSON"]
+    )
+
+    upload_to_play_store(
+      package_name: PACKAGE_NAME,
+      track: "internal",
+      track_promote_to: "beta",
+      json_key: ENV["PLAY_SERVICE_ACCOUNT_JSON"],
+      skip_upload_changelogs: false
+    )
+
+    UI.success("Successfully promoted to beta track!")
+  end
+
+  # -------------------------------------------------------------------------
+  # Lane: deploy_production
+  # -------------------------------------------------------------------------
+  desc "Promote beta build to production track"
+  lane :deploy_production do |options|
+    ensure_env_vars(
+      env_vars: ["PLAY_SERVICE_ACCOUNT_JSON"]
+    )
+
+    # Ensure we're on a clean branch
+    ensure_git_status_clean unless ENV["CI"]
+
+    rollout = options[:rollout] || 1.0
+
+    upload_to_play_store(
+      package_name: PACKAGE_NAME,
+      track: "beta",
+      track_promote_to: "production",
+      json_key: ENV["PLAY_SERVICE_ACCOUNT_JSON"],
+      rollout: rollout.to_s,
+      skip_upload_changelogs: false
+    )
+
+    UI.success("Successfully promoted to production (rollout: #{(rollout * 100).to_i}%)!")
+  end
+
+  # -------------------------------------------------------------------------
+  # Lane: lint
+  # -------------------------------------------------------------------------
+  desc "Run lint and static analysis checks"
+  lane :lint do
+    gradle(
+      task: "lintDebug",
+      flags: "--stacktrace"
+    )
+
+    # Run Detekt if configured
+    begin
+      gradle(
+        task: "detekt",
+        flags: "--stacktrace"
+      )
+    rescue StandardError => e
+      UI.important("Detekt not configured or failed: #{e.message}")
+    end
+
+    UI.success("Lint checks completed")
+  end
+
+  # -------------------------------------------------------------------------
+  # Lane: clean
+  # -------------------------------------------------------------------------
+  desc "Clean build artifacts"
+  lane :clean do
+    gradle(
+      task: "clean"
+    )
+    UI.success("Build artifacts cleaned")
+  end
+
+  # -------------------------------------------------------------------------
+  # After all lanes
+  # -------------------------------------------------------------------------
+  after_all do |lane|
+    UI.success("Lane #{lane} completed successfully!")
+  end
+
+  # -------------------------------------------------------------------------
+  # Error handling
+  # -------------------------------------------------------------------------
+  error do |lane, exception|
+    UI.error("Lane #{lane} failed: #{exception.message}")
+
+    if ENV["CI"] && ENV["SLACK_WEBHOOK_URL"]
+      slack(
+        message: "Happy Android: Lane `#{lane}` failed",
+        payload: {
+          "Error" => exception.message,
+          "Build URL" => ENV["GITHUB_SERVER_URL"].to_s + "/" +
+                         ENV["GITHUB_REPOSITORY"].to_s + "/actions/runs/" +
+                         ENV["GITHUB_RUN_ID"].to_s
+        },
+        default_payloads: [:git_branch, :last_git_commit],
+        success: false
+      )
+    end
+  end
+end

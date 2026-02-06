@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Session count plurals -->
+    <plurals name="session_count">
+        <item quantity="one">%d Sitzung</item>
+        <item quantity="other">%d Sitzungen</item>
+    </plurals>
+
+    <!-- Message count plurals -->
+    <plurals name="message_count">
+        <item quantity="one">%d Nachricht</item>
+        <item quantity="other">%d Nachrichten</item>
+    </plurals>
+
+    <!-- Tool use count plurals -->
+    <plurals name="tool_use_count">
+        <item quantity="one">%d Werkzeugnutzung</item>
+        <item quantity="other">%d Werkzeugnutzungen</item>
+    </plurals>
+
+    <!-- Time duration plurals -->
+    <plurals name="minutes_ago">
+        <item quantity="one">vor %d Minute</item>
+        <item quantity="other">vor %d Minuten</item>
+    </plurals>
+
+    <plurals name="hours_ago">
+        <item quantity="one">vor %d Stunde</item>
+        <item quantity="other">vor %d Stunden</item>
+    </plurals>
+
+    <plurals name="days_ago">
+        <item quantity="one">vor %d Tag</item>
+        <item quantity="other">vor %d Tagen</item>
+    </plurals>
+</resources>

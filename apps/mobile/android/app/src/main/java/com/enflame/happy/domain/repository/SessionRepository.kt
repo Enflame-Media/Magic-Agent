@@ -1,5 +1,6 @@
 package com.enflame.happy.domain.repository
 
+import com.enflame.happy.domain.model.Artifact
 import com.enflame.happy.domain.model.Session
 import kotlinx.coroutines.flow.Flow
 
@@ -42,4 +43,12 @@ interface SessionRepository {
      * @param sessionId The session to unsubscribe from.
      */
     suspend fun unsubscribeFromSession(sessionId: String)
+
+    /**
+     * Get artifacts for a specific session.
+     *
+     * @param sessionId The session to get artifacts for.
+     * @return List of artifacts for the session.
+     */
+    suspend fun getArtifacts(sessionId: String): List<Artifact>
 }

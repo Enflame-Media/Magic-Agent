@@ -18,8 +18,10 @@ This file provides guidance to Claude Code when working with the Happy Android n
 app/src/main/java/com/enflame/happy/
 ├── data/                    # Data layer
 │   ├── api/                 # Retrofit API service interfaces
+│   ├── crypto/              # Encryption service (AES-256-GCM, ECDH)
 │   ├── repository/          # Repository implementations
-│   └── local/               # Room database, DataStore
+│   ├── local/               # Room database, DataStore
+│   └── sync/                # WebSocket sync service
 ├── domain/                  # Domain/business logic layer
 │   ├── model/               # Domain models (data classes)
 │   ├── repository/          # Repository interfaces
@@ -180,23 +182,32 @@ interface SessionRepository {
 }
 ```
 
-### EncryptionService (To Be Implemented)
+### EncryptionService
 
-End-to-end encryption using Google Tink for AES-256-GCM:
+End-to-end encryption using AES-256-GCM via Java Cryptography Architecture (JCA).
+
+Located in `data/crypto/EncryptionService.kt`.
 
 ```kotlin
+@Singleton
 class EncryptionService @Inject constructor() {
-    fun encrypt(data: ByteArray, key: SecretKey): ByteArray
-    fun decrypt(data: ByteArray, key: SecretKey): ByteArray
-    fun generateKeyPair(): KeyPair
+    fun encrypt(data: ByteArray, key: ByteArray): ByteArray
+    fun decrypt(bundle: ByteArray, key: ByteArray): ByteArray
+    fun generateKeyPair(): KeyPairData
+    fun deriveSharedSecret(privateKey: ByteArray, peerPublicKey: ByteArray): ByteArray
+    fun getBundleInfo(bundle: ByteArray): BundleInfo?
 }
 ```
 
 **Cross-Platform Compatibility:**
 - Uses AES-256-GCM (same as happy-cli, happy-app, happy-macos)
-- Bundle format: `[version:1][nonce:12][ciphertext:N][authTag:16]`
-- Key derivation uses X25519 ECDH with HKDF
+- Bundle format v0: `[version:1][nonce:12][ciphertext:N][authTag:16]`
+- Bundle format v1: `[version:1][keyVersion:2][nonce:12][ciphertext:N][authTag:16]`
+- Hybrid nonce: 4 random bytes + 8-byte monotonic counter (thread-safe)
+- Key derivation: X25519 ECDH with HKDF-SHA256 (info: "happy-encryption")
 - See [ENCRYPTION-ARCHITECTURE.md](../../../docs/ENCRYPTION-ARCHITECTURE.md) for details
+
+**Hilt DI:** Provided as singleton via `CryptoModule` to ensure nonce counter uniqueness.
 
 ## Testing
 
@@ -300,17 +311,92 @@ class HomeScreenTest {
 | API Service | Complete | Retrofit interface defined |
 | Repository Pattern | Complete | Interface + implementation |
 | .gitignore | Complete | Android-specific exclusions |
+| QR Code Scanner | Complete | CameraX + ML Kit (HAP-961) |
+| Encryption Service | Complete | AES-256-GCM, X25519 ECDH, HKDF (HAP-973) |
+| Sessions List Screen | Complete | LazyColumn, search, filter, pull-to-refresh (HAP-981) |
+| WebSocket Sync Service | Complete | OkHttp WebSocket, reconnection, Kotlin Flow (HAP-970) |
+| WebSocket Sync E2E Tests | Complete | Integration tests, encryption E2E, reconnection tests (HAP-979) |
+| Session Detail Screen | Complete | Message list, header, pull-to-refresh, real-time updates (HAP-984) |
+| Settings Screen | Complete | Server, notifications, theme, about, account sections (HAP-986) |
+| Push Notifications (FCM) | Complete | FCM service, channels, rich notifications, actions (HAP-986) |
+| Voice Features | Complete | ElevenLabs TTS + Android system TTS fallback (HAP-999) |
+| In-App Purchases | Complete | Google Play Billing, paywall, subscription status (HAP-1000) |
+| Artifacts Viewer | Complete | Syntax-highlighted code viewer, 8+ languages (HAP-1002) |
+| i18n (7 Languages) | Complete | en, es, fr, de, ja, zh-CN, ko with plurals, in-app picker (HAP-1001) |
+| CI/CD Pipeline | Complete | GitHub Actions CI + Release, Fastlane, Detekt, Dependabot (HAP-1004) |
+| Friends & Social | Complete | Friend list, requests, QR add, profiles, search, filter (HAP-1003) |
 
 ### Next Steps
 
-- [ ] QR Code Scanner (CameraX + ML Kit)
-- [ ] Sessions List Screen
-- [ ] Session Detail Screen
-- [ ] WebSocket Sync Service
-- [ ] Encryption Service (Tink)
+- [x] QR Code Scanner (CameraX + ML Kit) - HAP-961
+- [x] Sessions List Screen - HAP-981
+- [x] Session Detail Screen - HAP-984
+- [x] WebSocket Sync Service (OkHttp, reconnection, Flow) - HAP-970
+- [x] Encryption Service (AES-256-GCM, ECDH, HKDF) - HAP-973
 - [ ] Local Storage (Room + DataStore)
-- [ ] Settings Screen
-- [ ] Push Notifications (FCM)
+- [x] Settings Screen - HAP-986
+- [x] Push Notifications (FCM) - HAP-986
+- [x] Voice Features (ElevenLabs + System TTS) - HAP-999
+- [x] In-App Purchases (Google Play Billing) - HAP-1000
+- [x] Artifacts Viewer (Syntax Highlighting) - HAP-1002
+- [x] i18n for 7 Languages - HAP-1001
+- [x] CI/CD Pipeline (GitHub Actions, Fastlane, Detekt, Dependabot) - HAP-1004
+- [x] Friends & Social Features (list, requests, profiles, QR) - HAP-1003
+
+## CI/CD
+
+### GitHub Actions Workflows
+
+| Workflow | File | Trigger | Purpose |
+|----------|------|---------|---------|
+| Android CI | `.github/workflows/android-ci.yml` | Push to main/develop, PRs | Build, test, lint, Detekt, ktlint |
+| Android Release | `.github/workflows/android-release.yml` | Manual dispatch | Signed build, Google Play deploy, GitHub Release |
+
+### Fastlane Lanes
+
+```bash
+# Run unit tests
+bundle exec fastlane test
+
+# Build debug APK
+bundle exec fastlane build_debug
+
+# Build signed release APK + AAB
+bundle exec fastlane build_release
+
+# Deploy to Google Play internal testing
+bundle exec fastlane deploy_internal
+
+# Promote to beta track
+bundle exec fastlane deploy_beta
+
+# Promote to production
+bundle exec fastlane deploy_production rollout:0.1
+
+# Run lint checks
+bundle exec fastlane lint
+
+# Clean build artifacts
+bundle exec fastlane clean
+```
+
+### Required GitHub Secrets (for release workflow)
+
+| Secret | Description |
+|--------|-------------|
+| `KEYSTORE_FILE` | Base64-encoded release keystore |
+| `KEYSTORE_PASSWORD` | Keystore password |
+| `KEY_ALIAS` | Key alias within the keystore |
+| `KEY_PASSWORD` | Key password |
+| `PLAY_SERVICE_ACCOUNT_JSON` | Google Play service account JSON key |
+
+### Code Quality Tools
+
+- **Android Lint**: Built-in Android static analysis (warnings as errors)
+- **Detekt**: Kotlin static analysis (`detekt.yml` configuration)
+- **ktlint**: Kotlin code style enforcement
+- **JaCoCo**: Test coverage reporting
+- **Dependabot**: Automated dependency update PRs (`.github/dependabot.yml`)
 
 ## Related Documentation
 

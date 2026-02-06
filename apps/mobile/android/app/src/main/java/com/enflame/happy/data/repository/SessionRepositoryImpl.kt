@@ -1,6 +1,7 @@
 package com.enflame.happy.data.repository
 
 import com.enflame.happy.data.api.HappyApiService
+import com.enflame.happy.domain.model.Artifact
 import com.enflame.happy.domain.model.Session
 import com.enflame.happy.domain.repository.SessionRepository
 import kotlinx.coroutines.flow.Flow
@@ -50,5 +51,13 @@ class SessionRepositoryImpl @Inject constructor(
 
     override suspend fun unsubscribeFromSession(sessionId: String) {
         // WebSocket unsubscription will be implemented in SyncService
+    }
+
+    override suspend fun getArtifacts(sessionId: String): List<Artifact> {
+        return try {
+            apiService.getArtifacts(sessionId)
+        } catch (e: Exception) {
+            throw e
+        }
     }
 }

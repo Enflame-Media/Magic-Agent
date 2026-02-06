@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App name -->
+    <string name="app_name">Happy</string>
+
+    <!-- Home screen -->
+    <string name="welcome_title">Bienvenido a Happy</string>
+    <string name="welcome_subtitle">Control remoto para Claude Code</string>
+    <string name="scan_qr_code">Escanear c\u00f3digo QR</string>
+    <string name="view_sessions">Ver sesiones</string>
+
+    <!-- Navigation -->
+    <string name="settings">Ajustes</string>
+    <string name="sessions">Sesiones</string>
+    <string name="session_detail">Detalles de la sesi\u00f3n</string>
+
+    <!-- Common actions -->
+    <string name="ok">Aceptar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="retry">Reintentar</string>
+    <string name="close">Cerrar</string>
+
+    <!-- QR Scanner -->
+    <string name="qr_scanner_title">Escanear c\u00f3digo QR</string>
+    <string name="qr_scanner_instruction">Apunta tu c\u00e1mara al c\u00f3digo QR mostrado en Claude Code CLI</string>
+    <string name="qr_scanner_processing">Procesando c\u00f3digo QR\u2026</string>
+    <string name="qr_scanner_permission_title">Se requiere acceso a la c\u00e1mara</string>
+    <string name="qr_scanner_permission_description">Happy necesita acceso a la c\u00e1mara para escanear c\u00f3digos QR de Claude Code CLI para el emparejamiento de dispositivos.</string>
+    <string name="qr_scanner_permission_rationale">El permiso de la c\u00e1mara fue denegado. Happy necesita acceso a la c\u00e1mara para escanear c\u00f3digos QR para el emparejamiento. Por favor, concede el acceso a la c\u00e1mara para continuar.</string>
+    <string name="qr_scanner_grant_permission">Conceder acceso a la c\u00e1mara</string>
+    <string name="qr_scanner_error_title">C\u00f3digo QR inv\u00e1lido</string>
+    <string name="qr_scanner_scan_again">Escanear de nuevo</string>
+
+    <!-- Pairing Confirmation -->
+    <string name="pairing_title">Confirmar vinculaci\u00f3n</string>
+    <string name="pairing_qr_scanned">C\u00f3digo QR escaneado</string>
+    <string name="pairing_confirm_description">Revisa los detalles del dispositivo a continuaci\u00f3n y confirma para establecer una conexi\u00f3n segura.</string>
+    <string name="pairing_device_name">Dispositivo</string>
+    <string name="pairing_public_key">Clave p\u00fablica</string>
+    <string name="pairing_confirm_button">Confirmar vinculaci\u00f3n</string>
+    <string name="pairing_in_progress">Vinculaci\u00f3n en progreso</string>
+    <string name="pairing_in_progress_description">Estableciendo una conexi\u00f3n segura con el dispositivo CLI. Esto puede tardar un momento.</string>
+    <string name="pairing_failed">Vinculaci\u00f3n fallida</string>
+
+    <!-- Error messages -->
+    <string name="error_generic">Algo sali\u00f3 mal</string>
+    <string name="error_network">Error de red. Por favor, comprueba tu conexi\u00f3n.</string>
+    <string name="error_server">Error del servidor. Por favor, int\u00e9ntalo de nuevo m\u00e1s tarde.</string>
+
+    <!-- Session List -->
+    <string name="session_untitled">Sesi\u00f3n sin t\u00edtulo</string>
+    <string name="session_search">Buscar sesiones</string>
+    <string name="session_search_placeholder">Buscar por t\u00edtulo o nombre de m\u00e1quina</string>
+    <string name="session_message_count">%d mensajes</string>
+    <string name="session_no_matching">Sin sesiones coincidentes</string>
+    <string name="session_no_matching_description">Intenta ajustar tu b\u00fasqueda o criterios de filtro</string>
+
+    <!-- Session Status -->
+    <string name="session_status_active">Activa</string>
+    <string name="session_status_idle">Inactiva</string>
+    <string name="session_status_completed">Completada</string>
+    <string name="session_status_disconnected">Desconectada</string>
+    <string name="session_status_unknown">Desconocido</string>
+
+    <!-- Connection Status -->
+    <string name="session_connection_connected">Conectado</string>
+    <string name="session_connection_disconnected">Desconectado</string>
+    <string name="session_connection_reconnecting">Reconectando</string>
+
+    <!-- Session Detail -->
+    <string name="session_detail_back">Atr\u00e1s</string>
+    <string name="session_detail_more_options">M\u00e1s opciones</string>
+    <string name="session_detail_share">Compartir</string>
+    <string name="session_detail_delete">Eliminar</string>
+    <string name="session_detail_delete_title">Eliminar sesi\u00f3n</string>
+    <string name="session_detail_delete_message">\u00bfEst\u00e1s seguro de que quieres eliminar esta sesi\u00f3n? Esta acci\u00f3n no se puede deshacer.</string>
+    <string name="session_detail_machine">M\u00e1quina</string>
+    <string name="session_detail_started">Iniciado</string>
+    <string name="session_detail_updated">\u00daltima actualizaci\u00f3n</string>
+    <string name="session_detail_loading">Cargando sesi\u00f3n\u2026</string>
+    <string name="session_detail_no_messages">Sin mensajes a\u00fan</string>
+    <string name="session_detail_no_messages_description">Los mensajes aparecer\u00e1n aqu\u00ed a medida que avance la sesi\u00f3n.</string>
+    <string name="session_detail_waiting">Esperando actividad\u2026</string>
+    <string name="session_detail_tool_uses">%d uso(s) de herramienta</string>
+    <string name="session_detail_expand">Expandir</string>
+    <string name="session_detail_collapse">Contraer</string>
+    <string name="session_detail_copied">Mensaje copiado al portapapeles</string>
+
+    <!-- Settings screen -->
+    <string name="settings_server_connection">Conexi\u00f3n al servidor</string>
+    <string name="settings_server_url">URL del servidor</string>
+    <string name="settings_checking_connection">Comprobando conexi\u00f3n\u2026</string>
+    <string name="settings_connected">Conectado</string>
+    <string name="settings_not_connected">No conectado</string>
+    <string name="settings_check_connection">Comprobar conexi\u00f3n</string>
+    <string name="settings_notifications">Notificaciones</string>
+    <string name="settings_enable_notifications">Activar notificaciones</string>
+    <string name="settings_notification_sound">Sonido</string>
+    <string name="settings_notification_vibration">Vibraci\u00f3n</string>
+    <string name="settings_notification_permission_required">Se requiere permiso de notificaciones</string>
+    <string name="settings_tap_to_enable">Toca para conceder permiso de notificaciones</string>
+    <string name="settings_system_notification_settings">Ajustes de notificaciones del sistema</string>
+    <string name="settings_theme">Tema</string>
+    <string name="settings_theme_system">Sistema</string>
+    <string name="settings_theme_light">Claro</string>
+    <string name="settings_theme_dark">Oscuro</string>
+    <string name="settings_about">Acerca de</string>
+    <string name="settings_app_version">Versi\u00f3n de la app</string>
+    <string name="settings_licenses">Licencias de c\u00f3digo abierto</string>
+    <string name="settings_copyright">\u00a9 2024\u20132026 Enflame Media. Todos los derechos reservados.</string>
+    <string name="settings_account">Cuenta</string>
+    <string name="settings_logout">Cerrar sesi\u00f3n</string>
+    <string name="settings_logout_title">Cerrar sesi\u00f3n</string>
+    <string name="settings_logout_message">\u00bfEst\u00e1s seguro de que quieres cerrar sesi\u00f3n? Esto borrar\u00e1 todas las credenciales y preferencias almacenadas.</string>
+
+    <!-- Language settings -->
+    <string name="settings_language">Idioma</string>
+    <string name="settings_language_system">Predeterminado del sistema</string>
+    <string name="settings_language_en">English</string>
+    <string name="settings_language_es">Espa\u00f1ol</string>
+    <string name="settings_language_fr">Fran\u00e7ais</string>
+    <string name="settings_language_de">Deutsch</string>
+    <string name="settings_language_ja">\u65e5\u672c\u8a9e</string>
+    <string name="settings_language_zh">\u7b80\u4f53\u4e2d\u6587</string>
+    <string name="settings_language_ko">\ud55c\uad6d\uc5b4</string>
+    <string name="settings_language_changed">Idioma cambiado. Reinicia la app para un efecto completo.</string>
+    <string name="settings_language_current">Actual: %s</string>
+
+    <!-- Voice Settings -->
+    <string name="voice_settings_title">Ajustes de voz</string>
+    <string name="voice_settings_provider">Proveedor</string>
+    <string name="voice_settings_voice">Voz</string>
+    <string name="voice_settings_playback">Reproducci\u00f3n</string>
+    <string name="voice_settings_behavior">Comportamiento</string>
+    <string name="voice_settings_api_key">Clave API</string>
+    <string name="voice_settings_test">Probar</string>
+    <string name="voice_settings_selected">Seleccionado</string>
+    <string name="voice_settings_speed">Velocidad</string>
+    <string name="voice_settings_volume">Volumen</string>
+    <string name="voice_settings_auto_play">Leer autom\u00e1ticamente mensajes nuevos</string>
+    <string name="voice_settings_skip_tool_outputs">Omitir salidas de herramientas</string>
+    <string name="voice_settings_behavior_footer">Cuando la lectura autom\u00e1tica est\u00e1 activada, los nuevos mensajes del asistente se leer\u00e1n en voz alta autom\u00e1ticamente.</string>
+    <string name="voice_settings_system_default">Voz predeterminada del dispositivo</string>
+    <string name="voice_settings_system_description">Usa la voz de texto a voz predeterminada configurada en los ajustes del sistema Android.</string>
+    <string name="voice_settings_api_key_configured">Clave API configurada</string>
+    <string name="voice_settings_api_key_required">Se requiere una clave API de ElevenLabs para voces de IA de alta calidad.</string>
+    <string name="voice_settings_api_key_placeholder">Clave API de ElevenLabs</string>
+    <string name="voice_settings_api_key_footer">Tu clave API se almacena de forma segura en almacenamiento cifrado. Obt\u00e9n una en elevenlabs.io.</string>
+    <string name="voice_settings_add_api_key">Agregar clave API</string>
+    <string name="voice_settings_save_api_key">Guardar clave API</string>
+    <string name="voice_settings_remove_api_key">Eliminar clave API</string>
+    <string name="voice_settings_remove_api_key_confirm">\u00bfEliminar clave API?</string>
+    <string name="voice_settings_remove_api_key_message">Esto eliminar\u00e1 la clave API de ElevenLabs almacenada. Puedes agregar una nueva m\u00e1s tarde.</string>
+    <string name="voice_settings_test_voice">Probar voz</string>
+    <string name="voice_settings_stop">Detener</string>
+    <string name="voice_settings_loading">Cargando audio\u2026</string>
+
+    <!-- Notification channels -->
+    <string name="notification_channel_session_updates">Actualizaciones de sesi\u00f3n</string>
+    <string name="notification_channel_messages">Mensajes</string>
+    <string name="notification_channel_pairing">Solicitudes de vinculaci\u00f3n</string>
+
+    <!-- Paywall screen -->
+    <string name="paywall_title">Planes de suscripci\u00f3n</string>
+    <string name="paywall_headline">Desbloquea la experiencia completa</string>
+    <string name="paywall_subheadline">Obt\u00e9n sesiones ilimitadas, soporte multi-dispositivo y m\u00e1s.</string>
+    <string name="paywall_recommended">Recomendado</string>
+    <string name="paywall_current_plan">Plan actual</string>
+    <string name="paywall_subscribe">Suscribirse</string>
+    <string name="paywall_restore_purchases">Restaurar compras</string>
+    <string name="paywall_auto_renew_notice">Las suscripciones se renuevan autom\u00e1ticamente hasta que se cancelen. Cancela en cualquier momento en Google Play.</string>
+    <string name="paywall_terms">T\u00e9rminos de servicio</string>
+    <string name="paywall_privacy">Pol\u00edtica de privacidad</string>
+    <string name="paywall_purchase_success_title">Compra exitosa</string>
+    <string name="paywall_purchase_success_message">\u00a1Gracias por suscribirte! Ahora tienes acceso completo a todas las funciones.</string>
+    <string name="paywall_restore_success_title">Compras restauradas</string>
+    <string name="paywall_restore_success_message">Tu suscripci\u00f3n se ha restaurado correctamente.</string>
+
+    <!-- Subscription status screen -->
+    <string name="subscription_status_title">Suscripci\u00f3n</string>
+    <string name="subscription_details">Detalles de la suscripci\u00f3n</string>
+    <string name="subscription_billing_period">Per\u00edodo de facturaci\u00f3n</string>
+    <string name="subscription_purchase_date">Fecha de compra</string>
+    <string name="subscription_renewal_date">Fecha de renovaci\u00f3n</string>
+    <string name="subscription_days_remaining">D\u00edas restantes</string>
+    <string name="subscription_auto_renew">Renovaci\u00f3n autom\u00e1tica</string>
+    <string name="subscription_enabled">Activado</string>
+    <string name="subscription_disabled">Desactivado</string>
+    <string name="subscription_actions">Acciones</string>
+    <string name="subscription_upgrade">Mejorar plan</string>
+    <string name="subscription_restore">Restaurar compras</string>
+    <string name="subscription_manage">Gestionar suscripci\u00f3n</string>
+    <string name="subscription_manage_footer">Abre Google Play para gestionar tu suscripci\u00f3n, cambiar de plan o cancelar.</string>
+    <string name="subscription_refresh">Actualizar</string>
+    <string name="subscription_expired_notice">Suscripci\u00f3n expirada</string>
+    <string name="subscription_expired_description">Tu suscripci\u00f3n ha expirado. Renueva para recuperar el acceso a las funciones premium.</string>
+    <string name="subscription_renew">Renovar suscripci\u00f3n</string>
+
+    <!-- Subscription status badges -->
+    <string name="subscription_active">Activa</string>
+    <string name="subscription_expired">Expirada</string>
+    <string name="subscription_revoked">Revocada</string>
+    <string name="subscription_free">Gratuita</string>
+    <string name="subscription_error">Error</string>
+    <string name="subscription_grace_period">Per\u00edodo de gracia</string>
+
+    <!-- Artifacts -->
+    <string name="artifacts_title">Artefactos</string>
+    <string name="artifacts_search">Buscar artefactos</string>
+    <string name="artifacts_search_placeholder">Buscar por t\u00edtulo o nombre de archivo</string>
+    <string name="artifacts_loading">Cargando artefactos\u2026</string>
+    <string name="artifacts_empty">Sin artefactos</string>
+    <string name="artifacts_empty_description">Los artefactos aparecer\u00e1n aqu\u00ed cuando Claude Code cree archivos durante la sesi\u00f3n.</string>
+    <string name="artifacts_no_matching">Sin artefactos coincidentes</string>
+    <string name="artifacts_no_matching_description">Intenta ajustar tu b\u00fasqueda o criterios de filtro</string>
+    <string name="artifacts_line_count">%d l\u00edneas</string>
+    <string name="artifacts_copy">Copiar al portapapeles</string>
+    <string name="artifacts_share">Compartir</string>
+    <string name="artifacts_toggle_line_numbers">Mostrar/ocultar n\u00fameros de l\u00ednea</string>
+    <string name="artifacts_image_not_supported">La vista previa de im\u00e1genes a\u00fan no est\u00e1 disponible</string>
+    <string name="artifacts_view_artifacts">Ver artefactos</string>
+
+    <!-- Empty states -->
+    <string name="no_sessions">Sin sesiones a\u00fan</string>
+    <string name="no_sessions_description">Escanea un c\u00f3digo QR de Claude Code CLI para comenzar</string>
+</resources>

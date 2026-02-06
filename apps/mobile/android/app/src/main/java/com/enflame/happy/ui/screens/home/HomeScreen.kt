@@ -40,6 +40,7 @@ import com.enflame.happy.ui.theme.HappyTheme
 @Composable
 fun HomeScreen(
     onNavigateToSessions: () -> Unit = {},
+    onNavigateToFriends: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
     onNavigateToQrScanner: () -> Unit = {}
 ) {
@@ -105,6 +106,14 @@ fun HomeScreen(
                 onClick = onNavigateToSessions
             ) {
                 Text(stringResource(R.string.view_sessions))
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            FilledTonalButton(
+                onClick = onNavigateToFriends
+            ) {
+                Text(stringResource(R.string.friends_view_friends))
             }
         }
     }

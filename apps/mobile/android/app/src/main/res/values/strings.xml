@@ -38,11 +38,238 @@
     <string name="pairing_device_name">Device</string>
     <string name="pairing_public_key">Public Key</string>
     <string name="pairing_confirm_button">Confirm Pairing</string>
+    <string name="pairing_in_progress">Pairing in Progress</string>
+    <string name="pairing_in_progress_description">Establishing a secure connection with the CLI device. This may take a moment.</string>
+    <string name="pairing_failed">Pairing Failed</string>
 
     <!-- Error messages -->
     <string name="error_generic">Something went wrong</string>
     <string name="error_network">Network error. Please check your connection.</string>
     <string name="error_server">Server error. Please try again later.</string>
+
+    <!-- Session List -->
+    <string name="session_untitled">Untitled Session</string>
+    <string name="session_search">Search sessions</string>
+    <string name="session_search_placeholder">Search by title or machine name</string>
+    <string name="session_message_count">%d messages</string>
+    <string name="session_no_matching">No matching sessions</string>
+    <string name="session_no_matching_description">Try adjusting your search or filter criteria</string>
+
+    <!-- Session Status -->
+    <string name="session_status_active">Active</string>
+    <string name="session_status_idle">Idle</string>
+    <string name="session_status_completed">Completed</string>
+    <string name="session_status_disconnected">Disconnected</string>
+    <string name="session_status_unknown">Unknown</string>
+
+    <!-- Connection Status -->
+    <string name="session_connection_connected">Connected</string>
+    <string name="session_connection_disconnected">Disconnected</string>
+    <string name="session_connection_reconnecting">Reconnecting</string>
+
+    <!-- Session Detail -->
+    <string name="session_detail_back">Back</string>
+    <string name="session_detail_more_options">More options</string>
+    <string name="session_detail_share">Share</string>
+    <string name="session_detail_delete">Delete</string>
+    <string name="session_detail_delete_title">Delete Session</string>
+    <string name="session_detail_delete_message">Are you sure you want to delete this session? This action cannot be undone.</string>
+    <string name="session_detail_machine">Machine</string>
+    <string name="session_detail_started">Started</string>
+    <string name="session_detail_updated">Last Updated</string>
+    <string name="session_detail_loading">Loading session…</string>
+    <string name="session_detail_no_messages">No Messages Yet</string>
+    <string name="session_detail_no_messages_description">Messages will appear here as the session progresses.</string>
+    <string name="session_detail_waiting">Waiting for activity…</string>
+    <string name="session_detail_tool_uses">%d tool use(s)</string>
+    <string name="session_detail_expand">Expand</string>
+    <string name="session_detail_collapse">Collapse</string>
+    <string name="session_detail_copied">Message copied to clipboard</string>
+
+    <!-- Settings screen -->
+    <string name="settings_server_connection">Server Connection</string>
+    <string name="settings_server_url">Server URL</string>
+    <string name="settings_checking_connection">Checking connection\u2026</string>
+    <string name="settings_connected">Connected</string>
+    <string name="settings_not_connected">Not connected</string>
+    <string name="settings_check_connection">Check connection</string>
+    <string name="settings_notifications">Notifications</string>
+    <string name="settings_enable_notifications">Enable notifications</string>
+    <string name="settings_notification_sound">Sound</string>
+    <string name="settings_notification_vibration">Vibration</string>
+    <string name="settings_notification_permission_required">Notification permission required</string>
+    <string name="settings_tap_to_enable">Tap to grant notification permission</string>
+    <string name="settings_system_notification_settings">System notification settings</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_theme_system">System</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
+    <string name="settings_about">About</string>
+    <string name="settings_app_version">App version</string>
+    <string name="settings_licenses">Open source licenses</string>
+    <string name="settings_copyright">\u00a9 2024\u20132026 Enflame Media. All rights reserved.</string>
+    <string name="settings_account">Account</string>
+    <string name="settings_logout">Log out</string>
+    <string name="settings_logout_title">Log Out</string>
+    <string name="settings_logout_message">Are you sure you want to log out? This will clear all stored credentials and preferences.</string>
+
+    <!-- Notification channels -->
+    <string name="notification_channel_session_updates">Session Updates</string>
+    <string name="notification_channel_messages">Messages</string>
+    <string name="notification_channel_pairing">Pairing Requests</string>
+
+    <!-- Language settings -->
+    <string name="settings_language">Language</string>
+    <string name="settings_language_system">System Default</string>
+    <string name="settings_language_en">English</string>
+    <string name="settings_language_es">Espa\u00f1ol</string>
+    <string name="settings_language_fr">Fran\u00e7ais</string>
+    <string name="settings_language_de">Deutsch</string>
+    <string name="settings_language_ja">\u65e5\u672c\u8a9e</string>
+    <string name="settings_language_zh">\u7b80\u4f53\u4e2d\u6587</string>
+    <string name="settings_language_ko">\ud55c\uad6d\uc5b4</string>
+    <string name="settings_language_changed">Language changed. Restart the app for full effect.</string>
+    <string name="settings_language_current">Current: %s</string>
+
+    <!-- Voice Settings -->
+    <string name="voice_settings_title">Voice Settings</string>
+    <string name="voice_settings_provider">Provider</string>
+    <string name="voice_settings_voice">Voice</string>
+    <string name="voice_settings_playback">Playback</string>
+    <string name="voice_settings_behavior">Behavior</string>
+    <string name="voice_settings_api_key">API Key</string>
+    <string name="voice_settings_test">Test</string>
+    <string name="voice_settings_selected">Selected</string>
+    <string name="voice_settings_speed">Speed</string>
+    <string name="voice_settings_volume">Volume</string>
+    <string name="voice_settings_auto_play">Auto-read new messages</string>
+    <string name="voice_settings_skip_tool_outputs">Skip tool outputs</string>
+    <string name="voice_settings_behavior_footer">When auto-read is enabled, new assistant messages will be read aloud automatically.</string>
+    <string name="voice_settings_system_default">Device default voice</string>
+    <string name="voice_settings_system_description">Uses the default text-to-speech voice configured in your Android system settings.</string>
+    <string name="voice_settings_api_key_configured">API key configured</string>
+    <string name="voice_settings_api_key_required">An ElevenLabs API key is required for high-quality AI voices.</string>
+    <string name="voice_settings_api_key_placeholder">ElevenLabs API key</string>
+    <string name="voice_settings_api_key_footer">Your API key is stored securely in encrypted storage. Get one at elevenlabs.io.</string>
+    <string name="voice_settings_add_api_key">Add API Key</string>
+    <string name="voice_settings_save_api_key">Save API Key</string>
+    <string name="voice_settings_remove_api_key">Remove API Key</string>
+    <string name="voice_settings_remove_api_key_confirm">Remove API Key?</string>
+    <string name="voice_settings_remove_api_key_message">This will remove the stored ElevenLabs API key. You can add a new one later.</string>
+    <string name="voice_settings_test_voice">Test Voice</string>
+    <string name="voice_settings_stop">Stop</string>
+    <string name="voice_settings_loading">Loading audio\u2026</string>
+
+    <!-- Paywall screen -->
+    <string name="paywall_title">Subscription Plans</string>
+    <string name="paywall_headline">Unlock the Full Experience</string>
+    <string name="paywall_subheadline">Get unlimited sessions, multi-device support, and more.</string>
+    <string name="paywall_recommended">Recommended</string>
+    <string name="paywall_current_plan">Current Plan</string>
+    <string name="paywall_subscribe">Subscribe</string>
+    <string name="paywall_restore_purchases">Restore Purchases</string>
+    <string name="paywall_auto_renew_notice">Subscriptions auto-renew until cancelled. Cancel anytime in Google Play.</string>
+    <string name="paywall_terms">Terms of Service</string>
+    <string name="paywall_privacy">Privacy Policy</string>
+    <string name="paywall_purchase_success_title">Purchase Successful</string>
+    <string name="paywall_purchase_success_message">Thank you for subscribing! You now have full access to all features.</string>
+    <string name="paywall_restore_success_title">Purchases Restored</string>
+    <string name="paywall_restore_success_message">Your subscription has been restored successfully.</string>
+
+    <!-- Subscription status screen -->
+    <string name="subscription_status_title">Subscription</string>
+    <string name="subscription_details">Subscription Details</string>
+    <string name="subscription_billing_period">Billing Period</string>
+    <string name="subscription_purchase_date">Purchase Date</string>
+    <string name="subscription_renewal_date">Renewal Date</string>
+    <string name="subscription_days_remaining">Days Remaining</string>
+    <string name="subscription_auto_renew">Auto-Renew</string>
+    <string name="subscription_enabled">Enabled</string>
+    <string name="subscription_disabled">Disabled</string>
+    <string name="subscription_actions">Actions</string>
+    <string name="subscription_upgrade">Upgrade Plan</string>
+    <string name="subscription_restore">Restore Purchases</string>
+    <string name="subscription_manage">Manage Subscription</string>
+    <string name="subscription_manage_footer">Opens Google Play to manage your subscription, change plan, or cancel.</string>
+    <string name="subscription_refresh">Refresh</string>
+    <string name="subscription_expired_notice">Subscription Expired</string>
+    <string name="subscription_expired_description">Your subscription has expired. Renew to regain access to premium features.</string>
+    <string name="subscription_renew">Renew Subscription</string>
+
+    <!-- Subscription status badges -->
+    <string name="subscription_active">Active</string>
+    <string name="subscription_expired">Expired</string>
+    <string name="subscription_revoked">Revoked</string>
+    <string name="subscription_free">Free</string>
+    <string name="subscription_error">Error</string>
+    <string name="subscription_grace_period">Grace Period</string>
+
+    <!-- Artifacts -->
+    <string name="artifacts_title">Artifacts</string>
+    <string name="artifacts_search">Search artifacts</string>
+    <string name="artifacts_search_placeholder">Search by title or filename</string>
+    <string name="artifacts_loading">Loading artifacts\u2026</string>
+    <string name="artifacts_empty">No Artifacts</string>
+    <string name="artifacts_empty_description">Artifacts will appear here as Claude Code creates files during the session.</string>
+    <string name="artifacts_no_matching">No matching artifacts</string>
+    <string name="artifacts_no_matching_description">Try adjusting your search or filter criteria</string>
+    <string name="artifacts_line_count">%d lines</string>
+    <string name="artifacts_copy">Copy to clipboard</string>
+    <string name="artifacts_share">Share</string>
+    <string name="artifacts_toggle_line_numbers">Toggle line numbers</string>
+    <string name="artifacts_image_not_supported">Image preview is not yet supported</string>
+    <string name="artifacts_view_artifacts">View Artifacts</string>
+
+    <!-- Friends & Social -->
+    <string name="friends_title">Friends</string>
+    <string name="friends_search">Search friends</string>
+    <string name="friends_search_placeholder">Search by name or username</string>
+    <string name="friends_add_friend">Add Friend</string>
+    <string name="friends_online_count">%d online</string>
+    <string name="friends_no_friends">No Friends Yet</string>
+    <string name="friends_no_friends_description">Add friends to see their online status and share Claude Code sessions.</string>
+    <string name="friends_no_matching">No matching friends</string>
+    <string name="friends_no_matching_description">Try adjusting your search or filter criteria</string>
+    <string name="friends_view_friends">View Friends</string>
+
+    <!-- Friend Status -->
+    <string name="friends_status_online">Online</string>
+    <string name="friends_status_away">Away</string>
+    <string name="friends_status_in_session">In Session</string>
+    <string name="friends_status_offline">Offline</string>
+    <string name="friends_last_seen_prefix">- last seen</string>
+    <string name="friends_last_seen_time">Last seen %s</string>
+    <string name="friends_currently_in_session">Currently in a Claude Code session</string>
+
+    <!-- Add Friend -->
+    <string name="friends_tab_username">Username</string>
+    <string name="friends_tab_qr_code">QR Code</string>
+    <string name="friends_tab_requests">Requests</string>
+    <string name="friends_username_instructions">Enter a username to send a friend request. They will need to accept before you become friends.</string>
+    <string name="friends_username_label">Username</string>
+    <string name="friends_username_placeholder">Enter username</string>
+    <string name="friends_message_label">Message (optional)</string>
+    <string name="friends_message_placeholder">Add a personal message</string>
+    <string name="friends_send_request">Send Request</string>
+    <string name="friends_qr_instructions">Scan a friend\'s QR code to quickly send them a friend request.</string>
+    <string name="friends_scan_qr_code">Scan QR Code</string>
+
+    <!-- Friend Requests -->
+    <string name="friends_no_pending_requests">No Pending Requests</string>
+    <string name="friends_no_pending_requests_description">Friend requests you send or receive will appear here.</string>
+    <string name="friends_accept">Accept</string>
+    <string name="friends_decline">Decline</string>
+
+    <!-- Friend Profile -->
+    <string name="friends_statistics">Statistics</string>
+    <string name="friends_shared_sessions">Shared Sessions</string>
+    <string name="friends_friends_since">Friends Since</string>
+    <string name="friends_actions">Actions</string>
+    <string name="friends_share_session">Share Session</string>
+    <string name="friends_view_shared_sessions">View Shared Sessions</string>
+    <string name="friends_remove_friend">Remove Friend</string>
+    <string name="friends_remove_confirm_title">Remove Friend?</string>
+    <string name="friends_remove_confirm_message">Are you sure you want to remove %s from your friends? You will no longer see each other\'s online status.</string>
 
     <!-- Empty states -->
     <string name="no_sessions">No sessions yet</string>

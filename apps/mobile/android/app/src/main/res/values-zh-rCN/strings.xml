@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App name -->
+    <string name="app_name">Happy</string>
+
+    <!-- Home screen -->
+    <string name="welcome_title">\u6b22\u8fce\u4f7f\u7528 Happy</string>
+    <string name="welcome_subtitle">Claude Code \u8fdc\u7a0b\u63a7\u5236</string>
+    <string name="scan_qr_code">\u626b\u63cf\u4e8c\u7ef4\u7801</string>
+    <string name="view_sessions">\u67e5\u770b\u4f1a\u8bdd</string>
+
+    <!-- Navigation -->
+    <string name="settings">\u8bbe\u7f6e</string>
+    <string name="sessions">\u4f1a\u8bdd</string>
+    <string name="session_detail">\u4f1a\u8bdd\u8be6\u60c5</string>
+
+    <!-- Common actions -->
+    <string name="ok">\u786e\u5b9a</string>
+    <string name="cancel">\u53d6\u6d88</string>
+    <string name="retry">\u91cd\u8bd5</string>
+    <string name="close">\u5173\u95ed</string>
+
+    <!-- QR Scanner -->
+    <string name="qr_scanner_title">\u626b\u63cf\u4e8c\u7ef4\u7801</string>
+    <string name="qr_scanner_instruction">\u5c06\u76f8\u673a\u5bf9\u51c6 Claude Code CLI \u4e2d\u663e\u793a\u7684\u4e8c\u7ef4\u7801</string>
+    <string name="qr_scanner_processing">\u6b63\u5728\u5904\u7406\u4e8c\u7ef4\u7801\u2026</string>
+    <string name="qr_scanner_permission_title">\u9700\u8981\u76f8\u673a\u6743\u9650</string>
+    <string name="qr_scanner_permission_description">Happy \u9700\u8981\u76f8\u673a\u6743\u9650\u6765\u626b\u63cf Claude Code CLI \u7684\u4e8c\u7ef4\u7801\u4ee5\u8fdb\u884c\u8bbe\u5907\u914d\u5bf9\u3002</string>
+    <string name="qr_scanner_permission_rationale">\u76f8\u673a\u6743\u9650\u5df2\u88ab\u62d2\u7edd\u3002Happy \u9700\u8981\u76f8\u673a\u6743\u9650\u6765\u626b\u63cf\u4e8c\u7ef4\u7801\u8fdb\u884c\u914d\u5bf9\u3002\u8bf7\u6388\u4e88\u76f8\u673a\u6743\u9650\u4ee5\u7ee7\u7eed\u3002</string>
+    <string name="qr_scanner_grant_permission">\u6388\u4e88\u76f8\u673a\u6743\u9650</string>
+    <string name="qr_scanner_error_title">\u65e0\u6548\u7684\u4e8c\u7ef4\u7801</string>
+    <string name="qr_scanner_scan_again">\u91cd\u65b0\u626b\u63cf</string>
+
+    <!-- Pairing Confirmation -->
+    <string name="pairing_title">\u786e\u8ba4\u914d\u5bf9</string>
+    <string name="pairing_qr_scanned">\u4e8c\u7ef4\u7801\u5df2\u626b\u63cf</string>
+    <string name="pairing_confirm_description">\u8bf7\u67e5\u770b\u4ee5\u4e0b\u8bbe\u5907\u8be6\u60c5\u5e76\u786e\u8ba4\u4ee5\u5efa\u7acb\u5b89\u5168\u8fde\u63a5\u3002</string>
+    <string name="pairing_device_name">\u8bbe\u5907</string>
+    <string name="pairing_public_key">\u516c\u94a5</string>
+    <string name="pairing_confirm_button">\u786e\u8ba4\u914d\u5bf9</string>
+    <string name="pairing_in_progress">\u914d\u5bf9\u4e2d</string>
+    <string name="pairing_in_progress_description">\u6b63\u5728\u4e0e CLI \u8bbe\u5907\u5efa\u7acb\u5b89\u5168\u8fde\u63a5\u3002\u8fd9\u53ef\u80fd\u9700\u8981\u4e00\u70b9\u65f6\u95f4\u3002</string>
+    <string name="pairing_failed">\u914d\u5bf9\u5931\u8d25</string>
+
+    <!-- Error messages -->
+    <string name="error_generic">\u51fa\u4e86\u70b9\u95ee\u9898</string>
+    <string name="error_network">\u7f51\u7edc\u9519\u8bef\u3002\u8bf7\u68c0\u67e5\u60a8\u7684\u8fde\u63a5\u3002</string>
+    <string name="error_server">\u670d\u52a1\u5668\u9519\u8bef\u3002\u8bf7\u7a0d\u540e\u91cd\u8bd5\u3002</string>
+
+    <!-- Session List -->
+    <string name="session_untitled">\u672a\u547d\u540d\u4f1a\u8bdd</string>
+    <string name="session_search">\u641c\u7d22\u4f1a\u8bdd</string>
+    <string name="session_search_placeholder">\u6309\u6807\u9898\u6216\u8bbe\u5907\u540d\u641c\u7d22</string>
+    <string name="session_message_count">%d \u6761\u6d88\u606f</string>
+    <string name="session_no_matching">\u6ca1\u6709\u5339\u914d\u7684\u4f1a\u8bdd</string>
+    <string name="session_no_matching_description">\u8bf7\u5c1d\u8bd5\u8c03\u6574\u641c\u7d22\u6761\u4ef6\u6216\u7b5b\u9009\u5668</string>
+
+    <!-- Session Status -->
+    <string name="session_status_active">\u6d3b\u8dc3</string>
+    <string name="session_status_idle">\u7a7a\u95f2</string>
+    <string name="session_status_completed">\u5df2\u5b8c\u6210</string>
+    <string name="session_status_disconnected">\u5df2\u65ad\u5f00</string>
+    <string name="session_status_unknown">\u672a\u77e5</string>
+
+    <!-- Connection Status -->
+    <string name="session_connection_connected">\u5df2\u8fde\u63a5</string>
+    <string name="session_connection_disconnected">\u5df2\u65ad\u5f00</string>
+    <string name="session_connection_reconnecting">\u91cd\u65b0\u8fde\u63a5\u4e2d</string>
+
+    <!-- Session Detail -->
+    <string name="session_detail_back">\u8fd4\u56de</string>
+    <string name="session_detail_more_options">\u66f4\u591a\u9009\u9879</string>
+    <string name="session_detail_share">\u5206\u4eab</string>
+    <string name="session_detail_delete">\u5220\u9664</string>
+    <string name="session_detail_delete_title">\u5220\u9664\u4f1a\u8bdd</string>
+    <string name="session_detail_delete_message">\u60a8\u786e\u5b9a\u8981\u5220\u9664\u6b64\u4f1a\u8bdd\u5417\uff1f\u6b64\u64cd\u4f5c\u65e0\u6cd5\u64a4\u6d88\u3002</string>
+    <string name="session_detail_machine">\u8bbe\u5907</string>
+    <string name="session_detail_started">\u5f00\u59cb\u65f6\u95f4</string>
+    <string name="session_detail_updated">\u6700\u540e\u66f4\u65b0</string>
+    <string name="session_detail_loading">\u6b63\u5728\u52a0\u8f7d\u4f1a\u8bdd\u2026</string>
+    <string name="session_detail_no_messages">\u6682\u65e0\u6d88\u606f</string>
+    <string name="session_detail_no_messages_description">\u4f1a\u8bdd\u8fdb\u884c\u65f6\uff0c\u6d88\u606f\u5c06\u663e\u793a\u5728\u8fd9\u91cc\u3002</string>
+    <string name="session_detail_waiting">\u7b49\u5f85\u6d3b\u52a8\u2026</string>
+    <string name="session_detail_tool_uses">%d \u6b21\u5de5\u5177\u4f7f\u7528</string>
+    <string name="session_detail_expand">\u5c55\u5f00</string>
+    <string name="session_detail_collapse">\u6536\u8d77</string>
+    <string name="session_detail_copied">\u6d88\u606f\u5df2\u590d\u5236\u5230\u526a\u8d34\u677f</string>
+
+    <!-- Settings screen -->
+    <string name="settings_server_connection">\u670d\u52a1\u5668\u8fde\u63a5</string>
+    <string name="settings_server_url">\u670d\u52a1\u5668 URL</string>
+    <string name="settings_checking_connection">\u6b63\u5728\u68c0\u67e5\u8fde\u63a5\u2026</string>
+    <string name="settings_connected">\u5df2\u8fde\u63a5</string>
+    <string name="settings_not_connected">\u672a\u8fde\u63a5</string>
+    <string name="settings_check_connection">\u68c0\u67e5\u8fde\u63a5</string>
+    <string name="settings_notifications">\u901a\u77e5</string>
+    <string name="settings_enable_notifications">\u542f\u7528\u901a\u77e5</string>
+    <string name="settings_notification_sound">\u58f0\u97f3</string>
+    <string name="settings_notification_vibration">\u632f\u52a8</string>
+    <string name="settings_notification_permission_required">\u9700\u8981\u901a\u77e5\u6743\u9650</string>
+    <string name="settings_tap_to_enable">\u70b9\u51fb\u6388\u4e88\u901a\u77e5\u6743\u9650</string>
+    <string name="settings_system_notification_settings">\u7cfb\u7edf\u901a\u77e5\u8bbe\u7f6e</string>
+    <string name="settings_theme">\u4e3b\u9898</string>
+    <string name="settings_theme_system">\u7cfb\u7edf</string>
+    <string name="settings_theme_light">\u6d45\u8272</string>
+    <string name="settings_theme_dark">\u6df1\u8272</string>
+    <string name="settings_about">\u5173\u4e8e</string>
+    <string name="settings_app_version">\u5e94\u7528\u7248\u672c</string>
+    <string name="settings_licenses">\u5f00\u6e90\u8bb8\u53ef\u8bc1</string>
+    <string name="settings_copyright">\u00a9 2024\u20132026 Enflame Media. \u4fdd\u7559\u6240\u6709\u6743\u5229\u3002</string>
+    <string name="settings_account">\u8d26\u6237</string>
+    <string name="settings_logout">\u9000\u51fa\u767b\u5f55</string>
+    <string name="settings_logout_title">\u9000\u51fa\u767b\u5f55</string>
+    <string name="settings_logout_message">\u60a8\u786e\u5b9a\u8981\u9000\u51fa\u767b\u5f55\u5417\uff1f\u8fd9\u5c06\u6e05\u9664\u6240\u6709\u5b58\u50a8\u7684\u51ed\u636e\u548c\u504f\u597d\u8bbe\u7f6e\u3002</string>
+
+    <!-- Language settings -->
+    <string name="settings_language">\u8bed\u8a00</string>
+    <string name="settings_language_system">\u7cfb\u7edf\u9ed8\u8ba4</string>
+    <string name="settings_language_en">English</string>
+    <string name="settings_language_es">Espa\u00f1ol</string>
+    <string name="settings_language_fr">Fran\u00e7ais</string>
+    <string name="settings_language_de">Deutsch</string>
+    <string name="settings_language_ja">\u65e5\u672c\u8a9e</string>
+    <string name="settings_language_zh">\u7b80\u4f53\u4e2d\u6587</string>
+    <string name="settings_language_ko">\ud55c\uad6d\uc5b4</string>
+    <string name="settings_language_changed">\u8bed\u8a00\u5df2\u66f4\u6539\u3002\u91cd\u65b0\u542f\u52a8\u5e94\u7528\u4ee5\u5b8c\u5168\u751f\u6548\u3002</string>
+    <string name="settings_language_current">\u5f53\u524d: %s</string>
+
+    <!-- Voice Settings -->
+    <string name="voice_settings_title">\u8bed\u97f3\u8bbe\u7f6e</string>
+    <string name="voice_settings_provider">\u63d0\u4f9b\u5546</string>
+    <string name="voice_settings_voice">\u8bed\u97f3</string>
+    <string name="voice_settings_playback">\u64ad\u653e</string>
+    <string name="voice_settings_behavior">\u884c\u4e3a</string>
+    <string name="voice_settings_api_key">API \u5bc6\u94a5</string>
+    <string name="voice_settings_test">\u6d4b\u8bd5</string>
+    <string name="voice_settings_selected">\u5df2\u9009\u62e9</string>
+    <string name="voice_settings_speed">\u901f\u5ea6</string>
+    <string name="voice_settings_volume">\u97f3\u91cf</string>
+    <string name="voice_settings_auto_play">\u81ea\u52a8\u6717\u8bfb\u65b0\u6d88\u606f</string>
+    <string name="voice_settings_skip_tool_outputs">\u8df3\u8fc7\u5de5\u5177\u8f93\u51fa</string>
+    <string name="voice_settings_behavior_footer">\u542f\u7528\u81ea\u52a8\u6717\u8bfb\u540e\uff0c\u65b0\u7684\u52a9\u624b\u6d88\u606f\u5c06\u81ea\u52a8\u6717\u8bfb\u3002</string>
+    <string name="voice_settings_system_default">\u8bbe\u5907\u9ed8\u8ba4\u8bed\u97f3</string>
+    <string name="voice_settings_system_description">\u4f7f\u7528\u5728 Android \u7cfb\u7edf\u8bbe\u7f6e\u4e2d\u914d\u7f6e\u7684\u9ed8\u8ba4\u6587\u5b57\u8f6c\u8bed\u97f3\u8bed\u97f3\u3002</string>
+    <string name="voice_settings_api_key_configured">API \u5bc6\u94a5\u5df2\u914d\u7f6e</string>
+    <string name="voice_settings_api_key_required">\u9ad8\u8d28\u91cf AI \u8bed\u97f3\u9700\u8981 ElevenLabs API \u5bc6\u94a5\u3002</string>
+    <string name="voice_settings_api_key_placeholder">ElevenLabs API \u5bc6\u94a5</string>
+    <string name="voice_settings_api_key_footer">\u60a8\u7684 API \u5bc6\u94a5\u5b89\u5168\u5b58\u50a8\u5728\u52a0\u5bc6\u5b58\u50a8\u4e2d\u3002\u8bf7\u5728 elevenlabs.io \u83b7\u53d6\u3002</string>
+    <string name="voice_settings_add_api_key">\u6dfb\u52a0 API \u5bc6\u94a5</string>
+    <string name="voice_settings_save_api_key">\u4fdd\u5b58 API \u5bc6\u94a5</string>
+    <string name="voice_settings_remove_api_key">\u5220\u9664 API \u5bc6\u94a5</string>
+    <string name="voice_settings_remove_api_key_confirm">\u5220\u9664 API \u5bc6\u94a5\uff1f</string>
+    <string name="voice_settings_remove_api_key_message">\u8fd9\u5c06\u5220\u9664\u5b58\u50a8\u7684 ElevenLabs API \u5bc6\u94a5\u3002\u60a8\u53ef\u4ee5\u7a0d\u540e\u6dfb\u52a0\u65b0\u7684\u5bc6\u94a5\u3002</string>
+    <string name="voice_settings_test_voice">\u6d4b\u8bd5\u8bed\u97f3</string>
+    <string name="voice_settings_stop">\u505c\u6b62</string>
+    <string name="voice_settings_loading">\u6b63\u5728\u52a0\u8f7d\u97f3\u9891\u2026</string>
+
+    <!-- Notification channels -->
+    <string name="notification_channel_session_updates">\u4f1a\u8bdd\u66f4\u65b0</string>
+    <string name="notification_channel_messages">\u6d88\u606f</string>
+    <string name="notification_channel_pairing">\u914d\u5bf9\u8bf7\u6c42</string>
+
+    <!-- Paywall screen -->
+    <string name="paywall_title">\u8ba2\u9605\u65b9\u6848</string>
+    <string name="paywall_headline">\u89e3\u9501\u5b8c\u6574\u4f53\u9a8c</string>
+    <string name="paywall_subheadline">\u83b7\u53d6\u65e0\u9650\u4f1a\u8bdd\u3001\u591a\u8bbe\u5907\u652f\u6301\u7b49\u66f4\u591a\u529f\u80fd\u3002</string>
+    <string name="paywall_recommended">\u63a8\u8350</string>
+    <string name="paywall_current_plan">\u5f53\u524d\u65b9\u6848</string>
+    <string name="paywall_subscribe">\u8ba2\u9605</string>
+    <string name="paywall_restore_purchases">\u6062\u590d\u8d2d\u4e70</string>
+    <string name="paywall_auto_renew_notice">\u8ba2\u9605\u5c06\u81ea\u52a8\u7eed\u8d39\uff0c\u76f4\u5230\u53d6\u6d88\u3002\u53ef\u968f\u65f6\u5728 Google Play \u4e2d\u53d6\u6d88\u3002</string>
+    <string name="paywall_terms">\u670d\u52a1\u6761\u6b3e</string>
+    <string name="paywall_privacy">\u9690\u79c1\u653f\u7b56</string>
+    <string name="paywall_purchase_success_title">\u8d2d\u4e70\u6210\u529f</string>
+    <string name="paywall_purchase_success_message">\u611f\u8c22\u60a8\u7684\u8ba2\u9605\uff01\u60a8\u73b0\u5728\u53ef\u4ee5\u5b8c\u5168\u8bbf\u95ee\u6240\u6709\u529f\u80fd\u3002</string>
+    <string name="paywall_restore_success_title">\u8d2d\u4e70\u5df2\u6062\u590d</string>
+    <string name="paywall_restore_success_message">\u60a8\u7684\u8ba2\u9605\u5df2\u6210\u529f\u6062\u590d\u3002</string>
+
+    <!-- Subscription status screen -->
+    <string name="subscription_status_title">\u8ba2\u9605</string>
+    <string name="subscription_details">\u8ba2\u9605\u8be6\u60c5</string>
+    <string name="subscription_billing_period">\u8ba1\u8d39\u5468\u671f</string>
+    <string name="subscription_purchase_date">\u8d2d\u4e70\u65e5\u671f</string>
+    <string name="subscription_renewal_date">\u7eed\u8d39\u65e5\u671f</string>
+    <string name="subscription_days_remaining">\u5269\u4f59\u5929\u6570</string>
+    <string name="subscription_auto_renew">\u81ea\u52a8\u7eed\u8d39</string>
+    <string name="subscription_enabled">\u5df2\u542f\u7528</string>
+    <string name="subscription_disabled">\u5df2\u7981\u7528</string>
+    <string name="subscription_actions">\u64cd\u4f5c</string>
+    <string name="subscription_upgrade">\u5347\u7ea7\u65b9\u6848</string>
+    <string name="subscription_restore">\u6062\u590d\u8d2d\u4e70</string>
+    <string name="subscription_manage">\u7ba1\u7406\u8ba2\u9605</string>
+    <string name="subscription_manage_footer">\u6253\u5f00 Google Play \u7ba1\u7406\u60a8\u7684\u8ba2\u9605\u3001\u66f4\u6362\u65b9\u6848\u6216\u53d6\u6d88\u3002</string>
+    <string name="subscription_refresh">\u5237\u65b0</string>
+    <string name="subscription_expired_notice">\u8ba2\u9605\u5df2\u8fc7\u671f</string>
+    <string name="subscription_expired_description">\u60a8\u7684\u8ba2\u9605\u5df2\u8fc7\u671f\u3002\u7eed\u8d39\u4ee5\u6062\u590d\u9ad8\u7ea7\u529f\u80fd\u7684\u8bbf\u95ee\u6743\u9650\u3002</string>
+    <string name="subscription_renew">\u7eed\u8d39\u8ba2\u9605</string>
+
+    <!-- Subscription status badges -->
+    <string name="subscription_active">\u6d3b\u8dc3</string>
+    <string name="subscription_expired">\u5df2\u8fc7\u671f</string>
+    <string name="subscription_revoked">\u5df2\u64a4\u9500</string>
+    <string name="subscription_free">\u514d\u8d39</string>
+    <string name="subscription_error">\u9519\u8bef</string>
+    <string name="subscription_grace_period">\u5bbd\u9650\u671f</string>
+
+    <!-- Artifacts -->
+    <string name="artifacts_title">\u5de5\u4ef6</string>
+    <string name="artifacts_search">\u641c\u7d22\u5de5\u4ef6</string>
+    <string name="artifacts_search_placeholder">\u6309\u6807\u9898\u6216\u6587\u4ef6\u540d\u641c\u7d22</string>
+    <string name="artifacts_loading">\u6b63\u5728\u52a0\u8f7d\u5de5\u4ef6\u2026</string>
+    <string name="artifacts_empty">\u65e0\u5de5\u4ef6</string>
+    <string name="artifacts_empty_description">\u5f53 Claude Code \u5728\u4f1a\u8bdd\u4e2d\u521b\u5efa\u6587\u4ef6\u65f6\uff0c\u5de5\u4ef6\u5c06\u663e\u793a\u5728\u8fd9\u91cc\u3002</string>
+    <string name="artifacts_no_matching">\u65e0\u5339\u914d\u7684\u5de5\u4ef6</string>
+    <string name="artifacts_no_matching_description">\u8bf7\u5c1d\u8bd5\u8c03\u6574\u641c\u7d22\u6761\u4ef6\u6216\u7b5b\u9009\u5668</string>
+    <string name="artifacts_line_count">%d \u884c</string>
+    <string name="artifacts_copy">\u590d\u5236\u5230\u526a\u8d34\u677f</string>
+    <string name="artifacts_share">\u5206\u4eab</string>
+    <string name="artifacts_toggle_line_numbers">\u663e\u793a/\u9690\u85cf\u884c\u53f7</string>
+    <string name="artifacts_image_not_supported">\u56fe\u7247\u9884\u89c8\u5c1a\u4e0d\u652f\u6301</string>
+    <string name="artifacts_view_artifacts">\u67e5\u770b\u5de5\u4ef6</string>
+
+    <!-- Empty states -->
+    <string name="no_sessions">\u6682\u65e0\u4f1a\u8bdd</string>
+    <string name="no_sessions_description">\u626b\u63cf Claude Code CLI \u7684\u4e8c\u7ef4\u7801\u5f00\u59cb\u4f7f\u7528</string>
+</resources>
