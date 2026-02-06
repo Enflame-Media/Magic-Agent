@@ -1,0 +1,11 @@
+# frozen_string_literal: true
+
+# Copyright (c) 2024-2026 Enflame Media. All rights reserved.
+#
+# Appfile - App metadata for Fastlane
+# For more information: https://docs.fastlane.tools/advanced/Appfile/
+
+app_identifier("media.enflame.happy.ios")
+apple_id(ENV["APPLE_ID"] || "apple-id@enflame.media")
+itc_team_id(ENV["ITC_TEAM_ID"] || "ITC_TEAM_ID_HERE")
+team_id(ENV["TEAM_ID"] || "TEAM_ID_HERE")

@@ -1,0 +1,11 @@
+# frozen_string_literal: true
+
+# Copyright (c) 2024-2026 Enflame Media. All rights reserved.
+#
+# Gemfile for Happy iOS - Fastlane dependencies
+
+source "https://rubygems.org"
+
+gem "fastlane", "~> 2.225"
+gem "cocoapods", "~> 1.16"
+gem "xcov", "~> 1.8"

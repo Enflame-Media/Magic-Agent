@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Localizable.stringsdict (English - Base)
+  Happy
+
+  Pluralization rules for English.
+  Copyright (c) 2024-2026 Enflame Media. All rights reserved.
+-->
+<plist version="1.0">
+<dict>
+    <!-- Sessions count -->
+    <key>sessions.count</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@sessions@</string>
+        <key>sessions</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>d</string>
+            <key>one</key>
+            <string>%d session</string>
+            <key>other</key>
+            <string>%d sessions</string>
+        </dict>
+    </dict>
+    <!-- Messages count -->
+    <key>messages.count</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@messages@</string>
+        <key>messages</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>d</string>
+            <key>one</key>
+            <string>%d message</string>
+            <key>other</key>
+            <string>%d messages</string>
+        </dict>
+    </dict>
+</dict>
+</plist>

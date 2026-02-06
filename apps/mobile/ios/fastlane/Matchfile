@@ -1,0 +1,20 @@
+# frozen_string_literal: true
+
+# Copyright (c) 2024-2026 Enflame Media. All rights reserved.
+#
+# Matchfile - Code signing configuration for Fastlane match
+# For more information: https://docs.fastlane.tools/actions/match/
+
+git_url(ENV["MATCH_GIT_URL"] || "git@github.com:Enflame-Media/ios-certificates.git")
+
+storage_mode("git")
+
+type("appstore") # The default type, can be: appstore, adhoc, enterprise, development, developer_id
+
+app_identifier(["media.enflame.happy.ios"])
+username(ENV["APPLE_ID"] || "apple-id@enflame.media")
+
+team_id(ENV["TEAM_ID"] || "TEAM_ID_HERE")
+
+# Keychain configuration for CI
+platform("ios")

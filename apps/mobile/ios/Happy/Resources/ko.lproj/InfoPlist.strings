@@ -1,0 +1,16 @@
+/*
+  InfoPlist.strings (Korean)
+  Happy
+
+  Localized Info.plist strings.
+  Copyright (c) 2024-2026 Enflame Media. All rights reserved.
+*/
+
+/* App display name */
+"CFBundleDisplayName" = "Happy";
+
+/* App name */
+"CFBundleName" = "Happy";
+
+/* Camera usage description */
+"NSCameraUsageDescription" = "Happy는 Claude Code CLI에 연결하기 위해 QR 코드를 스캔할 카메라 접근 권한이 필요합니다.";

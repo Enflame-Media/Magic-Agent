@@ -8,12 +8,23 @@
 
 import AVFoundation
 
+/// Protocol for camera permission management, enabling testability.
+///
+/// Abstracts the camera permission API so that tests can provide mock
+/// implementations without requiring actual camera hardware.
+protocol CameraPermissionProviding {
+    var isAuthorized: Bool { get }
+    var isNotDetermined: Bool { get }
+    var isDenied: Bool { get }
+    @MainActor func requestPermission() async -> Bool
+}
+
 /// Manages camera permission requests and status checking.
 ///
 /// This service wraps `AVCaptureDevice` authorization APIs to provide
 /// a clean async interface for camera permission management. It is used
 /// by the QR scanner to ensure camera access before starting the capture session.
-final class CameraPermissionService {
+final class CameraPermissionService: CameraPermissionProviding {
 
     /// The current authorization status for the camera.
     var authorizationStatus: AVAuthorizationStatus {

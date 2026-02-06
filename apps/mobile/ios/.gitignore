@@ -132,3 +132,8 @@ Temporary Items
 
 # Testing
 *.xcresult
+
+# Ruby / Bundler (Fastlane)
+vendor/bundle
+.bundle/
+Gemfile.lock

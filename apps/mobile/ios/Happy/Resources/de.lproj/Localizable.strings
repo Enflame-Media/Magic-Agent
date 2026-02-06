@@ -1,0 +1,139 @@
+/*
+  Localizable.strings (German)
+  Happy
+
+  Copyright (c) 2024-2026 Enflame Media. All rights reserved.
+*/
+
+// MARK: - Common
+
+"common.cancel" = "Abbrechen";
+"common.connect" = "Verbinden";
+"common.enabled" = "Aktiviert";
+"common.disabled" = "Deaktiviert";
+"common.tryAgain" = "Erneut versuchen";
+"common.goBack" = "Zurueck";
+
+// MARK: - Welcome Screen
+
+"welcome.title" = "Happy";
+"welcome.subtitle" = "Fernsteuerung fuer Claude Code";
+"welcome.getStarted" = "Erste Schritte";
+"welcome.navigationTitle" = "Willkommen";
+
+// MARK: - Welcome Instructions
+
+"welcome.instruction1.title" = "Claude Code CLI starten";
+"welcome.instruction1.description" = "Fuehren Sie 'happy' in Ihrem Terminal aus";
+"welcome.instruction2.title" = "QR-Code scannen";
+"welcome.instruction2.description" = "Verwenden Sie die Schaltflaeche unten zum Verbinden";
+"welcome.instruction3.title" = "Fernsteuern";
+"welcome.instruction3.description" = "Sitzungen von Ihrem iPhone aus anzeigen und verwalten";
+
+// MARK: - QR Scanner
+
+"scanner.title" = "QR-Code scannen";
+"scanner.scanButton" = "QR-Code scannen";
+"scanner.checkingPermission" = "Kamerazugriff wird geprueft...";
+"scanner.instruction" = "Richten Sie Ihre Kamera auf den QR-Code\nin Ihrem Terminal";
+"scanner.errorTitle" = "Scanner-Fehler";
+
+// MARK: - Camera Permission
+
+"camera.accessRequired" = "Kamerazugriff erforderlich";
+"camera.accessDescription" = "Happy benoetigt Kamerazugriff, um QR-Codes von Ihrem Claude Code CLI zu scannen. Bitte aktivieren Sie den Kamerazugriff in den Einstellungen.";
+"camera.openSettings" = "Einstellungen oeffnen";
+"camera.navigationTitle" = "Kamerazugriff";
+
+// MARK: - Pairing Confirmation
+
+"pairing.title" = "QR-Code gescannt";
+"pairing.subtitle" = "Verbindung zu Claude Code CLI bestaetigen";
+"pairing.serverLabel" = "Server";
+"pairing.publicKeyLabel" = "Oeffentlicher Schluessel";
+"pairing.machineLabel" = "Geraet";
+"pairing.scanAgain" = "Erneut scannen";
+"pairing.navigationTitle" = "Kopplung bestaetigen";
+
+// MARK: - Notifications
+
+"notifications.title" = "Benachrichtigungen";
+"notifications.pushNotifications" = "Push-Benachrichtigungen";
+"notifications.description" = "Erhalten Sie Benachrichtigungen, wenn Sitzungen abgeschlossen werden, Fehler auftreten oder neue Nachrichten eintreffen.";
+"notifications.enable" = "Benachrichtigungen aktivieren";
+"notifications.notificationTypes" = "Benachrichtigungstypen";
+"notifications.typesDescription" = "Waehlen Sie aus, welche Arten von Benachrichtigungen Sie erhalten moechten.";
+"notifications.sessionUpdates" = "Sitzungsaktualisierungen";
+"notifications.messages" = "Nachrichten";
+"notifications.pairingRequests" = "Kopplungsanfragen";
+"notifications.debugInfo" = "Debug-Info";
+"notifications.deviceToken" = "Geraete-Token";
+
+// MARK: - Notification Status
+
+"notifications.status.enabled" = "Aktiviert";
+"notifications.status.disabled" = "Deaktiviert";
+"notifications.status.denied" = "Abgelehnt - Tippen zum Oeffnen der Einstellungen";
+"notifications.status.provisional" = "Vorlaeufig";
+"notifications.status.ephemeral" = "Kurzlebig";
+"notifications.status.notConfigured" = "Nicht konfiguriert";
+"notifications.status.unknown" = "Unbekannt";
+
+// MARK: - Sessions (Plurals - see .stringsdict)
+
+"sessions.count" = "%d Sitzungen";
+
+// MARK: - Messages (Plurals - see .stringsdict)
+
+"messages.count" = "%d Nachrichten";
+
+// MARK: - Pairing Progress
+
+"pairing.connecting" = "Verbindung wird hergestellt...";
+"pairing.connectingDescription" = "Sichere Verbindung zu\nClaude Code CLI wird aufgebaut";
+"pairing.stepGeneratingKeys" = "Verschluesselungsschluessel generieren";
+"pairing.stepChallengeResponse" = "Verifizierung durchfuehren";
+"pairing.stepSecuring" = "Verbindung sichern";
+"pairing.success" = "Kopplung erfolgreich";
+"pairing.successDescription" = "Verbunden mit Claude Code CLI";
+"pairing.failed" = "Kopplung fehlgeschlagen";
+"pairing.retry" = "Erneut versuchen";
+
+// MARK: - Session List
+
+"sessionList.title" = "Sitzungen";
+"sessionList.searchPrompt" = "Sitzungen suchen";
+"sessionList.loading" = "Sitzungen werden geladen...";
+"sessionList.noSessions" = "Keine Sitzungen";
+"sessionList.noSessionsDescription" = "Starten Sie eine Claude Code Sitzung von Ihrem CLI, um sie hier zu sehen.";
+"sessionList.noMatching" = "Keine passenden Sitzungen";
+"sessionList.noMatchingDescription" = "Versuchen Sie, Ihre Suche oder Ihren Filter anzupassen.";
+"sessionList.disconnect" = "Trennen";
+
+// MARK: - Session Detail
+
+"sessionDetail.session" = "Sitzung";
+"sessionDetail.loading" = "Nachrichten werden geladen...";
+"sessionDetail.noMessages" = "Keine Nachrichten";
+"sessionDetail.noMessagesDescription" = "Nachrichten erscheinen hier, wenn die Sitzung fortschreitet.";
+"sessionDetail.waitingForActivity" = "Warte auf Aktivitaet...";
+"sessionDetail.machineLabel" = "Geraet";
+"sessionDetail.startedLabel" = "Gestartet";
+"sessionDetail.costLabel" = "Kosten";
+"sessionDetail.tokensLabel" = "Token";
+"sessionDetail.streaming" = "Claude antwortet...";
+"sessionDetail.untitledSession" = "Unbenannte Sitzung";
+
+// MARK: - Common Actions
+
+"common.ok" = "OK";
+"common.error" = "Fehler";
+"common.filter" = "Filter";
+"common.retry" = "Erneut versuchen";
+
+// MARK: - Errors
+
+"error.generic" = "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.";
+"error.networkUnavailable" = "Netzwerkverbindung nicht verfuegbar.";
+"error.authenticationFailed" = "Authentifizierung fehlgeschlagen. Bitte versuchen Sie es erneut.";
+"error.unknown" = "Ein unbekannter Fehler ist aufgetreten.";

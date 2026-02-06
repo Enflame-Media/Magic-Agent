@@ -1,0 +1,139 @@
+/*
+  Localizable.strings (French)
+  Happy
+
+  Copyright (c) 2024-2026 Enflame Media. All rights reserved.
+*/
+
+// MARK: - Common
+
+"common.cancel" = "Annuler";
+"common.connect" = "Connecter";
+"common.enabled" = "Active";
+"common.disabled" = "Desactive";
+"common.tryAgain" = "Reessayer";
+"common.goBack" = "Retour";
+
+// MARK: - Welcome Screen
+
+"welcome.title" = "Happy";
+"welcome.subtitle" = "Telecommande pour Claude Code";
+"welcome.getStarted" = "Commencer";
+"welcome.navigationTitle" = "Bienvenue";
+
+// MARK: - Welcome Instructions
+
+"welcome.instruction1.title" = "Demarrez Claude Code CLI";
+"welcome.instruction1.description" = "Executez 'happy' dans votre terminal";
+"welcome.instruction2.title" = "Scannez le code QR";
+"welcome.instruction2.description" = "Utilisez le bouton ci-dessous pour connecter";
+"welcome.instruction3.title" = "Controlez a distance";
+"welcome.instruction3.description" = "Consultez et gerez les sessions depuis votre iPhone";
+
+// MARK: - QR Scanner
+
+"scanner.title" = "Scanner le code QR";
+"scanner.scanButton" = "Scanner le code QR";
+"scanner.checkingPermission" = "Verification de l'acces a la camera...";
+"scanner.instruction" = "Pointez votre camera vers le code QR\naffiche dans votre terminal";
+"scanner.errorTitle" = "Erreur du scanner";
+
+// MARK: - Camera Permission
+
+"camera.accessRequired" = "Acces a la camera requis";
+"camera.accessDescription" = "Happy a besoin de l'acces a la camera pour scanner les codes QR de votre Claude Code CLI. Veuillez activer l'acces a la camera dans les Reglages.";
+"camera.openSettings" = "Ouvrir les Reglages";
+"camera.navigationTitle" = "Acces a la camera";
+
+// MARK: - Pairing Confirmation
+
+"pairing.title" = "Code QR scanne";
+"pairing.subtitle" = "Confirmez la connexion a Claude Code CLI";
+"pairing.serverLabel" = "Serveur";
+"pairing.publicKeyLabel" = "Cle publique";
+"pairing.machineLabel" = "Machine";
+"pairing.scanAgain" = "Scanner a nouveau";
+"pairing.navigationTitle" = "Confirmer l'appairage";
+
+// MARK: - Notifications
+
+"notifications.title" = "Notifications";
+"notifications.pushNotifications" = "Notifications push";
+"notifications.description" = "Recevez des notifications lorsque les sessions se terminent, des erreurs surviennent ou de nouveaux messages arrivent.";
+"notifications.enable" = "Activer les notifications";
+"notifications.notificationTypes" = "Types de notifications";
+"notifications.typesDescription" = "Choisissez quels types de notifications vous souhaitez recevoir.";
+"notifications.sessionUpdates" = "Mises a jour de session";
+"notifications.messages" = "Messages";
+"notifications.pairingRequests" = "Demandes d'appairage";
+"notifications.debugInfo" = "Info de debogage";
+"notifications.deviceToken" = "Jeton d'appareil";
+
+// MARK: - Notification Status
+
+"notifications.status.enabled" = "Active";
+"notifications.status.disabled" = "Desactive";
+"notifications.status.denied" = "Refuse - Appuyez pour ouvrir les Reglages";
+"notifications.status.provisional" = "Provisoire";
+"notifications.status.ephemeral" = "Ephemere";
+"notifications.status.notConfigured" = "Non configure";
+"notifications.status.unknown" = "Inconnu";
+
+// MARK: - Sessions (Plurals - see .stringsdict)
+
+"sessions.count" = "%d sessions";
+
+// MARK: - Messages (Plurals - see .stringsdict)
+
+"messages.count" = "%d messages";
+
+// MARK: - Pairing Progress
+
+"pairing.connecting" = "Connexion en cours...";
+"pairing.connectingDescription" = "Etablissement d'une connexion securisee\navec Claude Code CLI";
+"pairing.stepGeneratingKeys" = "Generation des cles de chiffrement";
+"pairing.stepChallengeResponse" = "Verification en cours";
+"pairing.stepSecuring" = "Securisation de la connexion";
+"pairing.success" = "Appairage reussi";
+"pairing.successDescription" = "Connecte a Claude Code CLI";
+"pairing.failed" = "Echec de l'appairage";
+"pairing.retry" = "Reessayer";
+
+// MARK: - Session List
+
+"sessionList.title" = "Sessions";
+"sessionList.searchPrompt" = "Rechercher des sessions";
+"sessionList.loading" = "Chargement des sessions...";
+"sessionList.noSessions" = "Aucune session";
+"sessionList.noSessionsDescription" = "Demarrez une session Claude Code depuis votre CLI pour la voir ici.";
+"sessionList.noMatching" = "Aucune session correspondante";
+"sessionList.noMatchingDescription" = "Essayez d'ajuster votre recherche ou filtre.";
+"sessionList.disconnect" = "Deconnecter";
+
+// MARK: - Session Detail
+
+"sessionDetail.session" = "Session";
+"sessionDetail.loading" = "Chargement des messages...";
+"sessionDetail.noMessages" = "Aucun message";
+"sessionDetail.noMessagesDescription" = "Les messages apparaitront ici au fur et a mesure de la session.";
+"sessionDetail.waitingForActivity" = "En attente d'activite...";
+"sessionDetail.machineLabel" = "Machine";
+"sessionDetail.startedLabel" = "Demarre";
+"sessionDetail.costLabel" = "Cout";
+"sessionDetail.tokensLabel" = "Jetons";
+"sessionDetail.streaming" = "Claude repond...";
+"sessionDetail.untitledSession" = "Session sans titre";
+
+// MARK: - Common Actions
+
+"common.ok" = "OK";
+"common.error" = "Erreur";
+"common.filter" = "Filtre";
+"common.retry" = "Reessayer";
+
+// MARK: - Errors
+
+"error.generic" = "Une erreur s'est produite. Veuillez reessayer.";
+"error.networkUnavailable" = "Connexion reseau indisponible.";
+"error.authenticationFailed" = "L'authentification a echoue. Veuillez reessayer.";
+"error.unknown" = "Une erreur inconnue s'est produite.";

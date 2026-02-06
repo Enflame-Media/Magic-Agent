@@ -1,0 +1,16 @@
+/*
+  InfoPlist.strings (Spanish)
+  Happy
+
+  Localized Info.plist strings.
+  Copyright (c) 2024-2026 Enflame Media. All rights reserved.
+*/
+
+/* App display name */
+"CFBundleDisplayName" = "Happy";
+
+/* App name */
+"CFBundleName" = "Happy";
+
+/* Camera usage description */
+"NSCameraUsageDescription" = "Happy necesita acceso a la camara para escanear codigos QR y conectarse a Claude Code CLI.";

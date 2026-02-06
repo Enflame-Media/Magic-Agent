@@ -28,11 +28,11 @@ struct CameraPermissionDeniedView: View {
 
             // Explanation
             VStack(spacing: 12) {
-                Text("Camera Access Required")
+                Text("camera.accessRequired".localized)
                     .font(.title2)
                     .fontWeight(.bold)
 
-                Text("Happy needs camera access to scan QR codes from your Claude Code CLI. Please enable camera access in Settings.")
+                Text("camera.accessDescription".localized)
                     .font(.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -46,13 +46,13 @@ struct CameraPermissionDeniedView: View {
                 Button {
                     openSettings()
                 } label: {
-                    Label("Open Settings", systemImage: "gear")
+                    Label("camera.openSettings".localized, systemImage: "gear")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
 
-                Button("Go Back") {
+                Button("common.goBack".localized) {
                     dismiss()
                 }
                 .foregroundStyle(.secondary)
@@ -62,7 +62,7 @@ struct CameraPermissionDeniedView: View {
             Spacer()
         }
         .padding()
-        .navigationTitle("Camera Access")
+        .navigationTitle("camera.navigationTitle".localized)
         .navigationBarTitleDisplayMode(.inline)
     }
 

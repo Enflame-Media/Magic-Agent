@@ -22,6 +22,70 @@
 		B91A2C3D4E5F0007 /* QRScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B91A2C3D4E5F0016 /* QRScannerView.swift */; };
 		B91A2C3D4E5F0008 /* QRCodePayloadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B91A2C3D4E5F0017 /* QRCodePayloadTests.swift */; };
 		B91A2C3D4E5F0009 /* QRScannerViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B91A2C3D4E5F0018 /* QRScannerViewModelTests.swift */; };
+		C91A2C3D4E5F0001 /* KeychainHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = C91A2C3D4E5F0010 /* KeychainHelper.swift */; };
+		C91A2C3D4E5F0002 /* KeychainHelperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C91A2C3D4E5F0011 /* KeychainHelperTests.swift */; };
+		D91A2C3D4E5F0001 /* EncryptionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D91A2C3D4E5F0010 /* EncryptionService.swift */; };
+		D91A2C3D4E5F0002 /* EncryptionServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D91A2C3D4E5F0011 /* EncryptionServiceTests.swift */; };
+		E91A2C3D4E5F0001 /* Session.swift in Sources */ = {isa = PBXBuildFile; fileRef = E91A2C3D4E5F0010 /* Session.swift */; };
+		E91A2C3D4E5F0002 /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = E91A2C3D4E5F0011 /* Message.swift */; };
+		E91A2C3D4E5F0003 /* APIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E91A2C3D4E5F0012 /* APIService.swift */; };
+		E91A2C3D4E5F0004 /* APIServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E91A2C3D4E5F0013 /* APIServiceTests.swift */; };
+		F91A2C3D4E5F0001 /* PushNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F91A2C3D4E5F0010 /* PushNotificationService.swift */; };
+		F91A2C3D4E5F0002 /* NotificationSettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F91A2C3D4E5F0011 /* NotificationSettingsViewModel.swift */; };
+		F91A2C3D4E5F0003 /* NotificationSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F91A2C3D4E5F0012 /* NotificationSettingsView.swift */; };
+		F91A2C3D4E5F0004 /* PushNotificationServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F91A2C3D4E5F0013 /* PushNotificationServiceTests.swift */; };
+		F91A2C3D4E5F0005 /* NotificationSettingsViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F91A2C3D4E5F0014 /* NotificationSettingsViewModelTests.swift */; };
+		G91A2C3D4E5F0001 /* SyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = G91A2C3D4E5F0010 /* SyncService.swift */; };
+		G91A2C3D4E5F0002 /* SyncServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = G91A2C3D4E5F0011 /* SyncServiceTests.swift */; };
+		H91A2C3D4E5F0001 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = H91A2C3D4E5F0010 /* AuthService.swift */; };
+		H91A2C3D4E5F0002 /* AuthenticationViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = H91A2C3D4E5F0011 /* AuthenticationViewModel.swift */; };
+		H91A2C3D4E5F0003 /* AuthServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = H91A2C3D4E5F0012 /* AuthServiceTests.swift */; };
+		K91A2C3D4E5F0001 /* SessionListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = K91A2C3D4E5F0010 /* SessionListViewModel.swift */; };
+		K91A2C3D4E5F0002 /* SessionDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = K91A2C3D4E5F0011 /* SessionDetailViewModel.swift */; };
+		K91A2C3D4E5F0003 /* SessionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = K91A2C3D4E5F0012 /* SessionListView.swift */; };
+		K91A2C3D4E5F0004 /* SessionDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = K91A2C3D4E5F0013 /* SessionDetailView.swift */; };
+		K91A2C3D4E5F0005 /* SessionRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = K91A2C3D4E5F0014 /* SessionRowView.swift */; };
+		K91A2C3D4E5F0006 /* SessionViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = K91A2C3D4E5F0015 /* SessionViewModelTests.swift */; };
+		J91A2C3D4E5F0001 /* PairingProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = J91A2C3D4E5F0010 /* PairingProgressView.swift */; };
+		J91A2C3D4E5F0002 /* AuthenticationViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = J91A2C3D4E5F0011 /* AuthenticationViewModelTests.swift */; };
+		L91A2C3D4E5F0001 /* QRScannerIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = L91A2C3D4E5F0010 /* QRScannerIntegrationTests.swift */; };
+		M91A2C3D4E5F0001 /* String+Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = M91A2C3D4E5F0010 /* String+Localization.swift */; };
+		M91A2C3D4E5F0002 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = M91A2C3D4E5F0020 /* Localizable.strings */; };
+		M91A2C3D4E5F0003 /* Localizable.stringsdict in Resources */ = {isa = PBXBuildFile; fileRef = M91A2C3D4E5F0030 /* Localizable.stringsdict */; };
+		M91A2C3D4E5F0004 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = M91A2C3D4E5F0040 /* InfoPlist.strings */; };
+		Q91A2C3D4E5F0001 /* Artifact.swift in Sources */ = {isa = PBXBuildFile; fileRef = Q91A2C3D4E5F0010 /* Artifact.swift */; };
+		Q91A2C3D4E5F0002 /* ArtifactViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = Q91A2C3D4E5F0011 /* ArtifactViewModel.swift */; };
+		Q91A2C3D4E5F0003 /* ArtifactListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = Q91A2C3D4E5F0012 /* ArtifactListView.swift */; };
+		Q91A2C3D4E5F0004 /* ArtifactDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = Q91A2C3D4E5F0013 /* ArtifactDetailView.swift */; };
+		Q91A2C3D4E5F0005 /* CodeHighlightView.swift in Sources */ = {isa = PBXBuildFile; fileRef = Q91A2C3D4E5F0014 /* CodeHighlightView.swift */; };
+		Q91A2C3D4E5F0006 /* SyntaxHighlighter.swift in Sources */ = {isa = PBXBuildFile; fileRef = Q91A2C3D4E5F0015 /* SyntaxHighlighter.swift */; };
+		Q91A2C3D4E5F0007 /* ArtifactTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = Q91A2C3D4E5F0016 /* ArtifactTests.swift */; };
+		Q91A2C3D4E5F0008 /* SyntaxHighlighterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = Q91A2C3D4E5F0017 /* SyntaxHighlighterTests.swift */; };
+		R91A2C3D4E5F0001 /* Friend.swift in Sources */ = {isa = PBXBuildFile; fileRef = R91A2C3D4E5F0010 /* Friend.swift */; };
+		R91A2C3D4E5F0002 /* FriendRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = R91A2C3D4E5F0011 /* FriendRequest.swift */; };
+		R91A2C3D4E5F0003 /* FriendsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = R91A2C3D4E5F0012 /* FriendsViewModel.swift */; };
+		R91A2C3D4E5F0004 /* FriendsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = R91A2C3D4E5F0013 /* FriendsListView.swift */; };
+		R91A2C3D4E5F0005 /* FriendRequestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = R91A2C3D4E5F0014 /* FriendRequestView.swift */; };
+		R91A2C3D4E5F0006 /* AddFriendView.swift in Sources */ = {isa = PBXBuildFile; fileRef = R91A2C3D4E5F0015 /* AddFriendView.swift */; };
+		R91A2C3D4E5F0007 /* FriendProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = R91A2C3D4E5F0016 /* FriendProfileView.swift */; };
+		R91A2C3D4E5F0008 /* FriendsViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = R91A2C3D4E5F0017 /* FriendsViewModelTests.swift */; };
+		N91A2C3D4E5F0001 /* VoiceSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = N91A2C3D4E5F0010 /* VoiceSettings.swift */; };
+		N91A2C3D4E5F0002 /* VoiceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = N91A2C3D4E5F0011 /* VoiceService.swift */; };
+		N91A2C3D4E5F0003 /* VoiceViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = N91A2C3D4E5F0012 /* VoiceViewModel.swift */; };
+		N91A2C3D4E5F0004 /* VoiceControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = N91A2C3D4E5F0013 /* VoiceControlView.swift */; };
+		N91A2C3D4E5F0005 /* VoiceSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = N91A2C3D4E5F0014 /* VoiceSettingsView.swift */; };
+		N91A2C3D4E5F0006 /* VoiceServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = N91A2C3D4E5F0015 /* VoiceServiceTests.swift */; };
+		P91A2C3D4E5F0001 /* SubscriptionPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = P91A2C3D4E5F0010 /* SubscriptionPlan.swift */; };
+		P91A2C3D4E5F0002 /* PurchaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = P91A2C3D4E5F0011 /* PurchaseService.swift */; };
+		P91A2C3D4E5F0003 /* PurchaseViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = P91A2C3D4E5F0012 /* PurchaseViewModel.swift */; };
+		P91A2C3D4E5F0004 /* PaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = P91A2C3D4E5F0013 /* PaywallView.swift */; };
+		P91A2C3D4E5F0005 /* SubscriptionStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = P91A2C3D4E5F0014 /* SubscriptionStatusView.swift */; };
+		P91A2C3D4E5F0006 /* PurchaseServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = P91A2C3D4E5F0015 /* PurchaseServiceTests.swift */; };
+		T91A2C3D4E5F0001 /* UsageData.swift in Sources */ = {isa = PBXBuildFile; fileRef = T91A2C3D4E5F0010 /* UsageData.swift */; };
+		T91A2C3D4E5F0002 /* UsageLimitsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = T91A2C3D4E5F0011 /* UsageLimitsViewModel.swift */; };
+		T91A2C3D4E5F0003 /* UsageLimitsWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = T91A2C3D4E5F0012 /* UsageLimitsWidget.swift */; };
+		T91A2C3D4E5F0004 /* UsageLimitsDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = T91A2C3D4E5F0013 /* UsageLimitsDetailView.swift */; };
+		T91A2C3D4E5F0005 /* UsageLimitsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T91A2C3D4E5F0014 /* UsageLimitsTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -61,6 +125,89 @@
 		B91A2C3D4E5F0016 /* QRScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRScannerView.swift; sourceTree = "<group>"; };
 		B91A2C3D4E5F0017 /* QRCodePayloadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRCodePayloadTests.swift; sourceTree = "<group>"; };
 		B91A2C3D4E5F0018 /* QRScannerViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRScannerViewModelTests.swift; sourceTree = "<group>"; };
+		C91A2C3D4E5F0010 /* KeychainHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainHelper.swift; sourceTree = "<group>"; };
+		C91A2C3D4E5F0011 /* KeychainHelperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainHelperTests.swift; sourceTree = "<group>"; };
+		D91A2C3D4E5F0010 /* EncryptionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EncryptionService.swift; sourceTree = "<group>"; };
+		D91A2C3D4E5F0011 /* EncryptionServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EncryptionServiceTests.swift; sourceTree = "<group>"; };
+		E91A2C3D4E5F0010 /* Session.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Session.swift; sourceTree = "<group>"; };
+		E91A2C3D4E5F0011 /* Message.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Message.swift; sourceTree = "<group>"; };
+		E91A2C3D4E5F0012 /* APIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIService.swift; sourceTree = "<group>"; };
+		E91A2C3D4E5F0013 /* APIServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIServiceTests.swift; sourceTree = "<group>"; };
+		F91A2C3D4E5F0010 /* PushNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushNotificationService.swift; sourceTree = "<group>"; };
+		F91A2C3D4E5F0011 /* NotificationSettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettingsViewModel.swift; sourceTree = "<group>"; };
+		F91A2C3D4E5F0012 /* NotificationSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettingsView.swift; sourceTree = "<group>"; };
+		F91A2C3D4E5F0013 /* PushNotificationServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushNotificationServiceTests.swift; sourceTree = "<group>"; };
+		F91A2C3D4E5F0014 /* NotificationSettingsViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettingsViewModelTests.swift; sourceTree = "<group>"; };
+		F91A2C3D4E5F0015 /* Happy.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Happy.entitlements; sourceTree = "<group>"; };
+		G91A2C3D4E5F0010 /* SyncService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncService.swift; sourceTree = "<group>"; };
+		G91A2C3D4E5F0011 /* SyncServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncServiceTests.swift; sourceTree = "<group>"; };
+		H91A2C3D4E5F0010 /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
+		H91A2C3D4E5F0011 /* AuthenticationViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationViewModel.swift; sourceTree = "<group>"; };
+		H91A2C3D4E5F0012 /* AuthServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthServiceTests.swift; sourceTree = "<group>"; };
+		K91A2C3D4E5F0010 /* SessionListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionListViewModel.swift; sourceTree = "<group>"; };
+		K91A2C3D4E5F0011 /* SessionDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionDetailViewModel.swift; sourceTree = "<group>"; };
+		K91A2C3D4E5F0012 /* SessionListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionListView.swift; sourceTree = "<group>"; };
+		K91A2C3D4E5F0013 /* SessionDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionDetailView.swift; sourceTree = "<group>"; };
+		K91A2C3D4E5F0014 /* SessionRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionRowView.swift; sourceTree = "<group>"; };
+		K91A2C3D4E5F0015 /* SessionViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionViewModelTests.swift; sourceTree = "<group>"; };
+		J91A2C3D4E5F0010 /* PairingProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairingProgressView.swift; sourceTree = "<group>"; };
+		J91A2C3D4E5F0011 /* AuthenticationViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationViewModelTests.swift; sourceTree = "<group>"; };
+		L91A2C3D4E5F0010 /* QRScannerIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRScannerIntegrationTests.swift; sourceTree = "<group>"; };
+		M91A2C3D4E5F0010 /* String+Localization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "String+Localization.swift"; sourceTree = "<group>"; };
+		M91A2C3D4E5F0021 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		M91A2C3D4E5F0022 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/Localizable.strings; sourceTree = "<group>"; };
+		M91A2C3D4E5F0023 /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/Localizable.strings; sourceTree = "<group>"; };
+		M91A2C3D4E5F0024 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/Localizable.strings; sourceTree = "<group>"; };
+		M91A2C3D4E5F0025 /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ja; path = ja.lproj/Localizable.strings; sourceTree = "<group>"; };
+		M91A2C3D4E5F0026 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
+		M91A2C3D4E5F0027 /* ko */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ko; path = ko.lproj/Localizable.strings; sourceTree = "<group>"; };
+		M91A2C3D4E5F0031 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.stringsdict; name = en; path = en.lproj/Localizable.stringsdict; sourceTree = "<group>"; };
+		M91A2C3D4E5F0032 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.stringsdict; name = es; path = es.lproj/Localizable.stringsdict; sourceTree = "<group>"; };
+		M91A2C3D4E5F0033 /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.stringsdict; name = fr; path = fr.lproj/Localizable.stringsdict; sourceTree = "<group>"; };
+		M91A2C3D4E5F0034 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.stringsdict; name = de; path = de.lproj/Localizable.stringsdict; sourceTree = "<group>"; };
+		M91A2C3D4E5F0035 /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.stringsdict; name = ja; path = ja.lproj/Localizable.stringsdict; sourceTree = "<group>"; };
+		M91A2C3D4E5F0036 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.stringsdict; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.stringsdict"; sourceTree = "<group>"; };
+		M91A2C3D4E5F0037 /* ko */ = {isa = PBXFileReference; lastKnownFileType = text.plist.stringsdict; name = ko; path = ko.lproj/Localizable.stringsdict; sourceTree = "<group>"; };
+		M91A2C3D4E5F0041 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		M91A2C3D4E5F0042 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		M91A2C3D4E5F0043 /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		M91A2C3D4E5F0044 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		M91A2C3D4E5F0045 /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ja; path = ja.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		M91A2C3D4E5F0046 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
+		M91A2C3D4E5F0047 /* ko */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ko; path = ko.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		Q91A2C3D4E5F0010 /* Artifact.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Artifact.swift; sourceTree = "<group>"; };
+		Q91A2C3D4E5F0011 /* ArtifactViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArtifactViewModel.swift; sourceTree = "<group>"; };
+		Q91A2C3D4E5F0012 /* ArtifactListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArtifactListView.swift; sourceTree = "<group>"; };
+		Q91A2C3D4E5F0013 /* ArtifactDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArtifactDetailView.swift; sourceTree = "<group>"; };
+		Q91A2C3D4E5F0014 /* CodeHighlightView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeHighlightView.swift; sourceTree = "<group>"; };
+		Q91A2C3D4E5F0015 /* SyntaxHighlighter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyntaxHighlighter.swift; sourceTree = "<group>"; };
+		Q91A2C3D4E5F0016 /* ArtifactTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArtifactTests.swift; sourceTree = "<group>"; };
+		Q91A2C3D4E5F0017 /* SyntaxHighlighterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyntaxHighlighterTests.swift; sourceTree = "<group>"; };
+		N91A2C3D4E5F0010 /* VoiceSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceSettings.swift; sourceTree = "<group>"; };
+		N91A2C3D4E5F0011 /* VoiceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceService.swift; sourceTree = "<group>"; };
+		N91A2C3D4E5F0012 /* VoiceViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceViewModel.swift; sourceTree = "<group>"; };
+		N91A2C3D4E5F0013 /* VoiceControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceControlView.swift; sourceTree = "<group>"; };
+		N91A2C3D4E5F0014 /* VoiceSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceSettingsView.swift; sourceTree = "<group>"; };
+		N91A2C3D4E5F0015 /* VoiceServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceServiceTests.swift; sourceTree = "<group>"; };
+		R91A2C3D4E5F0010 /* Friend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Friend.swift; sourceTree = "<group>"; };
+		R91A2C3D4E5F0011 /* FriendRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendRequest.swift; sourceTree = "<group>"; };
+		R91A2C3D4E5F0012 /* FriendsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsViewModel.swift; sourceTree = "<group>"; };
+		R91A2C3D4E5F0013 /* FriendsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsListView.swift; sourceTree = "<group>"; };
+		R91A2C3D4E5F0014 /* FriendRequestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendRequestView.swift; sourceTree = "<group>"; };
+		R91A2C3D4E5F0015 /* AddFriendView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddFriendView.swift; sourceTree = "<group>"; };
+		R91A2C3D4E5F0016 /* FriendProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendProfileView.swift; sourceTree = "<group>"; };
+		R91A2C3D4E5F0017 /* FriendsViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsViewModelTests.swift; sourceTree = "<group>"; };
+		P91A2C3D4E5F0010 /* SubscriptionPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionPlan.swift; sourceTree = "<group>"; };
+		P91A2C3D4E5F0011 /* PurchaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PurchaseService.swift; sourceTree = "<group>"; };
+		P91A2C3D4E5F0012 /* PurchaseViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PurchaseViewModel.swift; sourceTree = "<group>"; };
+		P91A2C3D4E5F0013 /* PaywallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallView.swift; sourceTree = "<group>"; };
+		P91A2C3D4E5F0014 /* SubscriptionStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionStatusView.swift; sourceTree = "<group>"; };
+		P91A2C3D4E5F0015 /* PurchaseServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PurchaseServiceTests.swift; sourceTree = "<group>"; };
+		T91A2C3D4E5F0010 /* UsageData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageData.swift; sourceTree = "<group>"; };
+		T91A2C3D4E5F0011 /* UsageLimitsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageLimitsViewModel.swift; sourceTree = "<group>"; };
+		T91A2C3D4E5F0012 /* UsageLimitsWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageLimitsWidget.swift; sourceTree = "<group>"; };
+		T91A2C3D4E5F0013 /* UsageLimitsDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageLimitsDetailView.swift; sourceTree = "<group>"; };
+		T91A2C3D4E5F0014 /* UsageLimitsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageLimitsTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -111,6 +258,7 @@
 				0A1B2C3D4E5F67B5 /* Resources */,
 				0A1B2C3D4E5F6782 /* Assets.xcassets */,
 				0A1B2C3D4E5F6788 /* Info.plist */,
+				F91A2C3D4E5F0015 /* Happy.entitlements */,
 			);
 			path = Happy;
 			sourceTree = "<group>";
@@ -121,6 +269,22 @@
 				0A1B2C3D4E5F6783 /* HappyTests.swift */,
 				B91A2C3D4E5F0017 /* QRCodePayloadTests.swift */,
 				B91A2C3D4E5F0018 /* QRScannerViewModelTests.swift */,
+				C91A2C3D4E5F0011 /* KeychainHelperTests.swift */,
+				D91A2C3D4E5F0011 /* EncryptionServiceTests.swift */,
+				E91A2C3D4E5F0013 /* APIServiceTests.swift */,
+				F91A2C3D4E5F0013 /* PushNotificationServiceTests.swift */,
+				F91A2C3D4E5F0014 /* NotificationSettingsViewModelTests.swift */,
+				G91A2C3D4E5F0011 /* SyncServiceTests.swift */,
+				H91A2C3D4E5F0012 /* AuthServiceTests.swift */,
+				J91A2C3D4E5F0011 /* AuthenticationViewModelTests.swift */,
+				K91A2C3D4E5F0015 /* SessionViewModelTests.swift */,
+				L91A2C3D4E5F0010 /* QRScannerIntegrationTests.swift */,
+				Q91A2C3D4E5F0016 /* ArtifactTests.swift */,
+				Q91A2C3D4E5F0017 /* SyntaxHighlighterTests.swift */,
+				R91A2C3D4E5F0017 /* FriendsViewModelTests.swift */,
+				N91A2C3D4E5F0015 /* VoiceServiceTests.swift */,
+				P91A2C3D4E5F0015 /* PurchaseServiceTests.swift */,
+				T91A2C3D4E5F0014 /* UsageLimitsTests.swift */,
 			);
 			path = HappyTests;
 			sourceTree = "<group>";
@@ -148,6 +312,14 @@
 			isa = PBXGroup;
 			children = (
 				B91A2C3D4E5F0010 /* QRCodePayload.swift */,
+				E91A2C3D4E5F0010 /* Session.swift */,
+				E91A2C3D4E5F0011 /* Message.swift */,
+				Q91A2C3D4E5F0010 /* Artifact.swift */,
+				R91A2C3D4E5F0010 /* Friend.swift */,
+				R91A2C3D4E5F0011 /* FriendRequest.swift */,
+				N91A2C3D4E5F0010 /* VoiceSettings.swift */,
+				P91A2C3D4E5F0010 /* SubscriptionPlan.swift */,
+				T91A2C3D4E5F0010 /* UsageData.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -158,7 +330,25 @@
 				B91A2C3D4E5F0013 /* CameraPreviewView.swift */,
 				B91A2C3D4E5F0014 /* CameraPermissionDeniedView.swift */,
 				B91A2C3D4E5F0015 /* PairingConfirmationView.swift */,
+				J91A2C3D4E5F0010 /* PairingProgressView.swift */,
 				B91A2C3D4E5F0016 /* QRScannerView.swift */,
+				F91A2C3D4E5F0012 /* NotificationSettingsView.swift */,
+				K91A2C3D4E5F0012 /* SessionListView.swift */,
+				K91A2C3D4E5F0013 /* SessionDetailView.swift */,
+				K91A2C3D4E5F0014 /* SessionRowView.swift */,
+				Q91A2C3D4E5F0012 /* ArtifactListView.swift */,
+				Q91A2C3D4E5F0013 /* ArtifactDetailView.swift */,
+				Q91A2C3D4E5F0014 /* CodeHighlightView.swift */,
+				R91A2C3D4E5F0013 /* FriendsListView.swift */,
+				R91A2C3D4E5F0014 /* FriendRequestView.swift */,
+				R91A2C3D4E5F0015 /* AddFriendView.swift */,
+				R91A2C3D4E5F0016 /* FriendProfileView.swift */,
+				N91A2C3D4E5F0013 /* VoiceControlView.swift */,
+				N91A2C3D4E5F0014 /* VoiceSettingsView.swift */,
+				P91A2C3D4E5F0013 /* PaywallView.swift */,
+				P91A2C3D4E5F0014 /* SubscriptionStatusView.swift */,
+				T91A2C3D4E5F0012 /* UsageLimitsWidget.swift */,
+				T91A2C3D4E5F0013 /* UsageLimitsDetailView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -167,6 +357,15 @@
 			isa = PBXGroup;
 			children = (
 				B91A2C3D4E5F0012 /* QRScannerViewModel.swift */,
+				F91A2C3D4E5F0011 /* NotificationSettingsViewModel.swift */,
+				H91A2C3D4E5F0011 /* AuthenticationViewModel.swift */,
+				K91A2C3D4E5F0010 /* SessionListViewModel.swift */,
+				K91A2C3D4E5F0011 /* SessionDetailViewModel.swift */,
+				Q91A2C3D4E5F0011 /* ArtifactViewModel.swift */,
+				R91A2C3D4E5F0012 /* FriendsViewModel.swift */,
+				N91A2C3D4E5F0012 /* VoiceViewModel.swift */,
+				P91A2C3D4E5F0012 /* PurchaseViewModel.swift */,
+				T91A2C3D4E5F0011 /* UsageLimitsViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -175,6 +374,13 @@
 			isa = PBXGroup;
 			children = (
 				B91A2C3D4E5F0011 /* CameraPermissionService.swift */,
+				D91A2C3D4E5F0010 /* EncryptionService.swift */,
+				E91A2C3D4E5F0012 /* APIService.swift */,
+				F91A2C3D4E5F0010 /* PushNotificationService.swift */,
+				G91A2C3D4E5F0010 /* SyncService.swift */,
+				H91A2C3D4E5F0010 /* AuthService.swift */,
+				N91A2C3D4E5F0011 /* VoiceService.swift */,
+				P91A2C3D4E5F0011 /* PurchaseService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -182,6 +388,9 @@
 		0A1B2C3D4E5F67B4 /* Utilities */ = {
 			isa = PBXGroup;
 			children = (
+				C91A2C3D4E5F0010 /* KeychainHelper.swift */,
+				M91A2C3D4E5F0010 /* String+Localization.swift */,
+				Q91A2C3D4E5F0015 /* SyntaxHighlighter.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -189,11 +398,59 @@
 		0A1B2C3D4E5F67B5 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				M91A2C3D4E5F0020 /* Localizable.strings */,
+				M91A2C3D4E5F0030 /* Localizable.stringsdict */,
+				M91A2C3D4E5F0040 /* InfoPlist.strings */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
+
+/* Begin PBXVariantGroup section */
+		M91A2C3D4E5F0020 /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				M91A2C3D4E5F0021 /* en */,
+				M91A2C3D4E5F0022 /* es */,
+				M91A2C3D4E5F0023 /* fr */,
+				M91A2C3D4E5F0024 /* de */,
+				M91A2C3D4E5F0025 /* ja */,
+				M91A2C3D4E5F0026 /* zh-Hans */,
+				M91A2C3D4E5F0027 /* ko */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
+		M91A2C3D4E5F0030 /* Localizable.stringsdict */ = {
+			isa = PBXVariantGroup;
+			children = (
+				M91A2C3D4E5F0031 /* en */,
+				M91A2C3D4E5F0032 /* es */,
+				M91A2C3D4E5F0033 /* fr */,
+				M91A2C3D4E5F0034 /* de */,
+				M91A2C3D4E5F0035 /* ja */,
+				M91A2C3D4E5F0036 /* zh-Hans */,
+				M91A2C3D4E5F0037 /* ko */,
+			);
+			name = Localizable.stringsdict;
+			sourceTree = "<group>";
+		};
+		M91A2C3D4E5F0040 /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				M91A2C3D4E5F0041 /* en */,
+				M91A2C3D4E5F0042 /* es */,
+				M91A2C3D4E5F0043 /* fr */,
+				M91A2C3D4E5F0044 /* de */,
+				M91A2C3D4E5F0045 /* ja */,
+				M91A2C3D4E5F0046 /* zh-Hans */,
+				M91A2C3D4E5F0047 /* ko */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
 
 /* Begin PBXNativeTarget section */
 		0A1B2C3D4E5F6771 /* Happy */ = {
@@ -261,6 +518,17 @@
 				TargetAttributes = {
 					0A1B2C3D4E5F6771 = {
 						CreatedOnToolsVersion = 15.0;
+						SystemCapabilities = {
+							com.apple.Push = {
+								enabled = 1;
+							};
+							com.apple.BackgroundModes = {
+								enabled = 1;
+							};
+							com.apple.InAppPurchase = {
+								enabled = 1;
+							};
+						};
 					};
 					0A1B2C3D4E5F6773 = {
 						CreatedOnToolsVersion = 15.0;
@@ -279,6 +547,12 @@
 			knownRegions = (
 				en,
 				Base,
+				es,
+				fr,
+				de,
+				ja,
+				"zh-Hans",
+				ko,
 			);
 			mainGroup = 0A1B2C3D4E5F67A0;
 			productRefGroup = 0A1B2C3D4E5F67A4 /* Products */;
@@ -298,6 +572,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				0A1B2C3D4E5F678B /* Assets.xcassets in Resources */,
+				M91A2C3D4E5F0002 /* Localizable.strings in Resources */,
+				M91A2C3D4E5F0003 /* Localizable.stringsdict in Resources */,
+				M91A2C3D4E5F0004 /* InfoPlist.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -331,6 +608,51 @@
 				B91A2C3D4E5F0005 /* CameraPermissionDeniedView.swift in Sources */,
 				B91A2C3D4E5F0006 /* PairingConfirmationView.swift in Sources */,
 				B91A2C3D4E5F0007 /* QRScannerView.swift in Sources */,
+				C91A2C3D4E5F0001 /* KeychainHelper.swift in Sources */,
+				D91A2C3D4E5F0001 /* EncryptionService.swift in Sources */,
+				E91A2C3D4E5F0001 /* Session.swift in Sources */,
+				E91A2C3D4E5F0002 /* Message.swift in Sources */,
+				E91A2C3D4E5F0003 /* APIService.swift in Sources */,
+				F91A2C3D4E5F0001 /* PushNotificationService.swift in Sources */,
+				F91A2C3D4E5F0002 /* NotificationSettingsViewModel.swift in Sources */,
+				F91A2C3D4E5F0003 /* NotificationSettingsView.swift in Sources */,
+				G91A2C3D4E5F0001 /* SyncService.swift in Sources */,
+				H91A2C3D4E5F0001 /* AuthService.swift in Sources */,
+				H91A2C3D4E5F0002 /* AuthenticationViewModel.swift in Sources */,
+				J91A2C3D4E5F0001 /* PairingProgressView.swift in Sources */,
+				K91A2C3D4E5F0001 /* SessionListViewModel.swift in Sources */,
+				K91A2C3D4E5F0002 /* SessionDetailViewModel.swift in Sources */,
+				K91A2C3D4E5F0003 /* SessionListView.swift in Sources */,
+				K91A2C3D4E5F0004 /* SessionDetailView.swift in Sources */,
+				K91A2C3D4E5F0005 /* SessionRowView.swift in Sources */,
+				M91A2C3D4E5F0001 /* String+Localization.swift in Sources */,
+				Q91A2C3D4E5F0001 /* Artifact.swift in Sources */,
+				Q91A2C3D4E5F0002 /* ArtifactViewModel.swift in Sources */,
+				Q91A2C3D4E5F0003 /* ArtifactListView.swift in Sources */,
+				Q91A2C3D4E5F0004 /* ArtifactDetailView.swift in Sources */,
+				Q91A2C3D4E5F0005 /* CodeHighlightView.swift in Sources */,
+				Q91A2C3D4E5F0006 /* SyntaxHighlighter.swift in Sources */,
+				R91A2C3D4E5F0001 /* Friend.swift in Sources */,
+				R91A2C3D4E5F0002 /* FriendRequest.swift in Sources */,
+				R91A2C3D4E5F0003 /* FriendsViewModel.swift in Sources */,
+				R91A2C3D4E5F0004 /* FriendsListView.swift in Sources */,
+				R91A2C3D4E5F0005 /* FriendRequestView.swift in Sources */,
+				R91A2C3D4E5F0006 /* AddFriendView.swift in Sources */,
+				R91A2C3D4E5F0007 /* FriendProfileView.swift in Sources */,
+				N91A2C3D4E5F0001 /* VoiceSettings.swift in Sources */,
+				N91A2C3D4E5F0002 /* VoiceService.swift in Sources */,
+				N91A2C3D4E5F0003 /* VoiceViewModel.swift in Sources */,
+				N91A2C3D4E5F0004 /* VoiceControlView.swift in Sources */,
+				N91A2C3D4E5F0005 /* VoiceSettingsView.swift in Sources */,
+				P91A2C3D4E5F0001 /* SubscriptionPlan.swift in Sources */,
+				P91A2C3D4E5F0002 /* PurchaseService.swift in Sources */,
+				P91A2C3D4E5F0003 /* PurchaseViewModel.swift in Sources */,
+				P91A2C3D4E5F0004 /* PaywallView.swift in Sources */,
+				P91A2C3D4E5F0005 /* SubscriptionStatusView.swift in Sources */,
+				T91A2C3D4E5F0001 /* UsageData.swift in Sources */,
+				T91A2C3D4E5F0002 /* UsageLimitsViewModel.swift in Sources */,
+				T91A2C3D4E5F0003 /* UsageLimitsWidget.swift in Sources */,
+				T91A2C3D4E5F0004 /* UsageLimitsDetailView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -341,6 +663,22 @@
 				0A1B2C3D4E5F678C /* HappyTests.swift in Sources */,
 				B91A2C3D4E5F0008 /* QRCodePayloadTests.swift in Sources */,
 				B91A2C3D4E5F0009 /* QRScannerViewModelTests.swift in Sources */,
+				C91A2C3D4E5F0002 /* KeychainHelperTests.swift in Sources */,
+				D91A2C3D4E5F0002 /* EncryptionServiceTests.swift in Sources */,
+				E91A2C3D4E5F0004 /* APIServiceTests.swift in Sources */,
+				F91A2C3D4E5F0004 /* PushNotificationServiceTests.swift in Sources */,
+				F91A2C3D4E5F0005 /* NotificationSettingsViewModelTests.swift in Sources */,
+				G91A2C3D4E5F0002 /* SyncServiceTests.swift in Sources */,
+				H91A2C3D4E5F0003 /* AuthServiceTests.swift in Sources */,
+				J91A2C3D4E5F0002 /* AuthenticationViewModelTests.swift in Sources */,
+				K91A2C3D4E5F0006 /* SessionViewModelTests.swift in Sources */,
+				L91A2C3D4E5F0001 /* QRScannerIntegrationTests.swift in Sources */,
+				Q91A2C3D4E5F0007 /* ArtifactTests.swift in Sources */,
+				Q91A2C3D4E5F0008 /* SyntaxHighlighterTests.swift in Sources */,
+				R91A2C3D4E5F0008 /* FriendsViewModelTests.swift in Sources */,
+				N91A2C3D4E5F0006 /* VoiceServiceTests.swift in Sources */,
+				P91A2C3D4E5F0006 /* PurchaseServiceTests.swift in Sources */,
+				T91A2C3D4E5F0005 /* UsageLimitsTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -493,6 +831,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Happy/Happy.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
@@ -524,6 +863,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Happy/Happy.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";

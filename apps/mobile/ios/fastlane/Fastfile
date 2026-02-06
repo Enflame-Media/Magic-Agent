@@ -1,0 +1,259 @@
+# frozen_string_literal: true
+
+# Copyright (c) 2024-2026 Enflame Media. All rights reserved.
+#
+# Fastfile - Automated build, test, and deployment lanes for Happy iOS
+# For more information: https://docs.fastlane.tools/
+
+default_platform(:ios)
+
+# ---------------------------------------------------------------------------
+# Constants
+# ---------------------------------------------------------------------------
+PROJECT         = "Happy.xcodeproj"
+SCHEME          = "Happy"
+APP_IDENTIFIER  = "media.enflame.happy.ios"
+SIMULATOR       = "iPhone 15"
+DERIVED_DATA    = "build/DerivedData"
+
+platform :ios do
+  # -------------------------------------------------------------------------
+  # Before all lanes
+  # -------------------------------------------------------------------------
+  before_all do
+    setup_ci if ENV["CI"]
+  end
+
+  # -------------------------------------------------------------------------
+  # Lane: build
+  # -------------------------------------------------------------------------
+  desc "Build the app for testing (no code signing)"
+  lane :build do
+    xcodebuild(
+      project: PROJECT,
+      scheme: SCHEME,
+      destination: "generic/platform=iOS Simulator",
+      configuration: "Debug",
+      derivedDataPath: DERIVED_DATA,
+      xcargs: "CODE_SIGNING_ALLOWED=NO"
+    )
+    UI.success("Build completed successfully")
+  end
+
+  # -------------------------------------------------------------------------
+  # Lane: test
+  # -------------------------------------------------------------------------
+  desc "Run unit tests and UI tests"
+  lane :test do
+    run_tests(
+      project: PROJECT,
+      scheme: SCHEME,
+      devices: [SIMULATOR],
+      derived_data_path: DERIVED_DATA,
+      code_coverage: true,
+      output_directory: "fastlane/test_output",
+      output_types: "junit,html",
+      result_bundle: true,
+      clean: false,
+      fail_build: true
+    )
+    UI.success("All tests passed")
+  end
+
+  # -------------------------------------------------------------------------
+  # Lane: lint
+  # -------------------------------------------------------------------------
+  desc "Run SwiftLint to check code style"
+  lane :lint do
+    if system("which swiftlint > /dev/null 2>&1")
+      swiftlint(
+        mode: :lint,
+        strict: true,
+        raise_if_swiftlint_error: true
+      )
+      UI.success("Linting passed")
+    else
+      UI.important("SwiftLint not installed, skipping lint check")
+    end
+  end
+
+  # -------------------------------------------------------------------------
+  # Lane: beta
+  # -------------------------------------------------------------------------
+  desc "Deploy a new build to TestFlight"
+  lane :beta do |options|
+    ensure_env_vars(
+      env_vars: ["APPLE_ID", "TEAM_ID", "MATCH_PASSWORD", "APP_STORE_CONNECT_API_KEY_ID"]
+    )
+
+    # Increment build number based on TestFlight
+    increment_build_number(
+      build_number: latest_testflight_build_number + 1
+    )
+
+    # Code signing via match
+    sync_code_signing(
+      type: "appstore",
+      app_identifier: APP_IDENTIFIER,
+      readonly: is_ci
+    )
+
+    # Build the app
+    build_app(
+      project: PROJECT,
+      scheme: SCHEME,
+      export_method: "app-store",
+      derived_data_path: DERIVED_DATA,
+      output_directory: "build/output",
+      output_name: "Happy.ipa",
+      include_bitcode: false,
+      clean: true,
+      xcargs: "-allowProvisioningUpdates"
+    )
+
+    # Upload to TestFlight
+    upload_to_testflight(
+      skip_waiting_for_build_processing: true,
+      apple_id: ENV["APPLE_ID"],
+      changelog: options[:changelog] || "Bug fixes and improvements.",
+      distribute_external: false
+    )
+
+    # Clean up build artifacts
+    clean_build_artifacts
+
+    UI.success("Successfully deployed to TestFlight!")
+  end
+
+  # -------------------------------------------------------------------------
+  # Lane: release
+  # -------------------------------------------------------------------------
+  desc "Deploy a new version to the App Store"
+  lane :release do |options|
+    ensure_env_vars(
+      env_vars: [
+        "APPLE_ID",
+        "TEAM_ID",
+        "MATCH_PASSWORD",
+        "APP_STORE_CONNECT_API_KEY_ID",
+        "APP_STORE_CONNECT_API_ISSUER_ID",
+        "APP_STORE_CONNECT_API_KEY_CONTENT"
+      ]
+    )
+
+    # Ensure we're on a clean release branch
+    ensure_git_status_clean unless ENV["CI"]
+
+    version = options[:version]
+    if version
+      increment_version_number(version_number: version)
+    end
+
+    # Increment build number
+    increment_build_number(
+      build_number: latest_testflight_build_number + 1
+    )
+
+    # Code signing via match
+    sync_code_signing(
+      type: "appstore",
+      app_identifier: APP_IDENTIFIER,
+      readonly: is_ci
+    )
+
+    # Build the app
+    build_app(
+      project: PROJECT,
+      scheme: SCHEME,
+      export_method: "app-store",
+      derived_data_path: DERIVED_DATA,
+      output_directory: "build/output",
+      output_name: "Happy.ipa",
+      include_bitcode: false,
+      clean: true,
+      xcargs: "-allowProvisioningUpdates"
+    )
+
+    # Upload to App Store
+    upload_to_app_store(
+      force: true,
+      skip_metadata: options[:skip_metadata] || false,
+      skip_screenshots: options[:skip_screenshots] || true,
+      submit_for_review: options[:submit_for_review] || false,
+      automatic_release: options[:automatic_release] || false,
+      precheck_include_in_app_purchases: false
+    )
+
+    # Clean up
+    clean_build_artifacts
+
+    # Tag the release
+    unless ENV["CI"]
+      add_git_tag(tag: "ios/v#{get_version_number(target: SCHEME)}-#{get_build_number}")
+      push_git_tags
+    end
+
+    UI.success("Successfully released to the App Store!")
+  end
+
+  # -------------------------------------------------------------------------
+  # Lane: certificates
+  # -------------------------------------------------------------------------
+  desc "Sync code signing certificates and provisioning profiles"
+  lane :certificates do |options|
+    sync_code_signing(
+      type: options[:type] || "development",
+      app_identifier: APP_IDENTIFIER,
+      readonly: options[:readonly] || is_ci
+    )
+    UI.success("Certificates synced successfully")
+  end
+
+  # -------------------------------------------------------------------------
+  # Lane: screenshots
+  # -------------------------------------------------------------------------
+  desc "Capture screenshots for App Store"
+  lane :screenshots do
+    capture_screenshots(
+      project: PROJECT,
+      scheme: "HappyUITests",
+      devices: [
+        "iPhone 15 Pro Max",
+        "iPhone SE (3rd generation)",
+        "iPad Pro (12.9-inch) (6th generation)"
+      ],
+      output_directory: "fastlane/screenshots",
+      clear_previous_screenshots: true,
+      stop_after_first_error: true
+    )
+    UI.success("Screenshots captured successfully")
+  end
+
+  # -------------------------------------------------------------------------
+  # After all lanes
+  # -------------------------------------------------------------------------
+  after_all do |lane|
+    UI.success("Lane #{lane} completed successfully!")
+  end
+
+  # -------------------------------------------------------------------------
+  # Error handling
+  # -------------------------------------------------------------------------
+  error do |lane, exception|
+    UI.error("Lane #{lane} failed: #{exception.message}")
+
+    if ENV["CI"] && ENV["SLACK_WEBHOOK_URL"]
+      slack(
+        message: "Happy iOS: Lane `#{lane}` failed",
+        payload: {
+          "Error" => exception.message,
+          "Build URL" => ENV["GITHUB_SERVER_URL"].to_s + "/" +
+                         ENV["GITHUB_REPOSITORY"].to_s + "/actions/runs/" +
+                         ENV["GITHUB_RUN_ID"].to_s
+        },
+        default_payloads: [:git_branch, :last_git_commit],
+        success: false
+      )
+    end
+  end
+end

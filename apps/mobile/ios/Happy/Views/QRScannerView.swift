@@ -16,9 +16,12 @@ import SwiftUI
 /// 3. Displays a viewfinder overlay to guide the user
 /// 4. Navigates to `PairingConfirmationView` on successful scan
 /// 5. Shows `CameraPermissionDeniedView` if permission is denied
+/// 6. Handles pairing progress and error states
+/// 7. Navigates to authenticated state on successful pairing
 struct QRScannerView: View {
 
     @StateObject private var viewModel = QRScannerViewModel()
+    @ObservedObject var authViewModel: AuthenticationViewModel
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -28,7 +31,7 @@ struct QRScannerView: View {
 
             switch viewModel.state {
             case .checkingPermission, .requestingPermission:
-                ProgressView("Checking camera access...")
+                ProgressView("scanner.checkingPermission".localized)
                     .foregroundStyle(.white)
 
             case .scanning:
@@ -38,6 +41,20 @@ struct QRScannerView: View {
                 // Handled via sheet presentation
                 scannerContent
 
+            case .pairing(let payload):
+                PairingProgressView(
+                    serverUrl: payload.serverUrl,
+                    onCancel: {
+                        viewModel.resetScanner()
+                    }
+                )
+
+            case .paired:
+                pairingSuccessView
+
+            case .pairingFailed(let message):
+                pairingFailedView(message: message)
+
             case .permissionDenied:
                 CameraPermissionDeniedView()
 
@@ -45,13 +62,13 @@ struct QRScannerView: View {
                 errorView(message: message)
             }
         }
-        .navigationTitle("Scan QR Code")
+        .navigationTitle("scanner.title".localized)
         .navigationBarTitleDisplayMode(.inline)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 if viewModel.state == .scanning {
-                    Button("Cancel") {
+                    Button("common.cancel".localized) {
                         dismiss()
                     }
                     .foregroundStyle(.white)
@@ -67,8 +84,9 @@ struct QRScannerView: View {
                     PairingConfirmationView(
                         payload: payload,
                         onConfirm: {
-                            viewModel.confirmPairing(with: payload)
-                            viewModel.showPairingConfirmation = false
+                            Task {
+                                await viewModel.confirmPairing(with: payload)
+                            }
                         },
                         onCancel: {
                             viewModel.showPairingConfirmation = false
@@ -76,13 +94,21 @@ struct QRScannerView: View {
                     )
                     .toolbar {
                         ToolbarItem(placement: .navigationBarLeading) {
-                            Button("Cancel") {
+                            Button("common.cancel".localized) {
                                 viewModel.showPairingConfirmation = false
                             }
                         }
                     }
                 }
                 .presentationDetents([.medium, .large])
+            }
+        }
+        .onChange(of: viewModel.isPairingComplete) { newValue in
+            if newValue {
+                // Sync auth state to the shared AuthenticationViewModel
+                Task {
+                    await authViewModel.checkExistingAuth()
+                }
             }
         }
         .task {
@@ -137,7 +163,7 @@ struct QRScannerView: View {
                     Spacer()
                         .frame(height: rect.maxY + 32)
 
-                    Text("Point your camera at the QR code\ndisplayed in your terminal")
+                    Text("scanner.instruction".localized)
                         .font(.subheadline)
                         .foregroundStyle(.white)
                         .multilineTextAlignment(.center)
@@ -150,16 +176,36 @@ struct QRScannerView: View {
         }
     }
 
-    // MARK: - Error View
+    // MARK: - Pairing Success View
 
-    /// Displays an error message with a retry option.
-    private func errorView(message: String) -> some View {
+    /// Displays a brief success message before navigating to the authenticated state.
+    private var pairingSuccessView: some View {
+        VStack(spacing: 24) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 72))
+                .foregroundStyle(.green)
+
+            Text("pairing.success".localized)
+                .font(.title2)
+                .fontWeight(.bold)
+                .foregroundStyle(.white)
+
+            Text("pairing.successDescription".localized)
+                .font(.body)
+                .foregroundStyle(.white.opacity(0.8))
+        }
+    }
+
+    // MARK: - Pairing Failed View
+
+    /// Displays pairing error with retry and scan-again options.
+    private func pairingFailedView(message: String) -> some View {
         VStack(spacing: 24) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.system(size: 48))
-                .foregroundStyle(.yellow)
+                .foregroundStyle(.red)
 
-            Text("Scanner Error")
+            Text("pairing.failed".localized)
                 .font(.title3)
                 .fontWeight(.bold)
                 .foregroundStyle(.white)
@@ -170,7 +216,43 @@ struct QRScannerView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
 
-            Button("Try Again") {
+            VStack(spacing: 16) {
+                Button("pairing.retry".localized) {
+                    Task {
+                        await viewModel.retryPairing()
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+
+                Button("pairing.scanAgain".localized) {
+                    viewModel.resetScanner()
+                }
+                .foregroundStyle(.white.opacity(0.7))
+            }
+        }
+    }
+
+    // MARK: - Error View
+
+    /// Displays an error message with a retry option.
+    private func errorView(message: String) -> some View {
+        VStack(spacing: 24) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 48))
+                .foregroundStyle(.yellow)
+
+            Text("scanner.errorTitle".localized)
+                .font(.title3)
+                .fontWeight(.bold)
+                .foregroundStyle(.white)
+
+            Text(message)
+                .font(.body)
+                .foregroundStyle(.white.opacity(0.8))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 32)
+
+            Button("common.tryAgain".localized) {
                 Task {
                     await viewModel.startScanning()
                 }
@@ -226,6 +308,6 @@ private struct ViewfinderCorners: View {
 
 #Preview {
     NavigationStack {
-        QRScannerView()
+        QRScannerView(authViewModel: AuthenticationViewModel())
     }
 }

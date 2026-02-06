@@ -12,13 +12,13 @@ This file provides guidance to Claude Code when working with the Happy iOS nativ
 
 ## Project Status
 
-> **Phase 1 Complete**: Initial Xcode project structure created.
+> **Phase 2 Complete**: All core features implemented.
 
 ### Implemented
 
 | Feature | Status | Notes |
 |---------|--------|-------|
-| Xcode Project | Done | Happy.xcodeproj with iOS 16+ target |
+| Xcode Project | Done | Happy.xcodeproj with iOS 16+ target (HAP-958) |
 | MVVM Structure | Done | Models, ViewModels, Views, Services folders |
 | App Entry Point | Done | HappyApp.swift with @main |
 | Welcome View | Done | ContentView with onboarding UI |
@@ -31,16 +31,39 @@ This file provides guidance to Claude Code when working with the Happy iOS nativ
 | Camera Permission | Done | CameraPermissionService with async API |
 | Pairing Confirmation | Done | Post-scan confirmation screen |
 | Permission Denied UI | Done | Settings deep-link for camera access |
+| Keychain Helper | Done | Security framework wrapper (HAP-982) |
+| API Service | Done | URLSession with generic request methods (HAP-969) |
+| E2E Encryption | Done | AES-256-GCM via CryptoKit (HAP-978) |
+| Auth Service | Done | Challenge-response auth with CryptoKit (HAP-965) |
+| Push Notifications | Done | APNs integration with categories/actions (HAP-992) |
+| WebSocket Sync | Done | URLSessionWebSocketTask with reconnection (HAP-974) |
+| Auth Integration | Done | QR scan to pairing handshake flow (HAP-966) |
+| Session Views | Done | Session list and detail views (HAP-985) |
+| QR Integration Tests | Done | 30 integration tests for scanning flow (HAP-971) |
+| i18n | Done | 7 languages with .strings/.stringsdict (HAP-995) |
+| Voice Features | Done | ElevenLabs TTS + system fallback (HAP-993) |
+| Purchases | Done | StoreKit 2 with RevenueCat abstraction (HAP-994) |
+| Artifacts Viewer | Done | Syntax-highlighted code viewer, 8 languages (HAP-996) |
+| Friends & Social | Done | Friend list, requests, QR add, profiles (HAP-997) |
+| Usage Limits Widget | Done | Plan usage limits with progress bars, detail view (HAP-722) |
 
-### Next Steps (Phase 2)
+### Completed Phases
 
-- [ ] Authentication service
-- [ ] API service integration
-- [ ] WebSocket sync service
-- [ ] Encryption service (AES-256-GCM)
-- [ ] Keychain helper for secure storage
-- [ ] Session list view
-- [ ] Session detail view
+- [x] Authentication service (HAP-965)
+- [x] Auth integration with QR scanner (HAP-966)
+- [x] API service integration (HAP-969)
+- [x] WebSocket sync service (HAP-974)
+- [x] Encryption service (AES-256-GCM) (HAP-978)
+- [x] Keychain helper for secure storage (HAP-982)
+- [x] Push notifications with APNs (HAP-992)
+- [x] Session list view (HAP-985)
+- [x] Session detail view (HAP-985)
+- [x] QR scanning integration tests (HAP-971)
+- [x] i18n for 7 languages (HAP-995)
+- [x] Voice features with ElevenLabs (HAP-993)
+- [x] In-app purchases with StoreKit 2 (HAP-994)
+- [x] Artifacts viewer with syntax highlighting (HAP-996)
+- [x] Friends and social features (HAP-997)
 
 ## Architecture
 
@@ -322,6 +345,35 @@ The app requires camera access for QR code scanning. This is configured in Info.
 
 - iPhone: Portrait, Landscape Left, Landscape Right
 - iPad: All orientations including Upside Down
+
+### Push Notifications (APNs)
+
+The app supports push notifications for session updates, messages, and pairing requests.
+
+**Configuration:**
+- Entitlements: `Happy/Happy.entitlements` with `aps-environment` key
+- Background mode: `remote-notification` in Info.plist
+- App delegate: `AppDelegate` handles APNs token registration via `UIApplicationDelegateAdaptor`
+
+**Notification Categories:**
+- `SESSION_UPDATE` - Session state changes (completed, error, waiting for input)
+- `MESSAGE` - New messages in a session (supports inline reply)
+- `PAIRING` - Pairing request status changes (approve/reject actions)
+
+**Architecture:**
+- `PushNotificationService` - Singleton managing APNs registration, token storage, and notification processing
+- `NotificationSettingsViewModel` - ViewModel for notification preferences UI
+- `NotificationSettingsView` - SwiftUI settings view for notification management
+- Device token stored in Keychain via `KeychainHelper.Key.deviceToken`
+
+```swift
+// Request permission and register
+let service = PushNotificationService.shared
+await service.requestPermission()
+
+// Token is automatically stored when APNs registration succeeds
+let token = service.deviceToken
+```
 
 ### Device Support
 

@@ -1,0 +1,139 @@
+/*
+  Localizable.strings (Simplified Chinese)
+  Happy
+
+  Copyright (c) 2024-2026 Enflame Media. All rights reserved.
+*/
+
+// MARK: - Common
+
+"common.cancel" = "取消";
+"common.connect" = "连接";
+"common.enabled" = "已启用";
+"common.disabled" = "已禁用";
+"common.tryAgain" = "重试";
+"common.goBack" = "返回";
+
+// MARK: - Welcome Screen
+
+"welcome.title" = "Happy";
+"welcome.subtitle" = "Claude Code 远程控制";
+"welcome.getStarted" = "开始使用";
+"welcome.navigationTitle" = "欢迎";
+
+// MARK: - Welcome Instructions
+
+"welcome.instruction1.title" = "启动 Claude Code CLI";
+"welcome.instruction1.description" = "在终端中运行 'happy'";
+"welcome.instruction2.title" = "扫描二维码";
+"welcome.instruction2.description" = "使用下方按钮进行连接";
+"welcome.instruction3.title" = "远程控制";
+"welcome.instruction3.description" = "通过 iPhone 查看和管理会话";
+
+// MARK: - QR Scanner
+
+"scanner.title" = "扫描二维码";
+"scanner.scanButton" = "扫描二维码";
+"scanner.checkingPermission" = "正在检查相机权限...";
+"scanner.instruction" = "将相机对准终端中\n显示的二维码";
+"scanner.errorTitle" = "扫描器错误";
+
+// MARK: - Camera Permission
+
+"camera.accessRequired" = "需要相机权限";
+"camera.accessDescription" = "Happy 需要相机权限来扫描 Claude Code CLI 的二维码。请在设置中启用相机权限。";
+"camera.openSettings" = "打开设置";
+"camera.navigationTitle" = "相机权限";
+
+// MARK: - Pairing Confirmation
+
+"pairing.title" = "二维码已扫描";
+"pairing.subtitle" = "确认连接到 Claude Code CLI";
+"pairing.serverLabel" = "服务器";
+"pairing.publicKeyLabel" = "公钥";
+"pairing.machineLabel" = "设备";
+"pairing.scanAgain" = "重新扫描";
+"pairing.navigationTitle" = "确认配对";
+
+// MARK: - Notifications
+
+"notifications.title" = "通知";
+"notifications.pushNotifications" = "推送通知";
+"notifications.description" = "在会话完成、发生错误或收到新消息时接收通知。";
+"notifications.enable" = "启用通知";
+"notifications.notificationTypes" = "通知类型";
+"notifications.typesDescription" = "选择您希望接收的通知类型。";
+"notifications.sessionUpdates" = "会话更新";
+"notifications.messages" = "消息";
+"notifications.pairingRequests" = "配对请求";
+"notifications.debugInfo" = "调试信息";
+"notifications.deviceToken" = "设备令牌";
+
+// MARK: - Notification Status
+
+"notifications.status.enabled" = "已启用";
+"notifications.status.disabled" = "已禁用";
+"notifications.status.denied" = "已拒绝 - 点击打开设置";
+"notifications.status.provisional" = "临时授权";
+"notifications.status.ephemeral" = "临时";
+"notifications.status.notConfigured" = "未配置";
+"notifications.status.unknown" = "未知";
+
+// MARK: - Sessions (Plurals - see .stringsdict)
+
+"sessions.count" = "%d 个会话";
+
+// MARK: - Messages (Plurals - see .stringsdict)
+
+"messages.count" = "%d 条消息";
+
+// MARK: - Pairing Progress
+
+"pairing.connecting" = "连接中...";
+"pairing.connectingDescription" = "正在与 Claude Code CLI\n建立安全连接";
+"pairing.stepGeneratingKeys" = "正在生成加密密钥";
+"pairing.stepChallengeResponse" = "正在进行挑战-响应验证";
+"pairing.stepSecuring" = "正在保护连接";
+"pairing.success" = "配对成功";
+"pairing.successDescription" = "已连接到 Claude Code CLI";
+"pairing.failed" = "配对失败";
+"pairing.retry" = "重试";
+
+// MARK: - Session List
+
+"sessionList.title" = "会话";
+"sessionList.searchPrompt" = "搜索会话";
+"sessionList.loading" = "正在加载会话...";
+"sessionList.noSessions" = "暂无会话";
+"sessionList.noSessionsDescription" = "从 CLI 启动 Claude Code 会话后，会显示在这里。";
+"sessionList.noMatching" = "没有匹配的会话";
+"sessionList.noMatchingDescription" = "请尝试调整搜索条件或筛选器。";
+"sessionList.disconnect" = "断开连接";
+
+// MARK: - Session Detail
+
+"sessionDetail.session" = "会话";
+"sessionDetail.loading" = "正在加载消息...";
+"sessionDetail.noMessages" = "暂无消息";
+"sessionDetail.noMessagesDescription" = "会话进行时，消息将显示在这里。";
+"sessionDetail.waitingForActivity" = "等待活动...";
+"sessionDetail.machineLabel" = "设备";
+"sessionDetail.startedLabel" = "开始时间";
+"sessionDetail.costLabel" = "费用";
+"sessionDetail.tokensLabel" = "令牌";
+"sessionDetail.streaming" = "Claude 正在回复...";
+"sessionDetail.untitledSession" = "未命名会话";
+
+// MARK: - Common Actions
+
+"common.ok" = "确定";
+"common.error" = "错误";
+"common.filter" = "筛选";
+"common.retry" = "重试";
+
+// MARK: - Errors
+
+"error.generic" = "发生错误，请重试。";
+"error.networkUnavailable" = "网络连接不可用。";
+"error.authenticationFailed" = "认证失败，请重试。";
+"error.unknown" = "发生未知错误。";

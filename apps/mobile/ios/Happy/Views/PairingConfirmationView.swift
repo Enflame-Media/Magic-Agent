@@ -34,11 +34,11 @@ struct PairingConfirmationView: View {
 
             // Title
             VStack(spacing: 8) {
-                Text("QR Code Scanned")
+                Text("pairing.title".localized)
                     .font(.title2)
                     .fontWeight(.bold)
 
-                Text("Confirm connection to Claude Code CLI")
+                Text("pairing.subtitle".localized)
                     .font(.body)
                     .foregroundStyle(.secondary)
             }
@@ -47,20 +47,20 @@ struct PairingConfirmationView: View {
             VStack(alignment: .leading, spacing: 16) {
                 DetailRow(
                     icon: "server.rack",
-                    title: "Server",
+                    title: NSLocalizedString("pairing.serverLabel", comment: ""),
                     value: displayServerUrl
                 )
 
                 DetailRow(
                     icon: "key.fill",
-                    title: "Public Key",
+                    title: NSLocalizedString("pairing.publicKeyLabel", comment: ""),
                     value: truncatedPublicKey
                 )
 
                 if let machineId = payload.machineId {
                     DetailRow(
                         icon: "desktopcomputer",
-                        title: "Machine",
+                        title: NSLocalizedString("pairing.machineLabel", comment: ""),
                         value: machineId
                     )
                 }
@@ -79,13 +79,13 @@ struct PairingConfirmationView: View {
                 Button {
                     onConfirm()
                 } label: {
-                    Label("Connect", systemImage: "link")
+                    Label("common.connect".localized, systemImage: "link")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
 
-                Button("Scan Again") {
+                Button("pairing.scanAgain".localized) {
                     onCancel()
                 }
                 .foregroundStyle(.secondary)
@@ -95,7 +95,7 @@ struct PairingConfirmationView: View {
             Spacer()
         }
         .padding()
-        .navigationTitle("Confirm Pairing")
+        .navigationTitle("pairing.navigationTitle".localized)
         .navigationBarTitleDisplayMode(.inline)
     }
 

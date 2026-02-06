@@ -11,23 +11,38 @@ import SwiftUI
 /// The root view of the Happy iOS application.
 ///
 /// This view provides the main navigation structure for the app,
-/// handling routing between different screens based on app state.
+/// handling routing between different screens based on authentication state.
+/// When unauthenticated, shows the welcome/pairing flow.
+/// When authenticated, shows the session list (placeholder for now).
 struct ContentView: View {
+
+    @StateObject private var authViewModel = AuthenticationViewModel()
+
     var body: some View {
-        NavigationStack {
-            WelcomeView()
+        Group {
+            if authViewModel.isAuthenticated {
+                NavigationStack {
+                    SessionListView(authViewModel: authViewModel)
+                }
+            } else {
+                NavigationStack {
+                    WelcomeView(authViewModel: authViewModel)
+                }
+            }
+        }
+        .task {
+            await authViewModel.checkExistingAuth()
         }
     }
 }
 
-/// The welcome view shown when the app first launches.
+/// The welcome view shown when the app first launches or after logout.
 ///
 /// This view provides onboarding instructions and a way to
 /// connect to a Claude Code CLI instance via QR code scanning.
 struct WelcomeView: View {
 
-    /// Controls navigation to the QR scanner screen.
-    @State private var showScanner = false
+    @ObservedObject var authViewModel: AuthenticationViewModel
 
     var body: some View {
         VStack(spacing: 32) {
@@ -39,11 +54,11 @@ struct WelcomeView: View {
                     .font(.system(size: 72))
                     .foregroundStyle(.blue.gradient)
 
-                Text("Happy")
+                Text("welcome.title".localized)
                     .font(.largeTitle)
                     .fontWeight(.bold)
 
-                Text("Remote control for Claude Code")
+                Text("welcome.subtitle".localized)
                     .font(.title3)
                     .foregroundStyle(.secondary)
             }
@@ -52,26 +67,26 @@ struct WelcomeView: View {
 
             // Setup instructions
             VStack(spacing: 24) {
-                Text("Get Started")
+                Text("welcome.getStarted".localized)
                     .font(.headline)
 
                 VStack(alignment: .leading, spacing: 16) {
                     InstructionRow(
                         number: 1,
-                        title: "Start Claude Code CLI",
-                        description: "Run 'happy' in your terminal"
+                        title: NSLocalizedString("welcome.instruction1.title", comment: ""),
+                        description: NSLocalizedString("welcome.instruction1.description", comment: "")
                     )
 
                     InstructionRow(
                         number: 2,
-                        title: "Scan QR Code",
-                        description: "Use the button below to connect"
+                        title: NSLocalizedString("welcome.instruction2.title", comment: ""),
+                        description: NSLocalizedString("welcome.instruction2.description", comment: "")
                     )
 
                     InstructionRow(
                         number: 3,
-                        title: "Control Remotely",
-                        description: "View and manage sessions from your iPhone"
+                        title: NSLocalizedString("welcome.instruction3.title", comment: ""),
+                        description: NSLocalizedString("welcome.instruction3.description", comment: "")
                     )
                 }
                 .frame(maxWidth: 350)
@@ -80,8 +95,8 @@ struct WelcomeView: View {
             Spacer()
 
             // Connect button - navigates to QR scanner
-            NavigationLink(destination: QRScannerView()) {
-                Label("Scan QR Code", systemImage: "qrcode.viewfinder")
+            NavigationLink(destination: QRScannerView(authViewModel: authViewModel)) {
+                Label("scanner.scanButton".localized, systemImage: "qrcode.viewfinder")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
@@ -91,8 +106,15 @@ struct WelcomeView: View {
             Spacer()
         }
         .padding()
-        .navigationTitle("Welcome")
+        .navigationTitle("welcome.navigationTitle".localized)
         .navigationBarTitleDisplayMode(.inline)
+        .alert("common.error".localized, isPresented: $authViewModel.showError) {
+            Button("common.ok".localized) {
+                authViewModel.dismissError()
+            }
+        } message: {
+            Text(authViewModel.errorMessage ?? "error.unknown".localized)
+        }
     }
 }
 

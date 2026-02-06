@@ -1,0 +1,108 @@
+# Copyright (c) 2024-2026 Enflame Media. All rights reserved.
+#
+# GitHub Actions CI workflow for Happy iOS
+# Runs build and tests on pull requests and pushes to main
+
+name: iOS CI
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - '**/*.swift'
+      - '**/*.xcodeproj/**'
+      - '**/Fastfile'
+      - '**/Gemfile*'
+      - '.github/workflows/ios-ci.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - '**/*.swift'
+      - '**/*.xcodeproj/**'
+      - '**/Fastfile'
+      - '**/Gemfile*'
+      - '.github/workflows/ios-ci.yml'
+
+concurrency:
+  group: ios-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
+  FASTLANE_SKIP_UPDATE_CHECK: "1"
+  FASTLANE_HIDE_CHANGELOG: "1"
+
+jobs:
+  build-and-test:
+    name: Build & Test
+    runs-on: macos-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Select Xcode version
+        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Cache Ruby gems
+        uses: actions/cache@v4
+        with:
+          path: vendor/bundle
+          key: ${{ runner.os }}-gems-${{ hashFiles('**/Gemfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-gems-
+
+      - name: Cache derived data
+        uses: actions/cache@v4
+        with:
+          path: build/DerivedData
+          key: ${{ runner.os }}-derived-data-${{ hashFiles('**/*.swift', '**/*.xcodeproj/**') }}
+          restore-keys: |
+            ${{ runner.os }}-derived-data-
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+
+      - name: Install Fastlane
+        run: |
+          bundle config set --local path 'vendor/bundle'
+          bundle install --jobs 4 --retry 3
+
+      - name: Build
+        run: bundle exec fastlane build
+
+      - name: Run tests
+        run: bundle exec fastlane test
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            fastlane/test_output/
+            build/DerivedData/Logs/Test/
+          retention-days: 14
+
+  lint:
+    name: Lint
+    runs-on: macos-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install SwiftLint
+        run: brew install swiftlint
+
+      - name: Run SwiftLint
+        run: swiftlint lint --strict --reporter github-actions-logging
+        continue-on-error: true

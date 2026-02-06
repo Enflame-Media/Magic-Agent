@@ -22,6 +22,15 @@ enum QRScannerState: Equatable {
     /// A QR code was successfully scanned and parsed.
     case scanned(QRCodePayload)
 
+    /// Pairing is in progress with the server.
+    case pairing(QRCodePayload)
+
+    /// Pairing completed successfully.
+    case paired
+
+    /// Pairing failed with an error.
+    case pairingFailed(String)
+
     /// Camera permission was denied by the user.
     case permissionDenied
 
@@ -32,7 +41,8 @@ enum QRScannerState: Equatable {
 /// ViewModel for the QR code scanner screen.
 ///
 /// Manages the scanner lifecycle including camera permissions, QR code
-/// detection callbacks, and navigation to the pairing confirmation screen.
+/// detection callbacks, pairing handshake via `AuthService`, and navigation
+/// to the authenticated state.
 ///
 /// Uses `ObservableObject` for iOS 16 compatibility (not `@Observable`
 /// which requires iOS 17).
@@ -52,18 +62,29 @@ final class QRScannerViewModel: ObservableObject {
     /// Whether to show the pairing confirmation screen.
     @Published var showPairingConfirmation: Bool = false
 
+    /// Whether pairing completed successfully and the app should navigate away.
+    @Published private(set) var isPairingComplete: Bool = false
+
     // MARK: - Dependencies
 
-    private let cameraPermissionService: CameraPermissionService
+    private let cameraPermissionService: CameraPermissionProviding
+    private let authService: AuthService
 
     // MARK: - Initialization
 
     /// Creates a new QR scanner view model.
     ///
-    /// - Parameter cameraPermissionService: The service used to manage camera permissions.
-    ///   Defaults to a new instance.
-    init(cameraPermissionService: CameraPermissionService = CameraPermissionService()) {
+    /// - Parameters:
+    ///   - cameraPermissionService: The service used to manage camera permissions.
+    ///     Defaults to a new instance.
+    ///   - authService: The authentication service used for the pairing handshake.
+    ///     Defaults to the shared singleton.
+    init(
+        cameraPermissionService: CameraPermissionProviding = CameraPermissionService(),
+        authService: AuthService = .shared
+    ) {
         self.cameraPermissionService = cameraPermissionService
+        self.authService = authService
     }
 
     // MARK: - Public Methods
@@ -128,25 +149,51 @@ final class QRScannerViewModel: ObservableObject {
     func resetScanner() {
         scannedPayload = nil
         showPairingConfirmation = false
+        isPairingComplete = false
         activateScanning()
     }
 
     /// Confirms the pairing with the scanned payload.
     ///
-    /// This will be expanded in a future issue to perform the actual
-    /// key exchange and authentication with the server.
+    /// Performs the full authentication handshake:
+    /// 1. Generates a local keypair
+    /// 2. Sends pairing request to the server
+    /// 3. Completes challenge-response authentication
+    /// 4. Stores credentials securely in Keychain
+    ///
+    /// On success, sets `isPairingComplete` to `true` to trigger navigation
+    /// to the authenticated state.
     ///
     /// - Parameter payload: The QR code payload to confirm pairing with.
     @MainActor
-    func confirmPairing(with payload: QRCodePayload) {
-        // TODO(HAP-960+): Implement actual pairing flow
-        // 1. Generate local keypair
-        // 2. Derive shared secret from CLI's public key
-        // 3. Send pairing request to server
-        // 4. Navigate to session list on success
-        #if DEBUG
-        print("[QRScanner] Pairing confirmed with server: \(payload.serverUrl)")
-        #endif
+    func confirmPairing(with payload: QRCodePayload) async {
+        state = .pairing(payload)
+
+        do {
+            try await authService.startPairing(with: payload)
+            state = .paired
+            isPairingComplete = true
+            showPairingConfirmation = false
+        } catch {
+            let message = error.localizedDescription
+            state = .pairingFailed(message)
+
+            #if DEBUG
+            print("[QRScanner] Pairing failed: \(message)")
+            #endif
+        }
+    }
+
+    /// Retries pairing after a failure using the previously scanned payload.
+    ///
+    /// If no payload is available, resets the scanner to scan again.
+    @MainActor
+    func retryPairing() async {
+        guard let payload = scannedPayload else {
+            resetScanner()
+            return
+        }
+        await confirmPairing(with: payload)
     }
 
     // MARK: - Private Methods

@@ -1,0 +1,203 @@
+# Copyright (c) 2024-2026 Enflame Media. All rights reserved.
+#
+# GitHub Actions CD workflow for Happy iOS
+# Deploys to TestFlight on merge to main
+#
+# Security: All workflow_dispatch inputs are passed through env: blocks
+# and referenced as shell variables to prevent command injection.
+
+name: iOS CD
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '**/*.swift'
+      - '**/*.xcodeproj/**'
+      - '**/Fastfile'
+      - '.github/workflows/ios-cd.yml'
+  workflow_dispatch:
+    inputs:
+      lane:
+        description: 'Fastlane lane to run'
+        required: true
+        default: 'beta'
+        type: choice
+        options:
+          - beta
+          - release
+      version:
+        description: 'Version number (release lane only, e.g., 1.2.0)'
+        required: false
+        type: string
+      changelog:
+        description: 'Changelog for TestFlight (beta lane only)'
+        required: false
+        type: string
+        default: 'Bug fixes and improvements.'
+
+concurrency:
+  group: ios-cd-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
+  FASTLANE_SKIP_UPDATE_CHECK: "1"
+  FASTLANE_HIDE_CHANGELOG: "1"
+
+jobs:
+  # Run tests before deploying
+  test:
+    name: Pre-deploy Tests
+    runs-on: macos-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Select Xcode version
+        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+
+      - name: Cache Ruby gems
+        uses: actions/cache@v4
+        with:
+          path: vendor/bundle
+          key: ${{ runner.os }}-gems-${{ hashFiles('**/Gemfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-gems-
+
+      - name: Cache derived data
+        uses: actions/cache@v4
+        with:
+          path: build/DerivedData
+          key: ${{ runner.os }}-derived-data-${{ hashFiles('**/*.swift', '**/*.xcodeproj/**') }}
+          restore-keys: |
+            ${{ runner.os }}-derived-data-
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+
+      - name: Install Fastlane
+        run: |
+          bundle config set --local path 'vendor/bundle'
+          bundle install --jobs 4 --retry 3
+
+      - name: Run tests
+        run: bundle exec fastlane test
+
+  # Deploy to TestFlight or App Store
+  deploy:
+    name: Deploy
+    needs: test
+    runs-on: macos-latest
+    timeout-minutes: 45
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Select Xcode version
+        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+
+      - name: Cache Ruby gems
+        uses: actions/cache@v4
+        with:
+          path: vendor/bundle
+          key: ${{ runner.os }}-gems-${{ hashFiles('**/Gemfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-gems-
+
+      - name: Cache derived data
+        uses: actions/cache@v4
+        with:
+          path: build/DerivedData
+          key: ${{ runner.os }}-derived-data-${{ hashFiles('**/*.swift', '**/*.xcodeproj/**') }}
+          restore-keys: |
+            ${{ runner.os }}-derived-data-
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+
+      - name: Install Fastlane
+        run: |
+          bundle config set --local path 'vendor/bundle'
+          bundle install --jobs 4 --retry 3
+
+      - name: Set up App Store Connect API key
+        env:
+          ASC_API_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
+          ASC_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo "$ASC_API_KEY_CONTENT" > ~/.appstoreconnect/private_keys/AuthKey_"$ASC_API_KEY_ID".p8
+
+      - name: Set up SSH key for match
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.MATCH_DEPLOY_KEY }}
+
+      - name: Determine lane
+        id: lane
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_LANE: ${{ github.event.inputs.lane }}
+        run: |
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "name=$INPUT_LANE" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=beta" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Deploy to TestFlight
+        if: steps.lane.outputs.name == 'beta'
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          TEAM_ID: ${{ secrets.TEAM_ID }}
+          ITC_TEAM_ID: ${{ secrets.ITC_TEAM_ID }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
+          FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: ${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}
+          CHANGELOG: ${{ github.event.inputs.changelog }}
+        run: |
+          bundle exec fastlane beta changelog:"${CHANGELOG:-Bug fixes and improvements.}"
+
+      - name: Deploy to App Store
+        if: steps.lane.outputs.name == 'release'
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          TEAM_ID: ${{ secrets.TEAM_ID }}
+          ITC_TEAM_ID: ${{ secrets.ITC_TEAM_ID }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
+          FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: ${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}
+          RELEASE_VERSION: ${{ github.event.inputs.version }}
+        run: |
+          ARGS=""
+          if [ -n "$RELEASE_VERSION" ]; then
+            ARGS="version:$RELEASE_VERSION"
+          fi
+          bundle exec fastlane release $ARGS
+
+      - name: Upload build artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            build/output/*.ipa
+            build/output/*.dSYM.zip
+          retention-days: 30

@@ -1,0 +1,139 @@
+/*
+  Localizable.strings (Japanese)
+  Happy
+
+  Copyright (c) 2024-2026 Enflame Media. All rights reserved.
+*/
+
+// MARK: - Common
+
+"common.cancel" = "キャンセル";
+"common.connect" = "接続";
+"common.enabled" = "有効";
+"common.disabled" = "無効";
+"common.tryAgain" = "再試行";
+"common.goBack" = "戻る";
+
+// MARK: - Welcome Screen
+
+"welcome.title" = "Happy";
+"welcome.subtitle" = "Claude Codeのリモートコントロール";
+"welcome.getStarted" = "はじめに";
+"welcome.navigationTitle" = "ようこそ";
+
+// MARK: - Welcome Instructions
+
+"welcome.instruction1.title" = "Claude Code CLIを起動";
+"welcome.instruction1.description" = "ターミナルで「happy」を実行してください";
+"welcome.instruction2.title" = "QRコードをスキャン";
+"welcome.instruction2.description" = "下のボタンを使って接続してください";
+"welcome.instruction3.title" = "リモート操作";
+"welcome.instruction3.description" = "iPhoneからセッションを表示・管理";
+
+// MARK: - QR Scanner
+
+"scanner.title" = "QRコードをスキャン";
+"scanner.scanButton" = "QRコードをスキャン";
+"scanner.checkingPermission" = "カメラへのアクセスを確認中...";
+"scanner.instruction" = "ターミナルに表示されているQRコードに\nカメラを向けてください";
+"scanner.errorTitle" = "スキャナーエラー";
+
+// MARK: - Camera Permission
+
+"camera.accessRequired" = "カメラへのアクセスが必要です";
+"camera.accessDescription" = "HappyはClaude Code CLIのQRコードをスキャンするためにカメラへのアクセスが必要です。設定でカメラへのアクセスを有効にしてください。";
+"camera.openSettings" = "設定を開く";
+"camera.navigationTitle" = "カメラアクセス";
+
+// MARK: - Pairing Confirmation
+
+"pairing.title" = "QRコードをスキャンしました";
+"pairing.subtitle" = "Claude Code CLIへの接続を確認";
+"pairing.serverLabel" = "サーバー";
+"pairing.publicKeyLabel" = "公開鍵";
+"pairing.machineLabel" = "マシン";
+"pairing.scanAgain" = "再スキャン";
+"pairing.navigationTitle" = "ペアリングの確認";
+
+// MARK: - Notifications
+
+"notifications.title" = "通知";
+"notifications.pushNotifications" = "プッシュ通知";
+"notifications.description" = "セッションの完了、エラーの発生、新しいメッセージの到着時に通知を受け取ります。";
+"notifications.enable" = "通知を有効にする";
+"notifications.notificationTypes" = "通知の種類";
+"notifications.typesDescription" = "受け取りたい通知の種類を選択してください。";
+"notifications.sessionUpdates" = "セッション更新";
+"notifications.messages" = "メッセージ";
+"notifications.pairingRequests" = "ペアリングリクエスト";
+"notifications.debugInfo" = "デバッグ情報";
+"notifications.deviceToken" = "デバイストークン";
+
+// MARK: - Notification Status
+
+"notifications.status.enabled" = "有効";
+"notifications.status.disabled" = "無効";
+"notifications.status.denied" = "拒否済み - タップして設定を開く";
+"notifications.status.provisional" = "仮承認";
+"notifications.status.ephemeral" = "一時的";
+"notifications.status.notConfigured" = "未設定";
+"notifications.status.unknown" = "不明";
+
+// MARK: - Sessions (Plurals - see .stringsdict)
+
+"sessions.count" = "%d件のセッション";
+
+// MARK: - Messages (Plurals - see .stringsdict)
+
+"messages.count" = "%d件のメッセージ";
+
+// MARK: - Pairing Progress
+
+"pairing.connecting" = "接続中...";
+"pairing.connectingDescription" = "Claude Code CLIとの\nセキュアな接続を確立しています";
+"pairing.stepGeneratingKeys" = "暗号鍵を生成中";
+"pairing.stepChallengeResponse" = "チャレンジレスポンスを実行中";
+"pairing.stepSecuring" = "接続を保護中";
+"pairing.success" = "ペアリング成功";
+"pairing.successDescription" = "Claude Code CLIに接続しました";
+"pairing.failed" = "ペアリング失敗";
+"pairing.retry" = "再試行";
+
+// MARK: - Session List
+
+"sessionList.title" = "セッション";
+"sessionList.searchPrompt" = "セッションを検索";
+"sessionList.loading" = "セッションを読み込み中...";
+"sessionList.noSessions" = "セッションがありません";
+"sessionList.noSessionsDescription" = "CLIからClaude Codeセッションを開始すると、ここに表示されます。";
+"sessionList.noMatching" = "一致するセッションがありません";
+"sessionList.noMatchingDescription" = "検索条件やフィルターを調整してみてください。";
+"sessionList.disconnect" = "切断";
+
+// MARK: - Session Detail
+
+"sessionDetail.session" = "セッション";
+"sessionDetail.loading" = "メッセージを読み込み中...";
+"sessionDetail.noMessages" = "メッセージがありません";
+"sessionDetail.noMessagesDescription" = "セッションが進むにつれてメッセージがここに表示されます。";
+"sessionDetail.waitingForActivity" = "アクティビティを待機中...";
+"sessionDetail.machineLabel" = "マシン";
+"sessionDetail.startedLabel" = "開始";
+"sessionDetail.costLabel" = "コスト";
+"sessionDetail.tokensLabel" = "トークン";
+"sessionDetail.streaming" = "Claudeが応答中...";
+"sessionDetail.untitledSession" = "無題のセッション";
+
+// MARK: - Common Actions
+
+"common.ok" = "OK";
+"common.error" = "エラー";
+"common.filter" = "フィルター";
+"common.retry" = "再試行";
+
+// MARK: - Errors
+
+"error.generic" = "エラーが発生しました。もう一度お試しください。";
+"error.networkUnavailable" = "ネットワーク接続が利用できません。";
+"error.authenticationFailed" = "認証に失敗しました。もう一度お試しください。";
+"error.unknown" = "不明なエラーが発生しました。";

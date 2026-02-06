@@ -1,0 +1,139 @@
+/*
+  Localizable.strings (English - Base)
+  Happy
+
+  Copyright (c) 2024-2026 Enflame Media. All rights reserved.
+*/
+
+// MARK: - Common
+
+"common.cancel" = "Cancel";
+"common.connect" = "Connect";
+"common.enabled" = "Enabled";
+"common.disabled" = "Disabled";
+"common.tryAgain" = "Try Again";
+"common.goBack" = "Go Back";
+
+// MARK: - Welcome Screen
+
+"welcome.title" = "Happy";
+"welcome.subtitle" = "Remote control for Claude Code";
+"welcome.getStarted" = "Get Started";
+"welcome.navigationTitle" = "Welcome";
+
+// MARK: - Welcome Instructions
+
+"welcome.instruction1.title" = "Start Claude Code CLI";
+"welcome.instruction1.description" = "Run 'happy' in your terminal";
+"welcome.instruction2.title" = "Scan QR Code";
+"welcome.instruction2.description" = "Use the button below to connect";
+"welcome.instruction3.title" = "Control Remotely";
+"welcome.instruction3.description" = "View and manage sessions from your iPhone";
+
+// MARK: - QR Scanner
+
+"scanner.title" = "Scan QR Code";
+"scanner.scanButton" = "Scan QR Code";
+"scanner.checkingPermission" = "Checking camera access...";
+"scanner.instruction" = "Point your camera at the QR code\ndisplayed in your terminal";
+"scanner.errorTitle" = "Scanner Error";
+
+// MARK: - Camera Permission
+
+"camera.accessRequired" = "Camera Access Required";
+"camera.accessDescription" = "Happy needs camera access to scan QR codes from your Claude Code CLI. Please enable camera access in Settings.";
+"camera.openSettings" = "Open Settings";
+"camera.navigationTitle" = "Camera Access";
+
+// MARK: - Pairing Confirmation
+
+"pairing.title" = "QR Code Scanned";
+"pairing.subtitle" = "Confirm connection to Claude Code CLI";
+"pairing.serverLabel" = "Server";
+"pairing.publicKeyLabel" = "Public Key";
+"pairing.machineLabel" = "Machine";
+"pairing.scanAgain" = "Scan Again";
+"pairing.navigationTitle" = "Confirm Pairing";
+
+// MARK: - Notifications
+
+"notifications.title" = "Notifications";
+"notifications.pushNotifications" = "Push Notifications";
+"notifications.description" = "Receive notifications when sessions complete, errors occur, or new messages arrive.";
+"notifications.enable" = "Enable Notifications";
+"notifications.notificationTypes" = "Notification Types";
+"notifications.typesDescription" = "Choose which types of notifications you want to receive.";
+"notifications.sessionUpdates" = "Session Updates";
+"notifications.messages" = "Messages";
+"notifications.pairingRequests" = "Pairing Requests";
+"notifications.debugInfo" = "Debug Info";
+"notifications.deviceToken" = "Device Token";
+
+// MARK: - Notification Status
+
+"notifications.status.enabled" = "Enabled";
+"notifications.status.disabled" = "Disabled";
+"notifications.status.denied" = "Denied - Tap to open Settings";
+"notifications.status.provisional" = "Provisional";
+"notifications.status.ephemeral" = "Ephemeral";
+"notifications.status.notConfigured" = "Not configured";
+"notifications.status.unknown" = "Unknown";
+
+// MARK: - Sessions (Plurals - see .stringsdict)
+
+"sessions.count" = "%d sessions";
+
+// MARK: - Messages (Plurals - see .stringsdict)
+
+"messages.count" = "%d messages";
+
+// MARK: - Pairing Progress
+
+"pairing.connecting" = "Connecting...";
+"pairing.connectingDescription" = "Establishing secure connection\nwith Claude Code CLI";
+"pairing.stepGeneratingKeys" = "Generating encryption keys";
+"pairing.stepChallengeResponse" = "Performing challenge-response";
+"pairing.stepSecuring" = "Securing connection";
+"pairing.success" = "Paired Successfully";
+"pairing.successDescription" = "Connected to Claude Code CLI";
+"pairing.failed" = "Pairing Failed";
+"pairing.retry" = "Retry";
+
+// MARK: - Session List
+
+"sessionList.title" = "Sessions";
+"sessionList.searchPrompt" = "Search sessions";
+"sessionList.loading" = "Loading sessions...";
+"sessionList.noSessions" = "No Sessions Yet";
+"sessionList.noSessionsDescription" = "Start a Claude Code session from your CLI to see it here.";
+"sessionList.noMatching" = "No Matching Sessions";
+"sessionList.noMatchingDescription" = "Try adjusting your search or filter.";
+"sessionList.disconnect" = "Disconnect";
+
+// MARK: - Session Detail
+
+"sessionDetail.session" = "Session";
+"sessionDetail.loading" = "Loading messages...";
+"sessionDetail.noMessages" = "No Messages Yet";
+"sessionDetail.noMessagesDescription" = "Messages will appear here as the session progresses.";
+"sessionDetail.waitingForActivity" = "Waiting for activity...";
+"sessionDetail.machineLabel" = "Machine";
+"sessionDetail.startedLabel" = "Started";
+"sessionDetail.costLabel" = "Cost";
+"sessionDetail.tokensLabel" = "Tokens";
+"sessionDetail.streaming" = "Claude is responding...";
+"sessionDetail.untitledSession" = "Untitled Session";
+
+// MARK: - Common Actions
+
+"common.ok" = "OK";
+"common.error" = "Error";
+"common.filter" = "Filter";
+"common.retry" = "Retry";
+
+// MARK: - Errors
+
+"error.generic" = "An error occurred. Please try again.";
+"error.networkUnavailable" = "Network connection unavailable.";
+"error.authenticationFailed" = "Authentication failed. Please try again.";
+"error.unknown" = "An unknown error occurred.";

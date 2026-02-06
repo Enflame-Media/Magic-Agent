@@ -1,0 +1,139 @@
+/*
+  Localizable.strings (Korean)
+  Happy
+
+  Copyright (c) 2024-2026 Enflame Media. All rights reserved.
+*/
+
+// MARK: - Common
+
+"common.cancel" = "취소";
+"common.connect" = "연결";
+"common.enabled" = "활성화됨";
+"common.disabled" = "비활성화됨";
+"common.tryAgain" = "다시 시도";
+"common.goBack" = "뒤로";
+
+// MARK: - Welcome Screen
+
+"welcome.title" = "Happy";
+"welcome.subtitle" = "Claude Code 원격 제어";
+"welcome.getStarted" = "시작하기";
+"welcome.navigationTitle" = "환영합니다";
+
+// MARK: - Welcome Instructions
+
+"welcome.instruction1.title" = "Claude Code CLI 시작";
+"welcome.instruction1.description" = "터미널에서 'happy'를 실행하세요";
+"welcome.instruction2.title" = "QR 코드 스캔";
+"welcome.instruction2.description" = "아래 버튼을 사용하여 연결하세요";
+"welcome.instruction3.title" = "원격 제어";
+"welcome.instruction3.description" = "iPhone에서 세션을 확인하고 관리하세요";
+
+// MARK: - QR Scanner
+
+"scanner.title" = "QR 코드 스캔";
+"scanner.scanButton" = "QR 코드 스캔";
+"scanner.checkingPermission" = "카메라 접근 권한 확인 중...";
+"scanner.instruction" = "터미널에 표시된 QR 코드에\n카메라를 향하세요";
+"scanner.errorTitle" = "스캐너 오류";
+
+// MARK: - Camera Permission
+
+"camera.accessRequired" = "카메라 접근 권한 필요";
+"camera.accessDescription" = "Happy는 Claude Code CLI의 QR 코드를 스캔하기 위해 카메라 접근 권한이 필요합니다. 설정에서 카메라 접근 권한을 활성화해 주세요.";
+"camera.openSettings" = "설정 열기";
+"camera.navigationTitle" = "카메라 접근";
+
+// MARK: - Pairing Confirmation
+
+"pairing.title" = "QR 코드 스캔 완료";
+"pairing.subtitle" = "Claude Code CLI 연결 확인";
+"pairing.serverLabel" = "서버";
+"pairing.publicKeyLabel" = "공개 키";
+"pairing.machineLabel" = "기기";
+"pairing.scanAgain" = "다시 스캔";
+"pairing.navigationTitle" = "페어링 확인";
+
+// MARK: - Notifications
+
+"notifications.title" = "알림";
+"notifications.pushNotifications" = "푸시 알림";
+"notifications.description" = "세션 완료, 오류 발생 또는 새 메시지 도착 시 알림을 받습니다.";
+"notifications.enable" = "알림 활성화";
+"notifications.notificationTypes" = "알림 유형";
+"notifications.typesDescription" = "수신할 알림 유형을 선택하세요.";
+"notifications.sessionUpdates" = "세션 업데이트";
+"notifications.messages" = "메시지";
+"notifications.pairingRequests" = "페어링 요청";
+"notifications.debugInfo" = "디버그 정보";
+"notifications.deviceToken" = "기기 토큰";
+
+// MARK: - Notification Status
+
+"notifications.status.enabled" = "활성화됨";
+"notifications.status.disabled" = "비활성화됨";
+"notifications.status.denied" = "거부됨 - 탭하여 설정 열기";
+"notifications.status.provisional" = "임시 허용";
+"notifications.status.ephemeral" = "임시";
+"notifications.status.notConfigured" = "미설정";
+"notifications.status.unknown" = "알 수 없음";
+
+// MARK: - Sessions (Plurals - see .stringsdict)
+
+"sessions.count" = "%d개 세션";
+
+// MARK: - Messages (Plurals - see .stringsdict)
+
+"messages.count" = "%d개 메시지";
+
+// MARK: - Pairing Progress
+
+"pairing.connecting" = "연결 중...";
+"pairing.connectingDescription" = "Claude Code CLI와\n보안 연결을 설정하고 있습니다";
+"pairing.stepGeneratingKeys" = "암호화 키 생성 중";
+"pairing.stepChallengeResponse" = "인증 수행 중";
+"pairing.stepSecuring" = "연결 보안 중";
+"pairing.success" = "페어링 성공";
+"pairing.successDescription" = "Claude Code CLI에 연결되었습니다";
+"pairing.failed" = "페어링 실패";
+"pairing.retry" = "다시 시도";
+
+// MARK: - Session List
+
+"sessionList.title" = "세션";
+"sessionList.searchPrompt" = "세션 검색";
+"sessionList.loading" = "세션 로딩 중...";
+"sessionList.noSessions" = "세션 없음";
+"sessionList.noSessionsDescription" = "CLI에서 Claude Code 세션을 시작하면 여기에 표시됩니다.";
+"sessionList.noMatching" = "일치하는 세션 없음";
+"sessionList.noMatchingDescription" = "검색 조건이나 필터를 조정해 보세요.";
+"sessionList.disconnect" = "연결 해제";
+
+// MARK: - Session Detail
+
+"sessionDetail.session" = "세션";
+"sessionDetail.loading" = "메시지 로딩 중...";
+"sessionDetail.noMessages" = "메시지 없음";
+"sessionDetail.noMessagesDescription" = "세션이 진행되면 여기에 메시지가 표시됩니다.";
+"sessionDetail.waitingForActivity" = "활동 대기 중...";
+"sessionDetail.machineLabel" = "기기";
+"sessionDetail.startedLabel" = "시작";
+"sessionDetail.costLabel" = "비용";
+"sessionDetail.tokensLabel" = "토큰";
+"sessionDetail.streaming" = "Claude가 응답 중...";
+"sessionDetail.untitledSession" = "제목 없는 세션";
+
+// MARK: - Common Actions
+
+"common.ok" = "확인";
+"common.error" = "오류";
+"common.filter" = "필터";
+"common.retry" = "다시 시도";
+
+// MARK: - Errors
+
+"error.generic" = "오류가 발생했습니다. 다시 시도해 주세요.";
+"error.networkUnavailable" = "네트워크 연결을 사용할 수 없습니다.";
+"error.authenticationFailed" = "인증에 실패했습니다. 다시 시도해 주세요.";
+"error.unknown" = "알 수 없는 오류가 발생했습니다.";
