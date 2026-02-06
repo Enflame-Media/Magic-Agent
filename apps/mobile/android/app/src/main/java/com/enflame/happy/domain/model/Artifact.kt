@@ -151,9 +151,25 @@ data class Artifact(
         )
 
         /**
+         * Sample image artifact for previews and testing.
+         */
+        val sampleImage = Artifact(
+            id = "artifact-004",
+            sessionId = "sample-123",
+            type = ArtifactType.IMAGE,
+            title = "Architecture Diagram",
+            content = "https://example.com/images/architecture-diagram.png",
+            language = null,
+            filePath = "docs/architecture.png",
+            createdAt = System.currentTimeMillis(),
+            updatedAt = System.currentTimeMillis(),
+            sizeBytes = 48576
+        )
+
+        /**
          * Collection of sample artifacts for previews and testing.
          */
-        val samples: List<Artifact> = listOf(sampleCode, sampleJson, sampleDocument)
+        val samples: List<Artifact> = listOf(sampleCode, sampleJson, sampleDocument, sampleImage)
     }
 }
 

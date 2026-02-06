@@ -138,3 +138,116 @@
 "error.networkUnavailable" = "ネットワーク接続が利用できません。";
 "error.authenticationFailed" = "認証に失敗しました。もう一度お試しください。";
 "error.unknown" = "不明なエラーが発生しました。";
+
+// MARK: - Common (additional)
+
+"common.save" = "保存";
+"common.done" = "完了";
+
+// MARK: - Voice Settings
+
+"voice.settings.title" = "音声設定";
+"voice.settings.provider" = "プロバイダー";
+"voice.settings.providerFooter" = "テキスト読み上げプロバイダーを選択してください。ElevenLabsはより高品質ですがAPIキーが必要です。";
+"voice.settings.voice" = "音声";
+"voice.settings.noVoices" = "お使いの言語で利用可能な音声がありません。";
+"voice.settings.speed" = "速度";
+"voice.settings.volume" = "音量";
+"voice.settings.playback" = "再生";
+"voice.settings.autoPlay" = "アシスタントメッセージを自動再生";
+"voice.settings.skipToolOutputs" = "ツール出力をスキップ";
+"voice.settings.behavior" = "動作";
+"voice.settings.behaviorFooter" = "自動再生がオンの場合、新しいアシスタントメッセージが自動的に読み上げられます。";
+"voice.settings.apiKey" = "APIキー";
+"voice.settings.apiKeyConfigured" = "APIキー設定済み";
+"voice.settings.removeApiKey" = "削除";
+"voice.settings.apiKeyRequired" = "このプロバイダーを使用するにはElevenLabs APIキーが必要です。";
+"voice.settings.apiKeyPlaceholder" = "ElevenLabs APIキーを入力";
+"voice.settings.saveApiKey" = "APIキーを保存";
+"voice.settings.addApiKey" = "APIキーを追加";
+"voice.settings.apiKeyFooter" = "APIキーはデバイスのキーチェーンに安全に保存されます。";
+"voice.settings.removeApiKeyConfirm" = "ElevenLabs APIキーを削除しますか？";
+"voice.settings.test" = "テスト";
+"voice.settings.testVoice" = "音声テスト";
+"voice.settings.testPhrase" = "こんにちは！これはHappyの音声設定のテストです。";
+
+// MARK: - Voice Provider
+
+"voice.provider.system" = "システム（Apple）";
+"voice.provider.elevenLabs" = "ElevenLabs";
+"voice.provider.systemDescription" = "iOS内蔵のテキスト読み上げ。APIキー不要。";
+"voice.provider.elevenLabsDescription" = "高品質AI音声。ElevenLabs APIキーが必要。";
+
+// MARK: - Voice Quality
+
+"voice.quality.enhanced" = "高品質";
+"voice.quality.premium" = "プレミアム品質";
+"voice.quality.default" = "標準品質";
+
+// MARK: - Voice Playback Controls
+
+"voice.play" = "再生";
+"voice.pause" = "一時停止";
+"voice.resume" = "再開";
+"voice.stop" = "停止";
+"voice.loading" = "読み込み中...";
+"voice.settings" = "音声設定";
+"voice.autoPlay.enable" = "自動再生を有効にする";
+"voice.autoPlay.disable" = "自動再生を無効にする";
+"voice.speakMessage" = "メッセージを読み上げ";
+"voice.stopMessage" = "読み上げを停止";
+
+// MARK: - Voice Chat
+
+"voiceChat.title" = "ボイスチャット";
+"voiceChat.status.connected" = "接続済み";
+"voiceChat.status.connecting" = "接続中...";
+"voiceChat.status.reconnecting" = "再接続中...";
+"voiceChat.status.disconnected" = "切断済み";
+"voiceChat.connect" = "接続";
+"voiceChat.disconnect" = "切断";
+"voiceChat.connecting" = "接続中";
+"voiceChat.reconnecting" = "再接続中";
+"voiceChat.mute" = "ミュート";
+"voiceChat.unmute" = "ミュート解除";
+"voiceChat.muted" = "ミュート中";
+"voiceChat.unmuted" = "マイクオン";
+"voiceChat.active" = "アクティブ";
+"voiceChat.you" = "あなた";
+"voiceChat.pushToTalk" = "押して話す";
+"voiceChat.noParticipants" = "他の参加者なし";
+"voiceChat.noParticipantsDescription" = "他の参加者がボイスチャットに参加するのを待っています。";
+"voiceChat.notConnected" = "未接続";
+"voiceChat.notConnectedDescription" = "接続をタップしてボイスチャットに参加してください。";
+
+// MARK: - Voice Chat VAD Modes
+
+"voiceChat.vadMode" = "入力モード";
+"voiceChat.vadMode.pushToTalk" = "プッシュトゥトーク";
+"voiceChat.vadMode.autoDetect" = "自動検出";
+"voiceChat.vadMode.alwaysOn" = "常時オン";
+"voiceChat.vadMode.pushToTalkDescription" = "ボタンを押している間マイクが有効になります。";
+"voiceChat.vadMode.autoDetectDescription" = "音声を検出するとマイクが有効になります。";
+"voiceChat.vadMode.alwaysOnDescription" = "マイクは常に有効です。";
+
+// MARK: - Voice Chat Errors
+
+"voiceChat.error.connectionFailed" = "接続に失敗しました";
+"voiceChat.error.microphonePermission" = "ボイスチャットにはマイクの許可が必要です。";
+"voiceChat.error.audioSession" = "オーディオセッションエラー";
+"voiceChat.error.invalidToken" = "無効なボイスチャットトークンです。";
+"voiceChat.error.roomNotFound" = "ボイスチャットルームが見つかりません。";
+"voiceChat.error.alreadyConnected" = "既にボイスチャットに接続しています。";
+"voiceChat.error.notConnected" = "ボイスチャットに接続していません。";
+"voiceChat.error.noRoom" = "このセッションで利用可能なボイスチャットルームがありません。";
+
+// MARK: - Audio Routing
+
+"audioRoute.title" = "オーディオ出力";
+"audioRoute.speaker" = "スピーカー";
+"audioRoute.receiver" = "受話器";
+"audioRoute.headphones" = "ヘッドフォン";
+"audioRoute.available" = "利用可能な出力";
+"audioRoute.footer" = "オーディオの再生先を選択します。Bluetoothデバイスは接続時に表示されます。";
+"audioRoute.currentOutput" = "現在の出力";
+"audioRoute.status" = "ステータス";

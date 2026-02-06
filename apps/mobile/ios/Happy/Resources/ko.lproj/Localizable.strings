@@ -138,3 +138,116 @@
 "error.networkUnavailable" = "네트워크 연결을 사용할 수 없습니다.";
 "error.authenticationFailed" = "인증에 실패했습니다. 다시 시도해 주세요.";
 "error.unknown" = "알 수 없는 오류가 발생했습니다.";
+
+// MARK: - Common (additional)
+
+"common.save" = "저장";
+"common.done" = "완료";
+
+// MARK: - Voice Settings
+
+"voice.settings.title" = "음성 설정";
+"voice.settings.provider" = "제공자";
+"voice.settings.providerFooter" = "텍스트 음성 변환 제공자를 선택하세요. ElevenLabs는 더 높은 품질을 제공하지만 API 키가 필요합니다.";
+"voice.settings.voice" = "음성";
+"voice.settings.noVoices" = "사용 가능한 음성이 없습니다.";
+"voice.settings.speed" = "속도";
+"voice.settings.volume" = "볼륨";
+"voice.settings.playback" = "재생";
+"voice.settings.autoPlay" = "어시스턴트 메시지 자동 재생";
+"voice.settings.skipToolOutputs" = "도구 출력 건너뛰기";
+"voice.settings.behavior" = "동작";
+"voice.settings.behaviorFooter" = "자동 재생이 켜지면 새로운 어시스턴트 메시지가 자동으로 읽어집니다.";
+"voice.settings.apiKey" = "API 키";
+"voice.settings.apiKeyConfigured" = "API 키 설정됨";
+"voice.settings.removeApiKey" = "제거";
+"voice.settings.apiKeyRequired" = "이 제공자를 사용하려면 ElevenLabs API 키가 필요합니다.";
+"voice.settings.apiKeyPlaceholder" = "ElevenLabs API 키 입력";
+"voice.settings.saveApiKey" = "API 키 저장";
+"voice.settings.addApiKey" = "API 키 추가";
+"voice.settings.apiKeyFooter" = "API 키는 기기 키체인에 안전하게 저장됩니다.";
+"voice.settings.removeApiKeyConfirm" = "ElevenLabs API 키를 제거하시겠습니까?";
+"voice.settings.test" = "테스트";
+"voice.settings.testVoice" = "음성 테스트";
+"voice.settings.testPhrase" = "안녕하세요! Happy의 음성 설정 테스트입니다.";
+
+// MARK: - Voice Provider
+
+"voice.provider.system" = "시스템 (Apple)";
+"voice.provider.elevenLabs" = "ElevenLabs";
+"voice.provider.systemDescription" = "iOS 내장 텍스트 음성 변환. API 키 불필요.";
+"voice.provider.elevenLabsDescription" = "고품질 AI 음성. ElevenLabs API 키 필요.";
+
+// MARK: - Voice Quality
+
+"voice.quality.enhanced" = "향상된 품질";
+"voice.quality.premium" = "프리미엄 품질";
+"voice.quality.default" = "기본 품질";
+
+// MARK: - Voice Playback Controls
+
+"voice.play" = "재생";
+"voice.pause" = "일시 정지";
+"voice.resume" = "재개";
+"voice.stop" = "정지";
+"voice.loading" = "로딩 중...";
+"voice.settings" = "음성 설정";
+"voice.autoPlay.enable" = "자동 재생 활성화";
+"voice.autoPlay.disable" = "자동 재생 비활성화";
+"voice.speakMessage" = "메시지 읽기";
+"voice.stopMessage" = "읽기 중지";
+
+// MARK: - Voice Chat
+
+"voiceChat.title" = "음성 채팅";
+"voiceChat.status.connected" = "연결됨";
+"voiceChat.status.connecting" = "연결 중...";
+"voiceChat.status.reconnecting" = "재연결 중...";
+"voiceChat.status.disconnected" = "연결 해제됨";
+"voiceChat.connect" = "연결";
+"voiceChat.disconnect" = "연결 해제";
+"voiceChat.connecting" = "연결 중";
+"voiceChat.reconnecting" = "재연결 중";
+"voiceChat.mute" = "음소거";
+"voiceChat.unmute" = "음소거 해제";
+"voiceChat.muted" = "음소거됨";
+"voiceChat.unmuted" = "마이크 켜짐";
+"voiceChat.active" = "활성";
+"voiceChat.you" = "나";
+"voiceChat.pushToTalk" = "눌러서 말하기";
+"voiceChat.noParticipants" = "다른 참가자 없음";
+"voiceChat.noParticipantsDescription" = "다른 참가자가 음성 채팅에 참여하기를 기다리고 있습니다.";
+"voiceChat.notConnected" = "연결되지 않음";
+"voiceChat.notConnectedDescription" = "연결을 탭하여 음성 채팅에 참여하세요.";
+
+// MARK: - Voice Chat VAD Modes
+
+"voiceChat.vadMode" = "입력 모드";
+"voiceChat.vadMode.pushToTalk" = "푸시 투 토크";
+"voiceChat.vadMode.autoDetect" = "자동 감지";
+"voiceChat.vadMode.alwaysOn" = "항상 켜짐";
+"voiceChat.vadMode.pushToTalkDescription" = "버튼을 누르고 있는 동안 말하세요.";
+"voiceChat.vadMode.autoDetectDescription" = "음성이 감지되면 마이크가 활성화됩니다.";
+"voiceChat.vadMode.alwaysOnDescription" = "마이크가 항상 활성화되어 있습니다.";
+
+// MARK: - Voice Chat Errors
+
+"voiceChat.error.connectionFailed" = "연결 실패";
+"voiceChat.error.microphonePermission" = "음성 채팅에 마이크 권한이 필요합니다.";
+"voiceChat.error.audioSession" = "오디오 세션 오류";
+"voiceChat.error.invalidToken" = "잘못된 음성 채팅 토큰입니다.";
+"voiceChat.error.roomNotFound" = "음성 채팅 방을 찾을 수 없습니다.";
+"voiceChat.error.alreadyConnected" = "이미 음성 채팅에 연결되어 있습니다.";
+"voiceChat.error.notConnected" = "음성 채팅에 연결되어 있지 않습니다.";
+"voiceChat.error.noRoom" = "이 세션에 사용 가능한 음성 채팅 방이 없습니다.";
+
+// MARK: - Audio Routing
+
+"audioRoute.title" = "오디오 출력";
+"audioRoute.speaker" = "스피커";
+"audioRoute.receiver" = "수화기";
+"audioRoute.headphones" = "헤드폰";
+"audioRoute.available" = "사용 가능한 출력";
+"audioRoute.footer" = "오디오 재생 위치를 선택하세요. 블루투스 기기는 연결 시 표시됩니다.";
+"audioRoute.currentOutput" = "현재 출력";
+"audioRoute.status" = "상태";

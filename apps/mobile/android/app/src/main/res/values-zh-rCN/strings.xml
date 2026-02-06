@@ -218,6 +218,9 @@
     <string name="artifacts_share">\u5206\u4eab</string>
     <string name="artifacts_toggle_line_numbers">\u663e\u793a/\u9690\u85cf\u884c\u53f7</string>
     <string name="artifacts_image_not_supported">\u56fe\u7247\u9884\u89c8\u5c1a\u4e0d\u652f\u6301</string>
+    <string name="artifacts_image_loading">\u6b63\u5728\u52a0\u8f7d\u56fe\u7247\u2026</string>
+    <string name="artifacts_image_load_error">\u56fe\u7247\u52a0\u8f7d\u5931\u8d25</string>
+    <string name="artifacts_image_load_error_hint">\u8bf7\u68c0\u67e5\u7f51\u7edc\u8fde\u63a5\u5e76\u91cd\u8bd5</string>
     <string name="artifacts_view_artifacts">\u67e5\u770b\u5de5\u4ef6</string>
 
     <!-- Empty states -->

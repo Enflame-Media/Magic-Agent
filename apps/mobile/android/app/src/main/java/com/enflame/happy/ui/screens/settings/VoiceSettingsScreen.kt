@@ -16,6 +16,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
+import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Key
@@ -25,6 +26,7 @@ import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.Speaker
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -58,9 +60,11 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.enflame.happy.R
+import com.enflame.happy.data.voice.AudioDevice
 import com.enflame.happy.domain.model.ElevenLabsVoice
 import com.enflame.happy.domain.model.VoicePlaybackState
 import com.enflame.happy.domain.model.VoiceProvider
+import com.enflame.happy.ui.components.AudioDeviceSelectionSheet
 import com.enflame.happy.ui.theme.HappyTheme
 import com.enflame.happy.ui.viewmodel.VoiceUiState
 import com.enflame.happy.ui.viewmodel.VoiceViewModel
@@ -96,7 +100,11 @@ fun VoiceSettingsScreen(
         onDeleteApiKey = viewModel::deleteApiKey,
         onTestVoice = { viewModel.speak(TEST_PHRASE) },
         onStopVoice = viewModel::stop,
-        onDismissError = viewModel::dismissError
+        onDismissError = viewModel::dismissError,
+        onShowAudioDeviceSelection = viewModel::showAudioDeviceSelection,
+        onSelectAudioDevice = viewModel::selectAudioDevice,
+        onUseDefaultAudioDevice = viewModel::useDefaultAudioDevice,
+        onHideAudioDeviceSelection = viewModel::hideAudioDeviceSelection
     )
 }
 
@@ -121,7 +129,11 @@ fun VoiceSettingsScreenContent(
     onDeleteApiKey: () -> Unit = {},
     onTestVoice: () -> Unit = {},
     onStopVoice: () -> Unit = {},
-    onDismissError: () -> Unit = {}
+    onDismissError: () -> Unit = {},
+    onShowAudioDeviceSelection: () -> Unit = {},
+    onSelectAudioDevice: (AudioDevice) -> Unit = {},
+    onUseDefaultAudioDevice: () -> Unit = {},
+    onHideAudioDeviceSelection: () -> Unit = {}
 ) {
     Scaffold(
         topBar = {
@@ -190,6 +202,18 @@ fun VoiceSettingsScreenContent(
                 onVolumeChanged = onVolumeChanged
             )
 
+            // --- Audio Output Section (HAP-1021) ---
+            VoiceSectionHeader(
+                icon = Icons.Default.Speaker,
+                title = stringResource(R.string.audio_output_title)
+            )
+
+            AudioOutputCard(
+                selectedDeviceName = uiState.selectedAudioDeviceName,
+                isBluetoothAvailable = uiState.isBluetoothAvailable,
+                onSelectDevice = onShowAudioDeviceSelection
+            )
+
             // --- Behavior Section ---
             VoiceSectionHeader(
                 icon = Icons.Default.Settings,
@@ -245,6 +269,17 @@ fun VoiceSettingsScreenContent(
                     Text(stringResource(R.string.ok))
                 }
             }
+        )
+    }
+
+    // Audio device selection bottom sheet (HAP-1021)
+    if (uiState.showAudioDeviceSheet) {
+        AudioDeviceSelectionSheet(
+            devices = uiState.audioDevices,
+            selectedDevice = uiState.selectedAudioDevice,
+            onDeviceSelected = onSelectAudioDevice,
+            onUseDefault = onUseDefaultAudioDevice,
+            onDismiss = onHideAudioDeviceSelection
         )
     }
 }
@@ -727,6 +762,76 @@ private fun TestVoiceCard(
                     Text(stringResource(R.string.voice_settings_test_voice))
                 }
             }
+        }
+    }
+}
+
+// --- Audio Output Card (HAP-1021) ---
+
+@Composable
+private fun AudioOutputCard(
+    selectedDeviceName: String,
+    isBluetoothAvailable: Boolean,
+    onSelectDevice: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        )
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onSelectDevice)
+                    .padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.audio_output_current),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Text(
+                        text = selectedDeviceName,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                if (isBluetoothAvailable) {
+                    Icon(
+                        imageVector = Icons.Default.Bluetooth,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedButton(
+                onClick = onSelectDevice,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Speaker,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(stringResource(R.string.audio_output_select))
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = stringResource(R.string.audio_output_description),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }

@@ -150,6 +150,8 @@ ksp(libs.hilt.compiler)
 | Networking | Retrofit + OkHttp | HTTP client |
 | Serialization | kotlinx.serialization | JSON parsing |
 | Local Storage | Room + DataStore | Database and preferences |
+| Image Loading | Coil Compose | Async image loading with caching |
+| Markdown | Markwon | Markdown rendering in TextView |
 | Encryption | Google Tink | E2E encryption |
 | Testing | JUnit + MockK | Unit and UI tests |
 
@@ -321,11 +323,14 @@ class HomeScreenTest {
 | Push Notifications (FCM) | Complete | FCM service, channels, rich notifications, actions (HAP-986) |
 | Voice Features | Complete | ElevenLabs TTS + Android system TTS fallback (HAP-999) |
 | In-App Purchases | Complete | Google Play Billing, paywall, subscription status (HAP-1000) |
-| Artifacts Viewer | Complete | Syntax-highlighted code viewer, 8+ languages (HAP-1002) |
+| Artifacts Viewer | Complete | Syntax-highlighted code viewer, 8+ languages (HAP-1002), image viewer with pinch-to-zoom (Coil), markdown rendering (Markwon) (HAP-1018) |
 | i18n (7 Languages) | Complete | en, es, fr, de, ja, zh-CN, ko with plurals, in-app picker (HAP-1001) |
 | CI/CD Pipeline | Complete | GitHub Actions CI + Release, Fastlane, Detekt, Dependabot (HAP-1004) |
 | Friends & Social | Complete | Friend list, requests, QR add, profiles, search, filter (HAP-1003) |
 | WebSocket Lifecycle Management | Complete | SyncLifecycleManager with ProcessLifecycleOwner (HAP-1017) |
+| Background Audio Service | Complete | Foreground service + MediaSession + MediaStyle notification (HAP-1021) |
+| Bluetooth Audio Routing | Complete | AudioDeviceManager + device selection UI (HAP-1021) |
+| LiveKit Evaluation | Complete | Evaluated and documented, recommended as separate issue (HAP-1021) |
 
 ### Next Steps
 

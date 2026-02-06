@@ -138,3 +138,116 @@
 "error.networkUnavailable" = "网络连接不可用。";
 "error.authenticationFailed" = "认证失败，请重试。";
 "error.unknown" = "发生未知错误。";
+
+// MARK: - Common (additional)
+
+"common.save" = "保存";
+"common.done" = "完成";
+
+// MARK: - Voice Settings
+
+"voice.settings.title" = "语音设置";
+"voice.settings.provider" = "提供商";
+"voice.settings.providerFooter" = "选择文字转语音提供商。ElevenLabs提供更高质量，但需要API密钥。";
+"voice.settings.voice" = "语音";
+"voice.settings.noVoices" = "没有适用于您语言的语音。";
+"voice.settings.speed" = "速度";
+"voice.settings.volume" = "音量";
+"voice.settings.playback" = "播放";
+"voice.settings.autoPlay" = "自动播放助手消息";
+"voice.settings.skipToolOutputs" = "跳过工具输出";
+"voice.settings.behavior" = "行为";
+"voice.settings.behaviorFooter" = "开启自动播放后，新的助手消息会自动朗读。";
+"voice.settings.apiKey" = "API密钥";
+"voice.settings.apiKeyConfigured" = "API密钥已配置";
+"voice.settings.removeApiKey" = "移除";
+"voice.settings.apiKeyRequired" = "使用此提供商需要ElevenLabs API密钥。";
+"voice.settings.apiKeyPlaceholder" = "输入您的ElevenLabs API密钥";
+"voice.settings.saveApiKey" = "保存API密钥";
+"voice.settings.addApiKey" = "添加API密钥";
+"voice.settings.apiKeyFooter" = "您的API密钥安全存储在设备钥匙串中。";
+"voice.settings.removeApiKeyConfirm" = "移除ElevenLabs API密钥？";
+"voice.settings.test" = "测试";
+"voice.settings.testVoice" = "测试语音";
+"voice.settings.testPhrase" = "你好！这是Happy语音设置的测试。";
+
+// MARK: - Voice Provider
+
+"voice.provider.system" = "系统（Apple）";
+"voice.provider.elevenLabs" = "ElevenLabs";
+"voice.provider.systemDescription" = "iOS内置文字转语音。无需API密钥。";
+"voice.provider.elevenLabsDescription" = "高质量AI语音。需要ElevenLabs API密钥。";
+
+// MARK: - Voice Quality
+
+"voice.quality.enhanced" = "增强品质";
+"voice.quality.premium" = "高级品质";
+"voice.quality.default" = "标准品质";
+
+// MARK: - Voice Playback Controls
+
+"voice.play" = "播放";
+"voice.pause" = "暂停";
+"voice.resume" = "继续";
+"voice.stop" = "停止";
+"voice.loading" = "加载中...";
+"voice.settings" = "语音设置";
+"voice.autoPlay.enable" = "启用自动播放";
+"voice.autoPlay.disable" = "禁用自动播放";
+"voice.speakMessage" = "朗读消息";
+"voice.stopMessage" = "停止朗读";
+
+// MARK: - Voice Chat
+
+"voiceChat.title" = "语音聊天";
+"voiceChat.status.connected" = "已连接";
+"voiceChat.status.connecting" = "连接中...";
+"voiceChat.status.reconnecting" = "重新连接中...";
+"voiceChat.status.disconnected" = "已断开";
+"voiceChat.connect" = "连接";
+"voiceChat.disconnect" = "断开";
+"voiceChat.connecting" = "连接中";
+"voiceChat.reconnecting" = "重新连接中";
+"voiceChat.mute" = "静音";
+"voiceChat.unmute" = "取消静音";
+"voiceChat.muted" = "已静音";
+"voiceChat.unmuted" = "麦克风开启";
+"voiceChat.active" = "活跃";
+"voiceChat.you" = "你";
+"voiceChat.pushToTalk" = "按住说话";
+"voiceChat.noParticipants" = "没有其他参与者";
+"voiceChat.noParticipantsDescription" = "等待其他人加入语音聊天。";
+"voiceChat.notConnected" = "未连接";
+"voiceChat.notConnectedDescription" = "点击连接加入语音聊天室。";
+
+// MARK: - Voice Chat VAD Modes
+
+"voiceChat.vadMode" = "输入模式";
+"voiceChat.vadMode.pushToTalk" = "按键说话";
+"voiceChat.vadMode.autoDetect" = "自动检测";
+"voiceChat.vadMode.alwaysOn" = "始终开启";
+"voiceChat.vadMode.pushToTalkDescription" = "按住按钮说话。";
+"voiceChat.vadMode.autoDetectDescription" = "检测到语音时麦克风自动激活。";
+"voiceChat.vadMode.alwaysOnDescription" = "麦克风始终处于激活状态。";
+
+// MARK: - Voice Chat Errors
+
+"voiceChat.error.connectionFailed" = "连接失败";
+"voiceChat.error.microphonePermission" = "语音聊天需要麦克风权限。";
+"voiceChat.error.audioSession" = "音频会话错误";
+"voiceChat.error.invalidToken" = "无效的语音聊天令牌。";
+"voiceChat.error.roomNotFound" = "未找到语音聊天室。";
+"voiceChat.error.alreadyConnected" = "已连接到语音聊天。";
+"voiceChat.error.notConnected" = "未连接到语音聊天。";
+"voiceChat.error.noRoom" = "此会话没有可用的语音聊天室。";
+
+// MARK: - Audio Routing
+
+"audioRoute.title" = "音频输出";
+"audioRoute.speaker" = "扬声器";
+"audioRoute.receiver" = "听筒";
+"audioRoute.headphones" = "耳机";
+"audioRoute.available" = "可用输出";
+"audioRoute.footer" = "选择音频播放位置。蓝牙设备在连接后显示。";
+"audioRoute.currentOutput" = "当前输出";
+"audioRoute.status" = "状态";

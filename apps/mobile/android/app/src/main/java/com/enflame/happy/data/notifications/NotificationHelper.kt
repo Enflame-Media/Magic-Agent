@@ -93,8 +93,18 @@ class NotificationHelper @Inject constructor(
             enableVibration(true)
         }
 
+        val mediaPlaybackChannel = NotificationChannel(
+            NotificationChannels.CHANNEL_MEDIA_PLAYBACK,
+            NotificationChannels.CHANNEL_MEDIA_PLAYBACK_NAME,
+            NotificationManager.IMPORTANCE_LOW
+        ).apply {
+            description = NotificationChannels.CHANNEL_MEDIA_PLAYBACK_DESCRIPTION
+            enableVibration(false)
+            setSound(null, null)
+        }
+
         notificationManager.createNotificationChannels(
-            listOf(sessionChannel, messageChannel, pairingChannel)
+            listOf(sessionChannel, messageChannel, pairingChannel, mediaPlaybackChannel)
         )
 
         Log.d(TAG, "Notification channels created")

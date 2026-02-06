@@ -87,6 +87,14 @@
 		T91A2C3D4E5F0004 /* UsageLimitsDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = T91A2C3D4E5F0013 /* UsageLimitsDetailView.swift */; };
 		T91A2C3D4E5F0005 /* UsageLimitsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T91A2C3D4E5F0014 /* UsageLimitsTests.swift */; };
 		V91A2C3D4E5F0001 /* SyncServiceReconnectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = V91A2C3D4E5F0010 /* SyncServiceReconnectionTests.swift */; };
+		X91A2C3D4E5F0001 /* RevenueCatPurchaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = X91A2C3D4E5F0010 /* RevenueCatPurchaseService.swift */; };
+		X91A2C3D4E5F0002 /* EntitlementService.swift in Sources */ = {isa = PBXBuildFile; fileRef = X91A2C3D4E5F0011 /* EntitlementService.swift */; };
+		X91A2C3D4E5F0003 /* PurchaseAnalyticsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = X91A2C3D4E5F0012 /* PurchaseAnalyticsService.swift */; };
+		X91A2C3D4E5F0004 /* RevenueCatPurchaseServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = X91A2C3D4E5F0013 /* RevenueCatPurchaseServiceTests.swift */; };
+		W91A2C3D4E5F0001 /* LiveKitVoiceChatService.swift in Sources */ = {isa = PBXBuildFile; fileRef = W91A2C3D4E5F0010 /* LiveKitVoiceChatService.swift */; };
+		W91A2C3D4E5F0002 /* VoiceChatViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = W91A2C3D4E5F0011 /* VoiceChatViewModel.swift */; };
+		W91A2C3D4E5F0003 /* VoiceChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = W91A2C3D4E5F0012 /* VoiceChatView.swift */; };
+		W91A2C3D4E5F0004 /* AudioRoutingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = W91A2C3D4E5F0013 /* AudioRoutingView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -211,6 +219,14 @@
 		T91A2C3D4E5F0013 /* UsageLimitsDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageLimitsDetailView.swift; sourceTree = "<group>"; };
 		T91A2C3D4E5F0014 /* UsageLimitsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageLimitsTests.swift; sourceTree = "<group>"; };
 		V91A2C3D4E5F0010 /* SyncServiceReconnectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncServiceReconnectionTests.swift; sourceTree = "<group>"; };
+		X91A2C3D4E5F0010 /* RevenueCatPurchaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RevenueCatPurchaseService.swift; sourceTree = "<group>"; };
+		X91A2C3D4E5F0011 /* EntitlementService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntitlementService.swift; sourceTree = "<group>"; };
+		X91A2C3D4E5F0012 /* PurchaseAnalyticsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PurchaseAnalyticsService.swift; sourceTree = "<group>"; };
+		X91A2C3D4E5F0013 /* RevenueCatPurchaseServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RevenueCatPurchaseServiceTests.swift; sourceTree = "<group>"; };
+		W91A2C3D4E5F0010 /* LiveKitVoiceChatService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveKitVoiceChatService.swift; sourceTree = "<group>"; };
+		W91A2C3D4E5F0011 /* VoiceChatViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceChatViewModel.swift; sourceTree = "<group>"; };
+		W91A2C3D4E5F0012 /* VoiceChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceChatView.swift; sourceTree = "<group>"; };
+		W91A2C3D4E5F0013 /* AudioRoutingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioRoutingView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -290,6 +306,7 @@
 				P91A2C3D4E5F0015 /* PurchaseServiceTests.swift */,
 				T91A2C3D4E5F0014 /* UsageLimitsTests.swift */,
 				V91A2C3D4E5F0010 /* SyncServiceReconnectionTests.swift */,
+				X91A2C3D4E5F0013 /* RevenueCatPurchaseServiceTests.swift */,
 			);
 			path = HappyTests;
 			sourceTree = "<group>";
@@ -354,6 +371,8 @@
 				P91A2C3D4E5F0014 /* SubscriptionStatusView.swift */,
 				T91A2C3D4E5F0012 /* UsageLimitsWidget.swift */,
 				T91A2C3D4E5F0013 /* UsageLimitsDetailView.swift */,
+				W91A2C3D4E5F0012 /* VoiceChatView.swift */,
+				W91A2C3D4E5F0013 /* AudioRoutingView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -371,6 +390,7 @@
 				N91A2C3D4E5F0012 /* VoiceViewModel.swift */,
 				P91A2C3D4E5F0012 /* PurchaseViewModel.swift */,
 				T91A2C3D4E5F0011 /* UsageLimitsViewModel.swift */,
+				W91A2C3D4E5F0011 /* VoiceChatViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -386,6 +406,10 @@
 				H91A2C3D4E5F0010 /* AuthService.swift */,
 				N91A2C3D4E5F0011 /* VoiceService.swift */,
 				P91A2C3D4E5F0011 /* PurchaseService.swift */,
+				X91A2C3D4E5F0010 /* RevenueCatPurchaseService.swift */,
+				X91A2C3D4E5F0011 /* EntitlementService.swift */,
+				X91A2C3D4E5F0012 /* PurchaseAnalyticsService.swift */,
+				W91A2C3D4E5F0010 /* LiveKitVoiceChatService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -658,6 +682,13 @@
 				T91A2C3D4E5F0002 /* UsageLimitsViewModel.swift in Sources */,
 				T91A2C3D4E5F0003 /* UsageLimitsWidget.swift in Sources */,
 				T91A2C3D4E5F0004 /* UsageLimitsDetailView.swift in Sources */,
+				X91A2C3D4E5F0001 /* RevenueCatPurchaseService.swift in Sources */,
+				X91A2C3D4E5F0002 /* EntitlementService.swift in Sources */,
+				X91A2C3D4E5F0003 /* PurchaseAnalyticsService.swift in Sources */,
+				W91A2C3D4E5F0001 /* LiveKitVoiceChatService.swift in Sources */,
+				W91A2C3D4E5F0002 /* VoiceChatViewModel.swift in Sources */,
+				W91A2C3D4E5F0003 /* VoiceChatView.swift in Sources */,
+				W91A2C3D4E5F0004 /* AudioRoutingView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -685,6 +716,7 @@
 				P91A2C3D4E5F0006 /* PurchaseServiceTests.swift in Sources */,
 				T91A2C3D4E5F0005 /* UsageLimitsTests.swift in Sources */,
 				V91A2C3D4E5F0001 /* SyncServiceReconnectionTests.swift in Sources */,
+				X91A2C3D4E5F0004 /* RevenueCatPurchaseServiceTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

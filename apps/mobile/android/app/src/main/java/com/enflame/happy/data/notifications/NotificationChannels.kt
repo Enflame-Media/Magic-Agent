@@ -31,6 +31,9 @@ object NotificationChannels {
     /** Channel for pairing request notifications. */
     const val CHANNEL_PAIRING = "pairing"
 
+    /** Channel for media playback foreground service notifications. */
+    const val CHANNEL_MEDIA_PLAYBACK = "media_playback"
+
     // --- Channel Display Names ---
 
     const val CHANNEL_SESSION_UPDATES_NAME = "Session Updates"
@@ -44,6 +47,10 @@ object NotificationChannels {
     const val CHANNEL_PAIRING_NAME = "Pairing Requests"
     const val CHANNEL_PAIRING_DESCRIPTION =
         "Notifications about device pairing requests and status changes"
+
+    const val CHANNEL_MEDIA_PLAYBACK_NAME = "Media Playback"
+    const val CHANNEL_MEDIA_PLAYBACK_DESCRIPTION =
+        "Controls for audio playback when playing in the background"
 
     // --- Notification Types (from server payload) ---
 

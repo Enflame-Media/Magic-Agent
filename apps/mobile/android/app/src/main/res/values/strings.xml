@@ -161,6 +161,25 @@
     <string name="voice_settings_stop">Stop</string>
     <string name="voice_settings_loading">Loading audio\u2026</string>
 
+    <!-- Audio Output (HAP-1021) -->
+    <string name="audio_output_title">Audio Output</string>
+    <string name="audio_output_current">Current output</string>
+    <string name="audio_output_select">Select Audio Output</string>
+    <string name="audio_output_description">Choose where audio is played. Connect a Bluetooth device to see it listed here.</string>
+    <string name="audio_device_title">Select Audio Output</string>
+    <string name="audio_device_default">System Default</string>
+    <string name="audio_device_default_description">Use the default audio output for your device</string>
+    <string name="audio_device_no_devices">No external audio devices detected. Connect a Bluetooth device, headphones, or USB audio device.</string>
+    <string name="audio_device_bluetooth_hint">Grant Bluetooth permission in Settings to see nearby Bluetooth devices.</string>
+    <string name="bluetooth_permission_title">Bluetooth Permission</string>
+    <string name="bluetooth_permission_description">Happy needs Bluetooth access to discover and connect to your Bluetooth audio devices for audio output.</string>
+    <string name="bluetooth_permission_rationale">Bluetooth permission was denied. To select Bluetooth audio devices, please grant Bluetooth access in Settings.</string>
+
+    <!-- Media Playback Notification (HAP-1021) -->
+    <string name="notification_channel_media_playback">Media Playback</string>
+    <string name="media_notification_playing">Playing audio\u2026</string>
+    <string name="media_notification_paused">Paused</string>
+
     <!-- Paywall screen -->
     <string name="paywall_title">Subscription Plans</string>
     <string name="paywall_headline">Unlock the Full Experience</string>
@@ -219,6 +238,9 @@
     <string name="artifacts_share">Share</string>
     <string name="artifacts_toggle_line_numbers">Toggle line numbers</string>
     <string name="artifacts_image_not_supported">Image preview is not yet supported</string>
+    <string name="artifacts_image_loading">Loading image\u2026</string>
+    <string name="artifacts_image_load_error">Failed to load image</string>
+    <string name="artifacts_image_load_error_hint">Check your network connection and try again</string>
     <string name="artifacts_view_artifacts">View Artifacts</string>
 
     <!-- Friends & Social -->

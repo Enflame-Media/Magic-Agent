@@ -42,7 +42,7 @@ This file provides guidance to Claude Code when working with the Happy iOS nativ
 | QR Integration Tests | Done | 30 integration tests for scanning flow (HAP-971) |
 | i18n | Done | 7 languages with .strings/.stringsdict (HAP-995) |
 | Voice Features | Done | ElevenLabs TTS + system fallback (HAP-993) |
-| Purchases | Done | StoreKit 2 with RevenueCat abstraction (HAP-994) |
+| Purchases | Done | StoreKit 2 with RevenueCat SDK integration (HAP-994, HAP-1007) |
 | Artifacts Viewer | Done | Syntax-highlighted code viewer, 8 languages (HAP-996) |
 | Friends & Social | Done | Friend list, requests, QR add, profiles (HAP-997) |
 | Usage Limits Widget | Done | Plan usage limits with progress bars, detail view (HAP-722) |
@@ -62,6 +62,7 @@ This file provides guidance to Claude Code when working with the Happy iOS nativ
 - [x] i18n for 7 languages (HAP-995)
 - [x] Voice features with ElevenLabs (HAP-993)
 - [x] In-app purchases with StoreKit 2 (HAP-994)
+- [x] RevenueCat SDK, entitlement gating, purchase analytics (HAP-1007)
 - [x] Artifacts viewer with syntax highlighting (HAP-996)
 - [x] Friends and social features (HAP-997)
 

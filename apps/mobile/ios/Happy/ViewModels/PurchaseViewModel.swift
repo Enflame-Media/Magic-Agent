@@ -7,9 +7,14 @@
 
 import Foundation
 import Combine
+import UIKit
 
 /// ViewModel for managing purchase state and coordinating between
-/// the `PurchaseService` and purchase-related views.
+/// the `PurchaseProviding` service and purchase-related views.
+///
+/// Routes purchases through RevenueCat when configured, falling back
+/// to direct StoreKit 2 otherwise. Tracks all purchase funnel events
+/// via `PurchaseAnalyticsService`.
 ///
 /// Uses `ObservableObject` for iOS 16 compatibility.
 final class PurchaseViewModel: ObservableObject {
@@ -76,16 +81,35 @@ final class PurchaseViewModel: ObservableObject {
     // MARK: - Dependencies
 
     private let purchaseService: PurchaseProviding
+    private let analytics: PurchaseAnalyticsService
+    private let entitlementService: EntitlementService
     private var cancellables = Set<AnyCancellable>()
 
     // MARK: - Initialization
 
     /// Creates a new purchase view model.
     ///
-    /// - Parameter purchaseService: The purchase service to use.
-    ///   Defaults to the shared singleton.
-    init(purchaseService: PurchaseProviding = PurchaseService.shared) {
-        self.purchaseService = purchaseService
+    /// - Parameters:
+    ///   - purchaseService: The purchase service to use.
+    ///     Defaults to `RevenueCatPurchaseService.shared` when configured,
+    ///     falling back to `PurchaseService.shared`.
+    ///   - analytics: The analytics service for tracking purchase events.
+    ///   - entitlementService: The entitlement service for feature gating.
+    init(
+        purchaseService: PurchaseProviding? = nil,
+        analytics: PurchaseAnalyticsService = .shared,
+        entitlementService: EntitlementService = .shared
+    ) {
+        // Use RevenueCat if configured, otherwise fall back to StoreKit 2
+        if let service = purchaseService {
+            self.purchaseService = service
+        } else if RevenueCatPurchaseService.shared.isConfigured {
+            self.purchaseService = RevenueCatPurchaseService.shared
+        } else {
+            self.purchaseService = PurchaseService.shared
+        }
+        self.analytics = analytics
+        self.entitlementService = entitlementService
         setupSubscriptions()
     }
 
@@ -126,6 +150,8 @@ final class PurchaseViewModel: ObservableObject {
 
     /// Purchases the specified subscription plan.
     ///
+    /// Tracks purchase funnel analytics events throughout the flow.
+    ///
     /// - Parameter plan: The subscription plan to purchase.
     @MainActor
     func purchase(_ plan: SubscriptionPlan) async {
@@ -133,34 +159,44 @@ final class PurchaseViewModel: ObservableObject {
         isPurchasing = true
         errorMessage = nil
 
+        analytics.trackPurchaseStarted(plan: plan)
+
         do {
             let success = try await purchaseService.purchase(plan)
             if success {
                 subscriptionStatus = purchaseService.subscriptionStatus
                 showPurchaseSuccess = true
+                analytics.trackPurchaseCompleted(plan: plan)
             }
         } catch PurchaseError.purchaseCancelled {
             // User cancelled, no error to show
+            analytics.trackPurchaseCancelled(plan: plan)
             #if DEBUG
             print("[PurchaseViewModel] User cancelled purchase")
             #endif
         } catch PurchaseError.pendingTransaction {
             errorMessage = PurchaseError.pendingTransaction.localizedDescription
             showError = true
+            analytics.trackPurchaseFailed(plan: plan, error: PurchaseError.pendingTransaction)
         } catch {
             errorMessage = error.localizedDescription
             showError = true
+            analytics.trackPurchaseFailed(plan: plan, error: error)
         }
 
         isPurchasing = false
     }
 
     /// Restores previously purchased subscriptions.
+    ///
+    /// Tracks restore analytics events throughout the flow.
     @MainActor
     func restorePurchases() async {
         guard !isRestoring else { return }
         isRestoring = true
         errorMessage = nil
+
+        analytics.trackRestoreStarted()
 
         do {
             try await purchaseService.restorePurchases()
@@ -168,6 +204,7 @@ final class PurchaseViewModel: ObservableObject {
 
             if subscriptionStatus.isActive {
                 showRestoreSuccess = true
+                analytics.trackRestoreCompleted()
             } else {
                 errorMessage = NSLocalizedString("subscription.restore.noPurchases", comment: "No purchases found to restore")
                 showError = true
@@ -175,6 +212,7 @@ final class PurchaseViewModel: ObservableObject {
         } catch {
             errorMessage = error.localizedDescription
             showError = true
+            analytics.trackRestoreFailed(error: error)
         }
 
         isRestoring = false
@@ -194,11 +232,35 @@ final class PurchaseViewModel: ObservableObject {
         showError = false
     }
 
+    /// Opens Apple's subscription management page.
+    func openSubscriptionManagement() {
+        analytics.trackSubscriptionManagementOpened()
+        if let url = URL(string: "https://apps.apple.com/account/subscriptions") {
+            UIApplication.shared.open(url)
+        }
+    }
+
+    /// Checks whether a gated feature is accessible.
+    ///
+    /// - Parameter feature: The feature to check.
+    /// - Returns: Whether the user can access the feature.
+    func canAccess(_ feature: GatedFeature) -> Bool {
+        entitlementService.canAccess(feature)
+    }
+
+    /// Called when the billing period selector changes.
+    ///
+    /// - Parameter newPeriod: The newly selected billing period.
+    func billingPeriodDidChange(to newPeriod: BillingPeriod) {
+        selectedBillingPeriod = newPeriod
+        analytics.trackBillingPeriodChanged(to: newPeriod)
+    }
+
     // MARK: - Private Methods
 
     /// Sets up Combine subscriptions to observe service state changes.
     private func setupSubscriptions() {
-        // Observe the purchase service if it's a PurchaseService (ObservableObject)
+        // Observe the purchase service if it's an ObservableObject
         if let service = purchaseService as? PurchaseService {
             service.$subscriptionStatus
                 .receive(on: DispatchQueue.main)
@@ -215,6 +277,27 @@ final class PurchaseViewModel: ObservableObject {
                 .store(in: &cancellables)
 
             service.$isPurchasing
+                .receive(on: DispatchQueue.main)
+                .sink { [weak self] purchasing in
+                    self?.isPurchasing = purchasing
+                }
+                .store(in: &cancellables)
+        } else if let rcService = purchaseService as? RevenueCatPurchaseService {
+            rcService.$subscriptionStatus
+                .receive(on: DispatchQueue.main)
+                .sink { [weak self] status in
+                    self?.subscriptionStatus = status
+                }
+                .store(in: &cancellables)
+
+            rcService.$availablePlans
+                .receive(on: DispatchQueue.main)
+                .sink { [weak self] plans in
+                    self?.plans = plans
+                }
+                .store(in: &cancellables)
+
+            rcService.$isPurchasing
                 .receive(on: DispatchQueue.main)
                 .sink { [weak self] purchasing in
                     self?.isPurchasing = purchasing

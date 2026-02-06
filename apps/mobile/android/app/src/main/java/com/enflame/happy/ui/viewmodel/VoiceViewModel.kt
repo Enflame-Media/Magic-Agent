@@ -4,6 +4,8 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.enflame.happy.data.local.UserPreferencesDataStore
+import com.enflame.happy.data.voice.AudioDevice
+import com.enflame.happy.data.voice.AudioDeviceManager
 import com.enflame.happy.data.voice.VoiceService
 import com.enflame.happy.domain.model.ElevenLabsVoice
 import com.enflame.happy.domain.model.VoicePlaybackState
@@ -36,6 +38,10 @@ import javax.inject.Inject
  * @property errorMessage Last error message, if any.
  * @property showError Whether to show the error dialog.
  * @property availableVoices List of available ElevenLabs voices.
+ * @property audioDevices Available audio output devices (HAP-1021).
+ * @property selectedAudioDevice Currently selected audio output device (HAP-1021).
+ * @property isBluetoothAvailable Whether Bluetooth audio is available (HAP-1021).
+ * @property showAudioDeviceSheet Whether to show audio device selection sheet (HAP-1021).
  */
 data class VoiceUiState(
     val provider: VoiceProvider = VoiceProvider.SYSTEM,
@@ -51,12 +57,20 @@ data class VoiceUiState(
     val playbackState: VoicePlaybackState = VoicePlaybackState.IDLE,
     val errorMessage: String? = null,
     val showError: Boolean = false,
-    val availableVoices: List<ElevenLabsVoice> = ElevenLabsVoice.defaultVoices
+    val availableVoices: List<ElevenLabsVoice> = ElevenLabsVoice.defaultVoices,
+    val audioDevices: List<AudioDevice> = emptyList(),
+    val selectedAudioDevice: AudioDevice? = null,
+    val isBluetoothAvailable: Boolean = false,
+    val showAudioDeviceSheet: Boolean = false
 ) {
     /** Whether speech is currently in progress. */
     val isSpeaking: Boolean
         get() = playbackState == VoicePlaybackState.SPEAKING ||
             playbackState == VoicePlaybackState.LOADING
+
+    /** Display name for the currently selected audio output device. */
+    val selectedAudioDeviceName: String
+        get() = selectedAudioDevice?.name ?: "System Default"
 }
 
 /**
@@ -65,14 +79,18 @@ data class VoiceUiState(
  * Manages voice preferences via [UserPreferencesDataStore] and controls
  * speech playback via [VoiceService]. All preference changes are persisted
  * reactively and the voice service is kept in sync.
+ *
+ * Also manages audio output device selection via [AudioDeviceManager] (HAP-1021).
  */
 @HiltViewModel
 class VoiceViewModel @Inject constructor(
     private val userPreferences: UserPreferencesDataStore,
-    private val voiceService: VoiceService
+    private val voiceService: VoiceService,
+    private val audioDeviceManager: AudioDeviceManager
 ) : ViewModel() {
 
     private val _errorState = MutableStateFlow(ErrorState())
+    private val _showAudioDeviceSheet = MutableStateFlow(false)
 
     /**
      * Combined UI state derived from DataStore flows and local state.
@@ -120,6 +138,22 @@ class VoiceViewModel @Inject constructor(
             errorMessage = error.message,
             showError = error.show
         )
+    }.combine(
+        combine(
+            audioDeviceManager.availableDevices,
+            audioDeviceManager.selectedDevice,
+            audioDeviceManager.isBluetoothAvailable,
+            _showAudioDeviceSheet
+        ) { devices, selected, btAvailable, showSheet ->
+            AudioDeviceState(devices, selected, btAvailable, showSheet)
+        }
+    ) { voiceState, audioState ->
+        voiceState.copy(
+            audioDevices = audioState.devices,
+            selectedAudioDevice = audioState.selectedDevice,
+            isBluetoothAvailable = audioState.isBluetoothAvailable,
+            showAudioDeviceSheet = audioState.showSheet
+        )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -140,6 +174,9 @@ class VoiceViewModel @Inject constructor(
                 voiceService.updateSettings(state.toVoiceSettings())
             }
         }
+
+        // Start audio device monitoring (HAP-1021)
+        audioDeviceManager.startMonitoring()
     }
 
     // --- Provider ---
@@ -298,6 +335,41 @@ class VoiceViewModel @Inject constructor(
         voiceService.resume()
     }
 
+    // --- Audio Device Selection (HAP-1021) ---
+
+    /**
+     * Show the audio device selection bottom sheet.
+     */
+    fun showAudioDeviceSelection() {
+        audioDeviceManager.refreshDevices()
+        _showAudioDeviceSheet.value = true
+    }
+
+    /**
+     * Hide the audio device selection bottom sheet.
+     */
+    fun hideAudioDeviceSelection() {
+        _showAudioDeviceSheet.value = false
+    }
+
+    /**
+     * Select an audio output device for playback.
+     *
+     * @param device The device to route audio to.
+     */
+    fun selectAudioDevice(device: AudioDevice) {
+        audioDeviceManager.selectDevice(device)
+        _showAudioDeviceSheet.value = false
+    }
+
+    /**
+     * Reset to system default audio output.
+     */
+    fun useDefaultAudioDevice() {
+        audioDeviceManager.selectDevice(null)
+        _showAudioDeviceSheet.value = false
+    }
+
     // --- Error Handling ---
 
     /**
@@ -310,6 +382,7 @@ class VoiceViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         voiceService.stop()
+        audioDeviceManager.stopMonitoring()
     }
 
     private data class ErrorState(
@@ -330,6 +403,13 @@ class VoiceViewModel @Inject constructor(
         val skipToolOutputs: Boolean,
         val modelId: String,
         val systemVoice: String?
+    )
+
+    private data class AudioDeviceState(
+        val devices: List<AudioDevice>,
+        val selectedDevice: AudioDevice?,
+        val isBluetoothAvailable: Boolean,
+        val showSheet: Boolean
     )
 
     companion object {

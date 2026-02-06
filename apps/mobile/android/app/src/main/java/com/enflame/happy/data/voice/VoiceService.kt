@@ -1,11 +1,14 @@
 package com.enflame.happy.data.voice
 
+import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
+import android.content.ServiceConnection
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
-import android.media.MediaPlayer
 import android.os.Build
+import android.os.IBinder
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.util.Log
@@ -42,8 +45,17 @@ import javax.inject.Singleton
  * ## Architecture
  * - Android [TextToSpeech] for system TTS (always available)
  * - ElevenLabs REST API for high-quality AI voices (requires API key)
- * - [MediaPlayer] for ElevenLabs audio playback with background audio support
+ * - [VoicePlaybackService] foreground service for background audio playback (HAP-1021)
+ * - [AudioDeviceManager] for Bluetooth and audio output routing (HAP-1021)
  * - Kotlin [StateFlow]/[SharedFlow] for reactive state updates
+ *
+ * ## Background Audio (HAP-1021)
+ * ElevenLabs audio playback is delegated to [VoicePlaybackService], a foreground
+ * service that:
+ * - Continues playback when the app is backgrounded
+ * - Shows a MediaStyle notification with play/pause/stop controls
+ * - Integrates with system media controls and MediaSession
+ * - Handles audio focus changes (duck/pause for interruptions)
  *
  * ## Usage
  * ```kotlin
@@ -56,7 +68,8 @@ import javax.inject.Singleton
 class VoiceService @Inject constructor(
     @ApplicationContext private val context: Context,
     private val elevenLabsApiService: ElevenLabsApiService,
-    private val tokenStorage: TokenStorage
+    private val tokenStorage: TokenStorage,
+    private val audioDeviceManager: AudioDeviceManager
 ) {
 
     // --- State ---
@@ -74,14 +87,54 @@ class VoiceService @Inject constructor(
     // --- Private Properties ---
 
     private var settings: VoiceSettings = VoiceSettings()
-    private var mediaPlayer: MediaPlayer? = null
     private var textToSpeech: TextToSpeech? = null
     private var isTtsInitialized = false
     private val audioManager: AudioManager =
         context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     private var audioFocusRequest: AudioFocusRequest? = null
 
+    /** Bound foreground service for background audio playback. */
+    private var playbackService: VoicePlaybackService? = null
+    private var isServiceBound = false
+
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+
+    /**
+     * ServiceConnection for binding to [VoicePlaybackService].
+     *
+     * When bound, observes the service's playback state and forwards
+     * it to this service's state flow.
+     */
+    private val serviceConnection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+            val binder = service as VoicePlaybackService.VoicePlaybackBinder
+            playbackService = binder.getService().also { svc ->
+                svc.volume = settings.volume
+                svc.onPlaybackComplete = {
+                    _playbackState.value = VoicePlaybackState.IDLE
+                }
+                svc.onPlaybackError = { message ->
+                    _playbackState.value = VoicePlaybackState.IDLE
+                    _errors.tryEmit(VoiceServiceError.SynthesisFailed(message))
+                }
+
+                // Observe foreground service playback state
+                serviceScope.launch {
+                    svc.playbackState.collect { state ->
+                        _playbackState.value = state
+                    }
+                }
+            }
+            isServiceBound = true
+            Log.d(TAG, "VoicePlaybackService bound")
+        }
+
+        override fun onServiceDisconnected(name: ComponentName?) {
+            playbackService = null
+            isServiceBound = false
+            Log.d(TAG, "VoicePlaybackService disconnected")
+        }
+    }
 
     companion object {
         private const val TAG = "VoiceService"
@@ -91,6 +144,7 @@ class VoiceService @Inject constructor(
 
     init {
         initializeSystemTts()
+        bindPlaybackService()
     }
 
     // --- Public Methods ---
@@ -120,13 +174,17 @@ class VoiceService @Inject constructor(
     fun stop() {
         textToSpeech?.stop()
 
-        mediaPlayer?.apply {
-            if (isPlaying) {
-                stop()
+        // Stop the foreground playback service
+        if (isServiceBound) {
+            playbackService?.stopPlayback()
+        } else {
+            // Send a stop intent even if not bound
+            try {
+                context.startService(VoicePlaybackService.createStopIntent(context))
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to send stop intent to playback service", e)
             }
-            release()
         }
-        mediaPlayer = null
 
         abandonAudioFocus()
         _playbackState.value = VoicePlaybackState.IDLE
@@ -135,28 +193,18 @@ class VoiceService @Inject constructor(
     /**
      * Pause the current speech playback.
      *
-     * Only ElevenLabs audio (MediaPlayer) supports pause. System TTS
+     * Only ElevenLabs audio (via foreground service) supports pause. System TTS
      * does not support pausing mid-utterance on Android.
      */
     fun pause() {
-        mediaPlayer?.let { player ->
-            if (player.isPlaying) {
-                player.pause()
-                _playbackState.value = VoicePlaybackState.PAUSED
-            }
-        }
+        playbackService?.pause()
     }
 
     /**
      * Resume paused speech playback.
      */
     fun resume() {
-        mediaPlayer?.let { player ->
-            if (_playbackState.value == VoicePlaybackState.PAUSED) {
-                player.start()
-                _playbackState.value = VoicePlaybackState.SPEAKING
-            }
-        }
+        playbackService?.resume()
     }
 
     /**
@@ -166,6 +214,7 @@ class VoiceService @Inject constructor(
      */
     fun updateSettings(newSettings: VoiceSettings) {
         settings = newSettings
+        playbackService?.volume = newSettings.volume
     }
 
     /**
@@ -216,6 +265,37 @@ class VoiceService @Inject constructor(
         textToSpeech?.shutdown()
         textToSpeech = null
         isTtsInitialized = false
+        unbindPlaybackService()
+        audioDeviceManager.stopMonitoring()
+    }
+
+    // --- Playback Service Binding ---
+
+    /**
+     * Bind to the [VoicePlaybackService] for background audio control.
+     */
+    private fun bindPlaybackService() {
+        try {
+            val intent = Intent(context, VoicePlaybackService::class.java)
+            context.bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to bind VoicePlaybackService", e)
+        }
+    }
+
+    /**
+     * Unbind from the [VoicePlaybackService].
+     */
+    private fun unbindPlaybackService() {
+        if (isServiceBound) {
+            try {
+                context.unbindService(serviceConnection)
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to unbind VoicePlaybackService", e)
+            }
+            isServiceBound = false
+            playbackService = null
+        }
     }
 
     // --- System TTS ---
@@ -302,6 +382,7 @@ class VoiceService @Inject constructor(
      * Speak text using ElevenLabs API.
      *
      * Falls back to system TTS if the API call fails.
+     * Audio playback is delegated to [VoicePlaybackService] for background support.
      */
     private suspend fun speakWithElevenLabs(text: String) {
         val apiKey = tokenStorage.readString(KEY_ELEVEN_LABS_API_KEY)
@@ -322,7 +403,7 @@ class VoiceService @Inject constructor(
                 apiKey = apiKey
             )
 
-            playAudioData(audioData)
+            playAudioViaForegroundService(audioData)
         } catch (e: VoiceServiceError) {
             _errors.tryEmit(e)
             Log.w(TAG, "ElevenLabs failed, falling back to system TTS: ${e.message}")
@@ -393,84 +474,57 @@ class VoiceService @Inject constructor(
     }
 
     /**
-     * Play raw audio data using MediaPlayer.
+     * Play audio data via the [VoicePlaybackService] foreground service.
      *
-     * Writes the audio bytes to a temporary file and plays it with MediaPlayer
-     * configured for spoken audio with background playback support.
+     * Writes audio bytes to a temporary file and starts the foreground service
+     * for background-capable playback with media notification.
      *
      * @param data The raw audio bytes (MP3 format).
      */
-    private suspend fun playAudioData(data: ByteArray) {
+    private suspend fun playAudioViaForegroundService(data: ByteArray) {
         withContext(Dispatchers.IO) {
-            // Write audio data to a temp file for MediaPlayer
+            // Write audio data to a temp file for the foreground service
             val tempFile = File.createTempFile("happy_tts_", ".mp3", context.cacheDir)
             FileOutputStream(tempFile).use { it.write(data) }
 
             withContext(Dispatchers.Main) {
-                if (!requestAudioFocus()) {
-                    _errors.tryEmit(
-                        VoiceServiceError.AudioFocusError("Could not acquire audio focus")
-                    )
-                    tempFile.delete()
-                    _playbackState.value = VoicePlaybackState.IDLE
-                    return@withContext
-                }
-
                 try {
-                    mediaPlayer = MediaPlayer().apply {
-                        setAudioAttributes(
-                            AudioAttributes.Builder()
-                                .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                                .setUsage(AudioAttributes.USAGE_MEDIA)
-                                .build()
-                        )
+                    // Start the foreground service with the audio file
+                    val intent = VoicePlaybackService.createPlayIntent(
+                        context = context,
+                        audioFilePath = tempFile.absolutePath,
+                        title = "Happy Voice"
+                    )
 
-                        setDataSource(tempFile.absolutePath)
-                        setVolume(settings.volume, settings.volume)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        context.startForegroundService(intent)
+                    } else {
+                        context.startService(intent)
+                    }
 
-                        setOnPreparedListener {
-                            _playbackState.value = VoicePlaybackState.SPEAKING
-                            start()
-                        }
-
-                        setOnCompletionListener {
-                            _playbackState.value = VoicePlaybackState.IDLE
-                            release()
-                            mediaPlayer = null
-                            abandonAudioFocus()
-                            tempFile.delete()
-                        }
-
-                        setOnErrorListener { _, what, extra ->
-                            Log.e(TAG, "MediaPlayer error: what=$what extra=$extra")
-                            _playbackState.value = VoicePlaybackState.IDLE
-                            _errors.tryEmit(
-                                VoiceServiceError.AudioDecodingFailed
-                            )
-                            release()
-                            mediaPlayer = null
-                            abandonAudioFocus()
-                            tempFile.delete()
-                            true
-                        }
-
-                        prepareAsync()
+                    // If bound, also trigger playback directly
+                    playbackService?.let { service ->
+                        service.volume = settings.volume
+                        service.playAudio(tempFile.absolutePath, "Happy Voice")
                     }
                 } catch (e: Exception) {
-                    Log.e(TAG, "Failed to initialize MediaPlayer", e)
+                    Log.e(TAG, "Failed to start foreground playback service", e)
                     _playbackState.value = VoicePlaybackState.IDLE
-                    _errors.tryEmit(VoiceServiceError.AudioDecodingFailed)
-                    abandonAudioFocus()
+                    _errors.tryEmit(VoiceServiceError.SynthesisFailed(
+                        e.localizedMessage ?: "Failed to start playback"
+                    ))
                     tempFile.delete()
                 }
             }
         }
     }
 
-    // --- Audio Focus ---
+    // --- Audio Focus (for System TTS only) ---
 
     /**
-     * Request audio focus for speech playback.
+     * Request audio focus for system TTS speech playback.
+     *
+     * ElevenLabs audio focus is managed by [VoicePlaybackService].
      *
      * @return `true` if audio focus was granted.
      */
@@ -486,7 +540,9 @@ class VoiceService @Inject constructor(
                 when (focusChange) {
                     AudioManager.AUDIOFOCUS_LOSS,
                     AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
-                        stop()
+                        textToSpeech?.stop()
+                        _playbackState.value = VoicePlaybackState.IDLE
+                        abandonAudioFocus()
                     }
                     AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
                         // Lower volume temporarily (handled by system ducking)

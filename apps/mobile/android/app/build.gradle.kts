@@ -103,6 +103,15 @@ dependencies {
     // Accompanist Permissions
     implementation(libs.accompanist.permissions)
 
+    // Image Loading (Coil)
+    implementation(libs.coil.compose)
+
+    // Markdown Rendering (Markwon)
+    implementation(libs.bundles.markwon)
+
+    // Media Session (HAP-1021: foreground service + MediaStyle notification)
+    implementation(libs.androidx.media)
+
     // Encryption
     implementation(libs.tink.android)
 

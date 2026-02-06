@@ -281,9 +281,7 @@ struct SubscriptionStatusView: View {
     /// Row linking to the App Store subscription management page.
     private var manageSubscriptionRow: some View {
         Button {
-            if let url = URL(string: "https://apps.apple.com/account/subscriptions") {
-                UIApplication.shared.open(url)
-            }
+            viewModel.openSubscriptionManagement()
         } label: {
             HStack {
                 Label("subscription.action.manage".localized, systemImage: "gear")

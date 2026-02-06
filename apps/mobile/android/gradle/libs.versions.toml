@@ -35,6 +35,15 @@ mlkitBarcodeScanning = "17.2.0"
 # Accompanist
 accompanistPermissions = "0.34.0"
 
+# Image Loading
+coil = "2.5.0"
+
+# Markdown Rendering
+markwon = "4.6.2"
+
+# Media
+media = "1.7.0"
+
 # Encryption
 tink = "1.12.0"
 
@@ -97,6 +106,19 @@ mlkit-barcode-scanning = { group = "com.google.mlkit", name = "barcode-scanning"
 # Accompanist
 accompanist-permissions = { group = "com.google.accompanist", name = "accompanist-permissions", version.ref = "accompanistPermissions" }
 
+# Image Loading
+coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
+
+# Markdown Rendering
+markwon-core = { group = "io.noties.markwon", name = "core", version.ref = "markwon" }
+markwon-strikethrough = { group = "io.noties.markwon", name = "ext-strikethrough", version.ref = "markwon" }
+markwon-tables = { group = "io.noties.markwon", name = "ext-tables", version.ref = "markwon" }
+markwon-html = { group = "io.noties.markwon", name = "html", version.ref = "markwon" }
+markwon-linkify = { group = "io.noties.markwon", name = "linkify", version.ref = "markwon" }
+
+# Media Session
+androidx-media = { group = "androidx.media", name = "media", version.ref = "media" }
+
 # Encryption
 tink-android = { group = "com.google.crypto.tink", name = "tink-android", version.ref = "tink" }
 
@@ -154,4 +176,11 @@ camerax = [
 hilt = [
     "hilt-android",
     "hilt-navigation-compose"
+]
+markwon = [
+    "markwon-core",
+    "markwon-strikethrough",
+    "markwon-tables",
+    "markwon-html",
+    "markwon-linkify"
 ]

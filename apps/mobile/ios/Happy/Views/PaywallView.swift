@@ -11,7 +11,7 @@ import SwiftUI
 ///
 /// Displays available subscription tiers with pricing, features,
 /// and purchase/restore options. Supports monthly and annual billing
-/// period toggling.
+/// period toggling. Tracks purchase funnel analytics events.
 struct PaywallView: View {
 
     /// The view model managing purchase state.
@@ -19,6 +19,12 @@ struct PaywallView: View {
 
     /// Environment dismiss action for closing the paywall.
     @Environment(\.dismiss) private var dismiss
+
+    /// The analytics service for tracking paywall events.
+    private let analytics = PurchaseAnalyticsService.shared
+
+    /// The source that triggered this paywall display.
+    var source: String?
 
     var body: some View {
         NavigationStack {
@@ -40,6 +46,11 @@ struct PaywallView: View {
                     // Restore purchases
                     restoreButton
 
+                    // Manage subscription (for existing subscribers)
+                    if viewModel.isSubscribed {
+                        manageSubscriptionButton
+                    }
+
                     // Legal text
                     legalFooter
                 }
@@ -50,11 +61,13 @@ struct PaywallView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("common.close".localized) {
+                        analytics.trackPaywallDismissed()
                         dismiss()
                     }
                 }
             }
             .task {
+                analytics.trackPaywallPresented(source: source)
                 await viewModel.loadProducts()
             }
             .alert("subscription.purchaseSuccess.title".localized, isPresented: $viewModel.showPurchaseSuccess) {
@@ -105,7 +118,10 @@ struct PaywallView: View {
 
     /// Picker for switching between monthly and annual billing.
     private var billingPeriodPicker: some View {
-        Picker("subscription.billingPeriod".localized, selection: $viewModel.selectedBillingPeriod) {
+        Picker("subscription.billingPeriod".localized, selection: Binding(
+            get: { viewModel.selectedBillingPeriod },
+            set: { viewModel.billingPeriodDidChange(to: $0) }
+        )) {
             ForEach(BillingPeriod.allCases) { period in
                 Text(period.displayName).tag(period)
             }
@@ -163,6 +179,21 @@ struct PaywallView: View {
         }
         .disabled(viewModel.isRestoring)
         .padding(.top, 8)
+    }
+
+    /// Button to manage existing subscription in Apple Settings.
+    private var manageSubscriptionButton: some View {
+        Button {
+            viewModel.openSubscriptionManagement()
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "gear")
+                    .font(.caption)
+                Text("subscription.action.manage".localized)
+                    .font(.subheadline)
+            }
+            .foregroundStyle(.secondary)
+        }
     }
 
     /// Legal and terms of service footer.

@@ -99,18 +99,18 @@ enum VoiceProvider: String, Codable, CaseIterable, Identifiable {
     var displayName: String {
         switch self {
         case .system:
-            return "System (Apple)"
+            return "voice.provider.system".localized
         case .elevenLabs:
-            return "ElevenLabs"
+            return "voice.provider.elevenLabs".localized
         }
     }
 
     var description: String {
         switch self {
         case .system:
-            return "Built-in iOS text-to-speech. No API key required."
+            return "voice.provider.systemDescription".localized
         case .elevenLabs:
-            return "High-quality AI voices. Requires an ElevenLabs API key."
+            return "voice.provider.elevenLabsDescription".localized
         }
     }
 }

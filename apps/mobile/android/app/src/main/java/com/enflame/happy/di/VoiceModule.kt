@@ -2,6 +2,7 @@ package com.enflame.happy.di
 
 import android.content.Context
 import com.enflame.happy.data.local.TokenStorage
+import com.enflame.happy.data.voice.AudioDeviceManager
 import com.enflame.happy.data.voice.ElevenLabsApiService
 import com.enflame.happy.data.voice.VoiceService
 import dagger.Module
@@ -32,6 +33,7 @@ annotation class ElevenLabsRetrofit
  *
  * Provides:
  * - [ElevenLabsApiService] Retrofit interface for ElevenLabs TTS
+ * - [AudioDeviceManager] singleton for Bluetooth and audio device routing (HAP-1021)
  * - [VoiceService] singleton for unified TTS management
  */
 @Module
@@ -73,19 +75,37 @@ object VoiceModule {
     }
 
     /**
+     * Provides the AudioDeviceManager singleton for Bluetooth and audio routing.
+     *
+     * Manages audio output device discovery, selection, and routing
+     * for Bluetooth headsets, wired headphones, USB audio, and speakers.
+     *
+     * @param context Application context for AudioManager access.
+     */
+    @Provides
+    @Singleton
+    fun provideAudioDeviceManager(
+        @ApplicationContext context: Context
+    ): AudioDeviceManager {
+        return AudioDeviceManager(context)
+    }
+
+    /**
      * Provides the VoiceService singleton.
      *
      * @param context Application context for TextToSpeech and AudioManager.
      * @param elevenLabsApiService ElevenLabs API for high-quality TTS.
      * @param tokenStorage Secure storage for the ElevenLabs API key.
+     * @param audioDeviceManager Audio device manager for Bluetooth routing (HAP-1021).
      */
     @Provides
     @Singleton
     fun provideVoiceService(
         @ApplicationContext context: Context,
         elevenLabsApiService: ElevenLabsApiService,
-        tokenStorage: TokenStorage
+        tokenStorage: TokenStorage,
+        audioDeviceManager: AudioDeviceManager
     ): VoiceService {
-        return VoiceService(context, elevenLabsApiService, tokenStorage)
+        return VoiceService(context, elevenLabsApiService, tokenStorage, audioDeviceManager)
     }
 }

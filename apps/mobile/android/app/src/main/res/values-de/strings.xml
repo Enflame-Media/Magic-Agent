@@ -218,6 +218,9 @@
     <string name="artifacts_share">Teilen</string>
     <string name="artifacts_toggle_line_numbers">Zeilennummern ein-/ausblenden</string>
     <string name="artifacts_image_not_supported">Bildvorschau wird noch nicht unterst\u00fctzt</string>
+    <string name="artifacts_image_loading">Bild wird geladen\u2026</string>
+    <string name="artifacts_image_load_error">Bild konnte nicht geladen werden</string>
+    <string name="artifacts_image_load_error_hint">\u00dcberpr\u00fcfen Sie Ihre Netzwerkverbindung und versuchen Sie es erneut</string>
     <string name="artifacts_view_artifacts">Artefakte anzeigen</string>
 
     <!-- Empty states -->

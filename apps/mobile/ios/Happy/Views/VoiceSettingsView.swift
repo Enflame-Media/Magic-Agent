@@ -181,11 +181,11 @@ struct VoiceSettingsView: View {
     private func qualityLabel(for voice: AVSpeechSynthesisVoice) -> String {
         switch voice.quality {
         case .enhanced:
-            return "Enhanced quality"
+            return "voice.quality.enhanced".localized
         case .premium:
-            return "Premium quality"
+            return "voice.quality.premium".localized
         default:
-            return "Default quality"
+            return "voice.quality.default".localized
         }
     }
 

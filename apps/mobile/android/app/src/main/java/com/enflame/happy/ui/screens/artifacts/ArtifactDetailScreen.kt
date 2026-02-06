@@ -70,17 +70,19 @@ import kotlinx.coroutines.launch
 /**
  * Artifact detail screen displaying the contents of a single artifact.
  *
- * For code and config artifacts, the content is displayed with syntax highlighting
- * using [SyntaxHighlighter]. For other types, plain monospaced text is shown.
+ * Renders different artifact types with specialized viewers:
+ * - **Code/Config**: Syntax-highlighted display via [SyntaxHighlighter]
+ * - **Document**: Markdown rendering via [MarkdownRenderer] (Markwon)
+ * - **Image**: Image loading with pinch-to-zoom via [ImageViewerComposable] (Coil)
  *
  * Features:
- * - Syntax-highlighted code display
- * - Line numbers (toggleable)
- * - Copy to clipboard button
- * - Share action
- * - File path display
- * - Language indicator
- * - Metadata header with type, language, size, and line count
+ * - Syntax-highlighted code display with line numbers (toggleable)
+ * - Markdown rendering with headings, lists, code blocks, links, tables
+ * - Image loading with pinch-to-zoom, pan, and double-tap zoom
+ * - Loading and error states for images
+ * - Copy to clipboard and share actions
+ * - File path display and metadata header
+ * - Dark mode support for all content types
  *
  * @param artifact The artifact to display.
  * @param onNavigateBack Callback for the back navigation button.
@@ -295,7 +297,8 @@ private fun MetadataHeader(
  * Displays the artifact content based on its type.
  *
  * Code and config artifacts get syntax highlighting with line numbers.
- * Documents and other types show plain monospaced text.
+ * Document artifacts are rendered as markdown using [MarkdownRenderer].
+ * Image artifacts are loaded and displayed with pinch-to-zoom via [ImageViewerComposable].
  */
 @Composable
 private fun ArtifactContentView(
@@ -315,38 +318,20 @@ private fun ArtifactContentView(
             )
         }
         ArtifactType.DOCUMENT -> {
-            Text(
-                text = artifact.content,
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    fontFamily = FontFamily.Monospace
-                ),
+            MarkdownRenderer(
+                markdown = artifact.content,
+                isDarkMode = isDarkMode,
                 modifier = modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(16.dp)
             )
         }
         ArtifactType.IMAGE -> {
-            // Placeholder for image support
-            Column(
+            ImageViewerComposable(
+                imageUrl = artifact.content,
+                contentDescription = artifact.title,
                 modifier = modifier
                     .fillMaxWidth()
-                    .padding(vertical = 40.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Image,
-                    contentDescription = null,
-                    modifier = Modifier.size(64.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = stringResource(R.string.artifacts_image_not_supported),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+                    .height(400.dp)
+            )
         }
     }
 }
@@ -507,6 +492,17 @@ private fun ArtifactDetailConfigPreview() {
     HappyTheme {
         ArtifactDetailScreen(
             artifact = Artifact.sampleJson,
+            onNavigateBack = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun ArtifactDetailImagePreview() {
+    HappyTheme {
+        ArtifactDetailScreen(
+            artifact = Artifact.sampleImage,
             onNavigateBack = {}
         )
     }

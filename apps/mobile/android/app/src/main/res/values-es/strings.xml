@@ -218,6 +218,9 @@
     <string name="artifacts_share">Compartir</string>
     <string name="artifacts_toggle_line_numbers">Mostrar/ocultar n\u00fameros de l\u00ednea</string>
     <string name="artifacts_image_not_supported">La vista previa de im\u00e1genes a\u00fan no est\u00e1 disponible</string>
+    <string name="artifacts_image_loading">Cargando imagen\u2026</string>
+    <string name="artifacts_image_load_error">Error al cargar la imagen</string>
+    <string name="artifacts_image_load_error_hint">Verifica tu conexi\u00f3n de red e int\u00e9ntalo de nuevo</string>
     <string name="artifacts_view_artifacts">Ver artefactos</string>
 
     <!-- Empty states -->

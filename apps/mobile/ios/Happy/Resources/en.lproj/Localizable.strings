@@ -138,3 +138,116 @@
 "error.networkUnavailable" = "Network connection unavailable.";
 "error.authenticationFailed" = "Authentication failed. Please try again.";
 "error.unknown" = "An unknown error occurred.";
+
+// MARK: - Common (additional)
+
+"common.save" = "Save";
+"common.done" = "Done";
+
+// MARK: - Voice Settings
+
+"voice.settings.title" = "Voice Settings";
+"voice.settings.provider" = "Provider";
+"voice.settings.providerFooter" = "Choose a text-to-speech provider. ElevenLabs offers higher quality but requires an API key.";
+"voice.settings.voice" = "Voice";
+"voice.settings.noVoices" = "No voices available for your language.";
+"voice.settings.speed" = "Speed";
+"voice.settings.volume" = "Volume";
+"voice.settings.playback" = "Playback";
+"voice.settings.autoPlay" = "Auto-play assistant messages";
+"voice.settings.skipToolOutputs" = "Skip tool outputs";
+"voice.settings.behavior" = "Behavior";
+"voice.settings.behaviorFooter" = "When auto-play is on, new assistant messages are read aloud automatically.";
+"voice.settings.apiKey" = "API Key";
+"voice.settings.apiKeyConfigured" = "API key configured";
+"voice.settings.removeApiKey" = "Remove";
+"voice.settings.apiKeyRequired" = "An ElevenLabs API key is required to use this provider.";
+"voice.settings.apiKeyPlaceholder" = "Enter your ElevenLabs API key";
+"voice.settings.saveApiKey" = "Save API Key";
+"voice.settings.addApiKey" = "Add API Key";
+"voice.settings.apiKeyFooter" = "Your API key is stored securely in the device Keychain.";
+"voice.settings.removeApiKeyConfirm" = "Remove ElevenLabs API key?";
+"voice.settings.test" = "Test";
+"voice.settings.testVoice" = "Test Voice";
+"voice.settings.testPhrase" = "Hello! This is a test of the voice settings in Happy.";
+
+// MARK: - Voice Provider
+
+"voice.provider.system" = "System (Apple)";
+"voice.provider.elevenLabs" = "ElevenLabs";
+"voice.provider.systemDescription" = "Built-in iOS text-to-speech. No API key required.";
+"voice.provider.elevenLabsDescription" = "High-quality AI voices. Requires an ElevenLabs API key.";
+
+// MARK: - Voice Quality
+
+"voice.quality.enhanced" = "Enhanced quality";
+"voice.quality.premium" = "Premium quality";
+"voice.quality.default" = "Default quality";
+
+// MARK: - Voice Playback Controls
+
+"voice.play" = "Play";
+"voice.pause" = "Pause";
+"voice.resume" = "Resume";
+"voice.stop" = "Stop";
+"voice.loading" = "Loading...";
+"voice.settings" = "Voice Settings";
+"voice.autoPlay.enable" = "Enable auto-play";
+"voice.autoPlay.disable" = "Disable auto-play";
+"voice.speakMessage" = "Read message aloud";
+"voice.stopMessage" = "Stop reading";
+
+// MARK: - Voice Chat
+
+"voiceChat.title" = "Voice Chat";
+"voiceChat.status.connected" = "Connected";
+"voiceChat.status.connecting" = "Connecting...";
+"voiceChat.status.reconnecting" = "Reconnecting...";
+"voiceChat.status.disconnected" = "Disconnected";
+"voiceChat.connect" = "Connect";
+"voiceChat.disconnect" = "Disconnect";
+"voiceChat.connecting" = "Connecting";
+"voiceChat.reconnecting" = "Reconnecting";
+"voiceChat.mute" = "Mute";
+"voiceChat.unmute" = "Unmute";
+"voiceChat.muted" = "Muted";
+"voiceChat.unmuted" = "Unmuted";
+"voiceChat.active" = "Active";
+"voiceChat.you" = "You";
+"voiceChat.pushToTalk" = "Hold to Talk";
+"voiceChat.noParticipants" = "No Other Participants";
+"voiceChat.noParticipantsDescription" = "Waiting for others to join the voice chat.";
+"voiceChat.notConnected" = "Not Connected";
+"voiceChat.notConnectedDescription" = "Tap Connect to join the voice chat room.";
+
+// MARK: - Voice Chat VAD Modes
+
+"voiceChat.vadMode" = "Input Mode";
+"voiceChat.vadMode.pushToTalk" = "Push to Talk";
+"voiceChat.vadMode.autoDetect" = "Auto Detect";
+"voiceChat.vadMode.alwaysOn" = "Always On";
+"voiceChat.vadMode.pushToTalkDescription" = "Hold the button to speak.";
+"voiceChat.vadMode.autoDetectDescription" = "Microphone activates when speech is detected.";
+"voiceChat.vadMode.alwaysOnDescription" = "Microphone is always active.";
+
+// MARK: - Voice Chat Errors
+
+"voiceChat.error.connectionFailed" = "Connection failed";
+"voiceChat.error.microphonePermission" = "Microphone permission is required for voice chat.";
+"voiceChat.error.audioSession" = "Audio session error";
+"voiceChat.error.invalidToken" = "Invalid voice chat token.";
+"voiceChat.error.roomNotFound" = "Voice chat room not found.";
+"voiceChat.error.alreadyConnected" = "Already connected to voice chat.";
+"voiceChat.error.notConnected" = "Not connected to voice chat.";
+"voiceChat.error.noRoom" = "No voice chat room available for this session.";
+
+// MARK: - Audio Routing
+
+"audioRoute.title" = "Audio Output";
+"audioRoute.speaker" = "Speaker";
+"audioRoute.receiver" = "Earpiece";
+"audioRoute.headphones" = "Headphones";
+"audioRoute.available" = "Available Outputs";
+"audioRoute.footer" = "Select where audio is played. Bluetooth devices appear when connected.";
+"audioRoute.currentOutput" = "Current Output";
+"audioRoute.status" = "Status";
