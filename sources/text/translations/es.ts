@@ -601,7 +601,7 @@ export const es: TranslationStructure = {
         },
         model: {
             title: 'MODELO',
-            opus: 'Opus 4.5',
+            opus: 'Opus 4.6',
             sonnet: 'Sonnet 4.5',
             haiku: 'Haiku 4.5',
         },
@@ -748,6 +748,11 @@ export const es: TranslationStructure = {
 
     settingsVoice: {
         // Voice settings screen
+        voiceAssistantTitle: 'Asistente de voz',
+        voiceAssistantDescription: 'Controla si las funciones del asistente de voz están disponibles. Cuando está desactivado, las capacidades de interacción por voz están desactivadas.',
+        enableVoiceAssistant: 'Activar asistente de voz',
+        voiceAssistantEnabledSubtitle: 'Las funciones de voz están activas',
+        voiceAssistantDisabledSubtitle: 'Las funciones de voz están desactivadas',
         languageTitle: 'Idioma',
         languageDescription: 'Elige tu idioma preferido para las interacciones con el asistente de voz. Esta configuración se sincroniza en todos tus dispositivos.',
         preferredLanguage: 'Idioma preferido',

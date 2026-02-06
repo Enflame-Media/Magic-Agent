@@ -527,6 +527,11 @@ export const it: TranslationStructure = {
 
     settingsVoice: {
         // Voice settings screen
+        voiceAssistantTitle: 'Assistente vocale',
+        voiceAssistantDescription: 'Controlla se le funzionalità dell\'assistente vocale sono disponibili. Quando disattivato, le capacità di interazione vocale sono disabilitate.',
+        enableVoiceAssistant: 'Attiva assistente vocale',
+        voiceAssistantEnabledSubtitle: 'Le funzionalità vocali sono attive',
+        voiceAssistantDisabledSubtitle: 'Le funzionalità vocali sono disattivate',
         languageTitle: 'Lingua',
         languageDescription: 'Scegli la tua lingua preferita per le interazioni dell\'assistente vocale. Questa impostazione si sincronizza su tutti i tuoi dispositivi.',
         preferredLanguage: 'Lingua preferita',

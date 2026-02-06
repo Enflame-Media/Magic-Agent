@@ -14,6 +14,14 @@ import { VOICE_CONFIG } from '../voiceConfig';
 import { logger } from '@/utils/logger';
 
 /**
+ * Check if voice assistant is enabled in settings.
+ * Returns false if voice is disabled, preventing any voice operations.
+ */
+function isVoiceAssistantEnabled(): boolean {
+    return storage.getState().settings.voiceAssistantEnabled;
+}
+
+/**
  * Centralized voice assistant hooks for multi-session context updates.
  * These hooks route app events to the voice assistant with formatted context updates.
  */
@@ -29,6 +37,7 @@ let shownSessions = new Set<string>();
 let lastFocusSession: string | null = null;
 
 function reportContextualUpdate(update: string | null | undefined) {
+    if (!isVoiceAssistantEnabled()) return;
     if (VOICE_CONFIG.ENABLE_DEBUG_LOGGING) {
         logger.debug('Voice: Reporting contextual update:', update);
     }
@@ -42,6 +51,7 @@ function reportContextualUpdate(update: string | null | undefined) {
 }
 
 function reportTextUpdate(update: string | null | undefined) {
+    if (!isVoiceAssistantEnabled()) return;
     if (VOICE_CONFIG.ENABLE_DEBUG_LOGGING) {
         logger.debug('Voice: Reporting text update:', update);
     }
@@ -124,6 +134,7 @@ export const voiceHooks = {
      * Called when voice session starts
      */
     onVoiceStarted(sessionId: string): string {
+        if (!isVoiceAssistantEnabled()) return '';
         if (VOICE_CONFIG.ENABLE_DEBUG_LOGGING) {
             logger.debug('Voice session started for:', sessionId);
         }

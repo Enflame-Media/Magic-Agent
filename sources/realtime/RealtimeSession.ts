@@ -19,6 +19,13 @@ export async function startRealtimeSession(sessionId: string, initialContext?: s
         return;
     }
 
+    // Check if voice assistant is enabled in settings
+    const voiceAssistantEnabled = storage.getState().settings.voiceAssistantEnabled;
+    if (!voiceAssistantEnabled) {
+        logger.debug('[Voice] Voice assistant is disabled in settings');
+        return;
+    }
+
     // Request microphone permission before starting voice session
     // Critical for iOS/Android - first session will fail without this
     const permissionResult = await requestMicrophonePermission();

@@ -602,7 +602,7 @@ export const en = {
         },
         model: {
             title: 'MODEL',
-            opus: 'Opus 4.5',
+            opus: 'Opus 4.6',
             sonnet: 'Sonnet 4.5',
             haiku: 'Haiku 4.5',
         },
@@ -749,6 +749,11 @@ export const en = {
 
     settingsVoice: {
         // Voice settings screen
+        voiceAssistantTitle: 'Voice Assistant',
+        voiceAssistantDescription: 'Control whether Voice Assistant features are available. When disabled, voice interaction capabilities are turned off.',
+        enableVoiceAssistant: 'Enable Voice Assistant',
+        voiceAssistantEnabledSubtitle: 'Voice features are active',
+        voiceAssistantDisabledSubtitle: 'Voice features are turned off',
         languageTitle: 'Language',
         languageDescription: 'Choose your preferred language for voice assistant interactions. This setting syncs across all your devices.',
         preferredLanguage: 'Preferred Language',

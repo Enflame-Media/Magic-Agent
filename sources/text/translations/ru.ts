@@ -611,7 +611,7 @@ export const ru: TranslationStructure = {
         },
         model: {
             title: 'МОДЕЛЬ',
-            opus: 'Opus 4.5',
+            opus: 'Opus 4.6',
             sonnet: 'Sonnet 4.5',
             haiku: 'Haiku 4.5',
         },
@@ -758,6 +758,11 @@ export const ru: TranslationStructure = {
 
     settingsVoice: {
         // Voice settings screen
+        voiceAssistantTitle: 'Голосовой ассистент',
+        voiceAssistantDescription: 'Управляйте доступностью функций голосового ассистента. При отключении возможности голосового взаимодействия недоступны.',
+        enableVoiceAssistant: 'Включить голосовой ассистент',
+        voiceAssistantEnabledSubtitle: 'Голосовые функции активны',
+        voiceAssistantDisabledSubtitle: 'Голосовые функции отключены',
         languageTitle: 'Язык',
         languageDescription: 'Выберите предпочтительный язык для взаимодействия с голосовым помощником. Эта настройка синхронизируется на всех ваших устройствах.',
         preferredLanguage: 'Предпочтительный язык',

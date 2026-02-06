@@ -530,6 +530,11 @@ export const ja: TranslationStructure = {
 
     settingsVoice: {
         // Voice settings screen
+        voiceAssistantTitle: '音声アシスタント',
+        voiceAssistantDescription: '音声アシスタント機能の利用可否を制御します。無効にすると、音声操作機能がオフになります。',
+        enableVoiceAssistant: '音声アシスタントを有効にする',
+        voiceAssistantEnabledSubtitle: '音声機能は有効です',
+        voiceAssistantDisabledSubtitle: '音声機能は無効です',
         languageTitle: '言語',
         languageDescription: '音声アシスタントの操作に使用する言語を選択します。この設定はすべてのデバイスで同期されます。',
         preferredLanguage: '優先言語',

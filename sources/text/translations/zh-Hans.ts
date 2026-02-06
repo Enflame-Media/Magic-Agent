@@ -603,7 +603,7 @@ export const zhHans: TranslationStructure = {
         },
         model: {
             title: '模型',
-            opus: 'Opus 4.5',
+            opus: 'Opus 4.6',
             sonnet: 'Sonnet 4.5',
             haiku: 'Haiku 4.5',
         },
@@ -750,6 +750,11 @@ export const zhHans: TranslationStructure = {
 
     settingsVoice: {
         // Voice settings screen
+        voiceAssistantTitle: '语音助手',
+        voiceAssistantDescription: '控制语音助手功能是否可用。禁用后，语音交互功能将被关闭。',
+        enableVoiceAssistant: '启用语音助手',
+        voiceAssistantEnabledSubtitle: '语音功能已激活',
+        voiceAssistantDisabledSubtitle: '语音功能已关闭',
         languageTitle: '语言',
         languageDescription: '选择您希望语音助手交互使用的语言。此设置将在您的所有设备间同步。',
         preferredLanguage: '首选语言',

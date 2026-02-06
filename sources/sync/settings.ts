@@ -22,6 +22,7 @@ export const SettingsSchema = z.object({
     groupSessionsByProject: z.boolean().describe('Group sessions by their working directory/project'),
     reviewPromptAnswered: z.boolean().describe('Whether the review prompt has been answered'),
     reviewPromptLikedApp: z.boolean().nullish().describe('Whether user liked the app when asked'),
+    voiceAssistantEnabled: z.boolean().describe('Whether to enable voice assistant features'),
     voiceAssistantLanguage: z.string().nullable().describe('Preferred language for voice assistant (null for auto-detect)'),
     preferredLanguage: z.string().nullable().describe('Preferred UI language (null for auto-detect from device locale)'),
     recentMachinePaths: z.array(z.object({
@@ -71,6 +72,7 @@ export const settingsDefaults: Settings = {
     groupSessionsByProject: false,
     reviewPromptAnswered: false,
     reviewPromptLikedApp: null,
+    voiceAssistantEnabled: true,
     voiceAssistantLanguage: null,
     preferredLanguage: null,
     recentMachinePaths: [],

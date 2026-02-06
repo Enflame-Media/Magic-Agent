@@ -513,7 +513,7 @@ class Sync {
 
         switch (modelMode) {
             case 'opus':
-                model = 'claude-opus-4-5-20251101';
+                model = 'claude-opus-4-6';
                 fallbackModel = null;
                 break;
             case 'sonnet':
@@ -526,7 +526,7 @@ class Sync {
                 break;
             default:
                 // If no modelMode is specified, use default behavior (opus)
-                model = 'claude-opus-4-5-20251101';
+                model = 'claude-opus-4-6';
                 fallbackModel = null;
                 break;
         }

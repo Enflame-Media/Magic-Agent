@@ -601,7 +601,7 @@ export const ca: TranslationStructure = {
         },
         model: {
             title: 'MODEL',
-            opus: 'Opus 4.5',
+            opus: 'Opus 4.6',
             sonnet: 'Sonnet 4.5',
             haiku: 'Haiku 4.5',
         },
@@ -748,6 +748,11 @@ export const ca: TranslationStructure = {
 
     settingsVoice: {
         // Voice settings screen
+        voiceAssistantTitle: 'Assistent de veu',
+        voiceAssistantDescription: 'Controla si les funcions de l\'assistent de veu estan disponibles. Quan està desactivat, les capacitats d\'interacció per veu estan desactivades.',
+        enableVoiceAssistant: 'Activa l\'assistent de veu',
+        voiceAssistantEnabledSubtitle: 'Les funcions de veu estan actives',
+        voiceAssistantDisabledSubtitle: 'Les funcions de veu estan desactivades',
         languageTitle: 'Idioma',
         languageDescription: 'Tria el teu idioma preferit per a les interaccions amb l\'assistent de veu. Aquesta configuració es sincronitza a tots els teus dispositius.',
         preferredLanguage: 'Idioma preferit',

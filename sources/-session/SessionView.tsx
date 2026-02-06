@@ -115,7 +115,7 @@ const ExpandableHeaderMetadata = React.memo(({
     // Format model mode for display
     const modelDisplay = useMemo(() => {
         // Claude models
-        if (modelMode === 'opus') return 'Opus 4.5';
+        if (modelMode === 'opus') return 'Opus 4.6';
         if (modelMode === 'sonnet') return 'Sonnet 4.5';
         if (modelMode === 'haiku') return 'Haiku 4.5';
         // Codex models
