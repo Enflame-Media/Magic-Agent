@@ -1,6 +1,7 @@
 import { defineConfig } from 'vitest/config';
 import vue from '@vitejs/plugin-vue';
 import { fileURLToPath, URL } from 'node:url';
+import path from 'node:path';
 
 /**
  * Vitest configuration for Happy Vue.js web application
@@ -15,14 +16,45 @@ import { fileURLToPath, URL } from 'node:url';
  * - e2e/                      - Playwright E2E tests (separate config)
  * - e2e/mobile/               - Appium mobile E2E tests
  *
+ * ## Vue Module Deduplication (HAP-983)
+ *
+ * In yarn workspace monorepos, Vue and its internal packages can be installed
+ * as duplicate copies (root hoisted + nested under apps/web/vue/node_modules/vue/).
+ * This causes Vue Test Utils mount() to fail with `renderSlot` errors on components
+ * that use `<slot />`, because `currentRenderingInstance` is module-scoped and the
+ * two copies don't share state.
+ *
+ * The `resolve.dedupe` and explicit Vue aliases force all Vue imports to resolve
+ * to the root monorepo copy, eliminating the duplicate module issue.
+ *
  * @see HAP-720 - NativeScript Mobile Testing Suite
+ * @see HAP-983 - Integration tests for responsive components
+ * @see https://vitejs.dev/config/shared-options.html#resolve-dedupe
  */
+
+// Root monorepo node_modules for Vue deduplication
+const rootNodeModules = path.resolve(__dirname, '../../../node_modules');
+
 export default defineConfig({
   plugins: [vue()],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
+      // Force Vue packages to resolve from root monorepo node_modules
+      // to prevent duplicate module instances (HAP-983)
+      'vue': path.resolve(rootNodeModules, 'vue'),
+      '@vue/runtime-core': path.resolve(rootNodeModules, '@vue/runtime-core'),
+      '@vue/runtime-dom': path.resolve(rootNodeModules, '@vue/runtime-dom'),
+      '@vue/reactivity': path.resolve(rootNodeModules, '@vue/reactivity'),
+      '@vue/shared': path.resolve(rootNodeModules, '@vue/shared'),
     },
+    dedupe: [
+      'vue',
+      '@vue/runtime-core',
+      '@vue/runtime-dom',
+      '@vue/reactivity',
+      '@vue/shared',
+    ],
   },
   test: {
     globals: true,

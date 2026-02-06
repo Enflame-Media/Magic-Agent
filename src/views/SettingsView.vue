@@ -17,6 +17,7 @@ import { useSyncStore } from '@/stores/sync';
 import { useUiStore } from '@/stores/ui';
 import { Button } from '@/components/ui/button';
 import { useLocale } from '@/composables/useLocale';
+import ResponsiveContainer from '@/components/app/ResponsiveContainer.vue';
 import {
   Card,
   CardContent,
@@ -125,7 +126,7 @@ function openGitHub() {
 </script>
 
 <template>
-  <div class="container mx-auto px-4 py-6 max-w-2xl">
+  <ResponsiveContainer size="narrow" padding="default">
     <!-- Header -->
     <header class="flex items-center gap-4 mb-6">
       <Button variant="ghost" size="icon" @click="goBack">
@@ -846,5 +847,5 @@ function openGitHub() {
         </Button>
       </section>
     </div>
-  </div>
+  </ResponsiveContainer>
 </template>

@@ -26,6 +26,8 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ShareSessionModal } from '@/components/app/sharing';
+import ResponsiveContainer from '@/components/app/ResponsiveContainer.vue';
+import { useResponsiveLayout } from '@/composables/useResponsiveLayout';
 import { fetchSessionMessages } from '@/services/sessions';
 import { decryptMessageContent, decryptSessionMetadata } from '@/services/encryption/sessionDecryption';
 import { normalizeDecryptedMessage } from '@/services/messages/normalize';
@@ -48,6 +50,16 @@ const sessionsStore = useSessionsStore();
 const messagesStore = useMessagesStore();
 const authStore = useAuthStore();
 const machinesStore = useMachinesStore();
+
+// Responsive layout for session view (HAP-976)
+// useResponsiveLayout provides adaptive panel management for multi-panel views.
+// Currently single-panel; containerClass provides responsive grid/flex styling.
+const { containerClass: responsiveContainerClass, isSinglePanel } = useResponsiveLayout(
+  [
+    { id: 'main', minBreakpoint: 'sm', defaultWidth: 100, collapsible: false },
+  ],
+  'main',
+);
 
 // Session ID from route params
 const sessionId = computed(() => route.params.id as string);
@@ -420,9 +432,10 @@ async function handleOptionPress(option: { title: string }): Promise<void> {
 </script>
 
 <template>
-  <div class="flex flex-col h-full min-h-0 bg-background">
+  <div :class="[responsiveContainerClass, 'min-h-0 bg-background']" :data-single-panel="isSinglePanel || undefined">
     <!-- Header -->
-    <header class="flex items-center gap-4 px-4 py-3 border-b bg-background sticky top-0 z-10">
+    <header class="flex items-center gap-4 border-b bg-background sticky top-0 z-10">
+      <ResponsiveContainer size="full" padding="compact" class="flex items-center gap-4">
       <!-- Back button -->
       <Button variant="ghost" size="icon" @click="goBack">
         <svg
@@ -501,6 +514,7 @@ async function handleOptionPress(option: { title: string }): Promise<void> {
           />
         </svg>
       </Button>
+      </ResponsiveContainer>
     </header>
 
     <!-- Content -->
@@ -580,9 +594,11 @@ async function handleOptionPress(option: { title: string }): Promise<void> {
     </ScrollArea>
 
     <!-- Input area -->
-    <div
+    <ResponsiveContainer
       v-if="session?.active"
-      class="border-t bg-muted/20 px-4 pb-4 pt-3"
+      size="full"
+      padding="compact"
+      class="border-t bg-muted/20"
     >
       <AgentInput
         v-model="messageInput"
@@ -597,7 +613,7 @@ async function handleOptionPress(option: { title: string }): Promise<void> {
         @cycle-model="cycleModelLabel"
         @cycle-mode="cyclePermissionMode"
       />
-    </div>
+    </ResponsiveContainer>
 
     <div v-else class="border-t p-4 bg-muted/30">
       <p class="text-sm text-center text-muted-foreground">

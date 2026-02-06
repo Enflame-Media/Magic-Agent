@@ -44,6 +44,7 @@ import {
   machineSpawnNewSession,
   pollForRealSession,
 } from '@/services/sync/ops';
+import ResponsiveContainer from '@/components/app/ResponsiveContainer.vue';
 
 interface SessionMetadata {
   name?: string;
@@ -319,7 +320,7 @@ async function handleDelete(): Promise<void> {
 </script>
 
 <template>
-  <div class="flex flex-col gap-6 px-4 py-6 lg:px-8">
+  <ResponsiveContainer size="narrow" padding="default" class="flex flex-col gap-6">
     <div class="flex items-center gap-3">
       <Button variant="ghost" size="icon" @click="goBack">
         <svg
@@ -656,5 +657,5 @@ async function handleDelete(): Promise<void> {
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  </div>
+  </ResponsiveContainer>
 </template>

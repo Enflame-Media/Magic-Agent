@@ -26,6 +26,7 @@ import { storeToRefs } from 'pinia';
 import SessionErrorDialog from '@/components/app/SessionErrorDialog.vue';
 import RevivalCooldownBanner from '@/components/app/RevivalCooldownBanner.vue';
 import SessionSidebar from '@/components/app/SessionSidebar.vue';
+import DesktopNavigation from '@/components/app/DesktopNavigation.vue';
 import MobileBottomNav from '@/components/app/MobileBottomNav.vue';
 import CommandPalette from '@/components/app/CommandPalette.vue';
 import SkipLink from '@/components/app/SkipLink.vue';
@@ -185,14 +186,20 @@ const pageTitle = computed(() => {
 
     <SidebarProvider class="min-h-svh">
       <ResizablePanelGroup direction="horizontal" class="min-h-svh">
-        <!-- Sidebar panel with drag-to-resize (HAP-927) -->
+        <!-- Sidebar panel with drag-to-resize (HAP-927, HAP-976) -->
+        <!-- Uses DesktopNavigation for semantic <nav> and ARIA attributes.
+             Note: DesktopNavigation's built-in isDesktop visibility check is compatible
+             here because the ResizablePanel collapses gracefully when nav is hidden on
+             viewports between sm (640px) and lg (1024px). -->
         <ResizablePanel
           :default-size="sidebarDefaultSize"
           :min-size="sidebarMinSize"
           :max-size="sidebarMaxSize"
           @resize="handleSidebarResize"
         >
-          <SessionSidebar />
+          <DesktopNavigation :width="sidebarWidth">
+            <SessionSidebar />
+          </DesktopNavigation>
         </ResizablePanel>
 
         <!-- Resize handle with tooltip for discoverability (HAP-934) -->

@@ -14,6 +14,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import ResponsiveContainer from '@/components/app/ResponsiveContainer.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -136,14 +137,14 @@ watch(userId, () => {
       </div>
     </header>
 
-    <div class="flex-1 p-4">
-      <div v-if="isLoading" class="space-y-4 max-w-xl mx-auto">
+    <ResponsiveContainer size="narrow" padding="default" class="flex-1">
+      <div v-if="isLoading" class="space-y-4">
         <Skeleton class="h-8 w-1/2" />
         <Skeleton class="h-4 w-1/3" />
         <Skeleton class="h-24 w-full" />
       </div>
 
-      <Card v-else-if="errorMessage" class="border-destructive/50 max-w-xl mx-auto">
+      <Card v-else-if="errorMessage" class="border-destructive/50">
         <CardContent class="py-8 text-center">
           <p class="text-destructive">{{ errorMessage }}</p>
           <Button variant="outline" class="mt-4" @click="goBack">
@@ -152,7 +153,7 @@ watch(userId, () => {
         </CardContent>
       </Card>
 
-      <Card v-else-if="profile" class="max-w-xl mx-auto">
+      <Card v-else-if="profile">
         <CardContent class="p-6 space-y-4">
           <div class="flex items-center gap-4">
             <Avatar class="h-16 w-16">
@@ -179,7 +180,7 @@ watch(userId, () => {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </ResponsiveContainer>
   </div>
 </template>
 

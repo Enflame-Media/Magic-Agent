@@ -21,6 +21,7 @@ import { Input } from '@/components/ui/input';
 import { Field, FieldLabel, FieldError, isInvalid } from '@/components/ui/form';
 import { useMachinesStore, type Machine } from '@/stores/machines';
 import { machineSpawnNewSession, isTemporaryPidSessionId, pollForRealSession } from '@/services/sync/ops';
+import ResponsiveContainer from '@/components/app/ResponsiveContainer.vue';
 
 const router = useRouter();
 const { t } = useI18n();
@@ -222,7 +223,7 @@ const canSubmit = computed(() => {
 
 <template>
   <div class="h-full overflow-auto bg-background">
-    <div class="max-w-3xl mx-auto px-6 py-8">
+    <ResponsiveContainer size="narrow" padding="comfortable">
       <header class="flex items-center gap-3 mb-10">
         <Button variant="ghost" size="icon" @click="router.push('/')">
           <svg
@@ -438,6 +439,6 @@ const canSubmit = computed(() => {
           </div>
         </div>
       </form>
-    </div>
+    </ResponsiveContainer>
   </div>
 </template>

@@ -13,6 +13,7 @@ import { normalizeDecryptedMessage } from '@/services/messages/normalize';
 import { fetchSessionMessages } from '@/services/sessions';
 import type { NormalizedMessage } from '@/services/messages/types';
 import { toast } from 'vue-sonner';
+import ResponsiveContainer from '@/components/app/ResponsiveContainer.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -124,7 +125,8 @@ watch([sessionId, messageId], async () => {
 
 <template>
   <div class="flex h-full flex-col bg-background">
-    <header class="flex items-center gap-4 px-4 py-3 border-b bg-background sticky top-0 z-10">
+    <header class="flex items-center gap-4 border-b bg-background sticky top-0 z-10">
+      <ResponsiveContainer size="full" padding="compact" class="flex items-center gap-4">
       <Button variant="ghost" size="icon" @click="goBack">
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -141,24 +143,25 @@ watch([sessionId, messageId], async () => {
         <ToolHeader v-if="mergedToolCall ?? toolMessage" :tool="mergedToolCall ?? toolMessage!.tool" />
         <div v-else class="text-sm text-muted-foreground">Tool details</div>
       </div>
+      </ResponsiveContainer>
     </header>
 
     <ScrollArea class="flex-1 min-h-0">
       <template v-if="isLoading">
-        <div class="p-6 space-y-4">
+        <ResponsiveContainer size="default" padding="default" class="space-y-4">
           <Skeleton class="h-6 w-1/2" />
           <Skeleton class="h-32 w-full" />
-        </div>
+        </ResponsiveContainer>
       </template>
 
       <template v-else-if="toolMessage">
-        <div class="p-6">
+        <ResponsiveContainer size="default" padding="default">
           <ToolFullView :tool="mergedToolCall ?? toolMessage.tool" :messages="normalizedMessages" />
-        </div>
+        </ResponsiveContainer>
       </template>
 
       <template v-else-if="toolResultMessage">
-        <div class="p-6">
+        <ResponsiveContainer size="default" padding="default">
           <ToolFullView
             :tool="{
               name: 'Tool result',
@@ -171,7 +174,7 @@ watch([sessionId, messageId], async () => {
               result: toolResultMessage.content,
             }"
           />
-        </div>
+        </ResponsiveContainer>
       </template>
 
       <template v-else>

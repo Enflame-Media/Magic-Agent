@@ -29,6 +29,7 @@ import FriendRequestCard from '@/components/app/FriendRequestCard.vue';
 import UserSearch from '@/components/app/UserSearch.vue';
 import EmptyState from '@/components/app/EmptyState.vue';
 import { PullToRefresh } from '@/components/app';
+import ResponsiveContainer from '@/components/app/ResponsiveContainer.vue';
 
 // Lazy load QRScanner - @zxing library is ~100KB
 const QRScanner = defineAsyncComponent({
@@ -203,7 +204,7 @@ function handleQRError(_err: Error): void {
     :mobile-only="true"
     @refresh="handleRefresh"
   >
-    <div class="container mx-auto max-w-2xl p-4">
+    <ResponsiveContainer size="narrow" padding="default">
       <!-- Header -->
       <div class="mb-6">
         <h1 class="text-2xl font-bold">Friends</h1>
@@ -375,7 +376,7 @@ function handleQRError(_err: Error): void {
         </Card>
       </TabsContent>
       </Tabs>
-    </div>
+    </ResponsiveContainer>
   </PullToRefresh>
 </template>
 

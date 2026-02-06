@@ -24,6 +24,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useOfflineArtifacts } from '@/composables/useOfflineArtifacts';
 import { useBreakpoints } from '@/composables/useBreakpoints';
+import ResponsiveContainer from '@/components/app/ResponsiveContainer.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -90,7 +91,8 @@ onMounted(() => {
 <template>
   <div class="flex flex-col h-screen bg-background">
     <!-- Header -->
-    <header class="flex items-center gap-4 px-4 py-3 border-b bg-background sticky top-0 z-10">
+    <header class="flex items-center gap-4 border-b bg-background sticky top-0 z-10">
+      <ResponsiveContainer size="full" padding="compact" class="flex items-center gap-4">
       <!-- Back button -->
       <Button variant="ghost" size="icon" @click="goBack">
         <svg
@@ -119,6 +121,7 @@ onMounted(() => {
 
       <!-- HAP-874: Offline indicator -->
       <OfflineIndicator />
+      </ResponsiveContainer>
     </header>
 
     <!-- Content with pull-to-refresh (HAP-932) -->
@@ -128,7 +131,7 @@ onMounted(() => {
       class="flex-1 overflow-hidden"
       @refresh="handleRefresh"
     >
-      <div class="h-full p-4">
+      <ResponsiveContainer size="default" padding="default" class="h-full">
         <!-- Loading -->
         <div v-if="isLoading" class="h-full flex items-center justify-center">
           <div class="space-y-4 w-full max-w-md">
@@ -155,7 +158,7 @@ onMounted(() => {
           :session-id="sessionId"
           class="h-full"
         />
-      </div>
+      </ResponsiveContainer>
     </PullToRefresh>
   </div>
 </template>

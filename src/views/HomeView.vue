@@ -28,6 +28,7 @@ const ChartAreaInteractive = defineAsyncComponent({
   timeout: 10000,
 });
 import { ConnectionStatus, PullToRefresh } from '@/components/app';
+import ResponsiveContainer from '@/components/app/ResponsiveContainer.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -165,10 +166,10 @@ function openSettings() {
     :mobile-only="true"
     @refresh="handleRefresh"
   >
-    <div class="flex flex-col gap-6 py-6">
+    <ResponsiveContainer size="wide" padding="default" class="flex flex-col gap-6">
       <SectionCards :cards="cards" />
 
-    <div class="grid gap-4 px-4 lg:px-6 lg:grid-cols-3">
+    <div class="grid gap-4 lg:grid-cols-3">
       <div class="lg:col-span-2">
         <ChartAreaInteractive />
       </div>
@@ -202,6 +203,6 @@ function openSettings() {
     </div>
 
       <DataTable :data="tableData" @new-session="startNewSession" />
-    </div>
+    </ResponsiveContainer>
   </PullToRefresh>
 </template>
