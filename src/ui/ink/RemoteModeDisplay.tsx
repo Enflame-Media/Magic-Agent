@@ -19,6 +19,68 @@ export const RemoteModeDisplay: React.FC<RemoteModeDisplayProps> = ({ messageBuf
     const terminalHeight = stdout.rows || 24
 
     useEffect(() => {
+        // Track both outer and inner timers for proper cleanup
+        let forceTimer: NodeJS.Timeout | null = null
+        let innerTimer: NodeJS.Timeout | null = null
+        // Track if we toggled from raw mode so cleanup can restore it deterministically
+        let wasRawAtToggle = false
+
+        // Force raw mode after component mount to ensure terminal driver is properly initialized
+        // This fixes issues where orphaned processes from local mode leave terminal in inconsistent state
+        const checkAndForceRawMode = () => {
+            // Guard: only attempt setRawMode on TTY stdin
+            if (!process.stdin.isTTY) return
+
+            try {
+                const wasRaw = process.stdin.isRaw
+
+                if (wasRaw) {
+                    // Already in raw mode according to Node.js, but terminal driver might be out of sync
+                    // Force reset by toggling
+                    wasRawAtToggle = true
+                    process.stdin.setRawMode(false)
+                    // Small delay to ensure the toggle takes effect at terminal driver level
+                    innerTimer = setTimeout(() => {
+                        try {
+                            if (process.stdin.isTTY) {
+                                process.stdin.setRawMode(true)
+                            }
+                        } catch {
+                            // Ignore errors - stdin may have been closed or is no longer a TTY
+                        }
+                    }, 10)
+                } else {
+                    // Not in raw mode, enable it
+                    process.stdin.setRawMode(true)
+                }
+            } catch {
+                // Ignore errors - stdin may not support raw mode
+            }
+        }
+
+        // Wait for Ink to fully set up raw mode before forcing
+        forceTimer = setTimeout(() => {
+            checkAndForceRawMode()
+        }, 100)
+
+        return () => {
+            if (forceTimer) clearTimeout(forceTimer)
+            if (innerTimer) {
+                clearTimeout(innerTimer)
+                // Synchronously restore raw mode if we toggled it off and the timeout hasn't fired yet
+                // This prevents leaving stdin in non-raw state if unmounted during the 10ms delay
+                if (wasRawAtToggle && process.stdin.isTTY) {
+                    try {
+                        process.stdin.setRawMode(true)
+                    } catch {
+                        // Ignore errors - stdin may have been closed or is no longer a TTY
+                    }
+                }
+            }
+        }
+    }, []);
+
+    useEffect(() => {
         setMessages(messageBuffer.getMessages())
         
         const unsubscribe = messageBuffer.onUpdate((newMessages) => {

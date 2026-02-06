@@ -192,4 +192,209 @@ describe('PushableAsyncIterable', () => {
         expect(queueSizeAfterConsuming2).toBe(0)
         expect(waiterCountBeforeEnd).toBe(1)
     })
+
+    it('should track done status correctly', () => {
+        const iterable = new PushableAsyncIterable<number>()
+
+        expect(iterable.done).toBe(false)
+
+        iterable.end()
+
+        expect(iterable.done).toBe(true)
+    })
+
+    it('should track hasError status correctly', () => {
+        const iterable = new PushableAsyncIterable<number>()
+
+        expect(iterable.hasError).toBe(false)
+
+        iterable.setError(new Error('test'))
+
+        expect(iterable.hasError).toBe(true)
+        expect(iterable.done).toBe(true)
+    })
+
+    it('should handle end() being called multiple times', () => {
+        const iterable = new PushableAsyncIterable<number>()
+
+        iterable.push(1)
+        iterable.end()
+
+        // Should not throw when called again
+        expect(() => iterable.end()).not.toThrow()
+        expect(iterable.done).toBe(true)
+    })
+
+    it('should handle setError() being called when already done', () => {
+        const iterable = new PushableAsyncIterable<number>()
+
+        iterable.end()
+
+        // Should not throw when setting error on done iterable
+        expect(() => iterable.setError(new Error('test'))).not.toThrow()
+        // Should still be marked as done (from end())
+        expect(iterable.done).toBe(true)
+        // hasError should be false since end() was called before setError()
+        expect(iterable.hasError).toBe(false)
+    })
+
+    it('should reject waiting consumers when error is set', async () => {
+        const iterable = new PushableAsyncIterable<number>()
+        const error = new Error('Reject test')
+
+        // Start consuming
+        const consumer = (async () => {
+            const caughtError = await getAsyncError<Error>(async () => {
+                for await (const _value of iterable) {
+                    // Wait for values
+                }
+            });
+            return caughtError;
+        })()
+
+        // Let consumer start waiting
+        await new Promise(resolve => setTimeout(resolve, 5))
+
+        // Set error
+        iterable.setError(error)
+
+        const result = await consumer
+        expect(result).toBe(error)
+        expect(result.message).toBe('Reject test')
+    })
+
+    it('should throw error when pushing to errored iterable', () => {
+        const iterable = new PushableAsyncIterable<number>()
+        const error = new Error('Previous error')
+
+        iterable.setError(error)
+
+        // After setError(), isDone is true, so push throws "completed" before checking error
+        expect(() => iterable.push(1)).toThrow('Cannot push to completed iterable')
+    })
+
+    it('should handle return() method correctly', async () => {
+        const iterable = new PushableAsyncIterable<number>()
+        iterable.push(1)
+
+        const iterator = iterable[Symbol.asyncIterator]()
+
+        // TypeScript allows return() to be optional on AsyncIterator, but our implementation provides it
+        expect(iterator.return).toBeDefined()
+        const result = await iterator.return!()
+
+        expect(result.done).toBe(true)
+        expect(result.value).toBeUndefined()
+        expect(iterable.done).toBe(true)
+    })
+
+    it('should handle throw() method correctly', async () => {
+        const iterable = new PushableAsyncIterable<number>()
+        const iterator = iterable[Symbol.asyncIterator]()
+        const error = new Error('Thrown error')
+
+        // TypeScript allows throw() to be optional on AsyncIterator, but our implementation provides it
+        expect(iterator.throw).toBeDefined()
+        const thrownError = await getAsyncError<Error>(async () => {
+            await iterator.throw!(error)
+        })
+
+        expect(thrownError.message).toBe('Thrown error')
+        expect(iterable.done).toBe(true)
+        expect(iterable.hasError).toBe(true)
+    })
+
+    it('should handle throw() with non-Error value', async () => {
+        const iterable = new PushableAsyncIterable<number>()
+        const iterator = iterable[Symbol.asyncIterator]()
+
+        // TypeScript allows throw() to be optional on AsyncIterator, but our implementation provides it
+        expect(iterator.throw).toBeDefined()
+        const thrownError = await getAsyncError<Error>(async () => {
+            await iterator.throw!('string error')
+        })
+
+        expect(thrownError.message).toBe('string error')
+        expect(iterable.done).toBe(true)
+        expect(iterable.hasError).toBe(true)
+    })
+
+    it('should deliver value directly when waiter is available', async () => {
+        const iterable = new PushableAsyncIterable<number>()
+        const results: number[] = []
+
+        // Start consumer first (it will wait)
+        const consumer = (async () => {
+            for await (const value of iterable) {
+                results.push(value)
+                if (results.length === 2) break
+            }
+        })()
+
+        // Let consumer start waiting
+        await new Promise(resolve => setTimeout(resolve, 5))
+        expect(iterable.waiterCount).toBe(1)
+        expect(iterable.queueSize).toBe(0)
+
+        // Push value - should deliver directly to waiter
+        iterable.push(1)
+        expect(iterable.queueSize).toBe(0) // No queue, direct delivery
+
+        await new Promise(resolve => setTimeout(resolve, 5))
+        iterable.push(2)
+
+        await consumer
+        expect(results).toEqual([1, 2])
+    })
+
+    it('should queue values when no waiter is available', () => {
+        const iterable = new PushableAsyncIterable<number>()
+
+        iterable.push(1)
+        iterable.push(2)
+        iterable.push(3)
+
+        expect(iterable.queueSize).toBe(3)
+        expect(iterable.waiterCount).toBe(0)
+    })
+
+    it('should return queued items in order', async () => {
+        const iterable = new PushableAsyncIterable<number>()
+
+        // Queue items first
+        iterable.push(1)
+        iterable.push(2)
+        iterable.push(3)
+        iterable.end()
+
+        const results: number[] = []
+        for await (const value of iterable) {
+            results.push(value)
+        }
+
+        expect(results).toEqual([1, 2, 3])
+    })
+
+    it('should resolve waiting consumers when ended', async () => {
+        const iterable = new PushableAsyncIterable<number>()
+
+        // Start waiting
+        const consumer = (async () => {
+            const values: number[] = []
+            for await (const value of iterable) {
+                values.push(value)
+            }
+            return values
+        })()
+
+        // Let consumer start
+        await new Promise(resolve => setTimeout(resolve, 5))
+        expect(iterable.waiterCount).toBe(1)
+
+        // End without pushing anything
+        iterable.end()
+
+        const result = await consumer
+        expect(result).toEqual([])
+    })
 })

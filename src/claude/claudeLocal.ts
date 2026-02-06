@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { spawn, execSync } from "node:child_process";
 import { resolve, join } from "node:path";
 import { createInterface } from "node:readline";
 import { mkdirSync, existsSync } from "node:fs";
@@ -26,7 +26,7 @@ export async function claudeLocal(opts: {
     allowedTools?: string[],
     /** Path to temporary settings file with SessionStart hook (required for session tracking) */
     hookSettingsPath?: string
-}) {
+}): Promise<string> {
 
     // Ensure project directory exists
     const projectDir = getProjectPath(opts.path);
@@ -92,12 +92,68 @@ export async function claudeLocal(opts: {
                 ...opts.claudeEnvVars
             }
 
+            // Generate a unique tracking ID for process lifecycle management
+            // Note: This is separate from the outer sessionId (UUID) used for Claude session identity
+            const processTrackingId = `happy-session-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+
             const child = spawn('node', [claudeCliPath, ...args], {
                 stdio: ['inherit', 'inherit', 'inherit', 'pipe'],
-                signal: opts.abort,
                 cwd: opts.path,
-                env,
+                env: {
+                    ...env,
+                    HAPPY_SESSION_ID: processTrackingId  // Pass tracking ID for process cleanup
+                }
             });
+
+            logger.debug(`[ClaudeLocal] Child spawned with PID: ${child.pid}, tracking ID: ${processTrackingId}`);
+
+            // Cleanup: Kill child process and any orphaned processes on abort
+            opts.abort.addEventListener('abort', () => {
+                logger.debug('[ClaudeLocal] Abort signal triggered - terminating Claude processes gracefully');
+
+                const pid = child.pid;
+                if (pid) {
+                    try {
+                        // First: try to kill the child process with SIGTERM (graceful)
+                        process.kill(pid, 'SIGTERM');
+                        logger.debug(`[ClaudeLocal] Sent SIGTERM to child PID ${pid}`);
+                    } catch (e) {
+                        logger.debug(`[ClaudeLocal] Error killing child: ${(e as Error).message}`);
+                    }
+                }
+
+                // Second: wait for graceful shutdown, then hunt down orphaned processes
+                setTimeout(() => {
+                    // Use SIGTERM (15) instead of SIGKILL (9) for graceful shutdown
+                    // Find processes by HAPPY_SESSION_ID environment variable
+                    // Note: processTrackingId is internally generated (alphanumeric + hyphens only), safe for shell
+                    try {
+                        // Use pkill with SIGTERM to terminate them gracefully
+                        execSync(`pkill -TERM -f "HAPPY_SESSION_ID=${processTrackingId}"`, {
+                            stdio: 'ignore',
+                            timeout: 500
+                        });
+                        logger.debug(`[ClaudeLocal] Terminated processes with tracking ID ${processTrackingId}`);
+                    } catch (e) {
+                        // No processes found - this is OK
+                        logger.debug(`[ClaudeLocal] No additional processes to terminate (tracking: ${processTrackingId})`);
+                    }
+
+                    // Final cleanup: if still alive after 500ms, use SIGKILL
+                    setTimeout(() => {
+                        try {
+                            execSync(`pkill -9 -f "HAPPY_SESSION_ID=${processTrackingId}"`, {
+                                stdio: 'ignore',
+                                timeout: 500
+                            });
+                            logger.debug(`[ClaudeLocal] Force killed remaining processes`);
+                        } catch (e) {
+                            // All processes are dead
+                            logger.debug(`[ClaudeLocal] All processes terminated gracefully`);
+                        }
+                    }, 500);
+                }, 100);
+            }, { once: true });
 
             // Add timeout to escalate to SIGKILL if child ignores SIGTERM
             // This prevents zombie processes when the child has a SIGTERM handler that doesn't exit
@@ -117,7 +173,7 @@ export async function claudeLocal(opts: {
             if (opts.abort.aborted) {
                 setKillTimeout();
             } else {
-                opts.abort.addEventListener('abort', setKillTimeout);
+                opts.abort.addEventListener('abort', setKillTimeout, { once: true });
             }
 
             // Clear kill timeout when child exits (whether via SIGTERM or otherwise)

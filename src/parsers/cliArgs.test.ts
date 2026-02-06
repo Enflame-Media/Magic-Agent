@@ -190,5 +190,108 @@ describe('parseCliArgs', () => {
       parseCliArgs(original)
       expect(original).toEqual(copy)
     })
+
+    it('should handle empty string arguments', () => {
+      const result = parseCliArgs([''])
+      expect(result.unknownArgs).toEqual([''])
+    })
+
+    it('should handle whitespace-only arguments', () => {
+      const result = parseCliArgs(['  '])
+      expect(result.unknownArgs).toEqual(['  '])
+    })
+  })
+
+  describe('edge cases for specific flags', () => {
+    it('should throw for invalid --happy-starting-mode value', () => {
+      expect(() => parseCliArgs(['--happy-starting-mode', 'invalid']))
+        .toThrow('Invalid --happy-starting-mode value: "invalid". Must be one of: local, remote')
+    })
+
+    it('should throw for missing --happy-starting-mode value', () => {
+      // When value is undefined (missing), zod validation fails
+      expect(() => parseCliArgs(['--happy-starting-mode']))
+        .toThrow()
+    })
+
+    it('should throw for missing --started-by value', () => {
+      expect(() => parseCliArgs(['--started-by']))
+        .toThrow()
+    })
+
+    it('should handle short version flag -v', () => {
+      const result = parseCliArgs(['-v'])
+      expect(result.showVersion).toBe(true)
+      expect(result.unknownArgs).toContain('-v')
+    })
+
+    it('should include both short help flag and pass through', () => {
+      const result = parseCliArgs(['-h'])
+      expect(result.showHelp).toBe(true)
+      expect(result.unknownArgs.length).toBeGreaterThan(0)
+      expect(result.unknownArgs).toContain('-h')
+    })
+
+    it('should handle verbose flag not being passed to claude', () => {
+      const result = parseCliArgs(['--verbose', '--some-other-flag'])
+      expect(result.verbose).toBe(true)
+      expect(result.options.claudeArgs).toBeDefined()
+      expect(result.options.claudeArgs).not.toContain('--verbose')
+      expect(result.options.claudeArgs).toContain('--some-other-flag')
+    })
+
+    it('should create claudeArgs array only when there are unknown args', () => {
+      const result = parseCliArgs(['--verbose'])
+      expect(result.options.claudeArgs).toBeUndefined()
+    })
+
+    it('should properly merge unknown args into claudeArgs', () => {
+      const result = parseCliArgs(['--model', 'test', '--temperature', '0.5'])
+      expect(result.options.claudeArgs).toEqual(['--model', 'test', '--temperature', '0.5'])
+    })
+
+    it('should handle claude prefix with no other args', () => {
+      const result = parseCliArgs(['claude'])
+      expect(result.unknownArgs).toEqual([])
+      expect(result.showHelp).toBe(false)
+      expect(result.showVersion).toBe(false)
+    })
+
+    it('should handle yolo flag transformation exactly', () => {
+      const result = parseCliArgs(['--yolo'])
+      expect(result.unknownArgs.length).toBe(1)
+      expect(result.unknownArgs[0]).toBe('--dangerously-skip-permissions')
+    })
+  })
+
+  describe('parsing result structure', () => {
+    it('should always return all expected properties', () => {
+      const result = parseCliArgs([])
+
+      // Verify structure exists
+      expect(result).toHaveProperty('options')
+      expect(result).toHaveProperty('showHelp')
+      expect(result).toHaveProperty('showVersion')
+      expect(result).toHaveProperty('verbose')
+      expect(result).toHaveProperty('unknownArgs')
+
+      // Verify types
+      expect(typeof result.showHelp).toBe('boolean')
+      expect(typeof result.showVersion).toBe('boolean')
+      expect(typeof result.verbose).toBe('boolean')
+      expect(Array.isArray(result.unknownArgs)).toBe(true)
+    })
+
+    it('should set startingMode in options when provided', () => {
+      const result = parseCliArgs(['--happy-starting-mode', 'local'])
+      expect(result.options.startingMode).toBe('local')
+      expect(result.options.startingMode).not.toBe('remote')
+    })
+
+    it('should set startedBy in options when provided', () => {
+      const result = parseCliArgs(['--started-by', 'daemon'])
+      expect(result.options.startedBy).toBe('daemon')
+      expect(result.options.startedBy).not.toBe('terminal')
+    })
   })
 })

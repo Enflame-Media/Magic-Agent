@@ -784,14 +784,21 @@ export class HappyWebSocket {
         const ackTimeout = timeout ?? this.config.ackTimeout;
 
         return new Promise<T>((resolve, reject) => {
-            const timer = setTimeout(() => {
-                this.pendingAcks.delete(ackId);
-                reject(new WebSocketAckTimeoutError(event, ackTimeout));
-            }, ackTimeout);
+            try {
+                // Send first - if this throws, no timer is created (HAP-945)
+                this.sendRaw({ event, data, ackId });
 
-            this.pendingAcks.set(ackId, { resolve: resolve as (value: unknown) => void, reject, timer });
+                // Only set timer after successful send to prevent timer leak
+                const timer = setTimeout(() => {
+                    this.pendingAcks.delete(ackId);
+                    reject(new WebSocketAckTimeoutError(event, ackTimeout));
+                }, ackTimeout);
 
-            this.sendRaw({ event, data, ackId });
+                this.pendingAcks.set(ackId, { resolve: resolve as (value: unknown) => void, reject, timer });
+            } catch (error) {
+                // sendRaw failed - no timer was created, no cleanup needed
+                reject(error);
+            }
         });
     }
 

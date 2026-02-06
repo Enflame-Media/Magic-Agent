@@ -414,11 +414,19 @@ function runClaudeCli(cliPath) {
     const { pathToFileURL } = require('url');
     const { spawn } = require('child_process');
 
+    // CRITICAL: Set session ID as environment variable
+    // This allows us to identify all processes from this session
+    const sessionId = process.env.HAPPY_SESSION_ID || process.pid.toString();
+
     // Check if it's a JavaScript file (.js or .cjs) or a binary file
     const isJsFile = cliPath.endsWith('.js') || cliPath.endsWith('.cjs') || cliPath.endsWith('.mjs');
 
     if (isJsFile) {
         // JavaScript file - use import to keep interceptors working
+        // Set environment variable before importing
+        process.env.HAPPY_SESSION_ID = sessionId;
+        process.env.HAPPY_LAUNCHER_PID = process.pid.toString();
+
         const importUrl = pathToFileURL(cliPath).href;
         import(importUrl).catch((error) => {
             console.error('\x1b[31mFailed to load Claude Code CLI:\x1b[0m', error.message);
@@ -434,9 +442,16 @@ function runClaudeCli(cliPath) {
         const args = process.argv.slice(2);
         const child = spawn(cliPath, args, {
             stdio: 'inherit',
-            env: process.env,
+            env: {
+                ...process.env,
+                HAPPY_SESSION_ID: sessionId,
+                HAPPY_LAUNCHER_PID: process.pid.toString()
+            },
             shell: process.platform === 'win32' // Use shell on Windows for proper path handling
         });
+
+        // Store child PID for cleanup
+        process.claudeCliChild = child;
 
         // Forward termination signals to child process
         // Without this, killing the launcher orphans the Claude binary (PPID becomes 1)

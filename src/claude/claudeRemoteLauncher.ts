@@ -11,9 +11,10 @@ import { formatClaudeMessageForInk } from "@/ui/messageFormatterInk";
 import { logger } from "@/ui/logger";
 import { SDKToLogConverter } from "./utils/sdkToLogConverter";
 import { PLAN_FAKE_REJECT } from "./sdk/prompts";
-import { EnhancedMode } from "./loop";
+import { EnhancedMode, LauncherResult } from "./loop";
 import { OutgoingMessageQueue } from "./utils/OutgoingMessageQueue";
 import { SocketDisconnectedError } from "@/api/socketUtils";
+import { trackEvent, captureException } from "@/telemetry";
 
 /** Debounce interval for ready notifications to prevent notification spam */
 const READY_DEBOUNCE_MS = 1000;
@@ -25,17 +26,32 @@ interface PermissionsField {
     allowedTools?: string[];
 }
 
-export async function claudeRemoteLauncher(session: Session): Promise<'switch' | 'exit'> {
+/**
+ * Launches Claude in remote (mobile-controlled) mode.
+ *
+ * HAP-948: Returns a LauncherResult with a cleanupComplete Promise that resolves
+ * when all cleanup operations (finally blocks) have completed. This allows the
+ * caller to wait for actual cleanup completion instead of using arbitrary delays.
+ *
+ * @param session - The active session
+ * @returns LauncherResult with reason and cleanupComplete promise
+ */
+export async function claudeRemoteLauncher(session: Session): Promise<LauncherResult> {
     logger.debug('[claudeRemoteLauncher] Starting remote launcher');
 
-    // Fix #5: Handle session deletion event - exit gracefully when session is archived remotely
+    // HAP-948: Create a Future that resolves when the finally block completes
+    const cleanupFuture = new Future<void>();
+
+    // HAP-943: Handle session deletion event with race condition fix
+    // Store abort promise so main loop can await it, preventing partial execution
     let sessionDeleted = false;
+    let sessionDeletionAbortPromise: Promise<void> | null = null;
     const onSessionDeleted = (deletedSessionId: string) => {
         if (deletedSessionId === session.client.sessionId) {
-            logger.warn('[remote] Session was deleted/archived remotely - exiting gracefully');
+            logger.warn('[remote] Session was deleted/archived remotely - initiating abort');
             sessionDeleted = true;
-            // Trigger abort to exit the launcher
-            abort().catch((error) => {
+            // Store promise so main loop can await completion
+            sessionDeletionAbortPromise = abort().catch((error) => {
                 logger.debug('[remote] Error during session deletion abort:', error);
             });
         }
@@ -343,8 +359,12 @@ export async function claudeRemoteLauncher(session: Session): Promise<'switch' |
         let lastReadyTime = 0;
 
         while (!exitReason) {
-            // Fix #5: Check if session was already deleted before starting
+            // HAP-943: Check if session was deleted and await abort completion
+            // This prevents partial loop iterations during async abort
             if (sessionDeleted) {
+                if (sessionDeletionAbortPromise) {
+                    await sessionDeletionAbortPromise;
+                }
                 exitReason = 'exit';
                 break;
             }
@@ -482,7 +502,7 @@ export async function claudeRemoteLauncher(session: Session): Promise<'switch' |
             } catch (e) {
                 logger.debug('[remote]: launch error', e);
                 if (!exitReason) {
-                    // HAP-XXX: Check socket connection state before trying to send event
+                    // HAP-957: Check socket connection state before trying to send event
                     // If socket is already disconnected, we're shutting down - exit immediately
                     if (!session.client.connected) {
                         logger.warn('[remote] Socket already disconnected - exiting instead of restarting');
@@ -493,7 +513,7 @@ export async function claudeRemoteLauncher(session: Session): Promise<'switch' |
                         session.client.sendSessionEvent({ type: 'message', message: 'Process exited unexpectedly' });
                     } catch (error) {
                         if (error instanceof SocketDisconnectedError) {
-                            // HAP-XXX: Socket disconnected means we're shutting down (e.g., killSession)
+                            // HAP-957: Socket disconnected means we're shutting down (e.g., killSession)
                             // Don't restart - exit the loop to avoid spawning a blank session
                             logger.warn('[remote] Socket disconnected - exiting instead of restarting');
                             exitReason = 'exit';
@@ -516,12 +536,21 @@ export async function claudeRemoteLauncher(session: Session): Promise<'switch' |
                         try {
                             session.client.sendClaudeSessionMessage(converted);
                         } catch (error) {
+                            // HAP-953: Add telemetry for swallowed errors in finally blocks
                             if (error instanceof SocketDisconnectedError) {
                                 logger.warn('[remote] Socket disconnected - cannot send interrupted tool result');
+                                trackEvent('finally_block_error', {
+                                    location: 'claudeRemoteLauncher.toolCallCleanup',
+                                    errorType: 'SocketDisconnectedError'
+                                });
                             } else {
                                 // Log unexpected errors in finally block instead of re-throwing
                                 // to avoid masking the original error from try/catch
                                 logger.warn('[remote] Unexpected error sending interrupted tool result:', error);
+                                captureException(error, {
+                                    context: 'finally_block_cleanup',
+                                    location: 'claudeRemoteLauncher.toolCallCleanup'
+                                });
                             }
                         }
                     }
@@ -549,14 +578,13 @@ export async function claudeRemoteLauncher(session: Session): Promise<'switch' |
         // Clean up permission handler
         permissionHandler.reset();
 
-        // Fix #5: Remove session deleted listener
+        // HAP-943: Remove session deleted listener
         session.client.off('sessionDeleted', onSessionDeleted);
 
         // HAP-944: Remove socket reconnect listener
         session.client.off('socketReconnect', onSocketReconnect);
 
         // Reset Terminal
-        process.stdin.off('data', abort);
         if (process.stdin.isTTY) {
             process.stdin.setRawMode(false);
         }
@@ -569,7 +597,14 @@ export async function claudeRemoteLauncher(session: Session): Promise<'switch' |
         if (abortFuture) { // Just in case of error
             abortFuture.resolve(undefined);
         }
+
+        // HAP-948: Resolve cleanup future after all cleanup operations complete
+        cleanupFuture.resolve(undefined);
     }
 
-    return exitReason || 'exit';
+    // HAP-948: Return LauncherResult with cleanup promise
+    return {
+        reason: exitReason || 'exit',
+        cleanupComplete: cleanupFuture.promise
+    };
 }

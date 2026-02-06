@@ -565,4 +565,62 @@ describe('HappyWebSocket', () => {
       expect(socket.getStats().totalHandlers).toBe(0);
     });
   });
+
+  describe('emitWithAck timer cleanup (HAP-945)', () => {
+    it('should not leak timer when sendRaw throws', async () => {
+      // Create a socket and mock the WebSocket send to throw
+      const testSocket = new HappyWebSocket('ws://localhost', mockAuth);
+      testSocket.connect();
+
+      // Get access to the underlying ws mock and make send throw
+      const ws = (testSocket as unknown as { ws: { send: ReturnType<typeof vi.fn> }; _connected: boolean }).ws;
+      (testSocket as unknown as { _connected: boolean })._connected = true;
+
+      // Make send throw an error
+      ws.send = vi.fn().mockImplementation(() => {
+        throw new Error('Send failed');
+      });
+
+      // emitWithAck should reject with the send error, not timeout
+      await expect(testSocket.emitWithAck('test-event', { test: 'data' }))
+        .rejects.toThrow('Send failed');
+
+      // Verify no pending acks remain (timer was never created or cleaned up)
+      const stats = testSocket.getStats();
+      expect(stats.pendingAcks).toBe(0);
+    });
+
+    it('should reject immediately on send failure without waiting for timeout', async () => {
+      const testSocket = new HappyWebSocket('ws://localhost', mockAuth, {
+        ackTimeout: 5000, // Long timeout
+      });
+      testSocket.connect();
+
+      const ws = (testSocket as unknown as { ws: { send: ReturnType<typeof vi.fn> }; _connected: boolean }).ws;
+      (testSocket as unknown as { _connected: boolean })._connected = true;
+
+      // Make send throw
+      ws.send = vi.fn().mockImplementation(() => {
+        throw new Error('Connection lost');
+      });
+
+      const startTime = Date.now();
+
+      await expect(testSocket.emitWithAck('test-event', {}))
+        .rejects.toThrow('Connection lost');
+
+      const elapsed = Date.now() - startTime;
+
+      // Should fail immediately, not after 5000ms timeout
+      expect(elapsed).toBeLessThan(100);
+    });
+
+    it('should throw WebSocketDisconnectedError when not connected', async () => {
+      const testSocket = new HappyWebSocket('ws://localhost', mockAuth);
+      // Don't connect - socket._connected is false
+
+      await expect(testSocket.emitWithAck('test-event', {}))
+        .rejects.toThrow("emitWithAck 'test-event'");
+    });
+  });
 });

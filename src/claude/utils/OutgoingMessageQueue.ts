@@ -26,6 +26,9 @@ interface QueueItem {
     sent: boolean;                 // Whether message has been sent
 }
 
+/** Default maximum queue size when disabled to prevent memory issues (HAP-955) */
+const DEFAULT_MAX_QUEUE_SIZE = 1000;
+
 export class OutgoingMessageQueue extends EventEmitter {
     private queue: QueueItem[] = [];
     private nextId = 1;
@@ -34,9 +37,21 @@ export class OutgoingMessageQueue extends EventEmitter {
     private delayTimers = new Map<number, NodeJS.Timeout>();
     /** Whether the queue is disabled due to socket disconnection */
     private disabled = false;
+    /** Atomic flag to prevent concurrent timer manipulation in scheduleProcessing (HAP-941) */
+    private schedulingPending = false;
+    /** Handle for pending setImmediate to allow cancellation in destroy() */
+    private schedulingHandle?: ReturnType<typeof setImmediate>;
+    /** Maximum queue size when disabled to prevent unbounded memory growth (HAP-955) */
+    private maxQueueSize: number;
+    /** Counter for evicted messages (for monitoring/debugging) */
+    private evictedCount = 0;
 
-    constructor(private sendFunction: (message: LogMessage) => void) {
+    constructor(
+        private sendFunction: (message: LogMessage) => void,
+        options?: { maxQueueSize?: number }
+    ) {
         super();
+        this.maxQueueSize = options?.maxQueueSize ?? DEFAULT_MAX_QUEUE_SIZE;
     }
 
     /**
@@ -44,6 +59,20 @@ export class OutgoingMessageQueue extends EventEmitter {
      */
     isDisabled(): boolean {
         return this.disabled;
+    }
+
+    /**
+     * Get the current queue size (for monitoring/testing)
+     */
+    getQueueSize(): number {
+        return this.queue.length;
+    }
+
+    /**
+     * Get the number of messages evicted due to queue size limit (HAP-955)
+     */
+    getEvictedCount(): number {
+        return this.evictedCount;
     }
 
     /**
@@ -60,7 +89,9 @@ export class OutgoingMessageQueue extends EventEmitter {
     }
     
     /**
-     * Add message to queue
+     * Add message to queue.
+     * When the queue is disabled and at capacity, the oldest message is evicted (FIFO).
+     * This prevents unbounded memory growth during extended disconnections (HAP-955).
      */
     enqueue(logMessage: LogMessage, options?: {
         delay?: number,
@@ -76,9 +107,28 @@ export class OutgoingMessageQueue extends EventEmitter {
                 released: !options?.delay,  // Not delayed = already released
                 sent: false
             };
-            
+
             this.queue.push(item);
-            
+
+            // HAP-955: Enforce size limit when disabled to prevent memory issues
+            // Only evict when disabled (during disconnection) and over limit
+            if (this.disabled && this.queue.length > this.maxQueueSize) {
+                const evicted = this.queue.shift();
+                if (evicted) {
+                    // Clear any delay timer for the evicted item
+                    const timer = this.delayTimers.get(evicted.id);
+                    if (timer) {
+                        clearTimeout(timer);
+                        this.delayTimers.delete(evicted.id);
+                    }
+                    this.evictedCount++;
+                    logger.warn(
+                        `[QUEUE] Queue size limit (${this.maxQueueSize}) reached while disabled - ` +
+                        `evicted oldest message (id: ${evicted.id}, total evicted: ${this.evictedCount})`
+                    );
+                }
+            }
+
             // If delayed, set timer to release it
             if (item.delayed) {
                 const timer = setTimeout(() => {
@@ -87,7 +137,7 @@ export class OutgoingMessageQueue extends EventEmitter {
                 this.delayTimers.set(item.id, timer);
             }
         });
-        
+
         // Try to process queue
         this.scheduleProcessing();
     }
@@ -222,28 +272,50 @@ export class OutgoingMessageQueue extends EventEmitter {
     
     /**
      * Schedule processing on next tick
+     *
+     * Uses atomic flag pattern (HAP-941) to prevent race conditions when called
+     * from multiple async contexts (enqueue, releaseItem, releaseToolCall, enable).
+     * The setImmediate coalesces rapid sequential calls into a single timer setup.
      */
     private scheduleProcessing(): void {
-        if (this.processTimer) {
-            clearTimeout(this.processTimer);
-            this.processTimer = undefined;
-        }
-        
-        this.processTimer = setTimeout(() => {
-            this.processTimer = undefined;  // Clear before processing
-            this.processQueue();
-        }, 0);
+        // Early return if scheduling is already pending - prevents concurrent timer manipulation
+        if (this.schedulingPending) return;
+        this.schedulingPending = true;
+
+        // Use setImmediate to coalesce rapid sequential calls
+        this.schedulingHandle = setImmediate(() => {
+            this.schedulingHandle = undefined;
+            this.schedulingPending = false;
+
+            // Clear existing timer if present
+            if (this.processTimer) {
+                clearTimeout(this.processTimer);
+            }
+
+            // Schedule actual processing
+            this.processTimer = setTimeout(() => {
+                this.processTimer = undefined;
+                this.processQueue();
+            }, 0);
+        });
     }
     
     /**
      * Cleanup timers and resources
      */
     destroy(): void {
+        // Cancel pending setImmediate to prevent it from re-creating processTimer after cleanup
+        if (this.schedulingHandle) {
+            clearImmediate(this.schedulingHandle);
+            this.schedulingHandle = undefined;
+            this.schedulingPending = false;
+        }
+
         if (this.processTimer) {
             clearTimeout(this.processTimer);
             this.processTimer = undefined;
         }
-        
+
         for (const timer of this.delayTimers.values()) {
             clearTimeout(timer);
         }

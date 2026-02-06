@@ -10,8 +10,8 @@ describe('pricing', () => {
             expect(pricing.outputPerMillion).toBe(75)
         })
 
-        it('should return correct pricing for Opus 4.5', () => {
-            const pricing = getModelPricing('claude-opus-4-5-20250929')
+        it('should return correct pricing for Opus 4.6', () => {
+            const pricing = getModelPricing('claude-opus-4-6')
             expect(pricing.inputPerMillion).toBe(5)
             expect(pricing.outputPerMillion).toBe(25)
         })

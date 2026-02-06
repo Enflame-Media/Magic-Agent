@@ -17,7 +17,7 @@ export class MessageQueue2<T> {
     private waiter: ((hasMessages: boolean) => void) | null = null;
     private closed = false;
     private onMessageHandler: ((message: string, mode: T) => void) | null = null;
-    modeHasher: (mode: T) => string;
+    public readonly modeHasher: (mode: T) => string;
 
     constructor(
         modeHasher: (mode: T) => string,
@@ -295,21 +295,13 @@ export class MessageQueue2<T> {
     private waitForMessages(abortSignal?: AbortSignal): Promise<boolean> {
         return new Promise((resolve) => {
             let abortHandler: (() => void) | null = null;
-
-            // Set up abort handler
-            if (abortSignal) {
-                abortHandler = () => {
-                    logger.debug('[MessageQueue2] Wait aborted');
-                    // Clear waiter if it's still set
-                    if (this.waiter === waiterFunc) {
-                        this.waiter = null;
-                    }
-                    resolve(false);
-                };
-                abortSignal.addEventListener('abort', abortHandler);
-            }
+            let resolved = false;
 
             const waiterFunc = (hasMessages: boolean) => {
+                // Prevent double resolution
+                if (resolved) return;
+                resolved = true;
+
                 // Clean up abort handler
                 if (abortHandler && abortSignal) {
                     abortSignal.removeEventListener('abort', abortHandler);
@@ -317,25 +309,45 @@ export class MessageQueue2<T> {
                 resolve(hasMessages);
             };
 
-            // Check again in case messages arrived or queue closed while setting up
+            // Set up abort handler
+            if (abortSignal) {
+                abortHandler = () => {
+                    logger.debug('[MessageQueue2] Wait aborted');
+                    // Clear waiter if it's still set to our function
+                    if (this.waiter === waiterFunc) {
+                        this.waiter = null;
+                    }
+                    waiterFunc(false);
+                };
+                abortSignal.addEventListener('abort', abortHandler);
+            }
+
+            // CRITICAL FIX: Set waiter FIRST to avoid race condition.
+            // Any push() after this point will notify us via waiterFunc.
+            // This eliminates the TOCTOU gap where a message could arrive
+            // between checking queue.length and setting this.waiter.
+            this.waiter = waiterFunc;
+
+            // Now atomically check if messages already exist, queue is closed, or abort triggered
             if (this.queue.length > 0) {
-                if (abortHandler && abortSignal) {
-                    abortSignal.removeEventListener('abort', abortHandler);
+                // Messages exist - clear our waiter and resolve immediately
+                if (this.waiter === waiterFunc) {
+                    this.waiter = null;
                 }
-                resolve(true);
+                waiterFunc(true);
                 return;
             }
 
             if (this.closed || abortSignal?.aborted) {
-                if (abortHandler && abortSignal) {
-                    abortSignal.removeEventListener('abort', abortHandler);
+                // Queue closed or aborted - clear our waiter and resolve
+                if (this.waiter === waiterFunc) {
+                    this.waiter = null;
                 }
-                resolve(false);
+                waiterFunc(false);
                 return;
             }
 
-            // Set the waiter
-            this.waiter = waiterFunc;
+            // Waiter is set and we're now waiting for messages
             logger.debug('[MessageQueue2] Waiting for messages...');
         });
     }

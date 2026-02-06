@@ -33,6 +33,8 @@ export type TelemetryEventType =
   | 'session_revival_failure'
   | 'session_revival_limit_exceeded'
   | 'session_revival_cooldown_triggered'
+  // Finally block error tracking (HAP-953)
+  | 'finally_block_error'
 
 /**
  * Base telemetry event structure.

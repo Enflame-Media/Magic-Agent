@@ -170,8 +170,30 @@ export interface ClientToServerEvents {
     reason: 'circuit_breaker'
     /** Remaining time until cooldown expires (milliseconds) */
     remainingMs: number
+    /** Remaining time until cooldown expires (seconds, rounded up) - user-friendly display value */
+    remainingSeconds: number
     /** Timestamp when cooldown will expire (Date.now() + remainingMs) */
     resumesAt: number
+    /** Machine ID this event originated from */
+    machineId: string
+  }) => void
+  /**
+   * Session revival progress event - emitted periodically during session revival timeout.
+   * Mobile app should display progress feedback to prevent app appearing frozen.
+   *
+   * @see HAP-950 - Add intermediate feedback during session revival timeout
+   */
+  'session-revival-progress': (data: {
+    /** Session ID being revived */
+    sessionId: string
+    /** Elapsed time since revival started (milliseconds) */
+    elapsedMs: number
+    /** Total timeout duration (milliseconds) */
+    timeoutMs: number
+    /** Remaining time until timeout (milliseconds) */
+    remainingMs: number
+    /** Human-readable status message */
+    message: string
     /** Machine ID this event originated from */
     machineId: string
   }) => void

@@ -4,19 +4,36 @@ import { Session } from "./session";
 import { Future } from "@/utils/future";
 import { createSessionScanner } from "./utils/sessionScanner";
 import { SocketDisconnectedError } from "@/api/socketUtils";
+import { LauncherResult } from "./loop";
 
-export async function claudeLocalLauncher(session: Session): Promise<'switch' | 'exit'> {
+/**
+ * Launches Claude in local (interactive terminal) mode.
+ *
+ * HAP-948: Returns a LauncherResult with a cleanupComplete Promise that resolves
+ * when all cleanup operations (finally blocks) have completed. This allows the
+ * caller to wait for actual cleanup completion instead of using arbitrary delays.
+ *
+ * @param session - The active session
+ * @returns LauncherResult with reason and cleanupComplete promise
+ */
+export async function claudeLocalLauncher(session: Session): Promise<LauncherResult> {
+    // HAP-948: Create a Future that resolves when the finally block completes
+    const cleanupFuture = new Future<void>();
 
-    // Fix #5: Handle session deletion event - exit gracefully when session is archived remotely
+    // HAP-943: Handle session deletion event with race condition fix
+    // Store abort promise so main loop can await it, preventing partial execution
     let sessionDeleted = false;
+    let sessionDeletionAbortPromise: Promise<void> | null = null;
     const onSessionDeleted = (deletedSessionId: string) => {
         if (deletedSessionId === session.client.sessionId) {
-            logger.warn('[local] Session was deleted/archived remotely - exiting gracefully');
+            logger.warn('[local] Session was deleted/archived remotely - initiating abort');
             sessionDeleted = true;
-            // Trigger abort to exit the launcher
+            // Trigger abort and store promise for main loop to await
             if (!processAbortController.signal.aborted) {
                 processAbortController.abort();
             }
+            // Store promise so main loop can await completion
+            sessionDeletionAbortPromise = exitFuture.promise;
         }
     };
     session.client.on('sessionDeleted', onSessionDeleted);
@@ -100,6 +117,20 @@ export async function claudeLocalLauncher(session: Session): Promise<'switch' | 
             await abort();
         }
 
+        /**
+         * HAP-943: Checks if the session was deleted and awaits any pending abort completion.
+         * @returns true if session deletion was detected and handled, false otherwise
+         */
+        async function handleSessionDeletionIfNeeded(): Promise<boolean> {
+            if (sessionDeleted) {
+                if (sessionDeletionAbortPromise) {
+                    await sessionDeletionAbortPromise;
+                }
+                return true;
+            }
+            return false;
+        }
+
         // When to abort
         // Fix #9: Track registration state to ensure proper cleanup
         session.client.rpcHandlerManager.registerHandler('abort', doAbort); // Abort current process, clean queue and switch to remote mode
@@ -113,13 +144,14 @@ export async function claudeLocalLauncher(session: Session): Promise<'switch' | 
         }); // When any message is received, abort current process, clean queue and switch to remote mode
 
         // Exit if there are messages in the queue
+        // HAP-948: Set exit reason instead of returning directly to ensure finally block runs
         if (session.queue.size() > 0) {
-            return 'switch';
+            exitReason = 'switch';
         }
 
-        // Fix #5: Check if session was already deleted before starting
-        if (sessionDeleted) {
-            return 'exit';
+        // HAP-943: Check if session was deleted and await abort completion
+        if (!exitReason && await handleSessionDeletionIfNeeded()) {
+            exitReason = 'exit';
         }
 
         // Handle session start
@@ -129,10 +161,12 @@ export async function claudeLocalLauncher(session: Session): Promise<'switch' | 
         }
 
         // Run local mode
-        while (true) {
-            // If we already have an exit reason, return it
-            if (exitReason) {
-                return exitReason;
+        // HAP-948: Check exitReason before loop - may be set by early exit conditions above
+        while (!exitReason) {
+            // HAP-943: Check if session was deleted during operation and await abort completion
+            if (await handleSessionDeletionIfNeeded()) {
+                exitReason = 'exit';
+                break;
             }
 
             // Launch
@@ -157,18 +191,15 @@ export async function claudeLocalLauncher(session: Session): Promise<'switch' | 
 
                 // Normal exit
                 if (!exitReason) {
-                    // Fix #5: Check if exit was due to session deletion
-                    if (sessionDeleted) {
-                        exitReason = 'exit';
-                    } else {
-                        exitReason = 'exit';
-                    }
+                    // HAP-943: Check if exit was due to session deletion and await abort
+                    await handleSessionDeletionIfNeeded();
+                    exitReason = 'exit';
                     break;
                 }
             } catch (e) {
                 logger.debug('[local]: launch error', e);
                 if (!exitReason) {
-                    // HAP-XXX: Check socket connection state before trying to send event
+                    // HAP-957: Check socket connection state before trying to send event
                     // If socket is already disconnected, we're shutting down - exit immediately
                     if (!session.client.connected) {
                         logger.warn('[local] Socket already disconnected - exiting instead of restarting');
@@ -179,7 +210,7 @@ export async function claudeLocalLauncher(session: Session): Promise<'switch' | 
                         session.client.sendSessionEvent({ type: 'message', message: 'Process exited unexpectedly' });
                     } catch (sendError) {
                         if (sendError instanceof SocketDisconnectedError) {
-                            // HAP-XXX: Socket disconnected means we're shutting down (e.g., killSession)
+                            // HAP-957: Socket disconnected means we're shutting down (e.g., killSession)
                             // Don't restart - exit the loop to avoid spawning a blank session
                             logger.warn('[local] Socket disconnected - exiting instead of restarting');
                             exitReason = 'exit';
@@ -206,17 +237,23 @@ export async function claudeLocalLauncher(session: Session): Promise<'switch' | 
             session.client.rpcHandlerManager.registerHandler('switch', async () => { });
         }
         session.queue.setOnMessage(null);
-        
+
         // Remove session found callback
         session.removeSessionFoundCallback(scannerSessionCallback);
 
-        // Fix #5: Remove session deleted listener
+        // HAP-943: Remove session deleted listener
         session.client.off('sessionDeleted', onSessionDeleted);
 
         // Cleanup
         await scanner.cleanup();
+
+        // HAP-948: Resolve cleanup future after all cleanup operations complete
+        cleanupFuture.resolve(undefined);
     }
 
-    // Return
-    return exitReason || 'exit';
+    // HAP-948: Return LauncherResult with cleanup promise
+    return {
+        reason: exitReason || 'exit',
+        cleanupComplete: cleanupFuture.promise
+    };
 }

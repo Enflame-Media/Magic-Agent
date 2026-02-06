@@ -9,6 +9,20 @@ import { addBreadcrumb, setTag, trackMetric } from "@/telemetry"
 
 export type PermissionMode = 'default' | 'acceptEdits' | 'bypassPermissions' | 'plan';
 
+/**
+ * Result returned by launcher functions containing the exit reason and a Promise
+ * that resolves when all cleanup operations are complete.
+ *
+ * HAP-948: This replaces the arbitrary 50ms delay with Promise-based completion,
+ * ensuring mode change notifications only fire after cleanup is fully complete.
+ */
+export interface LauncherResult {
+    /** The reason the launcher exited: 'switch' to change modes, 'exit' to terminate */
+    reason: 'switch' | 'exit';
+    /** Promise that resolves when all cleanup operations (finally blocks) have completed */
+    cleanupComplete: Promise<void>;
+}
+
 export interface EnhancedMode {
     permissionMode: PermissionMode;
     model?: string;
@@ -35,7 +49,45 @@ interface LoopOptions {
     onSessionReady?: (session: Session) => void
 }
 
-export async function loop(opts: LoopOptions) {
+/**
+ * Handles post-launch mode switch operations: telemetry, cleanup, and notifications.
+ *
+ * @param session - The active session
+ * @param fromMode - The mode being switched from
+ * @param toMode - The mode being switched to
+ * @param result - The launcher result containing cleanup promise
+ * @param onModeChange - Optional callback to notify of mode changes
+ */
+async function handleModeSwitch(
+    session: Session,
+    fromMode: 'local' | 'remote',
+    toMode: 'local' | 'remote',
+    result: LauncherResult,
+    onModeChange?: (mode: 'local' | 'remote') => void
+): Promise<void> {
+    // Track mode switch for debugging context (HAP-522)
+    addBreadcrumb({ category: 'session', message: `Mode switch: ${fromMode} → ${toMode}`, level: 'info' })
+    setTag('session.mode', toMode)
+
+    // HAP-948: Wait for actual cleanup completion instead of arbitrary delay
+    await result.cleanupComplete;
+
+    if (onModeChange) {
+        onModeChange(toMode);
+    }
+
+    // HAP-952: Send ready notification after mode switch completion
+    // This allows mobile app to know CLI is ready to receive commands
+    try {
+        session.client.sendSessionEvent({ type: 'ready' }, `mode-switch-${toMode}`);
+        logger.debug(`[loop] Sent ready event after mode switch to ${toMode}`);
+    } catch (error) {
+        // Non-fatal: log but don't fail the mode switch
+        logger.debug('[loop] Failed to send ready event after mode switch:', error);
+    }
+}
+
+export async function loop(opts: LoopOptions): Promise<void> {
     // Track session duration for performance monitoring (HAP-534)
     const sessionStart = Date.now()
     let modeChanges = 0
@@ -74,49 +126,33 @@ export async function loop(opts: LoopOptions) {
 
             // Run local mode if applicable
             if (mode === 'local') {
-                let reason = await claudeLocalLauncher(session);
-                if (reason === 'exit') { // Normal exit - Exit loop
+                const result = await claudeLocalLauncher(session);
+                if (result.reason === 'exit') { // Normal exit - Exit loop
                     return;
                 }
 
                 // Non "exit" reason means we need to switch to remote mode
+                const fromMode = mode;
                 mode = 'remote';
                 modeChanges++
 
-                // Track mode switch for debugging context (HAP-522)
-                addBreadcrumb({ category: 'session', message: 'Mode switch: local → remote', level: 'info' })
-                setTag('session.mode', mode)
-
-                // Wait for cleanup to complete before notifying mode change
-                await new Promise(resolve => setTimeout(resolve, 50));
-
-                if (opts.onModeChange) {
-                    opts.onModeChange(mode);
-                }
+                await handleModeSwitch(session, fromMode, mode, result, opts.onModeChange);
                 continue;
             }
 
             // Start remote mode
             if (mode === 'remote') {
-                let reason = await claudeRemoteLauncher(session);
-                if (reason === 'exit') { // Normal exit - Exit loop
+                const result = await claudeRemoteLauncher(session);
+                if (result.reason === 'exit') { // Normal exit - Exit loop
                     return;
                 }
 
                 // Non "exit" reason means we need to switch to local mode
+                const fromMode = mode;
                 mode = 'local';
                 modeChanges++
 
-                // Track mode switch for debugging context (HAP-522)
-                addBreadcrumb({ category: 'session', message: 'Mode switch: remote → local', level: 'info' })
-                setTag('session.mode', mode)
-
-                // Wait for cleanup to complete before notifying mode change
-                await new Promise(resolve => setTimeout(resolve, 50));
-
-                if (opts.onModeChange) {
-                    opts.onModeChange(mode);
-                }
+                await handleModeSwitch(session, fromMode, mode, result, opts.onModeChange);
                 continue;
             }
         }

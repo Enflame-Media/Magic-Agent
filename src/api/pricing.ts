@@ -43,8 +43,8 @@ const MODEL_PRICING: Record<string, ModelPricing> = {
         cacheWriteMultiplier: 1.25,
         cacheReadMultiplier: 0.1
     },
-    // Opus 4.5
-    'claude-opus-4-5': {
+    // Opus 4.6
+    'claude-opus-4-6': {
         inputPerMillion: 5,
         outputPerMillion: 25,
         cacheWriteMultiplier: 1.25,
