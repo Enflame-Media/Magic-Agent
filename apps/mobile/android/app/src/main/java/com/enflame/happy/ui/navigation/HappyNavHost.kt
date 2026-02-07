@@ -92,9 +92,15 @@ sealed class Screen(val route: String) {
  * Navigation host for the Happy app.
  *
  * Defines the navigation graph with all app destinations.
+ *
+ * @param navController The navigation controller managing app navigation.
+ * @param friendsViewModel Shared ViewModel for processing friend invites from QR scans and deep links.
  */
 @Composable
-fun HappyNavHost(navController: NavHostController) {
+fun HappyNavHost(
+    navController: NavHostController,
+    friendsViewModel: FriendsViewModel? = null
+) {
     NavHost(
         navController = navController,
         startDestination = Screen.Home.route
@@ -133,6 +139,13 @@ fun HappyNavHost(navController: NavHostController) {
                         // back on the confirmation screen returns to Home
                         popUpTo(Screen.QrScanner.route) { inclusive = true }
                     }
+                },
+                onFriendInviteScanned = { inviteCode ->
+                    // Navigate to Friends screen and process the QR invite
+                    navController.navigate(Screen.Friends.route) {
+                        popUpTo(Screen.QrScanner.route) { inclusive = true }
+                    }
+                    friendsViewModel?.processFriendInviteFromQr(inviteCode)
                 }
             )
         }

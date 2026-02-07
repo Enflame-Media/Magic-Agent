@@ -19,16 +19,21 @@ import com.enflame.happy.ui.viewmodel.FriendsViewModel
 @Composable
 fun HappyApp(deepLinkInviteCode: String? = null) {
     val navController = rememberNavController()
+    val friendsViewModel: FriendsViewModel = hiltViewModel()
 
-    HappyNavHost(navController = navController)
+    HappyNavHost(
+        navController = navController,
+        friendsViewModel = friendsViewModel
+    )
 
     // Handle deep link invite codes
     if (deepLinkInviteCode != null) {
         LaunchedEffect(deepLinkInviteCode) {
-            // Navigate to friends screen to process the invite
+            // Navigate to friends screen and process the invite
             navController.navigate(Screen.Friends.route) {
                 launchSingleTop = true
             }
+            friendsViewModel.processFriendInviteFromLink(deepLinkInviteCode)
         }
     }
 }

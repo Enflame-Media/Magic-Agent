@@ -4,6 +4,8 @@ import android.util.Base64
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.enflame.happy.domain.model.PairingData
+import com.enflame.happy.domain.model.QrPayloadClassifier
+import com.enflame.happy.domain.model.QrPayloadType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,8 +22,11 @@ sealed interface QrScannerUiState {
     /** Camera is active and scanning for QR codes. */
     data object Scanning : QrScannerUiState
 
-    /** A QR code has been detected and parsed successfully. */
+    /** A QR code has been detected and parsed as pairing data. */
     data class ScannedSuccess(val pairingData: PairingData) : QrScannerUiState
+
+    /** A QR code has been detected and parsed as a friend invite. */
+    data class FriendInviteScanned(val inviteCode: String) : QrScannerUiState
 
     /** The scanned QR code could not be parsed as valid pairing data. */
     data class ScannedError(val message: String) : QrScannerUiState
@@ -46,18 +51,27 @@ class QrScannerViewModel @Inject constructor(
     val uiState: StateFlow<QrScannerUiState> = _uiState.asStateFlow()
 
     /**
-     * Processes raw QR code content and attempts to extract pairing data.
+     * Processes raw QR code content and attempts to extract pairing data
+     * or a friend invite.
      *
-     * Tries JSON format first, then falls back to treating the content
-     * as a raw base64-encoded public key.
+     * Uses [QrPayloadClassifier] to identify friend invites first,
+     * then falls back to pairing data parsing.
      */
     fun onQrCodeScanned(rawContent: String) {
+        // Check for friend invite first via classifier
+        val classified = QrPayloadClassifier.classify(rawContent)
+        if (classified is QrPayloadType.FriendInvite) {
+            _uiState.value = QrScannerUiState.FriendInviteScanned(classified.payload.code)
+            return
+        }
+
+        // Try pairing data parsing
         val pairingData = parseQrContent(rawContent)
         if (pairingData != null) {
             _uiState.value = QrScannerUiState.ScannedSuccess(pairingData)
         } else {
             _uiState.value = QrScannerUiState.ScannedError(
-                "Invalid QR code. Please scan a QR code from Claude Code CLI."
+                "Invalid QR code. Please scan a QR code from Claude Code CLI or a friend invite."
             )
         }
     }

@@ -71,16 +71,18 @@ import java.util.concurrent.Executors
 fun QrScannerScreen(
     onNavigateBack: () -> Unit,
     onPairingDataScanned: (PairingData) -> Unit,
+    onFriendInviteScanned: (String) -> Unit = {},
     viewModel: QrScannerViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
 
-    // When a QR code is successfully scanned, navigate to pairing confirmation
+    // When a QR code is successfully scanned, navigate accordingly
     LaunchedEffect(uiState) {
-        if (uiState is QrScannerUiState.ScannedSuccess) {
-            val data = (uiState as QrScannerUiState.ScannedSuccess).pairingData
-            onPairingDataScanned(data)
+        when (val state = uiState) {
+            is QrScannerUiState.ScannedSuccess -> onPairingDataScanned(state.pairingData)
+            is QrScannerUiState.FriendInviteScanned -> onFriendInviteScanned(state.inviteCode)
+            else -> {} // Scanning or error - no navigation needed
         }
     }
 
