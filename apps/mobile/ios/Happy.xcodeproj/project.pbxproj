@@ -106,6 +106,7 @@
 		Z91A2C3D4E5F0005 /* PrivacySettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = Z91A2C3D4E5F0014 /* PrivacySettingsView.swift */; };
 		Z91A2C3D4E5F0006 /* SharedSessionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = Z91A2C3D4E5F0015 /* SharedSessionsView.swift */; };
 		Z91A2C3D4E5F0007 /* SessionShareSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = Z91A2C3D4E5F0016 /* SessionShareSheet.swift */; };
+		LK1A2C3D4E5F0001 /* LiveKit in Frameworks */ = {isa = PBXBuildFile; productRef = LK1A2C3D4E5F0010 /* LiveKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -256,6 +257,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				LK1A2C3D4E5F0001 /* LiveKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -528,6 +530,9 @@
 			dependencies = (
 			);
 			name = Happy;
+			packageProductDependencies = (
+				LK1A2C3D4E5F0010 /* LiveKit */,
+			);
 			productName = Happy;
 			productReference = 0A1B2C3D4E5F6772 /* Happy.app */;
 			productType = "com.apple.product-type.application";
@@ -617,6 +622,9 @@
 				ko,
 			);
 			mainGroup = 0A1B2C3D4E5F67A0;
+			packageReferences = (
+				LK1A2C3D4E5F0020 /* XCRemoteSwiftPackageReference "client-sdk-swift" */,
+			);
 			productRefGroup = 0A1B2C3D4E5F67A4 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -1090,6 +1098,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		LK1A2C3D4E5F0020 /* XCRemoteSwiftPackageReference "client-sdk-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/livekit/client-sdk-swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		LK1A2C3D4E5F0010 /* LiveKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = LK1A2C3D4E5F0020 /* XCRemoteSwiftPackageReference "client-sdk-swift" */;
+			productName = LiveKit;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 0A1B2C3D4E5F6770 /* Project object */;
 }

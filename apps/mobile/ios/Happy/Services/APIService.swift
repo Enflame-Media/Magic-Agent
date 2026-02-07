@@ -208,6 +208,31 @@ actor APIService: APIServiceProtocol {
         let _: DeviceTokenResponse = try await post("/v1/devices/unregister", body: body)
     }
 
+    // MARK: - Voice Chat Token
+
+    /// Response from the voice chat token endpoint.
+    struct VoiceChatTokenResponse: Decodable {
+        let url: String
+        let token: String
+        let roomName: String
+    }
+
+    /// Fetch a LiveKit room token for voice chat in a session.
+    ///
+    /// Calls the server to generate a short-lived JWT for authenticating
+    /// with the LiveKit room associated with the given session.
+    ///
+    /// - Parameter sessionId: The session ID to join voice chat for.
+    /// - Returns: The server URL, room token, and room name.
+    func fetchVoiceChatToken(sessionId: String) async throws -> VoiceChatTokenResponse {
+        struct TokenRequest: Encodable {
+            let sessionId: String
+        }
+
+        let body = TokenRequest(sessionId: sessionId)
+        return try await post("/v1/voice-chat/token", body: body)
+    }
+
     // MARK: - Private Helpers
 
     private func performRequest(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {

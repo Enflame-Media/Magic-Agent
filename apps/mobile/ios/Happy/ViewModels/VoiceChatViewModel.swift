@@ -63,7 +63,11 @@ final class VoiceChatViewModel: ObservableObject {
     // MARK: - Dependencies
 
     private let voiceChatService: LiveKitVoiceChatServiceProtocol
+    private let apiService: APIService
     private var cancellables = Set<AnyCancellable>()
+
+    /// The session ID for fetching voice chat tokens from the server.
+    private var sessionId: String?
 
     /// Room URL for the current session's voice chat.
     private var roomURL: String?
@@ -77,14 +81,20 @@ final class VoiceChatViewModel: ObservableObject {
     ///
     /// - Parameters:
     ///   - voiceChatService: The voice chat service. Defaults to the shared instance.
-    ///   - roomURL: The LiveKit room URL for connection.
-    ///   - token: The authentication token for the voice chat room.
+    ///   - apiService: The API service for fetching room tokens. Defaults to shared.
+    ///   - sessionId: The session ID to join voice chat for (triggers server token fetch).
+    ///   - roomURL: The LiveKit room URL for direct connection (bypasses token fetch).
+    ///   - token: The authentication token for direct connection (bypasses token fetch).
     init(
         voiceChatService: LiveKitVoiceChatServiceProtocol = LiveKitVoiceChatService.shared,
+        apiService: APIService = .shared,
+        sessionId: String? = nil,
         roomURL: String? = nil,
         token: String? = nil
     ) {
         self.voiceChatService = voiceChatService
+        self.apiService = apiService
+        self.sessionId = sessionId
         self.roomURL = roomURL
         self.voiceChatToken = token
 
@@ -94,8 +104,24 @@ final class VoiceChatViewModel: ObservableObject {
     // MARK: - Public Methods
 
     /// Connect to the voice chat room.
+    ///
+    /// If a sessionId is set and no roomURL/token are available,
+    /// fetches a LiveKit room token from the Happy server API first.
     @MainActor
     func connect() async {
+        // If we have a sessionId but no room credentials, fetch from server
+        if roomURL == nil || voiceChatToken == nil, let sessionId = sessionId {
+            do {
+                let response = try await apiService.fetchVoiceChatToken(sessionId: sessionId)
+                roomURL = response.url
+                voiceChatToken = response.token
+            } catch {
+                errorMessage = error.localizedDescription
+                showError = true
+                return
+            }
+        }
+
         guard let url = roomURL, let token = voiceChatToken else {
             errorMessage = "voiceChat.error.noRoom".localized
             showError = true
@@ -145,10 +171,18 @@ final class VoiceChatViewModel: ObservableObject {
         }
     }
 
-    /// Configure the room URL and token for connection.
+    /// Configure the room URL and token for direct connection.
     func configure(roomURL: String, token: String) {
         self.roomURL = roomURL
         self.voiceChatToken = token
+    }
+
+    /// Configure the session ID for server-based token fetching.
+    func configure(sessionId: String) {
+        self.sessionId = sessionId
+        // Clear any stale direct credentials
+        self.roomURL = nil
+        self.voiceChatToken = nil
     }
 
     /// Dismiss the current error.
