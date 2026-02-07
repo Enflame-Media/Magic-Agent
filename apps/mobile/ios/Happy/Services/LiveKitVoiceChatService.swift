@@ -8,6 +8,9 @@
 import AVFoundation
 import Combine
 import Foundation
+#if canImport(LiveKit)
+import LiveKit
+#endif
 
 // MARK: - Voice Chat State
 
@@ -219,6 +222,7 @@ enum VoiceChatError: LocalizedError, Equatable {
     case roomNotFound
     case alreadyConnected
     case notConnected
+    case tokenFetchFailed(String)
 
     var errorDescription: String? {
         switch self {
@@ -236,22 +240,24 @@ enum VoiceChatError: LocalizedError, Equatable {
             return "voiceChat.error.alreadyConnected".localized
         case .notConnected:
             return "voiceChat.error.notConnected".localized
+        case .tokenFetchFailed(let message):
+            return "voiceChat.error.tokenFetchFailed".localized + ": \(message)"
         }
     }
 }
 
 // MARK: - LiveKitVoiceChatService
 
-/// Service for real-time voice chat using WebRTC via the LiveKit protocol.
+/// Service for real-time voice chat using the LiveKit Swift SDK with WebRTC transport.
 ///
-/// Provides bidirectional audio communication for voice chat rooms.
-/// Uses AVAudioEngine for audio capture and playback with voice
-/// activity detection support.
+/// Provides bidirectional audio communication for voice chat rooms using
+/// LiveKit's Room and Participant APIs for low-latency WebRTC audio with
+/// built-in echo cancellation, noise suppression, and adaptive bitrate.
 ///
 /// ## Architecture
-/// - WebRTC-based peer-to-peer audio via LiveKit signaling protocol
-/// - AVAudioEngine for low-latency audio capture and playback
-/// - Voice Activity Detection (VAD) using audio level monitoring
+/// - LiveKit Room API for WebRTC-based audio transport
+/// - RoomDelegate for participant and track event handling
+/// - Built-in Voice Activity Detection via LiveKit's isSpeaking events
 /// - AVAudioSession for audio routing (speaker/earpiece/Bluetooth)
 /// - Combine publishers for reactive state updates
 ///
@@ -299,23 +305,13 @@ final class LiveKitVoiceChatService: NSObject, LiveKitVoiceChatServiceProtocol {
     // MARK: - Private Properties
 
     private var _vadMode: VoiceActivityMode = .pushToTalk
-    private var audioEngine: AVAudioEngine?
     private var isPushToTalkActive = false
     private var cancellables = Set<AnyCancellable>()
 
-    /// WebSocket connection for LiveKit signaling.
-    private var signalingTask: URLSessionWebSocketTask?
-    private let urlSession: URLSession
-
-    /// Timer for voice activity detection level monitoring.
-    private var vadTimer: Timer?
-
-    /// Threshold for voice activity detection (0.0-1.0).
-    private let vadThreshold: Float = 0.03
-
-    /// Number of consecutive silent frames before declaring silence.
-    private let vadSilenceFrames = 15
-    private var silenceCounter = 0
+    #if canImport(LiveKit)
+    /// The LiveKit room instance for WebRTC communication.
+    private var room: Room?
+    #endif
 
     /// Current room URL for reconnection.
     private var currentRoomURL: String?
@@ -324,24 +320,15 @@ final class LiveKitVoiceChatService: NSObject, LiveKitVoiceChatServiceProtocol {
     // MARK: - Initialization
 
     override init() {
-        let config = URLSessionConfiguration.default
-        config.timeoutIntervalForRequest = 30
-        self.urlSession = URLSession(configuration: config)
         super.init()
         setupRouteChangeNotifications()
         updateAvailableRoutes()
     }
 
-    /// Initializer for testing with a custom URLSession.
-    init(urlSession: URLSession) {
-        self.urlSession = urlSession
-        super.init()
-        setupRouteChangeNotifications()
-    }
-
     deinit {
-        vadTimer?.invalidate()
-        stopAudioEngine()
+        #if canImport(LiveKit)
+        room = nil
+        #endif
     }
 
     // MARK: - Public Methods
@@ -368,43 +355,58 @@ final class LiveKitVoiceChatService: NSObject, LiveKitVoiceChatServiceProtocol {
         currentRoomURL = roomURL
         currentToken = token
 
+        #if canImport(LiveKit)
         do {
-            // Configure audio session for voice chat
-            try configureAudioSessionForVoiceChat()
+            // Create a new Room with this service as delegate
+            let newRoom = Room(delegate: self)
+            self.room = newRoom
 
-            // Start the audio engine for capture
-            try startAudioEngine()
+            // Connect to the LiveKit server with WebRTC transport
+            try await newRoom.connect(
+                url: roomURL,
+                token: token,
+                connectOptions: ConnectOptions(
+                    autoSubscribe: true
+                ),
+                roomOptions: RoomOptions(
+                    defaultAudioCaptureOptions: AudioCaptureOptions(
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    )
+                )
+            )
 
-            // Connect to LiveKit signaling server
-            try await connectToSignalingServer(url: roomURL, token: token)
+            // Enable microphone (starts muted based on VAD mode)
+            let shouldEnableMic = _vadMode != .pushToTalk
+            try await newRoom.localParticipant.setMicrophone(enabled: shouldEnableMic)
 
             _chatState.send(.connected)
-            _isMuted.send(true) // Start muted by default
+            _isMuted.send(!shouldEnableMic)
 
-            // Start VAD monitoring if in auto-detect mode
-            if _vadMode == .autoDetect {
-                startVADMonitoring()
-            }
+            // Refresh remote participants
+            refreshParticipants()
 
             #if DEBUG
-            print("[LiveKitVoiceChatService] Connected to room: \(roomURL)")
+            print("[LiveKitVoiceChatService] Connected to LiveKit room via WebRTC: \(roomURL)")
             #endif
         } catch {
             _chatState.send(.error(error.localizedDescription))
-            stopAudioEngine()
-            throw error
+            self.room = nil
+            throw VoiceChatError.connectionFailed(error.localizedDescription)
         }
+        #else
+        // LiveKit SDK not available — report error
+        _chatState.send(.error("LiveKit SDK not available"))
+        throw VoiceChatError.connectionFailed("LiveKit SDK is not integrated. Add the LiveKit Swift SDK via SPM.")
+        #endif
     }
 
     func disconnect() async {
-        vadTimer?.invalidate()
-        vadTimer = nil
-
-        signalingTask?.cancel(with: .normalClosure, reason: nil)
-        signalingTask = nil
-
-        stopAudioEngine()
-        deactivateAudioSession()
+        #if canImport(LiveKit)
+        await room?.disconnect()
+        room = nil
+        #endif
 
         _chatState.send(.disconnected)
         _participants.send([])
@@ -425,15 +427,11 @@ final class LiveKitVoiceChatService: NSObject, LiveKitVoiceChatServiceProtocol {
             _isVoiceDetected.send(false)
         }
 
-        // Update the audio engine input tap
-        if let engine = audioEngine, engine.isRunning {
-            if muted {
-                // Mute: pause the input node
-                engine.inputNode.volume = 0
-            } else {
-                engine.inputNode.volume = 1
-            }
+        #if canImport(LiveKit)
+        Task {
+            try? await room?.localParticipant.setMicrophone(enabled: !muted)
         }
+        #endif
 
         #if DEBUG
         print("[LiveKitVoiceChatService] Muted: \(muted)")
@@ -445,22 +443,18 @@ final class LiveKitVoiceChatService: NSObject, LiveKitVoiceChatServiceProtocol {
 
         switch mode {
         case .pushToTalk:
-            vadTimer?.invalidate()
-            vadTimer = nil
             // Mute unless push-to-talk is active
             if !isPushToTalkActive {
                 setMuted(true)
             }
 
         case .autoDetect:
+            // In auto-detect mode, unmute so LiveKit can detect speech
             if chatState == .connected {
-                startVADMonitoring()
+                setMuted(false)
             }
-            // Will automatically unmute when voice is detected
 
         case .alwaysOn:
-            vadTimer?.invalidate()
-            vadTimer = nil
             setMuted(false)
         }
     }
@@ -489,19 +483,15 @@ final class LiveKitVoiceChatService: NSObject, LiveKitVoiceChatServiceProtocol {
                 try audioSession.overrideOutputAudioPort(.none)
 
             case .bluetooth(let name), .airPlay(let name), .carPlay(let name):
-                // Find the matching port in available outputs
-                guard let _ = audioSession.currentRoute.outputs.first,
-                      let availablePorts = audioSession.availableInputs else {
+                guard let availablePorts = audioSession.availableInputs else {
                     throw VoiceChatError.audioSessionError("No available ports for \(name)")
                 }
 
-                // For Bluetooth, set preferred input matching the name
                 if let port = availablePorts.first(where: { $0.portName == name }) {
                     try audioSession.setPreferredInput(port)
                 }
 
             case .headphones:
-                // Headphones are automatically selected when plugged in
                 try audioSession.overrideOutputAudioPort(.none)
             }
 
@@ -517,246 +507,31 @@ final class LiveKitVoiceChatService: NSObject, LiveKitVoiceChatServiceProtocol {
         }
     }
 
-    // MARK: - Audio Engine
+    // MARK: - Participant Management
 
-    /// Configure the audio session for bidirectional voice chat.
-    private func configureAudioSessionForVoiceChat() throws {
-        let audioSession = AVAudioSession.sharedInstance()
-        do {
-            try audioSession.setCategory(
-                .playAndRecord,
-                mode: .voiceChat,
-                options: [.defaultToSpeaker, .allowBluetoothA2DP]
+    /// Refresh the participant list from the LiveKit room state.
+    private func refreshParticipants() {
+        #if canImport(LiveKit)
+        guard let room = room else { return }
+
+        let remoteParticipants = room.remoteParticipants.values.map { participant in
+            VoiceChatParticipant(
+                id: participant.sid?.stringValue ?? participant.identity?.stringValue ?? UUID().uuidString,
+                name: participant.name ?? participant.identity?.stringValue ?? "Unknown",
+                isSpeaking: participant.isSpeaking,
+                isMuted: !participant.isMicrophoneEnabled(),
+                audioLevel: participant.audioLevel
             )
-            try audioSession.setActive(true)
-        } catch {
-            throw VoiceChatError.audioSessionError(error.localizedDescription)
-        }
-    }
-
-    /// Start the audio engine for microphone capture.
-    private func startAudioEngine() throws {
-        let engine = AVAudioEngine()
-        let inputNode = engine.inputNode
-        let inputFormat = inputNode.outputFormat(forBus: 0)
-
-        // Install a tap on the input node for audio level monitoring
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: inputFormat) { [weak self] buffer, _ in
-            self?.processAudioBuffer(buffer)
         }
 
-        engine.prepare()
-        try engine.start()
-
-        self.audioEngine = engine
-
-        #if DEBUG
-        print("[LiveKitVoiceChatService] Audio engine started (format: \(inputFormat))")
+        DispatchQueue.main.async { [weak self] in
+            self?._participants.send(Array(remoteParticipants))
+        }
         #endif
-    }
-
-    /// Stop the audio engine.
-    private func stopAudioEngine() {
-        if let engine = audioEngine, engine.isRunning {
-            engine.inputNode.removeTap(onBus: 0)
-            engine.stop()
-        }
-        audioEngine = nil
-    }
-
-    /// Process an audio buffer for voice activity detection.
-    private func processAudioBuffer(_ buffer: AVAudioPCMBuffer) {
-        guard let channelData = buffer.floatChannelData?[0] else { return }
-        let frameLength = Int(buffer.frameLength)
-
-        // Calculate RMS (Root Mean Square) audio level
-        var sum: Float = 0
-        for i in 0..<frameLength {
-            sum += channelData[i] * channelData[i]
-        }
-        let rms = sqrtf(sum / Float(frameLength))
-
-        // Update voice detection state based on VAD mode
-        if _vadMode == .autoDetect && !isMuted {
-            if rms > vadThreshold {
-                silenceCounter = 0
-                if !_isVoiceDetected.value {
-                    DispatchQueue.main.async { [weak self] in
-                        self?._isVoiceDetected.send(true)
-                    }
-                }
-            } else {
-                silenceCounter += 1
-                if silenceCounter >= vadSilenceFrames && _isVoiceDetected.value {
-                    DispatchQueue.main.async { [weak self] in
-                        self?._isVoiceDetected.send(false)
-                    }
-                }
-            }
-        }
-    }
-
-    // MARK: - Voice Activity Detection
-
-    /// Start periodic VAD monitoring.
-    private func startVADMonitoring() {
-        vadTimer?.invalidate()
-
-        // In auto-detect mode, unmute the mic so we can detect speech
-        setMuted(false)
-
-        vadTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
-            // VAD processing happens in the audio buffer tap callback
-            // This timer ensures the run loop stays active
-            guard let self = self else { return }
-            if self.chatState != .connected {
-                self.vadTimer?.invalidate()
-                self.vadTimer = nil
-            }
-        }
-    }
-
-    // MARK: - Signaling (LiveKit Protocol)
-
-    /// Connect to the LiveKit signaling server via WebSocket.
-    private func connectToSignalingServer(url: String, token: String) async throws {
-        guard let wsURL = URL(string: url) else {
-            throw VoiceChatError.connectionFailed("Invalid room URL")
-        }
-
-        // Build the WebSocket URL with token
-        var components = URLComponents(url: wsURL, resolvingAgainstBaseURL: false)
-        components?.queryItems = [
-            URLQueryItem(name: "access_token", value: token),
-            URLQueryItem(name: "protocol", value: "9"),
-            URLQueryItem(name: "sdk", value: "ios"),
-            URLQueryItem(name: "version", value: "2.0.0")
-        ]
-
-        guard let signalingURL = components?.url else {
-            throw VoiceChatError.connectionFailed("Failed to build signaling URL")
-        }
-
-        var request = URLRequest(url: signalingURL)
-        request.timeoutInterval = 30
-
-        let task = urlSession.webSocketTask(with: request)
-        self.signalingTask = task
-        task.resume()
-
-        // Start receiving messages
-        receiveSignalingMessages()
-
-        // Send join request
-        let joinMessage = LiveKitJoinMessage(
-            audioEnabled: true,
-            videoEnabled: false
-        )
-        if let data = try? JSONEncoder().encode(joinMessage) {
-            try await task.send(.data(data))
-        }
-    }
-
-    /// Receive messages from the signaling server.
-    private func receiveSignalingMessages() {
-        signalingTask?.receive { [weak self] result in
-            guard let self = self else { return }
-
-            switch result {
-            case .success(let message):
-                switch message {
-                case .data(let data):
-                    self.handleSignalingMessage(data)
-                case .string(let text):
-                    if let data = text.data(using: .utf8) {
-                        self.handleSignalingMessage(data)
-                    }
-                @unknown default:
-                    break
-                }
-                // Continue receiving
-                self.receiveSignalingMessages()
-
-            case .failure(let error):
-                #if DEBUG
-                print("[LiveKitVoiceChatService] WebSocket error: \(error)")
-                #endif
-
-                // Attempt reconnection if we were connected
-                if self.chatState == .connected {
-                    self._chatState.send(.reconnecting)
-                    Task {
-                        try? await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
-                        if let url = self.currentRoomURL, let token = self.currentToken {
-                            try? await self.connect(roomURL: url, token: token)
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    /// Handle an incoming signaling message.
-    private func handleSignalingMessage(_ data: Data) {
-        guard let message = try? JSONDecoder().decode(LiveKitSignalingMessage.self, from: data) else {
-            #if DEBUG
-            print("[LiveKitVoiceChatService] Failed to decode signaling message")
-            #endif
-            return
-        }
-
-        switch message.type {
-        case "participant_joined":
-            if let participant = message.participant {
-                var current = _participants.value
-                current.append(VoiceChatParticipant(
-                    id: participant.id,
-                    name: participant.name,
-                    isSpeaking: false,
-                    isMuted: participant.isMuted,
-                    audioLevel: 0.0
-                ))
-                DispatchQueue.main.async { [weak self] in
-                    self?._participants.send(current)
-                }
-            }
-
-        case "participant_left":
-            if let participantId = message.participantId {
-                var current = _participants.value
-                current.removeAll { $0.id == participantId }
-                DispatchQueue.main.async { [weak self] in
-                    self?._participants.send(current)
-                }
-            }
-
-        case "speaker_changed":
-            if let participantId = message.participantId,
-               let isSpeaking = message.isSpeaking {
-                var current = _participants.value
-                if let idx = current.firstIndex(where: { $0.id == participantId }) {
-                    current[idx].isSpeaking = isSpeaking
-                    DispatchQueue.main.async { [weak self] in
-                        self?._participants.send(current)
-                    }
-                }
-            }
-
-        case "room_closed":
-            Task {
-                await self.disconnect()
-            }
-
-        default:
-            #if DEBUG
-            print("[LiveKitVoiceChatService] Unknown message type: \(message.type)")
-            #endif
-        }
     }
 
     // MARK: - Microphone Permission
 
-    /// Request microphone permission.
     private func requestMicrophonePermission() async -> Bool {
         let status = AVAudioSession.sharedInstance().recordPermission
 
@@ -778,7 +553,6 @@ final class LiveKitVoiceChatService: NSObject, LiveKitVoiceChatServiceProtocol {
 
     // MARK: - Audio Routing
 
-    /// Set up notifications for audio route changes.
     private func setupRouteChangeNotifications() {
         NotificationCenter.default.publisher(for: AVAudioSession.routeChangeNotification)
             .receive(on: DispatchQueue.main)
@@ -788,12 +562,10 @@ final class LiveKitVoiceChatService: NSObject, LiveKitVoiceChatServiceProtocol {
             .store(in: &cancellables)
     }
 
-    /// Update the list of available audio routes.
     func updateAvailableRoutes() {
         let audioSession = AVAudioSession.sharedInstance()
         var routes: [AudioOutputRoute] = [.builtInSpeaker, .builtInReceiver]
 
-        // Check for available inputs (Bluetooth, etc.)
         if let availableInputs = audioSession.availableInputs {
             for input in availableInputs {
                 switch input.portType {
@@ -811,7 +583,6 @@ final class LiveKitVoiceChatService: NSObject, LiveKitVoiceChatServiceProtocol {
             }
         }
 
-        // Check current output route
         let currentOutput = audioSession.currentRoute.outputs.first
         let current: AudioOutputRoute
 
@@ -835,38 +606,79 @@ final class LiveKitVoiceChatService: NSObject, LiveKitVoiceChatServiceProtocol {
         _availableRoutes.send(routes)
         _currentRoute.send(current)
     }
+}
 
-    /// Deactivate the audio session when voice chat ends.
-    private func deactivateAudioSession() {
-        do {
-            try AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
-        } catch {
-            #if DEBUG
-            print("[LiveKitVoiceChatService] Failed to deactivate audio session: \(error)")
-            #endif
+// MARK: - LiveKit RoomDelegate
+
+#if canImport(LiveKit)
+extension LiveKitVoiceChatService: RoomDelegate {
+
+    func room(_ room: Room, didUpdate connectionState: ConnectionState, from oldValue: ConnectionState) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            switch connectionState {
+            case .disconnected:
+                // Only update if we didn't intentionally disconnect
+                if self.chatState != .disconnected {
+                    self._chatState.send(.disconnected)
+                    self._participants.send([])
+                }
+            case .connecting:
+                self._chatState.send(.connecting)
+            case .reconnecting:
+                self._chatState.send(.reconnecting)
+            case .connected:
+                self._chatState.send(.connected)
+                self.refreshParticipants()
+            }
         }
     }
-}
 
-// MARK: - LiveKit Signaling Types
+    func room(_ room: Room, participantDidJoin participant: RemoteParticipant) {
+        #if DEBUG
+        print("[LiveKitVoiceChatService] Participant joined: \(participant.name ?? "unknown")")
+        #endif
+        refreshParticipants()
+    }
 
-/// Join message sent to the LiveKit signaling server.
-struct LiveKitJoinMessage: Codable {
-    let type: String = "join"
-    let audioEnabled: Bool
-    let videoEnabled: Bool
-}
+    func room(_ room: Room, participantDidLeave participant: RemoteParticipant) {
+        #if DEBUG
+        print("[LiveKitVoiceChatService] Participant left: \(participant.name ?? "unknown")")
+        #endif
+        refreshParticipants()
+    }
 
-/// Incoming signaling message from LiveKit server.
-struct LiveKitSignalingMessage: Codable {
-    let type: String
-    let participant: LiveKitParticipantInfo?
-    let participantId: String?
-    let isSpeaking: Bool?
+    func room(_ room: Room, participant: Participant, didUpdate isSpeaking: Bool) {
+        if participant is LocalParticipant {
+            DispatchQueue.main.async { [weak self] in
+                self?._isVoiceDetected.send(isSpeaking)
+            }
+        }
+        refreshParticipants()
+    }
 
-    struct LiveKitParticipantInfo: Codable {
-        let id: String
-        let name: String
-        let isMuted: Bool
+    func room(_ room: Room, participant: RemoteParticipant, didSubscribe publication: RemoteTrackPublication, track: Track) {
+        #if DEBUG
+        print("[LiveKitVoiceChatService] Subscribed to track: \(track.kind) from \(participant.name ?? "unknown")")
+        #endif
+        refreshParticipants()
+    }
+
+    func room(_ room: Room, participant: RemoteParticipant, didUnsubscribe publication: RemoteTrackPublication, track: Track) {
+        #if DEBUG
+        print("[LiveKitVoiceChatService] Unsubscribed from track: \(track.kind) from \(participant.name ?? "unknown")")
+        #endif
+        refreshParticipants()
+    }
+
+    func room(_ room: Room, participant: Participant, didUpdate metadata: String?) {
+        refreshParticipants()
+    }
+
+    func room(_ room: Room, participant: Participant, didUpdate connectionQuality: ConnectionQuality) {
+        #if DEBUG
+        print("[LiveKitVoiceChatService] Connection quality for \(participant.name ?? "unknown"): \(connectionQuality)")
+        #endif
     }
 }
+#endif
