@@ -26,7 +26,7 @@ import { Toast } from '@/toast';
 import { Modal } from '@/modal';
 import { layout } from '@/components/layout';
 import { getDisplayName, type UserProfile } from '@/sync/friendTypes';
-import type { SessionSharePermission, SessionShareEntry } from '@happy/protocol';
+import type { SessionSharePermission, SessionShareEntry } from '@magic-agent/protocol';
 
 // Permission selector component
 interface PermissionSelectorProps {

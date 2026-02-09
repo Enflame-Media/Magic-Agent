@@ -57,7 +57,7 @@ import {
     getLastKnownSeq as getLastKnownSeqUtil,
 } from './deltaSyncUtils';
 import { orchestrateDeltaSync } from './deltaSyncOrchestrator';
-import { getSessionId } from '@happy/protocol';
+import { getSessionId } from '@magic-agent/protocol';
 
 /**
  * HAP-441: Delta sync response type from server.

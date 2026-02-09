@@ -4,7 +4,7 @@ import {
     type GitHubProfile,
     ImageRefSchema,
     type ImageRef,
-} from '@happy/protocol';
+} from '@magic-agent/protocol';
 
 // Re-export for local use
 export { GitHubProfileSchema, ImageRefSchema };

@@ -50,7 +50,7 @@ vi.mock('@/utils/correlationId', () => ({
 
 // Import after mocks are set up
 import { useErrorHandler } from '../useErrorHandler';
-import { AppError, ErrorCodes } from '@happy/errors';
+import { AppError, ErrorCodes } from '@magic-agent/errors';
 
 describe('useErrorHandler', () => {
     beforeEach(() => {

@@ -1,9 +1,9 @@
 import { z } from 'zod';
-import { FeedBodySchema } from '@happy/protocol';
+import { FeedBodySchema } from '@magic-agent/protocol';
 
-// Re-export FeedBodySchema from @happy/protocol for consistency
+// Re-export FeedBodySchema from @magic-agent/protocol for consistency
 // This is the canonical schema for feed body types
-export { FeedBodySchema, type FeedBody } from '@happy/protocol';
+export { FeedBodySchema, type FeedBody } from '@magic-agent/protocol';
 
 // Feed item schema
 export const FeedItemSchema = z.object({

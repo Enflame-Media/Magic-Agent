@@ -14,7 +14,7 @@ import type {
     SessionShareSettings,
     SessionShareEntry,
     SessionSharePermission,
-} from '@happy/protocol';
+} from '@magic-agent/protocol';
 import { useAuth } from '@/auth/AuthContext';
 import { getServerUrl } from '@/sync/serverConfig';
 import { t } from '@/text';

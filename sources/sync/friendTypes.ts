@@ -1,7 +1,7 @@
 /**
  * Friend-related types and schemas
  *
- * Re-exports core schemas from @happy/protocol for consistency,
+ * Re-exports core schemas from @magic-agent/protocol for consistency,
  * and adds app-specific relationship event schemas.
  */
 
@@ -15,7 +15,7 @@ export {
     type RelationshipStatus,
     UserProfileSchema,
     type UserProfile,
-} from '@happy/protocol';
+} from '@magic-agent/protocol';
 
 // Import schemas and types for use in this file
 import {
@@ -23,7 +23,7 @@ import {
     UserProfileSchema,
     type RelationshipStatus,
     type UserProfile,
-} from '@happy/protocol';
+} from '@magic-agent/protocol';
 
 //
 // Relationship Updated Event

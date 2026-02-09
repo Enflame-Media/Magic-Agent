@@ -1,7 +1,7 @@
 /**
  * Error utilities for safe error handling and standardized error management.
  *
- * This module re-exports the shared AppError from @happy/errors and provides
+ * This module re-exports the shared AppError from @magic-agent/errors and provides
  * app-specific error codes and user-friendly message utilities.
  *
  * @module utils/errors
@@ -20,8 +20,8 @@
  */
 
 // Re-export AppError, ErrorCodes, and types from shared package
-export { AppError, ErrorCodes } from '@happy/errors';
-export type { AppErrorOptions, AppErrorJSON, ErrorCode } from '@happy/errors';
+export { AppError, ErrorCodes } from '@magic-agent/errors';
+export type { AppErrorOptions, AppErrorJSON, ErrorCode } from '@magic-agent/errors';
 
 import { getLastFailedCorrelationId, getDisplayCorrelationId } from '@/utils/correlationId';
 
@@ -98,11 +98,11 @@ export function getUserFriendlyMessage(code: string): string {
     return UserFriendlyMessages[code] || 'Something went wrong. Please try again.';
 }
 
-// ErrorCodes and ErrorCode type are now imported from @happy/errors above.
+// ErrorCodes and ErrorCode type are now imported from @magic-agent/errors above.
 // This provides unified error codes across all Happy projects (CLI, App, Server).
 
 // Import AppError for the extended utilities below
-import { AppError } from '@happy/errors';
+import { AppError } from '@magic-agent/errors';
 
 /**
  * Get the user-friendly message for an AppError.

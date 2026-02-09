@@ -1,7 +1,7 @@
 /**
- * API Types - Re-exports from @happy/protocol
+ * API Types - Re-exports from @magic-agent/protocol
  *
- * This file re-exports shared protocol types from @happy/protocol.
+ * This file re-exports shared protocol types from @magic-agent/protocol.
  * It serves as the single import point for protocol types in happy-app.
  *
  * Note: App-specific types (Profile, friendTypes, feedTypes) remain local
@@ -13,10 +13,10 @@
 import { z } from 'zod';
 import { GitHubProfileSchema as LocalGitHubProfileSchema, ImageRefSchema as LocalImageRefSchema } from './profile';
 import { RelationshipStatusSchema as LocalRelationshipStatusSchema, UserProfileSchema as LocalUserProfileSchema } from './friendTypes';
-import { FeedBodySchema as ProtocolFeedBodySchema, type FeedBody as ProtocolFeedBody } from '@happy/protocol';
+import { FeedBodySchema as ProtocolFeedBodySchema, type FeedBody as ProtocolFeedBody } from '@magic-agent/protocol';
 
 // ============================================================================
-// Re-export protocol schemas from @happy/protocol
+// Re-export protocol schemas from @magic-agent/protocol
 // ============================================================================
 
 export {
@@ -93,7 +93,7 @@ export {
     type VersionedValue,
     NullableVersionedValueSchema,
     type NullableVersionedValue,
-} from '@happy/protocol';
+} from '@magic-agent/protocol';
 
 // ============================================================================
 // App-specific type aliases (for backward compatibility)

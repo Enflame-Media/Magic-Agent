@@ -1,5 +1,5 @@
 import type { ApiEphemeralActivityUpdate } from '../apiTypes';
-import { getSessionIdFromEphemeral } from '@happy/protocol';
+import { getSessionIdFromEphemeral } from '@magic-agent/protocol';
 
 export class ActivityUpdateAccumulator {
     private pendingUpdates = new Map<string, ApiEphemeralActivityUpdate>();

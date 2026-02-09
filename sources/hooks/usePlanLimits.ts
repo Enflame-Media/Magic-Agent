@@ -4,10 +4,10 @@ import { AuthCredentials } from '@/auth/tokenStorage';
 import { getServerUrl } from '@/sync/serverConfig';
 import { authenticatedFetch } from '@/sync/apiHelper';
 import { AppError, ErrorCodes } from '@/utils/errors';
-import type { UsageLimit, PlanLimitsResponse } from '@happy/protocol';
+import type { UsageLimit, PlanLimitsResponse } from '@magic-agent/protocol';
 
-// Re-export types from @happy/protocol for backward compatibility
-export type { UsageLimit, PlanLimitsResponse } from '@happy/protocol';
+// Re-export types from @magic-agent/protocol for backward compatibility
+export type { UsageLimit, PlanLimitsResponse } from '@magic-agent/protocol';
 
 /**
  * Hook state for plan limits data
