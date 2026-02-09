@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { PlanLimitsResponseSchema } from '@happy/protocol';
+import { PlanLimitsResponseSchema } from '@magic-agent/protocol';
 import {
     fetchClaudeUsageLimits,
     clearUsageLimitsCache,

@@ -3,7 +3,7 @@ import { UsageSchema } from '@/claude/types'
 import { PermissionMode } from '@/claude/loop'
 
 // =============================================================================
-// TYPE IMPORTS FROM @happy/protocol (shared package)
+// TYPE IMPORTS FROM @magic-agent/protocol (shared package)
 // =============================================================================
 // Import only what's actually used locally for type aliases and internal use.
 
@@ -21,9 +21,9 @@ import type {
   ApiEphemeralUsageUpdate,
   ApiEphemeralMachineActivityUpdate,
   ApiEphemeralUpdate,
-} from '@happy/protocol'
+} from '@magic-agent/protocol'
 
-import { McpSyncStateSchema } from '@happy/protocol'
+import { McpSyncStateSchema } from '@magic-agent/protocol'
 
 // =============================================================================
 // TYPE ALIASES (For internal use)

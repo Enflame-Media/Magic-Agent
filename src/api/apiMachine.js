@@ -55,7 +55,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ApiMachineClient = void 0;
 var errors_1 = require("@/utils/errors");
-var protocol_1 = require("@happy/protocol");
+var protocol_1 = require("@magic-agent/protocol");
 var logger_1 = require("@/ui/logger");
 var configuration_1 = require("@/configuration");
 var registerCommonHandlers_1 = require("../modules/common/registerCommonHandlers");

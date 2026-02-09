@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserMessageSchema = void 0;
 var zod_1 = require("zod");
-var protocol_1 = require("@happy/protocol");
+var protocol_1 = require("@magic-agent/protocol");
 /**
  * Machine metadata - static information (rarely changes)
  */

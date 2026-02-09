@@ -6,7 +6,7 @@
  */
 
 import { AppError, ErrorCodes } from '@/utils/errors';
-import { getSessionId, getSessionIdFromEphemeral, getMachineIdFromEphemeral, ApiDeleteMachineSchema, type SessionIdEphemeral, type MachineIdEphemeral } from '@happy/protocol';
+import { getSessionId, getSessionIdFromEphemeral, getMachineIdFromEphemeral, ApiDeleteMachineSchema, type SessionIdEphemeral, type MachineIdEphemeral } from '@magic-agent/protocol';
 import { logger } from '@/ui/logger';
 import { configuration } from '@/configuration';
 import { EphemeralUpdate, MachineMetadata, DaemonState, Machine, Update, UpdateMachineBody } from './types';

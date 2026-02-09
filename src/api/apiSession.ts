@@ -1,6 +1,6 @@
 import { logger } from '@/ui/logger'
 import { AppError, ErrorCodes } from '@/utils/errors'
-import { getSessionId, getSessionIdFromEphemeral, getMachineIdFromEphemeral, hasSessionId, tryGetSessionId, tryGetSessionIdFromEphemeral, type SessionIdUpdate, type SessionIdEphemeral, type MachineIdEphemeral } from '@happy/protocol'
+import { getSessionId, getSessionIdFromEphemeral, getMachineIdFromEphemeral, hasSessionId, tryGetSessionId, tryGetSessionIdFromEphemeral, type SessionIdUpdate, type SessionIdEphemeral, type MachineIdEphemeral } from '@magic-agent/protocol'
 import { EventEmitter } from 'node:events'
 import { HappyWebSocket } from './HappyWebSocket'
 import { AgentState, EphemeralUpdate, MessageContent, Metadata, Session, Update, UserMessage, UserMessageSchema, Usage } from './types'

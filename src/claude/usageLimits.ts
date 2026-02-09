@@ -7,7 +7,7 @@
  * @see HAP-730 - Implement usage limits fetcher in happy-cli
  */
 
-import type { PlanLimitsResponse, UsageLimit } from '@happy/protocol';
+import type { PlanLimitsResponse, UsageLimit } from '@magic-agent/protocol';
 import { logger } from '@/ui/logger';
 
 /** Anthropic OAuth usage API endpoint */

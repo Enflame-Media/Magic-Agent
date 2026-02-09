@@ -1,7 +1,7 @@
 /**
  * Error utilities for safe error handling and standardized error management.
  *
- * This module re-exports the shared AppError from @happy/errors and provides
+ * This module re-exports the shared AppError from @magic-agent/errors and provides
  * CLI-specific error codes and utilities.
  *
  * @module utils/errors
@@ -26,12 +26,12 @@
  * ```
  */
 import axios from 'axios'
-import { AppError, type ErrorCode } from '@happy/errors'
+import { AppError, type ErrorCode } from '@magic-agent/errors'
 import { getCorrelationId } from '@/utils/correlationId'
 
 // Re-export AppError, ErrorCodes, and types from shared package
-export { AppError, ErrorCodes } from '@happy/errors'
-export type { AppErrorOptions, AppErrorJSON, ErrorCode } from '@happy/errors'
+export { AppError, ErrorCodes } from '@magic-agent/errors'
+export type { AppErrorOptions, AppErrorJSON, ErrorCode } from '@magic-agent/errors'
 
 // =============================================================================
 // ERROR DOCUMENTATION UTILITIES
