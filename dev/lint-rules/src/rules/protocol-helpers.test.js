@@ -2,7 +2,7 @@
  * @fileoverview Tests for the protocol-helpers rule.
  *
  * Tests that the rule correctly identifies direct .sid and .machineId
- * access on update body objects and recommends using @happy/protocol helpers.
+ * access on update body objects and recommends using @magic-agent/protocol helpers.
  *
  * @see HAP-658 for the original ESLint implementation
  * @see HAP-653 for the protocol accessor helper design
@@ -30,13 +30,13 @@ ruleTester.run('protocol-helpers', rule, {
         // Using the helper functions (recommended)
         {
             code: `
-                import { getSessionId } from '@happy/protocol';
+                import { getSessionId } from '@magic-agent/protocol';
                 const sid = getSessionId(update.body);
             `,
         },
         {
             code: `
-                import { getMachineId } from '@happy/protocol';
+                import { getMachineId } from '@magic-agent/protocol';
                 const machineId = getMachineId(update.body);
             `,
         },

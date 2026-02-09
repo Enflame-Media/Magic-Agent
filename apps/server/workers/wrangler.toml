@@ -1,0 +1,179 @@
+name = "happy-server-workers"
+main = "src/index.ts"
+compatibility_date = "2026-02-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Cloudflare Account ID
+account_id = "81f483e6767ea3194467ecef42840f79"
+
+# Enable Node.js compatibility for process.env and other Node APIs
+[build]
+command = ""
+
+#############################
+# Development Environment
+#############################
+[env.dev]
+name = "happy-server-workers-dev"
+preview_urls = false
+workers_dev = false
+
+# DEBUG_RPC_ROUTING: Set to "true" to enable verbose RPC routing debug logs (HAP-297)
+[env.dev.vars]
+ENVIRONMENT = "development"
+DEBUG_RPC_ROUTING = "false"
+HAPPY_APP_URL = "https://api-dev.magicagent.app"
+SENTRY_DSN = "https://af2fba0efa2a35d5d45cb73a04913f8c@o4509604128817152.ingest.us.sentry.io/4510650134691840"
+
+# Version metadata binding for Sentry releases
+[env.dev.version_metadata]
+binding = "CF_VERSION_METADATA"
+# Custom domain routing
+[[env.dev.routes]]
+pattern = "api-dev.magicagent.app"
+custom_domain = true
+
+# D1 Database binding (development)
+[[env.dev.d1_databases]]
+binding = "DB"
+database_name = "happy-dev"
+database_id = "402f86c0-7405-49cc-9667-93ad06fe4206"
+remote = true
+
+# R2 Bucket binding (development)
+[[env.dev.r2_buckets]]
+binding = "UPLOADS"
+bucket_name = "happy-dev-uploads"
+remote = true
+
+# KV Namespace binding (development) - for rate limiting (HAP-409)
+[[env.dev.kv_namespaces]]
+binding = "RATE_LIMIT_KV"
+id = "5d82d033678243aa8080971ecf538477"
+
+# Analytics Engine binding (development) - for sync metrics (HAP-546)
+[[env.dev.analytics_engine_datasets]]
+binding = "SYNC_METRICS"
+dataset = "sync_metrics_dev"
+
+# Analytics Engine binding (development) - for bundle size metrics (HAP-564)
+[[env.dev.analytics_engine_datasets]]
+binding = "BUNDLE_METRICS"
+dataset = "bundle_metrics_dev"
+
+# Analytics Engine binding (development) - for client-side metrics (HAP-577)
+[[env.dev.analytics_engine_datasets]]
+binding = "CLIENT_METRICS"
+dataset = "client_metrics_dev"
+
+# Durable Objects bindings (development)
+[[env.dev.durable_objects.bindings]]
+name = "CONNECTION_MANAGER"
+class_name = "ConnectionManager"
+
+# Durable Objects migrations (development) - required for new DO classes
+[[env.dev.migrations]]
+tag = "v1"
+new_classes = ["ConnectionManager"]
+
+# Scheduled Triggers (development) - Token blacklist cleanup (HAP-504)
+[env.dev.triggers]
+crons = ["0 2 * * *"]  # Daily at 2 AM UTC
+
+[env.dev.observability]
+[env.dev.observability.logs]
+enabled = true
+head_sampling_rate = 1
+invocation_logs = true
+persist = true
+
+[env.dev.observability.traces]
+enabled = true
+head_sampling_rate = 1
+persist = true
+
+#############################
+# Production Environment
+#############################
+[env.prod]
+name = "happy-server-workers-prod"
+preview_urls = false
+workers_dev = false
+
+
+# DEBUG_RPC_ROUTING: Set to "true" to enable verbose RPC routing debug logs (HAP-297)
+# Warning: Keep disabled in production to avoid performance impact
+[env.prod.vars]
+ENVIRONMENT = "production"
+DEBUG_RPC_ROUTING = "false"
+GITHUB_CLIENT_ID = "Ov23liIbGVFF64wNeSAN"
+GITHUB_REDIRECT_URL = "https://api.magicagent.app/v1/connect/github/callback"
+HAPPY_APP_URL = "https://api.magicagent.app"
+SENTRY_DSN = "https://af2fba0efa2a35d5d45cb73a04913f8c@o4509604128817152.ingest.us.sentry.io/4510650134691840"
+
+# Version metadata binding for Sentry releases
+[env.prod.version_metadata]
+binding = "CF_VERSION_METADATA"
+# Custom domain routing
+[[env.prod.routes]]
+pattern = "api.magicagent.app"
+custom_domain = true
+
+# D1 Database binding (production)
+[[env.prod.d1_databases]]
+binding = "DB"
+database_name = "happy-prod"
+database_id = "f547b6d8-035d-4550-a5cf-acea4c533901"
+remote = true
+
+# R2 Bucket binding (production)
+[[env.prod.r2_buckets]]
+binding = "UPLOADS"
+bucket_name = "happy-prod-uploads"
+remote = true
+
+# KV Namespace binding (production) - for rate limiting (HAP-409)
+[[env.prod.kv_namespaces]]
+binding = "RATE_LIMIT_KV"
+id = "2e9baf9f10054559a6220e78051fb336"
+
+# Analytics Engine binding (production) - for sync metrics (HAP-546)
+[[env.prod.analytics_engine_datasets]]
+binding = "SYNC_METRICS"
+dataset = "sync_metrics_prod"
+
+# Analytics Engine binding (production) - for bundle size metrics (HAP-564)
+[[env.prod.analytics_engine_datasets]]
+binding = "BUNDLE_METRICS"
+dataset = "bundle_metrics_prod"
+
+# Analytics Engine binding (production) - for client-side metrics (HAP-577)
+[[env.prod.analytics_engine_datasets]]
+binding = "CLIENT_METRICS"
+dataset = "client_metrics_prod"
+
+# Durable Objects bindings (production)
+[[env.prod.durable_objects.bindings]]
+name = "CONNECTION_MANAGER"
+class_name = "ConnectionManager"
+
+# Durable Objects migrations (production) - required for new DO classes
+[[env.prod.migrations]]
+tag = "v1"
+new_classes = ["ConnectionManager"]
+
+# Scheduled Triggers (production) - Token blacklist cleanup (HAP-504)
+[env.prod.triggers]
+crons = ["0 2 * * *"]  # Daily at 2 AM UTC
+
+[env.prod.observability]
+[env.prod.observability.logs]
+enabled = true
+head_sampling_rate = 1
+invocation_logs = true
+persist = true
+
+[env.prod.observability.traces]
+enabled = true
+head_sampling_rate = 1
+persist = true

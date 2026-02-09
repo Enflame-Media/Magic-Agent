@@ -11,7 +11,7 @@ import Foundation
 
 /// A single usage limit entry representing one limit category (e.g., tokens, requests).
 ///
-/// Maps to the `UsageLimit` type from `@happy/protocol` (Zod schema).
+/// Maps to the `UsageLimit` type from `@magic-agent/protocol` (Zod schema).
 /// Contains percentage used and reset information for display.
 struct UsageLimit: Identifiable, Codable, Equatable {
     /// Unique identifier for this limit type (e.g., "opus_tokens").
@@ -68,7 +68,7 @@ enum UsageColor {
 
 /// Full plan limits response from the API.
 ///
-/// Maps to the `PlanLimitsResponse` type from `@happy/protocol` (Zod schema).
+/// Maps to the `PlanLimitsResponse` type from `@magic-agent/protocol` (Zod schema).
 /// Contains session limit (if applicable), weekly limits array, and metadata.
 struct PlanLimitsResponse: Codable, Equatable {
     /// Session limit if applicable (e.g., concurrent session count).

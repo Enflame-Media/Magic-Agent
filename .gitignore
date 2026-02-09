@@ -2,15 +2,6 @@
 # This repo tracks shared packages and root config only.
 # Each project (happy-app, happy-cli, etc.) has its own git repo.
 
-# Project directories (have their own git repos)
-/happy-admin/
-/happy-admin-api/
-/happy-app/
-/happy-cli/
-/happy-macos/
-/happy-server/
-/happy-server-workers/
-/happy-vue/
 
 # Dependencies (yarn workspaces hoisted dependencies)
 node_modules/
@@ -64,5 +55,5 @@ packages/**/dist/
 .turbo/
 
 # Generated schema files (CI artifacts)
-packages/@happy/protocol/protocol-schemas.json
+packages/@magic-agent/protocol/protocol-schemas.json
 schema-diff.md

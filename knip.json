@@ -34,7 +34,7 @@
         "@config-plugins/*",
         "@elevenlabs/*",
         "@expo/*",
-        "@happy/protocol",
+        "@magic-agent/protocol",
         "@legendapp/*",
         "@livekit/*",
         "@lottiefiles/*",
@@ -112,7 +112,7 @@
       "ignore": ["src/**/*.test.ts", "src/**/*.spec.ts"],
       "ignoreDependencies": [
         "@fastify/swagger",
-        "@happy/protocol",
+        "@magic-agent/protocol",
         "@modelcontextprotocol/sdk",
         "@sentry/node",
         "@stablelib/hex",
@@ -155,7 +155,7 @@
       "ignoreDependencies": [
         "@fastify/cors",
         "@fastify/swagger",
-        "@happy/protocol",
+        "@magic-agent/protocol",
         "@prisma/client",
         "@socket.io/*",
         "@types/*",
@@ -206,7 +206,7 @@
       "ignoreDependencies": [
         "@cloudflare/workers-types",
         "@eslint/*",
-        "@happy/protocol",
+        "@magic-agent/protocol",
         "@hono/zod-openapi",
         "@stablelib/*",
         "@types/*",

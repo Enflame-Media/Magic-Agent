@@ -22,8 +22,8 @@ yarn typecheck:errors
 yarn typecheck:protocol
 
 # Run tests (per package)
-yarn workspace @happy/protocol test
-yarn workspace @happy/errors test
+yarn workspace @magic-agent/protocol test
+yarn workspace @magic-agent/errors test
 yarn workspace @happy/lint-rules test
 ```
 
@@ -54,7 +54,7 @@ All communication is end-to-end encrypted via TweetNaCl.
 
 ### Formatting/linting
 - TypeScript strict mode everywhere
-- Use Yarn workspaces (`yarn workspace @happy/protocol <cmd>`)
+- Use Yarn workspaces (`yarn workspace @magic-agent/protocol <cmd>`)
 - Packages output both ESM and CJS formats
 
 ### Patterns to follow
@@ -73,5 +73,5 @@ All communication is end-to-end encrypted via TweetNaCl.
 
 - **ID field inconsistency**: Session ID is `id` in new/update-session but `sid` in message/delete updates (HAP-383 legacy)
 - **Dual module format**: All packages must work with both ESM and CommonJS consumers
-- **Postinstall builds**: `@happy/errors` and `@happy/protocol` are built automatically on `yarn install`
-- **Swift generation**: Run `yarn workspace @happy/protocol generate:swift` after schema changes for happy-macos
+- **Postinstall builds**: `@magic-agent/errors` and `@magic-agent/protocol` are built automatically on `yarn install`
+- **Swift generation**: Run `yarn workspace @magic-agent/protocol generate:swift` after schema changes for happy-macos

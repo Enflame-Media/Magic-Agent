@@ -84,8 +84,8 @@ jobs:
       - name: Install dependencies
         run: yarn install --immutable
 
-      - name: Build @happy/protocol
-        run: yarn workspace @happy/protocol build
+      - name: Build @magic-agent/protocol
+        run: yarn workspace @magic-agent/protocol build
 
       # Build the web bundle
       - name: Build web bundle
@@ -219,8 +219,8 @@ jobs:
       - name: Install dependencies
         run: yarn install --immutable
 
-      - name: Build @happy/protocol
-        run: yarn workspace @happy/protocol build
+      - name: Build @magic-agent/protocol
+        run: yarn workspace @magic-agent/protocol build
 
       - name: Build web bundle
         working-directory: apps/web/react

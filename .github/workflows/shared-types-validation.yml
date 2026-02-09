@@ -1,5 +1,5 @@
 # Shared Types Validation
-# Validates that @happy/protocol changes don't break any consumer project
+# Validates that @magic-agent/protocol changes don't break any consumer project
 # Part of HAP-383 implementation (Phase 6 - HAP-389)
 
 name: Shared Types Validation
@@ -13,10 +13,10 @@ on:
     branches:
       - main
     paths:
-      - 'packages/@happy/protocol/**'
+      - 'packages/@magic-agent/protocol/**'
   pull_request:
     paths:
-      - 'packages/@happy/protocol/**'
+      - 'packages/@magic-agent/protocol/**'
 
 jobs:
   validate-shared-types:
@@ -54,10 +54,10 @@ jobs:
       - name: Install dependencies
         run: yarn install --immutable
 
-      - name: Build @happy/protocol
+      - name: Build @magic-agent/protocol
         run: yarn build:protocol
 
-      - name: Type check @happy/protocol
+      - name: Type check @magic-agent/protocol
         run: yarn typecheck:protocol
 
       - name: Type check happy-cli
@@ -76,7 +76,7 @@ jobs:
         run: |
           echo "## Shared Types Validation Complete" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "All 4 consumer projects type-check successfully against @happy/protocol." >> $GITHUB_STEP_SUMMARY
+          echo "All 4 consumer projects type-check successfully against @magic-agent/protocol." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Projects Validated" >> $GITHUB_STEP_SUMMARY
           echo "- happy-cli (apps/cli)" >> $GITHUB_STEP_SUMMARY

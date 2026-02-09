@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * Lint script to enforce @happy/protocol ID accessor helper usage.
+ * Lint script to enforce @magic-agent/protocol ID accessor helper usage.
  *
  * This script detects direct access to session/machine ID fields on API update objects
- * and suggests using the helper functions from @happy/protocol instead.
+ * and suggests using the helper functions from @magic-agent/protocol instead.
  *
  * INCORRECT (direct field access on update bodies):
  *   - update.body.sid → Use getSessionId(update.body)
@@ -17,7 +17,7 @@
  *   - getSessionIdFromEphemeral(ephemeral)
  *
  * The script specifically targets .body.sid and .body.machineId patterns
- * which indicate access on @happy/protocol update objects.
+ * which indicate access on @magic-agent/protocol update objects.
  *
  * Usage:
  *   node scripts/lint-protocol-helpers.mjs [directory]
@@ -34,7 +34,7 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 
-// Patterns to detect direct field access on @happy/protocol update objects
+// Patterns to detect direct field access on @magic-agent/protocol update objects
 // These match the .body.sid and .body.machineId access patterns
 const PATTERNS = [
     {
@@ -42,14 +42,14 @@ const PATTERNS = [
         // Examples: update.body.sid, data.body?.sid, updateData.body.sid
         pattern: /\.body\??\.sid\b/g,
         message: 'Avoid direct .sid access on update body.',
-        suggestion: 'Use getSessionId(update.body) from @happy/protocol. See HAP-653.',
+        suggestion: 'Use getSessionId(update.body) from @magic-agent/protocol. See HAP-653.',
     },
     {
         // Matches: .body.machineId, .body?.machineId (for machine updates)
         // Examples: update.body.machineId, data.body?.machineId
         pattern: /\.body\??\.machineId\b/g,
         message: 'Avoid direct .machineId access on update body.',
-        suggestion: 'Use getMachineId(update.body) from @happy/protocol. See HAP-653.',
+        suggestion: 'Use getMachineId(update.body) from @magic-agent/protocol. See HAP-653.',
     },
 ]
 
@@ -73,7 +73,7 @@ const SKIP_DIRS = new Set([
 
 // Files/directories that are allowed to use direct access
 const ALLOWED_PATHS = [
-    // The @happy/protocol package itself - helpers need direct access
+    // The @magic-agent/protocol package itself - helpers need direct access
     'packages/schema/protocol',
     // Test files can have mock objects with direct construction
     '.test.ts',
@@ -278,11 +278,11 @@ function main() {
     }
 
     if (allIssues.length === 0) {
-        console.log('✓ No @happy/protocol ID accessor issues found')
+        console.log('✓ No @magic-agent/protocol ID accessor issues found')
         process.exit(0)
     }
 
-    console.log('\n⚠️  Found ' + allIssues.length + ' @happy/protocol ID accessor issue(s):\n')
+    console.log('\n⚠️  Found ' + allIssues.length + ' @magic-agent/protocol ID accessor issue(s):\n')
 
     for (const issue of allIssues) {
         console.log('  ' + issue.file + ':' + issue.line + ':' + issue.column)
@@ -291,8 +291,8 @@ function main() {
         console.log()
     }
 
-    console.log('Hint: Use helper functions from @happy/protocol for type-safe ID extraction.')
-    console.log('      Import: import { getSessionId, getMachineId } from "@happy/protocol"')
+    console.log('Hint: Use helper functions from @magic-agent/protocol for type-safe ID extraction.')
+    console.log('      Import: import { getSessionId, getMachineId } from "@magic-agent/protocol"')
     console.log('      See: HAP-653 for helper function documentation\n')
 
     // Exit with warning code

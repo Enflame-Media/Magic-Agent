@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "@happy/protocol schemas",
-  "description": "JSON Schema representation of @happy/protocol Zod schemas for drift detection",
+  "title": "@magic-agent/protocol schemas",
+  "description": "JSON Schema representation of @magic-agent/protocol Zod schemas for drift detection",
   "_metadata": {
     "generatedAt": "2026-01-01T12:07:59.760Z",
     "packageVersion": "0.0.1",

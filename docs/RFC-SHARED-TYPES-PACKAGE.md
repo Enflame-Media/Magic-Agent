@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-This RFC recommends implementing a **yarn workspaces-based shared package** (`@happy/protocol`) to consolidate ~95 duplicated type definitions across the Happy monorepo. The investigation identified significant schema drift risk, as evidenced by the recent `sessionId` vs `sid` bug that caused production sync failures.
+This RFC recommends implementing a **yarn workspaces-based shared package** (`@magic-agent/protocol`) to consolidate ~95 duplicated type definitions across the Happy monorepo. The investigation identified significant schema drift risk, as evidenced by the recent `sessionId` vs `sid` bug that caused production sync failures.
 
 **Recommendation**: Yarn workspaces with Zod schemas as the source of truth.
 
@@ -241,7 +241,7 @@ PrismaJson namespace:
 
 ### 2.1 Option A: Yarn Workspaces
 
-**Implementation**: Create `packages/schema/protocol/` with shared Zod schemas, referenced via `"@happy/protocol": "workspace:*"` in each project.
+**Implementation**: Create `packages/schema/protocol/` with shared Zod schemas, referenced via `"@magic-agent/protocol": "workspace:*"` in each project.
 
 | Aspect | Assessment |
 |--------|------------|
@@ -268,7 +268,7 @@ PrismaJson namespace:
 
 ### 2.2 Option B: NPM Package
 
-**Implementation**: Publish `@happy/protocol` to npm (private registry or public), consumed as standard dependency.
+**Implementation**: Publish `@magic-agent/protocol` to npm (private registry or public), consumed as standard dependency.
 
 | Aspect | Assessment |
 |--------|------------|
@@ -458,7 +458,7 @@ export default defineConfig({
 ```json
 // packages/schema/protocol/package.json
 {
-    "name": "@happy/protocol",
+    "name": "@magic-agent/protocol",
     "version": "0.0.1",
     "type": "module",
     "main": "./dist/index.cjs",
@@ -541,11 +541,11 @@ module.exports = config;
 6. Build and verify dual output (ESM + CJS)
 7. Run `yarn install` to link workspace
 
-**Deliverable**: `@happy/protocol` package builds with ~15 core types
+**Deliverable**: `@magic-agent/protocol` package builds with ~15 core types
 
 ### Phase 2: Integrate happy-app (1 day)
 
-1. Add `"@happy/protocol": "workspace:*"` to apps/web/react/package.json
+1. Add `"@magic-agent/protocol": "workspace:*"` to apps/web/react/package.json
 2. Update Metro config for workspace resolution
 3. Replace imports in `sources/sync/apiTypes.ts`:
    ```typescript
@@ -553,7 +553,7 @@ module.exports = config;
    export const ApiUpdateSchema = z.discriminatedUnion('t', [...]);
 
    // After
-   export { ApiUpdateSchema, type ApiUpdate } from '@happy/protocol';
+   export { ApiUpdateSchema, type ApiUpdate } from '@magic-agent/protocol';
    ```
 4. Run `yarn typecheck` to verify
 5. Run `yarn start` to verify Metro resolves package
@@ -562,7 +562,7 @@ module.exports = config;
 
 ### Phase 3: Integrate happy-cli (1 day)
 
-1. Add `"@happy/protocol": "workspace:*"` to apps/cli/package.json
+1. Add `"@magic-agent/protocol": "workspace:*"` to apps/cli/package.json
 2. Replace imports in `src/api/types.ts`
 3. Remove duplicated schema definitions
 4. Run `yarn typecheck` and `yarn test`
@@ -571,9 +571,9 @@ module.exports = config;
 
 ### Phase 4: Integrate happy-server-workers (1 day)
 
-1. Add `"@happy/protocol": "workspace:*"` to apps/server/workers/package.json
+1. Add `"@magic-agent/protocol": "workspace:*"` to apps/server/workers/package.json
 2. Update `src/durable-objects/types.ts`:
-   - Import shared types from `@happy/protocol`
+   - Import shared types from `@magic-agent/protocol`
    - Keep Workers-specific types (WebSocket infrastructure) local
 3. Run `yarn typecheck` and `yarn test`
 
@@ -583,8 +583,8 @@ module.exports = config;
 
 ### Phase 5: Integrate happy-server (1 day)
 
-1. Add `"@happy/protocol": "workspace:*"` to apps/server/docker/package.json
-2. Verify CommonJS import works: `const { ApiUpdateSchema } = require('@happy/protocol')`
+1. Add `"@magic-agent/protocol": "workspace:*"` to apps/server/docker/package.json
+2. Verify CommonJS import works: `const { ApiUpdateSchema } = require('@magic-agent/protocol')`
 3. Update `sources/app/events/eventRouter.ts`:
    - Import shared types
    - Keep EventRouter class and builder functions local
@@ -604,7 +604,7 @@ module.exports = config;
 ### Phase 7: CI Validation (optional, recommended)
 
 1. Create GitHub Action that:
-   - Builds `@happy/protocol`
+   - Builds `@magic-agent/protocol`
    - Builds all 4 projects
    - Runs type checking across all
 2. Fail PR if any project has type errors
@@ -653,7 +653,7 @@ module.exports = config;
 
 If this RFC is approved, create the following implementation issues:
 
-### HAP-XXX: Create @happy/protocol package
+### HAP-XXX: Create @magic-agent/protocol package
 
 **Scope**: Set up package structure, implement core types, verify builds
 
@@ -663,7 +663,7 @@ If this RFC is approved, create the following implementation issues:
 - [ ] Dual ESM/CJS build working
 - [ ] Root workspace config added
 
-### HAP-XXX: Integrate @happy/protocol in happy-app
+### HAP-XXX: Integrate @magic-agent/protocol in happy-app
 
 **Scope**: Metro config, import migration, type verification
 
@@ -673,15 +673,15 @@ If this RFC is approved, create the following implementation issues:
 - [ ] Local duplicates removed
 - [ ] App compiles and runs
 
-### HAP-XXX: Integrate @happy/protocol in happy-cli
+### HAP-XXX: Integrate @magic-agent/protocol in happy-cli
 
 **Scope**: Import migration, duplicate removal, test verification
 
-### HAP-XXX: Integrate @happy/protocol in happy-server-workers
+### HAP-XXX: Integrate @magic-agent/protocol in happy-server-workers
 
 **Scope**: Import migration, field naming fixes, test verification
 
-### HAP-XXX: Integrate @happy/protocol in happy-server
+### HAP-XXX: Integrate @magic-agent/protocol in happy-server
 
 **Scope**: CommonJS import verification, duplicate removal, test verification
 

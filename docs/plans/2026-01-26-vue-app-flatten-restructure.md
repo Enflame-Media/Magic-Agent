@@ -2,9 +2,9 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Flatten the Vue app from nested workspace structure to single app, replacing duplicate @happy-vue/protocol with canonical @happy/protocol
+**Goal:** Flatten the Vue app from nested workspace structure to single app, replacing duplicate @happy-vue/protocol with canonical @magic-agent/protocol
 
-**Architecture:** Move `apps/web/vue/apps/web/` contents up to `apps/web/vue/`, migrate `@happy-vue/shared` code into `src/shared/`, replace all `@happy-vue/protocol` imports with `@happy/protocol` from root monorepo
+**Architecture:** Move `apps/web/vue/apps/web/` contents up to `apps/web/vue/`, migrate `@happy-vue/shared` code into `src/shared/`, replace all `@happy-vue/protocol` imports with `@magic-agent/protocol` from root monorepo
 
 **Tech Stack:** Vue 3, Vite, TypeScript, Cloudflare Workers, Zod
 
@@ -129,7 +129,7 @@ git commit -m "refactor: update @happy-vue/shared imports to @/shared"
 
 ---
 
-## Task 4: Replace @happy-vue/protocol with @happy/protocol
+## Task 4: Replace @happy-vue/protocol with @magic-agent/protocol
 
 **Files:**
 - Modify: `apps/web/vue/apps/web/package.json`
@@ -144,7 +144,7 @@ Edit `apps/web/vue/apps/web/package.json`:
 "@happy-vue/protocol": "workspace:*",
 
 // ADD to dependencies:
-"@happy/protocol": "workspace:*",
+"@magic-agent/protocol": "workspace:*",
 ```
 
 **Step 2: Update tsconfig.json paths**
@@ -161,7 +161,7 @@ Edit `apps/web/vue/apps/web/tsconfig.json` paths section:
 "@/*": ["./src/*"]
 ```
 
-Note: `@happy/protocol` doesn't need a path alias - it's resolved via node_modules from workspace dependency.
+Note: `@magic-agent/protocol` doesn't need a path alias - it's resolved via node_modules from workspace dependency.
 
 **Step 3: Find all @happy-vue/protocol imports**
 
@@ -177,7 +177,7 @@ For each file, change:
 // FROM:
 import { ... } from '@happy-vue/protocol';
 // TO:
-import { ... } from '@happy/protocol';
+import { ... } from '@magic-agent/protocol';
 ```
 
 Key files to update:
@@ -199,7 +199,7 @@ Key files to update:
 
 **Step 5: Handle API differences**
 
-The `@happy/protocol` has additional types that `@happy-vue/protocol` was missing. Review each import to ensure the types exist. Key additions in @happy/protocol:
+The `@magic-agent/protocol` has additional types that `@happy-vue/protocol` was missing. Review each import to ensure the types exist. Key additions in @magic-agent/protocol:
 - `ApiEphemeralMachineDisconnectedUpdate` - add to imports where machine events are handled
 - `friendshipDate` field - available on account schemas
 
@@ -223,7 +223,7 @@ Expected: No errors (or only errors unrelated to protocol imports)
 
 ```bash
 git add .
-git commit -m "refactor: migrate from @happy-vue/protocol to @happy/protocol"
+git commit -m "refactor: migrate from @happy-vue/protocol to @magic-agent/protocol"
 ```
 
 ---
@@ -327,7 +327,7 @@ Edit `tsconfig.json` - remove workspace-relative paths:
 Edit `package.json`:
 - Update name if needed (keep `@happy-vue/web` or change to `happy-vue`)
 - Remove workspace references
-- Ensure `@happy/protocol: workspace:*` is in dependencies
+- Ensure `@magic-agent/protocol: workspace:*` is in dependencies
 - Remove `@happy-vue/shared` and `@happy-vue/protocol` from dependencies
 
 **Step 5: Remove workspace config files**
@@ -364,11 +364,11 @@ cd /volume1/Projects/happy
 yarn install
 ```
 
-**Step 3: Verify @happy/protocol links correctly**
+**Step 3: Verify @magic-agent/protocol links correctly**
 
 ```bash
 cd /volume1/Projects/happy/apps/web/vue
-ls -la node_modules/@happy/protocol
+ls -la node_modules/@magic-agent/protocol
 ```
 
 Expected: Symlink to `../../../packages/schema/protocol`
@@ -442,7 +442,7 @@ Edit `apps/web/vue/CLAUDE.md`:
 - Remove references to workspace structure
 - Remove references to `@happy-vue/protocol` and `@happy-vue/shared`
 - Update directory structure diagram
-- Document that it uses `@happy/protocol` from root monorepo
+- Document that it uses `@magic-agent/protocol` from root monorepo
 - Document that shared code is in `src/shared/`
 
 **Step 2: Update README.md**
@@ -544,7 +544,7 @@ Expected: App loads and functions correctly
 
 ## Post-Implementation Checklist
 
-- [ ] All imports updated from `@happy-vue/protocol` to `@happy/protocol`
+- [ ] All imports updated from `@happy-vue/protocol` to `@magic-agent/protocol`
 - [ ] All imports updated from `@happy-vue/shared` to `@/shared`
 - [ ] TypeScript compiles without errors
 - [ ] Unit tests pass

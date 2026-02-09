@@ -37,7 +37,7 @@ const githubToken = ""   // ✅ (camelCase is fine)
 
 ### happy/protocol-helpers
 
-Enforces use of `@happy/protocol` ID accessor helpers instead of direct property access.
+Enforces use of `@magic-agent/protocol` ID accessor helpers instead of direct property access.
 
 **Bad:**
 ```typescript
@@ -47,7 +47,7 @@ const machineId = update.body.machineId; // ❌ Direct access
 
 **Good:**
 ```typescript
-import { getSessionId, getMachineId } from '@happy/protocol';
+import { getSessionId, getMachineId } from '@magic-agent/protocol';
 
 const sid = getSessionId(update.body);      // ✅
 const machineId = getMachineId(update.body); // ✅
@@ -175,7 +175,7 @@ Each rule has a corresponding `.test.js` file that tests:
 - HAP-758: Adopt oxlint type-aware linting and JS plugins
 - HAP-763: Add unit tests for @happy/lint-rules oxlint plugin
 - HAP-502: ESLint naming convention rule for GitHub casing
-- HAP-658: ESLint rule to enforce @happy/protocol ID accessor helper usage
+- HAP-658: ESLint rule to enforce @magic-agent/protocol ID accessor helper usage
 - HAP-653: Protocol ID accessor helper design
 
 ## Compatibility

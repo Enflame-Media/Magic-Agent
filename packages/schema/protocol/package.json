@@ -1,7 +1,7 @@
 {
-  "name": "@happy/protocol",
+  "name": "@magic-agent/protocol",
   "version": "0.0.1",
-  "description": "Shared protocol types for Happy monorepo (Zod schemas for API updates, ephemeral events)",
+  "description": "Shared protocol types for Magic Agent monorepo (Zod schemas for API updates, ephemeral events)",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

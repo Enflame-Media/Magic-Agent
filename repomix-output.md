@@ -170,8 +170,8 @@ wget-log
 ## Project Structure & Module Organization
 - Root workspace config lives in `package.json` with Yarn workspaces.
 - Shared packages live in `packages/@happy/`:
-  - `packages/@happy/protocol/` for Zod schemas and shared API types.
-  - `packages/@happy/errors/` for AppError utilities.
+  - `packages/@magic-agent/protocol/` for Zod schemas and shared API types.
+  - `packages/@magic-agent/errors/` for AppError utilities.
   - `packages/@happy/lint-rules/` for custom ESLint/Oxlint rules.
 - Product apps and services are top-level directories (`happy-app/`, `happy-cli/`, `happy-server-workers/`, `happy-admin/`, `happy-admin-api/`).
 - `happy-cli/` is the Node.js CLI wrapper (TypeScript, ESM).
@@ -184,11 +184,11 @@ wget-log
 
 ## Build, Test, and Development Commands
 - `yarn install` installs workspace dependencies (Yarn 4 via Corepack).
-- `yarn build:protocol` builds `@happy/protocol`.
-- `yarn build:errors` builds `@happy/errors`.
+- `yarn build:protocol` builds `@magic-agent/protocol`.
+- `yarn build:errors` builds `@magic-agent/errors`.
 - `yarn typecheck:protocol` or `yarn typecheck:errors` runs TypeScript checks.
-- `yarn workspace @happy/protocol test` runs protocol tests (Vitest).
-- `yarn workspace @happy/errors test` runs errors tests (Vitest).
+- `yarn workspace @magic-agent/protocol test` runs protocol tests (Vitest).
+- `yarn workspace @magic-agent/errors test` runs errors tests (Vitest).
 - `yarn workspace @happy/lint-rules test` runs lint-rules tests (Vitest).
 
 ## Project-Specific Commands
@@ -202,7 +202,7 @@ wget-log
 - TypeScript/ESM is the default in shared packages.
 - Indentation is 4 spaces in TypeScript and JSON files; match existing file style.
 - Use existing naming patterns in each package (e.g., `GitHub` casing rules are enforced by lint rules).
-- Prefer small, focused modules; keep shared types in `@happy/protocol` instead of duplicating across projects.
+- Prefer small, focused modules; keep shared types in `@magic-agent/protocol` instead of duplicating across projects.
 
 ## Testing Guidelines
 - Tests are co-located next to source (`src/*.test.ts`, `src/rules/*.test.js`).
@@ -1893,7 +1893,7 @@ app.get('/v1/endpoint', {
 
 ## Executive Summary
 
-This RFC recommends implementing a **yarn workspaces-based shared package** (`@happy/protocol`) to consolidate ~95 duplicated type definitions across the Happy monorepo. The investigation identified significant schema drift risk, as evidenced by the recent `sessionId` vs `sid` bug that caused production sync failures.
+This RFC recommends implementing a **yarn workspaces-based shared package** (`@magic-agent/protocol`) to consolidate ~95 duplicated type definitions across the Happy monorepo. The investigation identified significant schema drift risk, as evidenced by the recent `sessionId` vs `sid` bug that caused production sync failures.
 
 **Recommendation**: Yarn workspaces with Zod schemas as the source of truth.
 
@@ -2125,7 +2125,7 @@ PrismaJson namespace:
 
 ### 2.1 Option A: Yarn Workspaces
 
-**Implementation**: Create `packages/@happy/protocol/` with shared Zod schemas, referenced via `"@happy/protocol": "workspace:*"` in each project.
+**Implementation**: Create `packages/@magic-agent/protocol/` with shared Zod schemas, referenced via `"@magic-agent/protocol": "workspace:*"` in each project.
 
 | Aspect | Assessment |
 |--------|------------|
@@ -2152,7 +2152,7 @@ PrismaJson namespace:
 
 ### 2.2 Option B: NPM Package
 
-**Implementation**: Publish `@happy/protocol` to npm (private registry or public), consumed as standard dependency.
+**Implementation**: Publish `@magic-agent/protocol` to npm (private registry or public), consumed as standard dependency.
 
 | Aspect | Assessment |
 |--------|------------|
@@ -2290,7 +2290,7 @@ packages/
 ### 4.2 Core Types for PoC (Priority 1)
 
 ```typescript
-// packages/@happy/protocol/src/updates/index.ts
+// packages/@magic-agent/protocol/src/updates/index.ts
 
 import { z } from 'zod';
 
@@ -2325,7 +2325,7 @@ export type ApiUpdate = z.infer<typeof ApiUpdateSchema>;
 ### 4.3 Build Configuration
 
 ```typescript
-// packages/@happy/protocol/tsup.config.ts
+// packages/@magic-agent/protocol/tsup.config.ts
 import { defineConfig } from 'tsup';
 
 export default defineConfig({
@@ -2340,9 +2340,9 @@ export default defineConfig({
 ```
 
 ```json
-// packages/@happy/protocol/package.json
+// packages/@magic-agent/protocol/package.json
 {
-    "name": "@happy/protocol",
+    "name": "@magic-agent/protocol",
     "version": "0.0.1",
     "type": "module",
     "main": "./dist/index.cjs",
@@ -2383,7 +2383,7 @@ const config = getDefaultConfig(__dirname);
 const workspaceRoot = path.resolve(__dirname, '..');
 config.watchFolders = [
     ...(config.watchFolders || []),
-    path.resolve(workspaceRoot, 'packages/@happy/protocol'),
+    path.resolve(workspaceRoot, 'packages/@magic-agent/protocol'),
 ];
 
 // Resolve workspace packages
@@ -2417,7 +2417,7 @@ module.exports = config;
 
 ### Phase 1: Create Package (1-2 days)
 
-1. Create `packages/@happy/protocol/` directory structure
+1. Create `packages/@magic-agent/protocol/` directory structure
 2. Add root `package.json` with workspaces config
 3. Implement core update schemas (copy from happy-app, standardize field names)
 4. Implement ephemeral schemas
@@ -2425,11 +2425,11 @@ module.exports = config;
 6. Build and verify dual output (ESM + CJS)
 7. Run `yarn install` to link workspace
 
-**Deliverable**: `@happy/protocol` package builds with ~15 core types
+**Deliverable**: `@magic-agent/protocol` package builds with ~15 core types
 
 ### Phase 2: Integrate happy-app (1 day)
 
-1. Add `"@happy/protocol": "workspace:*"` to happy-app/package.json
+1. Add `"@magic-agent/protocol": "workspace:*"` to happy-app/package.json
 2. Update Metro config for workspace resolution
 3. Replace imports in `sources/sync/apiTypes.ts`:
    ```typescript
@@ -2437,7 +2437,7 @@ module.exports = config;
    export const ApiUpdateSchema = z.discriminatedUnion('t', [...]);
 
    // After
-   export { ApiUpdateSchema, type ApiUpdate } from '@happy/protocol';
+   export { ApiUpdateSchema, type ApiUpdate } from '@magic-agent/protocol';
    ```
 4. Run `yarn typecheck` to verify
 5. Run `yarn start` to verify Metro resolves package
@@ -2446,7 +2446,7 @@ module.exports = config;
 
 ### Phase 3: Integrate happy-cli (1 day)
 
-1. Add `"@happy/protocol": "workspace:*"` to happy-cli/package.json
+1. Add `"@magic-agent/protocol": "workspace:*"` to happy-cli/package.json
 2. Replace imports in `src/api/types.ts`
 3. Remove duplicated schema definitions
 4. Run `yarn typecheck` and `yarn test`
@@ -2455,9 +2455,9 @@ module.exports = config;
 
 ### Phase 4: Integrate happy-server-workers (1 day)
 
-1. Add `"@happy/protocol": "workspace:*"` to happy-server-workers/package.json
+1. Add `"@magic-agent/protocol": "workspace:*"` to happy-server-workers/package.json
 2. Update `src/durable-objects/types.ts`:
-   - Import shared types from `@happy/protocol`
+   - Import shared types from `@magic-agent/protocol`
    - Keep Workers-specific types (WebSocket infrastructure) local
 3. Run `yarn typecheck` and `yarn test`
 
@@ -2467,8 +2467,8 @@ module.exports = config;
 
 ### Phase 5: Integrate happy-server (1 day)
 
-1. Add `"@happy/protocol": "workspace:*"` to happy-server/package.json
-2. Verify CommonJS import works: `const { ApiUpdateSchema } = require('@happy/protocol')`
+1. Add `"@magic-agent/protocol": "workspace:*"` to happy-server/package.json
+2. Verify CommonJS import works: `const { ApiUpdateSchema } = require('@magic-agent/protocol')`
 3. Update `sources/app/events/eventRouter.ts`:
    - Import shared types
    - Keep EventRouter class and builder functions local
@@ -2488,7 +2488,7 @@ module.exports = config;
 ### Phase 7: CI Validation (optional, recommended)
 
 1. Create GitHub Action that:
-   - Builds `@happy/protocol`
+   - Builds `@magic-agent/protocol`
    - Builds all 4 projects
    - Runs type checking across all
 2. Fail PR if any project has type errors
@@ -2537,7 +2537,7 @@ module.exports = config;
 
 If this RFC is approved, create the following implementation issues:
 
-### HAP-XXX: Create @happy/protocol package
+### HAP-XXX: Create @magic-agent/protocol package
 
 **Scope**: Set up package structure, implement core types, verify builds
 
@@ -2547,7 +2547,7 @@ If this RFC is approved, create the following implementation issues:
 - [ ] Dual ESM/CJS build working
 - [ ] Root workspace config added
 
-### HAP-XXX: Integrate @happy/protocol in happy-app
+### HAP-XXX: Integrate @magic-agent/protocol in happy-app
 
 **Scope**: Metro config, import migration, type verification
 
@@ -2557,15 +2557,15 @@ If this RFC is approved, create the following implementation issues:
 - [ ] Local duplicates removed
 - [ ] App compiles and runs
 
-### HAP-XXX: Integrate @happy/protocol in happy-cli
+### HAP-XXX: Integrate @magic-agent/protocol in happy-cli
 
 **Scope**: Import migration, duplicate removal, test verification
 
-### HAP-XXX: Integrate @happy/protocol in happy-server-workers
+### HAP-XXX: Integrate @magic-agent/protocol in happy-server-workers
 
 **Scope**: Import migration, field naming fixes, test verification
 
-### HAP-XXX: Integrate @happy/protocol in happy-server
+### HAP-XXX: Integrate @magic-agent/protocol in happy-server
 
 **Scope**: CommonJS import verification, duplicate removal, test verification
 
@@ -2597,13 +2597,13 @@ If this RFC is approved, create the following implementation issues:
 *This RFC was generated by Claude Code as part of HAP-383 investigation.*
 ````
 
-## File: packages/@happy/errors/src/index.test.ts
+## File: packages/@magic-agent/errors/src/index.test.ts
 ````typescript
 import { describe, it, expect } from 'vitest';
 import { AppError, ErrorCodes, type ErrorCode } from './index';
 ````
 
-## File: packages/@happy/errors/src/safeError.ts
+## File: packages/@magic-agent/errors/src/safeError.ts
 ````typescript
 import { AppError, type ErrorCode } from './index';
 export interface SafeErrorResponse {
@@ -2634,9 +2634,9 @@ export function getErrorStatusCode(err: Error | AppError | unknown): ErrorStatus
 function getStatusCodeFromErrorCode(code: ErrorCode): ErrorStatusCode
 ````
 
-## File: packages/@happy/errors/CLAUDE.md
+## File: packages/@magic-agent/errors/CLAUDE.md
 ````markdown
-# @happy/errors - Development Guidelines
+# @magic-agent/errors - Development Guidelines
 
 > **📍 Part of the Happy monorepo** — See root [`CLAUDE.md`](../../../CLAUDE.md) for overall architecture and cross-project guidelines.
 
@@ -2644,7 +2644,7 @@ function getStatusCodeFromErrorCode(code: ErrorCode): ErrorStatusCode
 
 ## Package Overview
 
-**@happy/errors** provides unified error handling for the Happy monorepo. It exports:
+**@magic-agent/errors** provides unified error handling for the Happy monorepo. It exports:
 
 - **AppError class**: Standardized error with codes, retry support, and cause chaining
 - **ErrorCodes**: Centralized error code constants organized by project
@@ -2678,7 +2678,7 @@ src/
 ### Basic Usage
 
 ```typescript
-import { AppError, ErrorCodes } from '@happy/errors';
+import { AppError, ErrorCodes } from '@magic-agent/errors';
 
 // Throw with error code constant
 throw new AppError(ErrorCodes.AUTH_FAILED, 'Session expired');
@@ -2792,10 +2792,10 @@ console.log(JSON.stringify(error));
 4. **Test both formats** - ESM and CJS consumers must work
 ````
 
-## File: packages/@happy/errors/package.json
+## File: packages/@magic-agent/errors/package.json
 ````json
 {
-    "name": "@happy/errors",
+    "name": "@magic-agent/errors",
     "version": "0.0.1",
     "description": "Unified error handling for Happy monorepo - AppError class with options pattern",
     "type": "module",
@@ -2841,7 +2841,7 @@ console.log(JSON.stringify(error));
 }
 ````
 
-## File: packages/@happy/errors/tsconfig.json
+## File: packages/@magic-agent/errors/tsconfig.json
 ````json
 {
     "compilerOptions": {
@@ -2868,7 +2868,7 @@ console.log(JSON.stringify(error));
 }
 ````
 
-## File: packages/@happy/errors/tsup.config.ts
+## File: packages/@magic-agent/errors/tsup.config.ts
 ````typescript
 import { defineConfig } from 'tsup';
 ````
@@ -2919,7 +2919,7 @@ MemberExpression(node)
 
 ````
 
-## File: packages/@happy/protocol/coverage/src/ephemeral/events.ts.html
+## File: packages/@magic-agent/protocol/coverage/src/ephemeral/events.ts.html
 ````html
 <!doctype html>
 <html lang="en">
@@ -3456,7 +3456,7 @@ export type ApiEphemeralUpdateType = ApiEphemeralUpdate['type'];
 </html>
 ````
 
-## File: packages/@happy/protocol/coverage/src/ephemeral/index.html
+## File: packages/@magic-agent/protocol/coverage/src/ephemeral/index.html
 ````html
 <!doctype html>
 <html lang="en">
@@ -3576,7 +3576,7 @@ export type ApiEphemeralUpdateType = ApiEphemeralUpdate['type'];
 </html>
 ````
 
-## File: packages/@happy/protocol/coverage/src/ephemeral/index.ts.html
+## File: packages/@magic-agent/protocol/coverage/src/ephemeral/index.ts.html
 ````html
 <!doctype html>
 <html lang="en">
@@ -3672,7 +3672,7 @@ export * from './events';
 </html>
 ````
 
-## File: packages/@happy/protocol/coverage/src/updates/account.ts.html
+## File: packages/@magic-agent/protocol/coverage/src/updates/account.ts.html
 ````html
 <!doctype html>
 <html lang="en">
@@ -3876,7 +3876,7 @@ export type ApiUpdateAccount = z.infer&lt;typeof ApiUpdateAccountSchema&gt;;
 </html>
 ````
 
-## File: packages/@happy/protocol/coverage/src/updates/artifact.ts.html
+## File: packages/@magic-agent/protocol/coverage/src/updates/artifact.ts.html
 ````html
 <!doctype html>
 <html lang="en">
@@ -4221,7 +4221,7 @@ export type ApiDeleteArtifact = z.infer&lt;typeof ApiDeleteArtifactSchema&gt;;
 </html>
 ````
 
-## File: packages/@happy/protocol/coverage/src/updates/index.html
+## File: packages/@magic-agent/protocol/coverage/src/updates/index.html
 ````html
 <!doctype html>
 <html lang="en">
@@ -4411,7 +4411,7 @@ export type ApiDeleteArtifact = z.infer&lt;typeof ApiDeleteArtifactSchema&gt;;
 </html>
 ````
 
-## File: packages/@happy/protocol/coverage/src/updates/index.ts.html
+## File: packages/@magic-agent/protocol/coverage/src/updates/index.ts.html
 ````html
 <!doctype html>
 <html lang="en">
@@ -4702,7 +4702,7 @@ export type ApiUpdateType = ApiUpdate['t'];
 </html>
 ````
 
-## File: packages/@happy/protocol/coverage/src/updates/machine.ts.html
+## File: packages/@magic-agent/protocol/coverage/src/updates/machine.ts.html
 ````html
 <!doctype html>
 <html lang="en">
@@ -5083,7 +5083,7 @@ export type ApiUpdateMachineState = z.infer&lt;typeof ApiUpdateMachineStateSchem
 </html>
 ````
 
-## File: packages/@happy/protocol/coverage/src/updates/message.ts.html
+## File: packages/@magic-agent/protocol/coverage/src/updates/message.ts.html
 ````html
 <!doctype html>
 <html lang="en">
@@ -5482,7 +5482,7 @@ export type ApiDeleteSession = z.infer&lt;typeof ApiDeleteSessionSchema&gt;;
 </html>
 ````
 
-## File: packages/@happy/protocol/coverage/src/updates/misc.ts.html
+## File: packages/@magic-agent/protocol/coverage/src/updates/misc.ts.html
 ````html
 <!doctype html>
 <html lang="en">
@@ -5854,7 +5854,7 @@ export type ApiKvBatchUpdate = z.infer&lt;typeof ApiKvBatchUpdateSchema&gt;;
 </html>
 ````
 
-## File: packages/@happy/protocol/coverage/src/updates/session.ts.html
+## File: packages/@magic-agent/protocol/coverage/src/updates/session.ts.html
 ````html
 <!doctype html>
 <html lang="en">
@@ -6232,7 +6232,7 @@ export type ApiUpdateSessionState = z.infer&lt;typeof ApiUpdateSessionStateSchem
 </html>
 ````
 
-## File: packages/@happy/protocol/coverage/src/common.ts.html
+## File: packages/@magic-agent/protocol/coverage/src/common.ts.html
 ````html
 <!doctype html>
 <html lang="en">
@@ -6958,7 +6958,7 @@ export type NullableVersionedValue = z.infer&lt;typeof NullableVersionedValueSch
 </html>
 ````
 
-## File: packages/@happy/protocol/coverage/src/constraints.ts.html
+## File: packages/@magic-agent/protocol/coverage/src/constraints.ts.html
 ````html
 <!doctype html>
 <html lang="en">
@@ -7582,7 +7582,7 @@ export type BodySizeLimits = typeof BODY_SIZE_LIMITS;
 </html>
 ````
 
-## File: packages/@happy/protocol/coverage/src/helpers.ts.html
+## File: packages/@magic-agent/protocol/coverage/src/helpers.ts.html
 ````html
 <!doctype html>
 <html lang="en">
@@ -8353,7 +8353,7 @@ export type BodySizeLimits = typeof BODY_SIZE_LIMITS;
  *
  * @example
  * ```typescript
- * import { hasSessionId, getSessionId, tryGetSessionId } from '@happy/protocol';
+ * import { hasSessionId, getSessionId, tryGetSessionId } from '@magic-agent/protocol';
  *
  * // Type-safe extraction
  * if (hasSessionId(update)) {
@@ -8719,7 +8719,7 @@ export function tryGetMachineIdFromEphemeral(update: ApiEphemeralUpdate): string
 </html>
 ````
 
-## File: packages/@happy/protocol/coverage/src/index.html
+## File: packages/@magic-agent/protocol/coverage/src/index.html
 ````html
 <!doctype html>
 <html lang="en">
@@ -8895,7 +8895,7 @@ export function tryGetMachineIdFromEphemeral(update: ApiEphemeralUpdate): string
 </html>
 ````
 
-## File: packages/@happy/protocol/coverage/src/index.ts.html
+## File: packages/@magic-agent/protocol/coverage/src/index.ts.html
 ````html
 <!doctype html>
 <html lang="en">
@@ -9051,7 +9051,7 @@ export function tryGetMachineIdFromEphemeral(update: ApiEphemeralUpdate): string
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">/**
- * @happy/protocol - Shared protocol types for Happy monorepo
+ * @magic-agent/protocol - Shared protocol types for Happy monorepo
  *
  * This package provides Zod schemas and TypeScript types for the Happy sync protocol.
  * It serves as the single source of truth for:
@@ -9062,7 +9062,7 @@ export function tryGetMachineIdFromEphemeral(update: ApiEphemeralUpdate): string
  *
  * @example
  * ```typescript
- * import { ApiUpdateSchema, type ApiUpdate } from '@happy/protocol';
+ * import { ApiUpdateSchema, type ApiUpdate } from '@magic-agent/protocol';
  *
  * // Validate incoming update
  * const result = ApiUpdateSchema.safeParse(data);
@@ -9120,7 +9120,7 @@ export * from './helpers';
 </html>
 ````
 
-## File: packages/@happy/protocol/coverage/src/mcp.ts.html
+## File: packages/@magic-agent/protocol/coverage/src/mcp.ts.html
 ````html
 <!doctype html>
 <html lang="en">
@@ -9462,7 +9462,7 @@ export type McpSyncState = z.infer&lt;typeof McpSyncStateSchema&gt;;
 </html>
 ````
 
-## File: packages/@happy/protocol/coverage/src/payloads.ts.html
+## File: packages/@magic-agent/protocol/coverage/src/payloads.ts.html
 ````html
 <!doctype html>
 <html lang="en">
@@ -9729,7 +9729,7 @@ export type EphemeralPayload = z.infer&lt;typeof EphemeralPayloadSchema&gt;;
 </html>
 ````
 
-## File: packages/@happy/protocol/coverage/base.css
+## File: packages/@magic-agent/protocol/coverage/base.css
 ````css
 body, html {
 body {
@@ -9816,7 +9816,7 @@ pre.prettyprint {
 .footer, .push {
 ````
 
-## File: packages/@happy/protocol/coverage/block-navigation.js
+## File: packages/@magic-agent/protocol/coverage/block-navigation.js
 ````javascript
 function toggleClass(index)
 function makeCurrent(index)
@@ -9824,7 +9824,7 @@ function goToPrevious()
 function goToNext()
 ````
 
-## File: packages/@happy/protocol/coverage/clover.xml
+## File: packages/@magic-agent/protocol/coverage/clover.xml
 ````xml
 <?xml version="1.0" encoding="UTF-8"?>
 <coverage generated="1767050362986" clover="3.2.0">
@@ -9832,7 +9832,7 @@ function goToNext()
     <metrics statements="67" coveredstatements="58" conditionals="11" coveredconditionals="10" methods="15" coveredmethods="12" elements="93" coveredelements="80" complexity="0" loc="67" ncloc="67" packages="3" files="15" classes="15"/>
     <package name="src">
       <metrics statements="45" coveredstatements="38" conditionals="11" coveredconditionals="10" methods="13" coveredmethods="12"/>
-      <file name="common.ts" path="/volume1/Projects/happy/packages/@happy/protocol/src/common.ts">
+      <file name="common.ts" path="/volume1/Projects/happy/packages/@magic-agent/protocol/src/common.ts">
         <metrics statements="8" coveredstatements="8" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
         <line num="44" count="2" type="stmt"/>
         <line num="73" count="2" type="stmt"/>
@@ -9843,13 +9843,13 @@ function goToNext()
         <line num="187" count="2" type="stmt"/>
         <line num="212" count="2" type="stmt"/>
       </file>
-      <file name="constraints.ts" path="/volume1/Projects/happy/packages/@happy/protocol/src/constraints.ts">
+      <file name="constraints.ts" path="/volume1/Projects/happy/packages/@magic-agent/protocol/src/constraints.ts">
         <metrics statements="3" coveredstatements="3" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
         <line num="22" count="2" type="stmt"/>
         <line num="143" count="2" type="stmt"/>
         <line num="166" count="2" type="stmt"/>
       </file>
-      <file name="helpers.ts" path="/volume1/Projects/happy/packages/@happy/protocol/src/helpers.ts">
+      <file name="helpers.ts" path="/volume1/Projects/happy/packages/@magic-agent/protocol/src/helpers.ts">
         <metrics statements="23" coveredstatements="21" conditionals="11" coveredconditionals="10" methods="12" coveredmethods="12"/>
         <line num="84" count="26" type="stmt"/>
         <line num="102" count="9" type="stmt"/>
@@ -9875,16 +9875,16 @@ function goToNext()
         <line num="351" count="2" type="stmt"/>
         <line num="353" count="2" type="stmt"/>
       </file>
-      <file name="index.ts" path="/volume1/Projects/happy/packages/@happy/protocol/src/index.ts">
+      <file name="index.ts" path="/volume1/Projects/happy/packages/@magic-agent/protocol/src/index.ts">
         <metrics statements="0" coveredstatements="0" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
       </file>
-      <file name="mcp.ts" path="/volume1/Projects/happy/packages/@happy/protocol/src/mcp.ts">
+      <file name="mcp.ts" path="/volume1/Projects/happy/packages/@magic-agent/protocol/src/mcp.ts">
         <metrics statements="3" coveredstatements="3" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
         <line num="30" count="1" type="stmt"/>
         <line num="52" count="1" type="stmt"/>
         <line num="84" count="1" type="stmt"/>
       </file>
-      <file name="payloads.ts" path="/volume1/Projects/happy/packages/@happy/protocol/src/payloads.ts">
+      <file name="payloads.ts" path="/volume1/Projects/happy/packages/@magic-agent/protocol/src/payloads.ts">
         <metrics statements="8" coveredstatements="3" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="0"/>
         <line num="21" count="1" type="stmt"/>
         <line num="36" count="1" type="stmt"/>
@@ -9898,7 +9898,7 @@ function goToNext()
     </package>
     <package name="src.ephemeral">
       <metrics statements="7" coveredstatements="5" conditionals="0" coveredconditionals="0" methods="2" coveredmethods="0"/>
-      <file name="events.ts" path="/volume1/Projects/happy/packages/@happy/protocol/src/ephemeral/events.ts">
+      <file name="events.ts" path="/volume1/Projects/happy/packages/@magic-agent/protocol/src/ephemeral/events.ts">
         <metrics statements="7" coveredstatements="5" conditionals="0" coveredconditionals="0" methods="2" coveredmethods="0"/>
         <line num="18" count="1" type="stmt"/>
         <line num="50" count="1" type="stmt"/>
@@ -9908,44 +9908,44 @@ function goToNext()
         <line num="114" count="1" type="stmt"/>
         <line num="142" count="1" type="stmt"/>
       </file>
-      <file name="index.ts" path="/volume1/Projects/happy/packages/@happy/protocol/src/ephemeral/index.ts">
+      <file name="index.ts" path="/volume1/Projects/happy/packages/@magic-agent/protocol/src/ephemeral/index.ts">
         <metrics statements="0" coveredstatements="0" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
       </file>
     </package>
     <package name="src.updates">
       <metrics statements="15" coveredstatements="15" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
-      <file name="account.ts" path="/volume1/Projects/happy/packages/@happy/protocol/src/updates/account.ts">
+      <file name="account.ts" path="/volume1/Projects/happy/packages/@magic-agent/protocol/src/updates/account.ts">
         <metrics statements="1" coveredstatements="1" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
         <line num="33" count="1" type="stmt"/>
       </file>
-      <file name="artifact.ts" path="/volume1/Projects/happy/packages/@happy/protocol/src/updates/artifact.ts">
+      <file name="artifact.ts" path="/volume1/Projects/happy/packages/@magic-agent/protocol/src/updates/artifact.ts">
         <metrics statements="3" coveredstatements="3" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
         <line num="34" count="1" type="stmt"/>
         <line num="63" count="1" type="stmt"/>
         <line num="85" count="1" type="stmt"/>
       </file>
-      <file name="index.ts" path="/volume1/Projects/happy/packages/@happy/protocol/src/updates/index.ts">
+      <file name="index.ts" path="/volume1/Projects/happy/packages/@magic-agent/protocol/src/updates/index.ts">
         <metrics statements="1" coveredstatements="1" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
         <line num="49" count="1" type="stmt"/>
       </file>
-      <file name="machine.ts" path="/volume1/Projects/happy/packages/@happy/protocol/src/updates/machine.ts">
+      <file name="machine.ts" path="/volume1/Projects/happy/packages/@magic-agent/protocol/src/updates/machine.ts">
         <metrics statements="2" coveredstatements="2" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
         <line num="36" count="1" type="stmt"/>
         <line num="81" count="1" type="stmt"/>
       </file>
-      <file name="message.ts" path="/volume1/Projects/happy/packages/@happy/protocol/src/updates/message.ts">
+      <file name="message.ts" path="/volume1/Projects/happy/packages/@magic-agent/protocol/src/updates/message.ts">
         <metrics statements="3" coveredstatements="3" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
         <line num="29" count="2" type="stmt"/>
         <line num="58" count="2" type="stmt"/>
         <line num="91" count="2" type="stmt"/>
       </file>
-      <file name="misc.ts" path="/volume1/Projects/happy/packages/@happy/protocol/src/updates/misc.ts">
+      <file name="misc.ts" path="/volume1/Projects/happy/packages/@magic-agent/protocol/src/updates/misc.ts">
         <metrics statements="3" coveredstatements="3" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
         <line num="30" count="1" type="stmt"/>
         <line num="61" count="1" type="stmt"/>
         <line num="90" count="1" type="stmt"/>
       </file>
-      <file name="session.ts" path="/volume1/Projects/happy/packages/@happy/protocol/src/updates/session.ts">
+      <file name="session.ts" path="/volume1/Projects/happy/packages/@magic-agent/protocol/src/updates/session.ts">
         <metrics statements="2" coveredstatements="2" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
         <line num="37" count="2" type="stmt"/>
         <line num="82" count="2" type="stmt"/>
@@ -9955,27 +9955,27 @@ function goToNext()
 </coverage>
 ````
 
-## File: packages/@happy/protocol/coverage/coverage-final.json
+## File: packages/@magic-agent/protocol/coverage/coverage-final.json
 ````json
-{"/volume1/Projects/happy/packages/@happy/protocol/src/common.ts": {"path":"/volume1/Projects/happy/packages/@happy/protocol/src/common.ts","statementMap":{"0":{"start":{"line":44,"column":35},"end":{"line":51,"column":null}},"1":{"start":{"line":73,"column":30},"end":{"line":79,"column":null}},"2":{"start":{"line":92,"column":40},"end":{"line":98,"column":null}},"3":{"start":{"line":118,"column":33},"end":{"line":126,"column":null}},"4":{"start":{"line":148,"column":30},"end":{"line":152,"column":null}},"5":{"start":{"line":168,"column":38},"end":{"line":171,"column":null}},"6":{"start":{"line":187,"column":36},"end":{"line":190,"column":null}},"7":{"start":{"line":212,"column":44},"end":{"line":215,"column":null}}},"fnMap":{},"branchMap":{},"s":{"0":2,"1":2,"2":2,"3":2,"4":2,"5":2,"6":2,"7":2},"f":{},"b":{},"meta":{"lastBranch":0,"lastFunction":0,"lastStatement":8,"seen":{"s:44:35:51:Infinity":0,"s:73:30:79:Infinity":1,"s:92:40:98:Infinity":2,"s:118:33:126:Infinity":3,"s:148:30:152:Infinity":4,"s:168:38:171:Infinity":5,"s:187:36:190:Infinity":6,"s:212:44:215:Infinity":7}}}
-,"/volume1/Projects/happy/packages/@happy/protocol/src/constraints.ts": {"path":"/volume1/Projects/happy/packages/@happy/protocol/src/constraints.ts","statementMap":{"0":{"start":{"line":22,"column":29},"end":{"line":135,"column":null}},"1":{"start":{"line":143,"column":24},"end":{"line":158,"column":null}},"2":{"start":{"line":166,"column":32},"end":{"line":178,"column":null}}},"fnMap":{},"branchMap":{},"s":{"0":2,"1":2,"2":2},"f":{},"b":{},"meta":{"lastBranch":0,"lastFunction":0,"lastStatement":3,"seen":{"s:22:29:135:Infinity":0,"s:143:24:158:Infinity":1,"s:166:32:178:Infinity":2}}}
-,"/volume1/Projects/happy/packages/@happy/protocol/src/helpers.ts": {"path":"/volume1/Projects/happy/packages/@happy/protocol/src/helpers.ts","statementMap":{"0":{"start":{"line":84,"column":4},"end":{"line":84,"column":null}},"1":{"start":{"line":102,"column":4},"end":{"line":102,"column":null}},"2":{"start":{"line":124,"column":4},"end":{"line":124,"column":null}},"3":{"start":{"line":146,"column":4},"end":{"line":146,"column":null}},"4":{"start":{"line":169,"column":4},"end":{"line":171,"column":null}},"5":{"start":{"line":170,"column":8},"end":{"line":170,"column":null}},"6":{"start":{"line":172,"column":4},"end":{"line":172,"column":null}},"7":{"start":{"line":193,"column":4},"end":{"line":195,"column":null}},"8":{"start":{"line":194,"column":8},"end":{"line":194,"column":null}},"9":{"start":{"line":196,"column":4},"end":{"line":196,"column":null}},"10":{"start":{"line":236,"column":4},"end":{"line":236,"column":null}},"11":{"start":{"line":254,"column":4},"end":{"line":254,"column":null}},"12":{"start":{"line":275,"column":4},"end":{"line":283,"column":null}},"13":{"start":{"line":278,"column":12},"end":{"line":278,"column":null}},"14":{"start":{"line":280,"column":39},"end":{"line":280,"column":null}},"15":{"start":{"line":281,"column":12},"end":{"line":281,"column":null}},"16":{"start":{"line":305,"column":4},"end":{"line":305,"column":null}},"17":{"start":{"line":326,"column":4},"end":{"line":328,"column":null}},"18":{"start":{"line":327,"column":8},"end":{"line":327,"column":null}},"19":{"start":{"line":329,"column":4},"end":{"line":329,"column":null}},"20":{"start":{"line":350,"column":4},"end":{"line":352,"column":null}},"21":{"start":{"line":351,"column":8},"end":{"line":351,"column":null}},"22":{"start":{"line":353,"column":4},"end":{"line":353,"column":null}}},"fnMap":{"0":{"name":"hasSessionId","decl":{"start":{"line":83,"column":16},"end":{"line":83,"column":29}},"loc":{"start":{"line":83,"column":75},"end":{"line":85,"column":null}},"line":83},"1":{"name":"hasSessionIdEphemeral","decl":{"start":{"line":101,"column":16},"end":{"line":101,"column":38}},"loc":{"start":{"line":101,"column":96},"end":{"line":103,"column":null}},"line":101},"2":{"name":"getSessionId","decl":{"start":{"line":122,"column":16},"end":{"line":122,"column":29}},"loc":{"start":{"line":122,"column":62},"end":{"line":125,"column":null}},"line":122},"3":{"name":"getSessionIdFromEphemeral","decl":{"start":{"line":144,"column":16},"end":{"line":144,"column":42}},"loc":{"start":{"line":144,"column":78},"end":{"line":147,"column":null}},"line":144},"4":{"name":"tryGetSessionId","decl":{"start":{"line":168,"column":16},"end":{"line":168,"column":32}},"loc":{"start":{"line":168,"column":71},"end":{"line":173,"column":null}},"line":168},"5":{"name":"tryGetSessionIdFromEphemeral","decl":{"start":{"line":192,"column":16},"end":{"line":192,"column":45}},"loc":{"start":{"line":192,"column":93},"end":{"line":197,"column":null}},"line":192},"6":{"name":"hasMachineId","decl":{"start":{"line":235,"column":16},"end":{"line":235,"column":29}},"loc":{"start":{"line":235,"column":75},"end":{"line":237,"column":null}},"line":235},"7":{"name":"hasMachineIdEphemeral","decl":{"start":{"line":253,"column":16},"end":{"line":253,"column":38}},"loc":{"start":{"line":253,"column":96},"end":{"line":255,"column":null}},"line":253},"8":{"name":"getMachineId","decl":{"start":{"line":274,"column":16},"end":{"line":274,"column":29}},"loc":{"start":{"line":274,"column":62},"end":{"line":284,"column":null}},"line":274},"9":{"name":"getMachineIdFromEphemeral","decl":{"start":{"line":303,"column":16},"end":{"line":303,"column":42}},"loc":{"start":{"line":303,"column":78},"end":{"line":306,"column":null}},"line":303},"10":{"name":"tryGetMachineId","decl":{"start":{"line":325,"column":16},"end":{"line":325,"column":32}},"loc":{"start":{"line":325,"column":71},"end":{"line":330,"column":null}},"line":325},"11":{"name":"tryGetMachineIdFromEphemeral","decl":{"start":{"line":349,"column":16},"end":{"line":349,"column":45}},"loc":{"start":{"line":349,"column":93},"end":{"line":354,"column":null}},"line":349}},"branchMap":{"0":{"loc":{"start":{"line":169,"column":4},"end":{"line":171,"column":null}},"type":"if","locations":[{"start":{"line":169,"column":4},"end":{"line":171,"column":null}},{"start":{},"end":{}}],"line":169},"1":{"loc":{"start":{"line":193,"column":4},"end":{"line":195,"column":null}},"type":"if","locations":[{"start":{"line":193,"column":4},"end":{"line":195,"column":null}},{"start":{},"end":{}}],"line":193},"2":{"loc":{"start":{"line":275,"column":4},"end":{"line":283,"column":null}},"type":"switch","locations":[{"start":{"line":276,"column":8},"end":{"line":276,"column":null}},{"start":{"line":277,"column":8},"end":{"line":278,"column":null}},{"start":{"line":279,"column":8},"end":{"line":282,"column":null}}],"line":275},"3":{"loc":{"start":{"line":326,"column":4},"end":{"line":328,"column":null}},"type":"if","locations":[{"start":{"line":326,"column":4},"end":{"line":328,"column":null}},{"start":{},"end":{}}],"line":326},"4":{"loc":{"start":{"line":350,"column":4},"end":{"line":352,"column":null}},"type":"if","locations":[{"start":{"line":350,"column":4},"end":{"line":352,"column":null}},{"start":{},"end":{}}],"line":350}},"s":{"0":26,"1":9,"2":18,"3":5,"4":11,"5":6,"6":5,"7":4,"8":2,"9":2,"10":12,"11":9,"12":7,"13":7,"14":0,"15":0,"16":5,"17":5,"18":2,"19":3,"20":4,"21":2,"22":2},"f":{"0":26,"1":9,"2":18,"3":5,"4":11,"5":4,"6":12,"7":9,"8":7,"9":5,"10":5,"11":4},"b":{"0":[6,5],"1":[2,2],"2":[4,7,0],"3":[2,3],"4":[2,2]},"meta":{"lastBranch":5,"lastFunction":12,"lastStatement":23,"seen":{"f:83:16:83:29":0,"s:84:4:84:Infinity":0,"f:101:16:101:38":1,"s:102:4:102:Infinity":1,"f:122:16:122:29":2,"s:124:4:124:Infinity":2,"f:144:16:144:42":3,"s:146:4:146:Infinity":3,"f:168:16:168:32":4,"b:169:4:171:Infinity:undefined:undefined:undefined:undefined":0,"s:169:4:171:Infinity":4,"s:170:8:170:Infinity":5,"s:172:4:172:Infinity":6,"f:192:16:192:45":5,"b:193:4:195:Infinity:undefined:undefined:undefined:undefined":1,"s:193:4:195:Infinity":7,"s:194:8:194:Infinity":8,"s:196:4:196:Infinity":9,"f:235:16:235:29":6,"s:236:4:236:Infinity":10,"f:253:16:253:38":7,"s:254:4:254:Infinity":11,"f:274:16:274:29":8,"b:276:8:276:Infinity:277:8:278:Infinity:279:8:282:Infinity":2,"s:275:4:283:Infinity":12,"s:278:12:278:Infinity":13,"s:280:39:280:Infinity":14,"s:281:12:281:Infinity":15,"f:303:16:303:42":9,"s:305:4:305:Infinity":16,"f:325:16:325:32":10,"b:326:4:328:Infinity:undefined:undefined:undefined:undefined":3,"s:326:4:328:Infinity":17,"s:327:8:327:Infinity":18,"s:329:4:329:Infinity":19,"f:349:16:349:45":11,"b:350:4:352:Infinity:undefined:undefined:undefined:undefined":4,"s:350:4:352:Infinity":20,"s:351:8:351:Infinity":21,"s:353:4:353:Infinity":22}}}
-,"/volume1/Projects/happy/packages/@happy/protocol/src/index.ts": {"path":"/volume1/Projects/happy/packages/@happy/protocol/src/index.ts","statementMap":{},"fnMap":{},"branchMap":{},"s":{},"f":{},"b":{},"meta":{"lastBranch":0,"lastFunction":0,"lastStatement":0,"seen":{}}}
-,"/volume1/Projects/happy/packages/@happy/protocol/src/mcp.ts": {"path":"/volume1/Projects/happy/packages/@happy/protocol/src/mcp.ts","statementMap":{"0":{"start":{"line":30,"column":36},"end":{"line":35,"column":null}},"1":{"start":{"line":52,"column":33},"end":{"line":55,"column":null}},"2":{"start":{"line":84,"column":34},"end":{"line":87,"column":null}}},"fnMap":{},"branchMap":{},"s":{"0":1,"1":1,"2":1},"f":{},"b":{},"meta":{"lastBranch":0,"lastFunction":0,"lastStatement":3,"seen":{"s:30:36:35:Infinity":0,"s:52:33:55:Infinity":1,"s:84:34:87:Infinity":2}}}
-,"/volume1/Projects/happy/packages/@happy/protocol/src/payloads.ts": {"path":"/volume1/Projects/happy/packages/@happy/protocol/src/payloads.ts","statementMap":{"0":{"start":{"line":21,"column":40},"end":{"line":26,"column":null}},"1":{"start":{"line":36,"column":35},"end":{"line":53,"column":null}},"2":{"start":{"line":46,"column":26},"end":{"line":46,"column":null}},"3":{"start":{"line":47,"column":8},"end":{"line":47,"column":null}},"4":{"start":{"line":48,"column":8},"end":{"line":48,"column":null}},"5":{"start":{"line":49,"column":8},"end":{"line":49,"column":null}},"6":{"start":{"line":50,"column":8},"end":{"line":50,"column":null}},"7":{"start":{"line":62,"column":38},"end":{"line":62,"column":null}}},"fnMap":{"0":{"name":"(anonymous_0)","decl":{"start":{"line":41,"column":31},"end":{"line":41,"column":32}},"loc":{"start":{"line":41,"column":41},"end":{"line":51,"column":5}},"line":41}},"branchMap":{},"s":{"0":1,"1":1,"2":0,"3":0,"4":0,"5":0,"6":0,"7":1},"f":{"0":0},"b":{},"meta":{"lastBranch":0,"lastFunction":1,"lastStatement":8,"seen":{"s:21:40:26:Infinity":0,"s:36:35:53:Infinity":1,"f:41:31:41:32":0,"s:46:26:46:Infinity":2,"s:47:8:47:Infinity":3,"s:48:8:48:Infinity":4,"s:49:8:49:Infinity":5,"s:50:8:50:Infinity":6,"s:62:38:62:Infinity":7}}}
-,"/volume1/Projects/happy/packages/@happy/protocol/src/ephemeral/events.ts": {"path":"/volume1/Projects/happy/packages/@happy/protocol/src/ephemeral/events.ts","statementMap":{"0":{"start":{"line":18,"column":48},"end":{"line":36,"column":null}},"1":{"start":{"line":50,"column":45},"end":{"line":75,"column":null}},"2":{"start":{"line":68,"column":17},"end":{"line":68,"column":null}},"3":{"start":{"line":72,"column":17},"end":{"line":72,"column":null}},"4":{"start":{"line":84,"column":55},"end":{"line":105,"column":null}},"5":{"start":{"line":114,"column":53},"end":{"line":135,"column":null}},"6":{"start":{"line":142,"column":40},"end":{"line":147,"column":null}}},"fnMap":{"0":{"name":"(anonymous_0)","decl":{"start":{"line":68,"column":8},"end":{"line":68,"column":9}},"loc":{"start":{"line":68,"column":17},"end":{"line":68,"column":null}},"line":68},"1":{"name":"(anonymous_1)","decl":{"start":{"line":72,"column":8},"end":{"line":72,"column":9}},"loc":{"start":{"line":72,"column":17},"end":{"line":72,"column":null}},"line":72}},"branchMap":{},"s":{"0":1,"1":1,"2":0,"3":0,"4":1,"5":1,"6":1},"f":{"0":0,"1":0},"b":{},"meta":{"lastBranch":0,"lastFunction":2,"lastStatement":7,"seen":{"s:18:48:36:Infinity":0,"s:50:45:75:Infinity":1,"f:68:8:68:9":0,"s:68:17:68:Infinity":2,"f:72:8:72:9":1,"s:72:17:72:Infinity":3,"s:84:55:105:Infinity":4,"s:114:53:135:Infinity":5,"s:142:40:147:Infinity":6}}}
-,"/volume1/Projects/happy/packages/@happy/protocol/src/ephemeral/index.ts": {"path":"/volume1/Projects/happy/packages/@happy/protocol/src/ephemeral/index.ts","statementMap":{},"fnMap":{},"branchMap":{},"s":{},"f":{},"b":{},"meta":{"lastBranch":0,"lastFunction":0,"lastStatement":0,"seen":{}}}
-,"/volume1/Projects/happy/packages/@happy/protocol/src/updates/account.ts": {"path":"/volume1/Projects/happy/packages/@happy/protocol/src/updates/account.ts","statementMap":{"0":{"start":{"line":33,"column":38},"end":{"line":41,"column":null}}},"fnMap":{},"branchMap":{},"s":{"0":1},"f":{},"b":{},"meta":{"lastBranch":0,"lastFunction":0,"lastStatement":1,"seen":{"s:33:38:41:Infinity":0}}}
-,"/volume1/Projects/happy/packages/@happy/protocol/src/updates/artifact.ts": {"path":"/volume1/Projects/happy/packages/@happy/protocol/src/updates/artifact.ts","statementMap":{"0":{"start":{"line":34,"column":36},"end":{"line":45,"column":null}},"1":{"start":{"line":63,"column":39},"end":{"line":68,"column":null}},"2":{"start":{"line":85,"column":39},"end":{"line":88,"column":null}}},"fnMap":{},"branchMap":{},"s":{"0":1,"1":1,"2":1},"f":{},"b":{},"meta":{"lastBranch":0,"lastFunction":0,"lastStatement":3,"seen":{"s:34:36:45:Infinity":0,"s:63:39:68:Infinity":1,"s:85:39:88:Infinity":2}}}
-,"/volume1/Projects/happy/packages/@happy/protocol/src/updates/index.ts": {"path":"/volume1/Projects/happy/packages/@happy/protocol/src/updates/index.ts","statementMap":{"0":{"start":{"line":49,"column":31},"end":{"line":63,"column":null}}},"fnMap":{},"branchMap":{},"s":{"0":1},"f":{},"b":{},"meta":{"lastBranch":0,"lastFunction":0,"lastStatement":1,"seen":{"s:49:31:63:Infinity":0}}}
-,"/volume1/Projects/happy/packages/@happy/protocol/src/updates/machine.ts": {"path":"/volume1/Projects/happy/packages/@happy/protocol/src/updates/machine.ts","statementMap":{"0":{"start":{"line":36,"column":35},"end":{"line":61,"column":null}},"1":{"start":{"line":81,"column":43},"end":{"line":100,"column":null}}},"fnMap":{},"branchMap":{},"s":{"0":1,"1":1},"f":{},"b":{},"meta":{"lastBranch":0,"lastFunction":0,"lastStatement":2,"seen":{"s:36:35:61:Infinity":0,"s:81:43:100:Infinity":1}}}
-,"/volume1/Projects/happy/packages/@happy/protocol/src/updates/message.ts": {"path":"/volume1/Projects/happy/packages/@happy/protocol/src/updates/message.ts","statementMap":{"0":{"start":{"line":29,"column":32},"end":{"line":35,"column":null}},"1":{"start":{"line":58,"column":41},"end":{"line":74,"column":null}},"2":{"start":{"line":91,"column":38},"end":{"line":106,"column":null}}},"fnMap":{},"branchMap":{},"s":{"0":2,"1":2,"2":2},"f":{},"b":{},"meta":{"lastBranch":0,"lastFunction":0,"lastStatement":3,"seen":{"s:29:32:35:Infinity":0,"s:58:41:74:Infinity":1,"s:91:38:106:Infinity":2}}}
-,"/volume1/Projects/happy/packages/@happy/protocol/src/updates/misc.ts": {"path":"/volume1/Projects/happy/packages/@happy/protocol/src/updates/misc.ts","statementMap":{"0":{"start":{"line":30,"column":44},"end":{"line":39,"column":null}},"1":{"start":{"line":61,"column":36},"end":{"line":69,"column":null}},"2":{"start":{"line":90,"column":38},"end":{"line":97,"column":null}}},"fnMap":{},"branchMap":{},"s":{"0":1,"1":1,"2":1},"f":{},"b":{},"meta":{"lastBranch":0,"lastFunction":0,"lastStatement":3,"seen":{"s:30:44:39:Infinity":0,"s:61:36:69:Infinity":1,"s:90:38:97:Infinity":2}}}
-,"/volume1/Projects/happy/packages/@happy/protocol/src/updates/session.ts": {"path":"/volume1/Projects/happy/packages/@happy/protocol/src/updates/session.ts","statementMap":{"0":{"start":{"line":37,"column":41},"end":{"line":62,"column":null}},"1":{"start":{"line":82,"column":43},"end":{"line":99,"column":null}}},"fnMap":{},"branchMap":{},"s":{"0":2,"1":2},"f":{},"b":{},"meta":{"lastBranch":0,"lastFunction":0,"lastStatement":2,"seen":{"s:37:41:62:Infinity":0,"s:82:43:99:Infinity":1}}}
+{"/volume1/Projects/happy/packages/@magic-agent/protocol/src/common.ts": {"path":"/volume1/Projects/happy/packages/@magic-agent/protocol/src/common.ts","statementMap":{"0":{"start":{"line":44,"column":35},"end":{"line":51,"column":null}},"1":{"start":{"line":73,"column":30},"end":{"line":79,"column":null}},"2":{"start":{"line":92,"column":40},"end":{"line":98,"column":null}},"3":{"start":{"line":118,"column":33},"end":{"line":126,"column":null}},"4":{"start":{"line":148,"column":30},"end":{"line":152,"column":null}},"5":{"start":{"line":168,"column":38},"end":{"line":171,"column":null}},"6":{"start":{"line":187,"column":36},"end":{"line":190,"column":null}},"7":{"start":{"line":212,"column":44},"end":{"line":215,"column":null}}},"fnMap":{},"branchMap":{},"s":{"0":2,"1":2,"2":2,"3":2,"4":2,"5":2,"6":2,"7":2},"f":{},"b":{},"meta":{"lastBranch":0,"lastFunction":0,"lastStatement":8,"seen":{"s:44:35:51:Infinity":0,"s:73:30:79:Infinity":1,"s:92:40:98:Infinity":2,"s:118:33:126:Infinity":3,"s:148:30:152:Infinity":4,"s:168:38:171:Infinity":5,"s:187:36:190:Infinity":6,"s:212:44:215:Infinity":7}}}
+,"/volume1/Projects/happy/packages/@magic-agent/protocol/src/constraints.ts": {"path":"/volume1/Projects/happy/packages/@magic-agent/protocol/src/constraints.ts","statementMap":{"0":{"start":{"line":22,"column":29},"end":{"line":135,"column":null}},"1":{"start":{"line":143,"column":24},"end":{"line":158,"column":null}},"2":{"start":{"line":166,"column":32},"end":{"line":178,"column":null}}},"fnMap":{},"branchMap":{},"s":{"0":2,"1":2,"2":2},"f":{},"b":{},"meta":{"lastBranch":0,"lastFunction":0,"lastStatement":3,"seen":{"s:22:29:135:Infinity":0,"s:143:24:158:Infinity":1,"s:166:32:178:Infinity":2}}}
+,"/volume1/Projects/happy/packages/@magic-agent/protocol/src/helpers.ts": {"path":"/volume1/Projects/happy/packages/@magic-agent/protocol/src/helpers.ts","statementMap":{"0":{"start":{"line":84,"column":4},"end":{"line":84,"column":null}},"1":{"start":{"line":102,"column":4},"end":{"line":102,"column":null}},"2":{"start":{"line":124,"column":4},"end":{"line":124,"column":null}},"3":{"start":{"line":146,"column":4},"end":{"line":146,"column":null}},"4":{"start":{"line":169,"column":4},"end":{"line":171,"column":null}},"5":{"start":{"line":170,"column":8},"end":{"line":170,"column":null}},"6":{"start":{"line":172,"column":4},"end":{"line":172,"column":null}},"7":{"start":{"line":193,"column":4},"end":{"line":195,"column":null}},"8":{"start":{"line":194,"column":8},"end":{"line":194,"column":null}},"9":{"start":{"line":196,"column":4},"end":{"line":196,"column":null}},"10":{"start":{"line":236,"column":4},"end":{"line":236,"column":null}},"11":{"start":{"line":254,"column":4},"end":{"line":254,"column":null}},"12":{"start":{"line":275,"column":4},"end":{"line":283,"column":null}},"13":{"start":{"line":278,"column":12},"end":{"line":278,"column":null}},"14":{"start":{"line":280,"column":39},"end":{"line":280,"column":null}},"15":{"start":{"line":281,"column":12},"end":{"line":281,"column":null}},"16":{"start":{"line":305,"column":4},"end":{"line":305,"column":null}},"17":{"start":{"line":326,"column":4},"end":{"line":328,"column":null}},"18":{"start":{"line":327,"column":8},"end":{"line":327,"column":null}},"19":{"start":{"line":329,"column":4},"end":{"line":329,"column":null}},"20":{"start":{"line":350,"column":4},"end":{"line":352,"column":null}},"21":{"start":{"line":351,"column":8},"end":{"line":351,"column":null}},"22":{"start":{"line":353,"column":4},"end":{"line":353,"column":null}}},"fnMap":{"0":{"name":"hasSessionId","decl":{"start":{"line":83,"column":16},"end":{"line":83,"column":29}},"loc":{"start":{"line":83,"column":75},"end":{"line":85,"column":null}},"line":83},"1":{"name":"hasSessionIdEphemeral","decl":{"start":{"line":101,"column":16},"end":{"line":101,"column":38}},"loc":{"start":{"line":101,"column":96},"end":{"line":103,"column":null}},"line":101},"2":{"name":"getSessionId","decl":{"start":{"line":122,"column":16},"end":{"line":122,"column":29}},"loc":{"start":{"line":122,"column":62},"end":{"line":125,"column":null}},"line":122},"3":{"name":"getSessionIdFromEphemeral","decl":{"start":{"line":144,"column":16},"end":{"line":144,"column":42}},"loc":{"start":{"line":144,"column":78},"end":{"line":147,"column":null}},"line":144},"4":{"name":"tryGetSessionId","decl":{"start":{"line":168,"column":16},"end":{"line":168,"column":32}},"loc":{"start":{"line":168,"column":71},"end":{"line":173,"column":null}},"line":168},"5":{"name":"tryGetSessionIdFromEphemeral","decl":{"start":{"line":192,"column":16},"end":{"line":192,"column":45}},"loc":{"start":{"line":192,"column":93},"end":{"line":197,"column":null}},"line":192},"6":{"name":"hasMachineId","decl":{"start":{"line":235,"column":16},"end":{"line":235,"column":29}},"loc":{"start":{"line":235,"column":75},"end":{"line":237,"column":null}},"line":235},"7":{"name":"hasMachineIdEphemeral","decl":{"start":{"line":253,"column":16},"end":{"line":253,"column":38}},"loc":{"start":{"line":253,"column":96},"end":{"line":255,"column":null}},"line":253},"8":{"name":"getMachineId","decl":{"start":{"line":274,"column":16},"end":{"line":274,"column":29}},"loc":{"start":{"line":274,"column":62},"end":{"line":284,"column":null}},"line":274},"9":{"name":"getMachineIdFromEphemeral","decl":{"start":{"line":303,"column":16},"end":{"line":303,"column":42}},"loc":{"start":{"line":303,"column":78},"end":{"line":306,"column":null}},"line":303},"10":{"name":"tryGetMachineId","decl":{"start":{"line":325,"column":16},"end":{"line":325,"column":32}},"loc":{"start":{"line":325,"column":71},"end":{"line":330,"column":null}},"line":325},"11":{"name":"tryGetMachineIdFromEphemeral","decl":{"start":{"line":349,"column":16},"end":{"line":349,"column":45}},"loc":{"start":{"line":349,"column":93},"end":{"line":354,"column":null}},"line":349}},"branchMap":{"0":{"loc":{"start":{"line":169,"column":4},"end":{"line":171,"column":null}},"type":"if","locations":[{"start":{"line":169,"column":4},"end":{"line":171,"column":null}},{"start":{},"end":{}}],"line":169},"1":{"loc":{"start":{"line":193,"column":4},"end":{"line":195,"column":null}},"type":"if","locations":[{"start":{"line":193,"column":4},"end":{"line":195,"column":null}},{"start":{},"end":{}}],"line":193},"2":{"loc":{"start":{"line":275,"column":4},"end":{"line":283,"column":null}},"type":"switch","locations":[{"start":{"line":276,"column":8},"end":{"line":276,"column":null}},{"start":{"line":277,"column":8},"end":{"line":278,"column":null}},{"start":{"line":279,"column":8},"end":{"line":282,"column":null}}],"line":275},"3":{"loc":{"start":{"line":326,"column":4},"end":{"line":328,"column":null}},"type":"if","locations":[{"start":{"line":326,"column":4},"end":{"line":328,"column":null}},{"start":{},"end":{}}],"line":326},"4":{"loc":{"start":{"line":350,"column":4},"end":{"line":352,"column":null}},"type":"if","locations":[{"start":{"line":350,"column":4},"end":{"line":352,"column":null}},{"start":{},"end":{}}],"line":350}},"s":{"0":26,"1":9,"2":18,"3":5,"4":11,"5":6,"6":5,"7":4,"8":2,"9":2,"10":12,"11":9,"12":7,"13":7,"14":0,"15":0,"16":5,"17":5,"18":2,"19":3,"20":4,"21":2,"22":2},"f":{"0":26,"1":9,"2":18,"3":5,"4":11,"5":4,"6":12,"7":9,"8":7,"9":5,"10":5,"11":4},"b":{"0":[6,5],"1":[2,2],"2":[4,7,0],"3":[2,3],"4":[2,2]},"meta":{"lastBranch":5,"lastFunction":12,"lastStatement":23,"seen":{"f:83:16:83:29":0,"s:84:4:84:Infinity":0,"f:101:16:101:38":1,"s:102:4:102:Infinity":1,"f:122:16:122:29":2,"s:124:4:124:Infinity":2,"f:144:16:144:42":3,"s:146:4:146:Infinity":3,"f:168:16:168:32":4,"b:169:4:171:Infinity:undefined:undefined:undefined:undefined":0,"s:169:4:171:Infinity":4,"s:170:8:170:Infinity":5,"s:172:4:172:Infinity":6,"f:192:16:192:45":5,"b:193:4:195:Infinity:undefined:undefined:undefined:undefined":1,"s:193:4:195:Infinity":7,"s:194:8:194:Infinity":8,"s:196:4:196:Infinity":9,"f:235:16:235:29":6,"s:236:4:236:Infinity":10,"f:253:16:253:38":7,"s:254:4:254:Infinity":11,"f:274:16:274:29":8,"b:276:8:276:Infinity:277:8:278:Infinity:279:8:282:Infinity":2,"s:275:4:283:Infinity":12,"s:278:12:278:Infinity":13,"s:280:39:280:Infinity":14,"s:281:12:281:Infinity":15,"f:303:16:303:42":9,"s:305:4:305:Infinity":16,"f:325:16:325:32":10,"b:326:4:328:Infinity:undefined:undefined:undefined:undefined":3,"s:326:4:328:Infinity":17,"s:327:8:327:Infinity":18,"s:329:4:329:Infinity":19,"f:349:16:349:45":11,"b:350:4:352:Infinity:undefined:undefined:undefined:undefined":4,"s:350:4:352:Infinity":20,"s:351:8:351:Infinity":21,"s:353:4:353:Infinity":22}}}
+,"/volume1/Projects/happy/packages/@magic-agent/protocol/src/index.ts": {"path":"/volume1/Projects/happy/packages/@magic-agent/protocol/src/index.ts","statementMap":{},"fnMap":{},"branchMap":{},"s":{},"f":{},"b":{},"meta":{"lastBranch":0,"lastFunction":0,"lastStatement":0,"seen":{}}}
+,"/volume1/Projects/happy/packages/@magic-agent/protocol/src/mcp.ts": {"path":"/volume1/Projects/happy/packages/@magic-agent/protocol/src/mcp.ts","statementMap":{"0":{"start":{"line":30,"column":36},"end":{"line":35,"column":null}},"1":{"start":{"line":52,"column":33},"end":{"line":55,"column":null}},"2":{"start":{"line":84,"column":34},"end":{"line":87,"column":null}}},"fnMap":{},"branchMap":{},"s":{"0":1,"1":1,"2":1},"f":{},"b":{},"meta":{"lastBranch":0,"lastFunction":0,"lastStatement":3,"seen":{"s:30:36:35:Infinity":0,"s:52:33:55:Infinity":1,"s:84:34:87:Infinity":2}}}
+,"/volume1/Projects/happy/packages/@magic-agent/protocol/src/payloads.ts": {"path":"/volume1/Projects/happy/packages/@magic-agent/protocol/src/payloads.ts","statementMap":{"0":{"start":{"line":21,"column":40},"end":{"line":26,"column":null}},"1":{"start":{"line":36,"column":35},"end":{"line":53,"column":null}},"2":{"start":{"line":46,"column":26},"end":{"line":46,"column":null}},"3":{"start":{"line":47,"column":8},"end":{"line":47,"column":null}},"4":{"start":{"line":48,"column":8},"end":{"line":48,"column":null}},"5":{"start":{"line":49,"column":8},"end":{"line":49,"column":null}},"6":{"start":{"line":50,"column":8},"end":{"line":50,"column":null}},"7":{"start":{"line":62,"column":38},"end":{"line":62,"column":null}}},"fnMap":{"0":{"name":"(anonymous_0)","decl":{"start":{"line":41,"column":31},"end":{"line":41,"column":32}},"loc":{"start":{"line":41,"column":41},"end":{"line":51,"column":5}},"line":41}},"branchMap":{},"s":{"0":1,"1":1,"2":0,"3":0,"4":0,"5":0,"6":0,"7":1},"f":{"0":0},"b":{},"meta":{"lastBranch":0,"lastFunction":1,"lastStatement":8,"seen":{"s:21:40:26:Infinity":0,"s:36:35:53:Infinity":1,"f:41:31:41:32":0,"s:46:26:46:Infinity":2,"s:47:8:47:Infinity":3,"s:48:8:48:Infinity":4,"s:49:8:49:Infinity":5,"s:50:8:50:Infinity":6,"s:62:38:62:Infinity":7}}}
+,"/volume1/Projects/happy/packages/@magic-agent/protocol/src/ephemeral/events.ts": {"path":"/volume1/Projects/happy/packages/@magic-agent/protocol/src/ephemeral/events.ts","statementMap":{"0":{"start":{"line":18,"column":48},"end":{"line":36,"column":null}},"1":{"start":{"line":50,"column":45},"end":{"line":75,"column":null}},"2":{"start":{"line":68,"column":17},"end":{"line":68,"column":null}},"3":{"start":{"line":72,"column":17},"end":{"line":72,"column":null}},"4":{"start":{"line":84,"column":55},"end":{"line":105,"column":null}},"5":{"start":{"line":114,"column":53},"end":{"line":135,"column":null}},"6":{"start":{"line":142,"column":40},"end":{"line":147,"column":null}}},"fnMap":{"0":{"name":"(anonymous_0)","decl":{"start":{"line":68,"column":8},"end":{"line":68,"column":9}},"loc":{"start":{"line":68,"column":17},"end":{"line":68,"column":null}},"line":68},"1":{"name":"(anonymous_1)","decl":{"start":{"line":72,"column":8},"end":{"line":72,"column":9}},"loc":{"start":{"line":72,"column":17},"end":{"line":72,"column":null}},"line":72}},"branchMap":{},"s":{"0":1,"1":1,"2":0,"3":0,"4":1,"5":1,"6":1},"f":{"0":0,"1":0},"b":{},"meta":{"lastBranch":0,"lastFunction":2,"lastStatement":7,"seen":{"s:18:48:36:Infinity":0,"s:50:45:75:Infinity":1,"f:68:8:68:9":0,"s:68:17:68:Infinity":2,"f:72:8:72:9":1,"s:72:17:72:Infinity":3,"s:84:55:105:Infinity":4,"s:114:53:135:Infinity":5,"s:142:40:147:Infinity":6}}}
+,"/volume1/Projects/happy/packages/@magic-agent/protocol/src/ephemeral/index.ts": {"path":"/volume1/Projects/happy/packages/@magic-agent/protocol/src/ephemeral/index.ts","statementMap":{},"fnMap":{},"branchMap":{},"s":{},"f":{},"b":{},"meta":{"lastBranch":0,"lastFunction":0,"lastStatement":0,"seen":{}}}
+,"/volume1/Projects/happy/packages/@magic-agent/protocol/src/updates/account.ts": {"path":"/volume1/Projects/happy/packages/@magic-agent/protocol/src/updates/account.ts","statementMap":{"0":{"start":{"line":33,"column":38},"end":{"line":41,"column":null}}},"fnMap":{},"branchMap":{},"s":{"0":1},"f":{},"b":{},"meta":{"lastBranch":0,"lastFunction":0,"lastStatement":1,"seen":{"s:33:38:41:Infinity":0}}}
+,"/volume1/Projects/happy/packages/@magic-agent/protocol/src/updates/artifact.ts": {"path":"/volume1/Projects/happy/packages/@magic-agent/protocol/src/updates/artifact.ts","statementMap":{"0":{"start":{"line":34,"column":36},"end":{"line":45,"column":null}},"1":{"start":{"line":63,"column":39},"end":{"line":68,"column":null}},"2":{"start":{"line":85,"column":39},"end":{"line":88,"column":null}}},"fnMap":{},"branchMap":{},"s":{"0":1,"1":1,"2":1},"f":{},"b":{},"meta":{"lastBranch":0,"lastFunction":0,"lastStatement":3,"seen":{"s:34:36:45:Infinity":0,"s:63:39:68:Infinity":1,"s:85:39:88:Infinity":2}}}
+,"/volume1/Projects/happy/packages/@magic-agent/protocol/src/updates/index.ts": {"path":"/volume1/Projects/happy/packages/@magic-agent/protocol/src/updates/index.ts","statementMap":{"0":{"start":{"line":49,"column":31},"end":{"line":63,"column":null}}},"fnMap":{},"branchMap":{},"s":{"0":1},"f":{},"b":{},"meta":{"lastBranch":0,"lastFunction":0,"lastStatement":1,"seen":{"s:49:31:63:Infinity":0}}}
+,"/volume1/Projects/happy/packages/@magic-agent/protocol/src/updates/machine.ts": {"path":"/volume1/Projects/happy/packages/@magic-agent/protocol/src/updates/machine.ts","statementMap":{"0":{"start":{"line":36,"column":35},"end":{"line":61,"column":null}},"1":{"start":{"line":81,"column":43},"end":{"line":100,"column":null}}},"fnMap":{},"branchMap":{},"s":{"0":1,"1":1},"f":{},"b":{},"meta":{"lastBranch":0,"lastFunction":0,"lastStatement":2,"seen":{"s:36:35:61:Infinity":0,"s:81:43:100:Infinity":1}}}
+,"/volume1/Projects/happy/packages/@magic-agent/protocol/src/updates/message.ts": {"path":"/volume1/Projects/happy/packages/@magic-agent/protocol/src/updates/message.ts","statementMap":{"0":{"start":{"line":29,"column":32},"end":{"line":35,"column":null}},"1":{"start":{"line":58,"column":41},"end":{"line":74,"column":null}},"2":{"start":{"line":91,"column":38},"end":{"line":106,"column":null}}},"fnMap":{},"branchMap":{},"s":{"0":2,"1":2,"2":2},"f":{},"b":{},"meta":{"lastBranch":0,"lastFunction":0,"lastStatement":3,"seen":{"s:29:32:35:Infinity":0,"s:58:41:74:Infinity":1,"s:91:38:106:Infinity":2}}}
+,"/volume1/Projects/happy/packages/@magic-agent/protocol/src/updates/misc.ts": {"path":"/volume1/Projects/happy/packages/@magic-agent/protocol/src/updates/misc.ts","statementMap":{"0":{"start":{"line":30,"column":44},"end":{"line":39,"column":null}},"1":{"start":{"line":61,"column":36},"end":{"line":69,"column":null}},"2":{"start":{"line":90,"column":38},"end":{"line":97,"column":null}}},"fnMap":{},"branchMap":{},"s":{"0":1,"1":1,"2":1},"f":{},"b":{},"meta":{"lastBranch":0,"lastFunction":0,"lastStatement":3,"seen":{"s:30:44:39:Infinity":0,"s:61:36:69:Infinity":1,"s:90:38:97:Infinity":2}}}
+,"/volume1/Projects/happy/packages/@magic-agent/protocol/src/updates/session.ts": {"path":"/volume1/Projects/happy/packages/@magic-agent/protocol/src/updates/session.ts","statementMap":{"0":{"start":{"line":37,"column":41},"end":{"line":62,"column":null}},"1":{"start":{"line":82,"column":43},"end":{"line":99,"column":null}}},"fnMap":{},"branchMap":{},"s":{"0":2,"1":2},"f":{},"b":{},"meta":{"lastBranch":0,"lastFunction":0,"lastStatement":2,"seen":{"s:37:41:62:Infinity":0,"s:82:43:99:Infinity":1}}}
 }
 ````
 
-## File: packages/@happy/protocol/coverage/index.html
+## File: packages/@magic-agent/protocol/coverage/index.html
 ````html
 <!doctype html>
 <html lang="en">
@@ -10109,29 +10109,29 @@ function goToNext()
 </html>
 ````
 
-## File: packages/@happy/protocol/coverage/prettify.css
+## File: packages/@magic-agent/protocol/coverage/prettify.css
 ````css
 .pln{color:#000}@media screen{.str{color:#080}.kwd{color:#008}.com{color:#800}.typ{color:#606}.lit{color:#066}.pun,.opn,.clo{color:#660}.tag{color:#008}.atn{color:#606}.atv{color:#080}.dec,.var{color:#606}.fun{color:red}}@media print,projection{.str{color:#060}.kwd{color:#006;font-weight:bold}.com{color:#600;font-style:italic}.typ{color:#404;font-weight:bold}.lit{color:#044}.pun,.opn,.clo{color:#440}.tag{color:#006;font-weight:bold}.atn{color:#404}.atv{color:#060}}pre.prettyprint{padding:2px;border:1px solid #888}ol.linenums{margin-top:0;margin-bottom:0}li.L0,li.L1,li.L2,li.L3,li.L5,li.L6,li.L7,li.L8{list-style-type:none}li.L1,li.L3,li.L5,li.L7,li.L9{background:#eee}
 ````
 
-## File: packages/@happy/protocol/coverage/prettify.js
+## File: packages/@magic-agent/protocol/coverage/prettify.js
 ````javascript
 window.PR_SHOULD_USE_CONTINUATION=true;(function()
 ````
 
-## File: packages/@happy/protocol/src/ephemeral/index.ts
+## File: packages/@magic-agent/protocol/src/ephemeral/index.ts
 ````typescript
 
 ````
 
-## File: packages/@happy/protocol/src/constraints.ts
+## File: packages/@magic-agent/protocol/src/constraints.ts
 ````typescript
 export type StringLimits = typeof STRING_LIMITS;
 export type Patterns = typeof PATTERNS;
 export type BodySizeLimits = typeof BODY_SIZE_LIMITS;
 ````
 
-## File: packages/@happy/protocol/src/sharing.test.ts
+## File: packages/@magic-agent/protocol/src/sharing.test.ts
 ````typescript
 import { describe, it, expect } from 'vitest';
 import {
@@ -10155,7 +10155,7 @@ import { STRING_LIMITS } from './constraints';
 // ═══════════════════════════════════════════════════════════════
 ````
 
-## File: packages/@happy/protocol/src/sharing.ts
+## File: packages/@magic-agent/protocol/src/sharing.ts
 ````typescript
 import { z } from 'zod';
 import { STRING_LIMITS } from './constraints';
@@ -10186,7 +10186,7 @@ export type RevokeInvitationRequest = z.infer<typeof RevokeInvitationRequestSche
 export type ResendInvitationRequest = z.infer<typeof ResendInvitationRequestSchema>;
 ````
 
-## File: packages/@happy/protocol/src/usageLimits.test.ts
+## File: packages/@magic-agent/protocol/src/usageLimits.test.ts
 ````typescript
 import { describe, it, expect } from 'vitest';
 import { UsageLimitSchema, PlanLimitsResponseSchema } from './usageLimits';
@@ -10195,7 +10195,7 @@ import { STRING_LIMITS } from './constraints';
 id: '', // invalid - empty id
 ````
 
-## File: packages/@happy/protocol/src/usageLimits.ts
+## File: packages/@magic-agent/protocol/src/usageLimits.ts
 ````typescript
 import { z } from 'zod';
 import { STRING_LIMITS } from './constraints';
@@ -10205,7 +10205,7 @@ export type UsageLimit = z.infer<typeof UsageLimitSchema>;
 export type PlanLimitsResponse = z.infer<typeof PlanLimitsResponseSchema>;
 ````
 
-## File: packages/@happy/protocol/tsconfig.json
+## File: packages/@magic-agent/protocol/tsconfig.json
 ````json
 {
     "compilerOptions": {
@@ -10232,7 +10232,7 @@ export type PlanLimitsResponse = z.infer<typeof PlanLimitsResponseSchema>;
 }
 ````
 
-## File: packages/@happy/protocol/tsup.config.ts
+## File: packages/@magic-agent/protocol/tsup.config.ts
 ````typescript
 import { defineConfig } from 'tsup';
 ````
@@ -10402,10 +10402,10 @@ function main()
 ## File: scripts/lint-protocol-helpers.mjs
 ````javascript
 /**
- * Lint script to enforce @happy/protocol ID accessor helper usage.
+ * Lint script to enforce @magic-agent/protocol ID accessor helper usage.
  *
  * This script detects direct access to session/machine ID fields on API update objects
- * and suggests using the helper functions from @happy/protocol instead.
+ * and suggests using the helper functions from @magic-agent/protocol instead.
  *
  * INCORRECT (direct field access on update bodies):
  *   - update.body.sid → Use getSessionId(update.body)
@@ -10419,7 +10419,7 @@ function main()
  *   - getSessionIdFromEphemeral(ephemeral)
  *
  * The script specifically targets .body.sid and .body.machineId patterns
- * which indicate access on @happy/protocol update objects.
+ * which indicate access on @magic-agent/protocol update objects.
  *
  * Usage:
  *   node scripts/lint-protocol-helpers.mjs [directory]
@@ -10433,7 +10433,7 @@ function main()
  * Related: HAP-653 (helper functions), HAP-658 (this lint rule)
  */
 ⋮----
-// Patterns to detect direct field access on @happy/protocol update objects
+// Patterns to detect direct field access on @magic-agent/protocol update objects
 // These match the .body.sid and .body.machineId access patterns
 ⋮----
 // Matches: .body.sid, .body?.sid (for session updates)
@@ -10448,7 +10448,7 @@ function main()
 ⋮----
 // Files/directories that are allowed to use direct access
 ⋮----
-// The @happy/protocol package itself - helpers need direct access
+// The @magic-agent/protocol package itself - helpers need direct access
 ⋮----
 // Test files can have mock objects with direct construction
 ⋮----
@@ -10535,7 +10535,7 @@ function main()
     "type": true
   },
   "workspaces": {
-    "packages/@happy/protocol": {
+    "packages/@magic-agent/protocol": {
       "entry": ["src/index.ts"],
       "project": ["src/**/*.ts"],
       "ignoreDependencies": ["zod"]
@@ -10564,7 +10564,7 @@ function main()
         "@config-plugins/*",
         "@elevenlabs/*",
         "@expo/*",
-        "@happy/protocol",
+        "@magic-agent/protocol",
         "@legendapp/*",
         "@livekit/*",
         "@lottiefiles/*",
@@ -10642,7 +10642,7 @@ function main()
       "ignore": ["src/**/*.test.ts", "src/**/*.spec.ts"],
       "ignoreDependencies": [
         "@fastify/swagger",
-        "@happy/protocol",
+        "@magic-agent/protocol",
         "@modelcontextprotocol/sdk",
         "@sentry/node",
         "@stablelib/hex",
@@ -10685,7 +10685,7 @@ function main()
       "ignoreDependencies": [
         "@fastify/cors",
         "@fastify/swagger",
-        "@happy/protocol",
+        "@magic-agent/protocol",
         "@prisma/client",
         "@socket.io/*",
         "@types/*",
@@ -10736,7 +10736,7 @@ function main()
       "ignoreDependencies": [
         "@cloudflare/workers-types",
         "@eslint/*",
-        "@happy/protocol",
+        "@magic-agent/protocol",
         "@hono/zod-openapi",
         "@stablelib/*",
         "@types/*",
@@ -10836,8 +10836,8 @@ jobs:
             bundle-stats-main-
       - name: Install dependencies
         run: yarn install --immutable
-      - name: Build @happy/protocol
-        run: yarn workspace @happy/protocol build
+      - name: Build @magic-agent/protocol
+        run: yarn workspace @magic-agent/protocol build
       - name: Build web bundle
         working-directory: happy-app
         run: yarn build:web:dev
@@ -10942,8 +10942,8 @@ jobs:
             ${{ runner.os }}-yarn-
       - name: Install dependencies
         run: yarn install --immutable
-      - name: Build @happy/protocol
-        run: yarn workspace @happy/protocol build
+      - name: Build @magic-agent/protocol
+        run: yarn workspace @magic-agent/protocol build
       - name: Build web bundle
         working-directory: happy-app
         run: yarn build:web:dev
@@ -11077,7 +11077,7 @@ Schema drift occurs when the server's API schemas diverge from what clients expe
 
 ### How It Works
 
-1. **Protocol Schema Extraction**: The `@happy/protocol` package's Zod schemas are converted to JSON Schema format
+1. **Protocol Schema Extraction**: The `@magic-agent/protocol` package's Zod schemas are converted to JSON Schema format
 2. **OpenAPI Schema Extraction**: The server's OpenAPI spec contains schemas derived from route definitions
 3. **Comparison**: A comparison script identifies mismatches between protocol and server schemas
 4. **Breaking Change Detection**: Optional `oasdiff` integration detects breaking changes vs. baseline
@@ -11118,7 +11118,7 @@ schema-drift:
 ```
 
 **Artifacts produced:**
-- `protocol-schemas` - JSON Schema representation of `@happy/protocol`
+- `protocol-schemas` - JSON Schema representation of `@magic-agent/protocol`
 - `schema-drift-report` - Markdown report of any detected drift
 
 ### Issue Severity
@@ -11211,12 +11211,12 @@ app.post('/v1/sessions', {
 3. **Use appropriate Zod types** (`z.string().uuid()`, `z.string().datetime()`)
 4. **Group endpoints with tags** in route handlers
 
-## Shared Types with @happy/protocol
+## Shared Types with @magic-agent/protocol
 
-The `@happy/protocol` package contains shared Zod schemas for API payloads:
+The `@magic-agent/protocol` package contains shared Zod schemas for API payloads:
 
 ```typescript
-// In @happy/protocol
+// In @magic-agent/protocol
 export const SessionUpdateSchema = z.object({
     sessionId: z.string(),
     status: z.enum(["active", "paused", "completed"]),
@@ -11224,7 +11224,7 @@ export const SessionUpdateSchema = z.object({
 });
 
 // In happy-server route
-import { SessionUpdateSchema } from "@happy/protocol";
+import { SessionUpdateSchema } from "@magic-agent/protocol";
 
 app.post('/v1/sessions/update', {
     schema: {
@@ -11292,8 +11292,8 @@ app.addHook('onRequest', (request, reply, done) => {
 ## Related Documentation
 
 - [Encryption Architecture](./ENCRYPTION-ARCHITECTURE.md) - E2E encryption design
-- [RFC: Shared Types Package](./RFC-SHARED-TYPES-PACKAGE.md) - @happy/protocol design
-- [@happy/protocol CLAUDE.md](../packages/@happy/protocol/CLAUDE.md) - Protocol package guidelines
+- [RFC: Shared Types Package](./RFC-SHARED-TYPES-PACKAGE.md) - @magic-agent/protocol design
+- [@magic-agent/protocol CLAUDE.md](../packages/@magic-agent/protocol/CLAUDE.md) - Protocol package guidelines
 
 ## Changelog
 
@@ -11742,7 +11742,7 @@ const githubToken = ""   // ✅ (camelCase is fine)
 
 ### happy/protocol-helpers
 
-Enforces use of `@happy/protocol` ID accessor helpers instead of direct property access.
+Enforces use of `@magic-agent/protocol` ID accessor helpers instead of direct property access.
 
 **Bad:**
 ```typescript
@@ -11752,7 +11752,7 @@ const machineId = update.body.machineId; // ❌ Direct access
 
 **Good:**
 ```typescript
-import { getSessionId, getMachineId } from '@happy/protocol';
+import { getSessionId, getMachineId } from '@magic-agent/protocol';
 
 const sid = getSessionId(update.body);      // ✅
 const machineId = getMachineId(update.body); // ✅
@@ -11880,7 +11880,7 @@ Each rule has a corresponding `.test.js` file that tests:
 - HAP-758: Adopt oxlint type-aware linting and JS plugins
 - HAP-763: Add unit tests for @happy/lint-rules oxlint plugin
 - HAP-502: ESLint naming convention rule for GitHub casing
-- HAP-658: ESLint rule to enforce @happy/protocol ID accessor helper usage
+- HAP-658: ESLint rule to enforce @magic-agent/protocol ID accessor helper usage
 - HAP-653: Protocol ID accessor helper design
 
 ## Compatibility
@@ -11890,7 +11890,7 @@ Each rule has a corresponding `.test.js` file that tests:
 - **Node.js:** 18+
 ````
 
-## File: packages/@happy/protocol/coverage/sorter.js
+## File: packages/@magic-agent/protocol/coverage/sorter.js
 ````javascript
 function getTable()
 function getTableHeader()
@@ -11909,7 +11909,7 @@ function addSortIndicators()
 function enableUI()
 ````
 
-## File: packages/@happy/protocol/scripts/extract-schemas.ts
+## File: packages/@magic-agent/protocol/scripts/extract-schemas.ts
 ````typescript
 import { z } from 'zod';
 import { writeFileSync } from 'node:fs';
@@ -11955,7 +11955,7 @@ function generateMetadata(): Record<string, unknown>
 async function main(): Promise<void>
 ````
 
-## File: packages/@happy/protocol/scripts/generate-swift.ts
+## File: packages/@magic-agent/protocol/scripts/generate-swift.ts
 ````typescript
 import { z } from 'zod';
 import { writeFileSync, mkdirSync, existsSync } from 'node:fs';
@@ -12021,7 +12021,7 @@ function generateHeader(): string
 async function main(): Promise<void>
 ````
 
-## File: packages/@happy/protocol/src/helpers.test.ts
+## File: packages/@magic-agent/protocol/src/helpers.test.ts
 ````typescript
 import { describe, it, expect } from 'vitest';
 import {
@@ -12046,7 +12046,7 @@ import {
 } from './index';
 ````
 
-## File: packages/@happy/protocol/src/helpers.ts
+## File: packages/@magic-agent/protocol/src/helpers.ts
 ````typescript
 import type {
     ApiUpdate,
@@ -12090,7 +12090,7 @@ export function tryGetMachineId(update: ApiUpdate): string | undefined
 export function tryGetMachineIdFromEphemeral(update: ApiEphemeralUpdate): string | undefined
 ````
 
-## File: packages/@happy/protocol/src/mcp.ts
+## File: packages/@magic-agent/protocol/src/mcp.ts
 ````typescript
 import { z } from 'zod';
 import { STRING_LIMITS } from './constraints';
@@ -12102,9 +12102,9 @@ export type McpToolInfo = z.infer<typeof McpToolInfoSchema>;
 export type McpSyncState = z.infer<typeof McpSyncStateSchema>;
 ````
 
-## File: packages/@happy/protocol/CLAUDE.md
+## File: packages/@magic-agent/protocol/CLAUDE.md
 ````markdown
-# @happy/protocol - Development Guidelines
+# @magic-agent/protocol - Development Guidelines
 
 > **📍 Part of the Happy monorepo** — See root [`CLAUDE.md`](../../../CLAUDE.md) for overall architecture and cross-project guidelines.
 
@@ -12112,7 +12112,7 @@ export type McpSyncState = z.infer<typeof McpSyncStateSchema>;
 
 ## Package Overview
 
-**@happy/protocol** provides shared Zod schemas and TypeScript types for the Happy sync protocol. This is the **single source of truth** for all API types used across the four consumer projects.
+**@magic-agent/protocol** provides shared Zod schemas and TypeScript types for the Happy sync protocol. This is the **single source of truth** for all API types used across the four consumer projects.
 
 ## Why This Package Exists
 
@@ -12162,7 +12162,7 @@ happy-macos/Happy/Generated/
 ### When to Regenerate
 
 Run `yarn generate:swift` after:
-- Adding new Zod schemas to @happy/protocol
+- Adding new Zod schemas to @magic-agent/protocol
 - Modifying existing schema field types
 - Changing schema property names
 
@@ -12231,7 +12231,7 @@ export type ApiNewSession = z.infer<typeof ApiNewSessionSchema>;
 For optimistic concurrency, use the versioned value helpers:
 
 ```typescript
-import { VersionedValueSchema, NullableVersionedValueSchema } from '@happy/protocol';
+import { VersionedValueSchema, NullableVersionedValueSchema } from '@magic-agent/protocol';
 
 // Non-nullable versioned field
 metadata: VersionedValueSchema,
@@ -12244,10 +12244,10 @@ agentState: NullableVersionedValueSchema,
 
 | Project | Module Format | Import Path |
 |---------|---------------|-------------|
-| happy-cli | ESM | `@happy/protocol` |
-| happy-app | ESM (Expo) | `@happy/protocol` |
-| happy-server | CommonJS | `@happy/protocol` |
-| happy-server-workers | ESM | `@happy/protocol` |
+| happy-cli | ESM | `@magic-agent/protocol` |
+| happy-app | ESM (Expo) | `@magic-agent/protocol` |
+| happy-server | CommonJS | `@magic-agent/protocol` |
+| happy-server-workers | ESM | `@magic-agent/protocol` |
 
 ## Testing
 
@@ -12332,15 +12332,15 @@ This repository contains shared code used across the Happy ecosystem - a mobile 
 
 ## Packages
 
-### @happy/protocol
+### @magic-agent/protocol
 
 Shared Zod schemas and TypeScript types for the Happy sync protocol.
 
 ```typescript
-import { ApiUpdateSchema, ApiEphemeralUpdateSchema } from '@happy/protocol';
+import { ApiUpdateSchema, ApiEphemeralUpdateSchema } from '@magic-agent/protocol';
 ```
 
-See [packages/@happy/protocol/README.md](packages/@happy/protocol/README.md) for detailed documentation.
+See [packages/@magic-agent/protocol/README.md](packages/@magic-agent/protocol/README.md) for detailed documentation.
 
 ## Repository Structure
 
@@ -12373,18 +12373,18 @@ corepack enable
 yarn install
 
 # Build the protocol package
-yarn workspace @happy/protocol build
+yarn workspace @magic-agent/protocol build
 
 # Type check
-yarn workspace @happy/protocol typecheck
+yarn workspace @magic-agent/protocol typecheck
 ```
 
 ### Available Scripts
 
 | Script | Description |
 |--------|-------------|
-| `yarn build:protocol` | Build @happy/protocol |
-| `yarn typecheck:protocol` | Type check @happy/protocol |
+| `yarn build:protocol` | Build @magic-agent/protocol |
+| `yarn typecheck:protocol` | Type check @magic-agent/protocol |
 
 ## CI/CD Pipeline
 
@@ -12422,7 +12422,7 @@ Security updates are automated via Dependabot:
 MIT
 ````
 
-## File: packages/@happy/protocol/src/updates/account.ts
+## File: packages/@magic-agent/protocol/src/updates/account.ts
 ````typescript
 import { z } from 'zod';
 import { GitHubProfileSchema, ImageRefSchema, NullableVersionedValueSchema } from '../common';
@@ -12431,7 +12431,7 @@ import { STRING_LIMITS } from '../constraints';
 export type ApiUpdateAccount = z.infer<typeof ApiUpdateAccountSchema>;
 ````
 
-## File: packages/@happy/protocol/src/updates/artifact.ts
+## File: packages/@magic-agent/protocol/src/updates/artifact.ts
 ````typescript
 import { z } from 'zod';
 import { VersionedValueSchema } from '../common';
@@ -12444,7 +12444,7 @@ export type ApiUpdateArtifact = z.infer<typeof ApiUpdateArtifactSchema>;
 export type ApiDeleteArtifact = z.infer<typeof ApiDeleteArtifactSchema>;
 ````
 
-## File: packages/@happy/protocol/src/payloads.ts
+## File: packages/@magic-agent/protocol/src/payloads.ts
 ````typescript
 import { z } from 'zod';
 import { STRING_LIMITS } from './constraints';
@@ -12523,7 +12523,7 @@ yarn-error.log*
 packages/**/dist/
 
 # Generated schema files (CI artifacts)
-packages/@happy/protocol/protocol-schemas.json
+packages/@magic-agent/protocol/protocol-schemas.json
 schema-diff.md
 ````
 
@@ -12568,7 +12568,7 @@ schema-diff.md
 }
 ````
 
-## File: packages/@happy/protocol/src/updates/misc.ts
+## File: packages/@magic-agent/protocol/src/updates/misc.ts
 ````typescript
 import { z } from 'zod';
 import { RelationshipStatusSchema, UserProfileSchema, FeedBodySchema } from '../common';
@@ -12581,7 +12581,7 @@ export type ApiNewFeedPost = z.infer<typeof ApiNewFeedPostSchema>;
 export type ApiKvBatchUpdate = z.infer<typeof ApiKvBatchUpdateSchema>;
 ````
 
-## File: packages/@happy/protocol/src/common.test.ts
+## File: packages/@magic-agent/protocol/src/common.test.ts
 ````typescript
 import { describe, it, expect } from 'vitest';
 import {
@@ -12609,10 +12609,10 @@ on:
     branches:
       - main
     paths:
-      - 'packages/@happy/protocol/**'
+      - 'packages/@magic-agent/protocol/**'
   pull_request:
     paths:
-      - 'packages/@happy/protocol/**'
+      - 'packages/@magic-agent/protocol/**'
 jobs:
   validate-shared-types:
     name: Validate Cross-Project Types
@@ -12642,9 +12642,9 @@ jobs:
             ${{ runner.os }}-yarn-
       - name: Install dependencies
         run: yarn install --immutable
-      - name: Build @happy/protocol
+      - name: Build @magic-agent/protocol
         run: yarn build:protocol
-      - name: Type check @happy/protocol
+      - name: Type check @magic-agent/protocol
         run: yarn typecheck:protocol
       - name: Type check happy-cli
         working-directory: happy-cli
@@ -12659,7 +12659,7 @@ jobs:
         run: |
           echo "## Shared Types Validation Complete" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "All 4 consumer projects type-check successfully against @happy/protocol." >> $GITHUB_STEP_SUMMARY
+          echo "All 4 consumer projects type-check successfully against @magic-agent/protocol." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "
           echo "- happy-cli" >> $GITHUB_STEP_SUMMARY
@@ -12668,7 +12668,7 @@ jobs:
           echo "- happy-server-workers" >> $GITHUB_STEP_SUMMARY
 ````
 
-## File: packages/@happy/errors/src/index.ts
+## File: packages/@magic-agent/errors/src/index.ts
 ````typescript
 export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];
 export interface AppErrorOptions {
@@ -12709,7 +12709,7 @@ static withCause(code: ErrorCode, message: string, cause?: Error): AppError
 static isAppError(error: unknown): error is AppError
 ````
 
-## File: packages/@happy/protocol/src/updates/index.ts
+## File: packages/@magic-agent/protocol/src/updates/index.ts
 ````typescript
 import { z } from 'zod';
 ⋮----
@@ -12724,7 +12724,7 @@ export type ApiUpdate = z.infer<typeof ApiUpdateSchema>;
 export type ApiUpdateType = ApiUpdate['t'];
 ````
 
-## File: packages/@happy/protocol/src/updates/message.ts
+## File: packages/@magic-agent/protocol/src/updates/message.ts
 ````typescript
 import { z } from 'zod';
 import { EncryptedContentSchema } from '../common';
@@ -12737,9 +12737,9 @@ export type ApiUpdateNewMessage = z.infer<typeof ApiUpdateNewMessageSchema>;
 export type ApiDeleteSession = z.infer<typeof ApiDeleteSessionSchema>;
 ````
 
-## File: packages/@happy/protocol/README.md
+## File: packages/@magic-agent/protocol/README.md
 ````markdown
-# @happy/protocol
+# @magic-agent/protocol
 
 Shared protocol types for the Happy monorepo. This package provides **Zod schemas** and **TypeScript types** for the Happy sync protocol, serving as the single source of truth across all four consumer projects.
 
@@ -12762,7 +12762,7 @@ import {
   ApiEphemeralUpdateSchema,
   type ApiUpdate,
   type ApiEphemeralUpdate
-} from '@happy/protocol';
+} from '@magic-agent/protocol';
 
 // Validate incoming update
 const result = ApiUpdateSchema.safeParse(data);
@@ -12784,7 +12784,7 @@ if (result.success) {
 ### CommonJS (happy-server)
 
 ```javascript
-const { ApiUpdateSchema, ApiEphemeralUpdateSchema } = require('@happy/protocol');
+const { ApiUpdateSchema, ApiEphemeralUpdateSchema } = require('@magic-agent/protocol');
 
 // Same usage as ESM
 const result = ApiUpdateSchema.safeParse(data);
@@ -12930,7 +12930,7 @@ The original naming inconsistencies (HAP-383) have been fully resolved:
 When handling updates, always check the discriminator (`t` or `type`) first:
 
 ```typescript
-import type { ApiUpdate, ApiEphemeralUpdate } from '@happy/protocol';
+import type { ApiUpdate, ApiEphemeralUpdate } from '@magic-agent/protocol';
 
 // Persistent updates use 't' discriminator
 function handleUpdate(update: ApiUpdate) {
@@ -12970,7 +12970,7 @@ function handleEphemeral(event: ApiEphemeralUpdate) {
 ## Type Guard Patterns
 
 ```typescript
-import { ApiUpdateSchema, type ApiUpdate, type ApiUpdateType } from '@happy/protocol';
+import { ApiUpdateSchema, type ApiUpdate, type ApiUpdateType } from '@magic-agent/protocol';
 
 // Type narrowing with switch
 function handleUpdate(update: ApiUpdate) {
@@ -12997,7 +12997,7 @@ const updateTypes: ApiUpdateType[] = [
 ## Building
 
 ```bash
-# From packages/@happy/protocol
+# From packages/@magic-agent/protocol
 yarn build        # Build ESM + CJS output
 yarn typecheck    # Type check without emitting
 yarn clean        # Remove dist folder
@@ -13036,7 +13036,7 @@ This package:
 
 ## Migration Guide
 
-When migrating existing code to use `@happy/protocol`:
+When migrating existing code to use `@magic-agent/protocol`:
 
 1. **Import from package** instead of local types:
    ```typescript
@@ -13044,7 +13044,7 @@ When migrating existing code to use `@happy/protocol`:
    import { ApiUpdate } from '../api/types';
 
    // After
-   import { ApiUpdate } from '@happy/protocol';
+   import { ApiUpdate } from '@magic-agent/protocol';
    ```
 
 2. **Remove duplicate definitions** from local files
@@ -13068,7 +13068,7 @@ See individual project integration issues (HAP-385 through HAP-388) for detailed
 MIT
 ````
 
-## File: packages/@happy/protocol/src/updates/machine.ts
+## File: packages/@magic-agent/protocol/src/updates/machine.ts
 ````typescript
 import { z } from 'zod';
 import { VersionedValueSchema } from '../common';
@@ -13081,7 +13081,7 @@ export type ApiUpdateMachineState = z.infer<typeof ApiUpdateMachineStateSchema>;
 export type ApiDeleteMachine = z.infer<typeof ApiDeleteMachineSchema>;
 ````
 
-## File: packages/@happy/protocol/src/updates/session.ts
+## File: packages/@magic-agent/protocol/src/updates/session.ts
 ````typescript
 import { z } from 'zod';
 import { NullableVersionedValueSchema } from '../common';
@@ -13096,7 +13096,7 @@ export type ArchiveReason = z.infer<typeof ArchiveReasonSchema>;
 export type ApiArchiveSession = z.infer<typeof ApiArchiveSessionSchema>;
 ````
 
-## File: packages/@happy/protocol/src/common.ts
+## File: packages/@magic-agent/protocol/src/common.ts
 ````typescript
 import { z } from 'zod';
 import { STRING_LIMITS } from './constraints';
@@ -13119,12 +13119,12 @@ export type VersionedValue = z.infer<typeof VersionedValueSchema>;
 export type NullableVersionedValue = z.infer<typeof NullableVersionedValueSchema>;
 ````
 
-## File: packages/@happy/protocol/src/index.ts
+## File: packages/@magic-agent/protocol/src/index.ts
 ````typescript
 
 ````
 
-## File: packages/@happy/protocol/src/ephemeral/events.ts
+## File: packages/@magic-agent/protocol/src/ephemeral/events.ts
 ````typescript
 import { z } from 'zod';
 import { STRING_LIMITS } from '../constraints';
@@ -13145,10 +13145,10 @@ export type ApiEphemeralUpdate = z.infer<typeof ApiEphemeralUpdateSchema>;
 export type ApiEphemeralUpdateType = ApiEphemeralUpdate['type'];
 ````
 
-## File: packages/@happy/protocol/package.json
+## File: packages/@magic-agent/protocol/package.json
 ````json
 {
-    "name": "@happy/protocol",
+    "name": "@magic-agent/protocol",
     "version": "0.0.1",
     "description": "Shared protocol types for Happy monorepo (Zod schemas for API updates, ephemeral events)",
     "type": "module",
@@ -13236,8 +13236,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 | Package | Directory | Description | Documentation |
 |---------|-----------|-------------|---------------|
-| **@happy/protocol** | [`packages/@happy/protocol/`](./packages/@happy/protocol/) | Shared Zod schemas for API types | [`packages/@happy/protocol/CLAUDE.md`](./packages/@happy/protocol/CLAUDE.md) |
-| **@happy/errors** | [`packages/@happy/errors/`](./packages/@happy/errors/) | Unified error handling (AppError) | [`packages/@happy/errors/CLAUDE.md`](./packages/@happy/errors/CLAUDE.md) |
+| **@magic-agent/protocol** | [`packages/@magic-agent/protocol/`](./packages/@magic-agent/protocol/) | Shared Zod schemas for API types | [`packages/@magic-agent/protocol/CLAUDE.md`](./packages/@magic-agent/protocol/CLAUDE.md) |
+| **@magic-agent/errors** | [`packages/@magic-agent/errors/`](./packages/@magic-agent/errors/) | Unified error handling (AppError) | [`packages/@magic-agent/errors/CLAUDE.md`](./packages/@magic-agent/errors/CLAUDE.md) |
 | **@happy/lint-rules** | [`packages/@happy/lint-rules/`](./packages/@happy/lint-rules/) | Custom oxlint/ESLint rules | [`packages/@happy/lint-rules/CLAUDE.md`](./packages/@happy/lint-rules/CLAUDE.md) |
 
 ### Additional Documentation
@@ -13246,7 +13246,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 |----------|----------|-------------|
 | Encryption Architecture | [`docs/ENCRYPTION-ARCHITECTURE.md`](./docs/ENCRYPTION-ARCHITECTURE.md) | E2E encryption design |
 | Error Codes | [`docs/errors/`](./docs/errors/) | CLI error code documentation |
-| Shared Types RFC | [`docs/RFC-SHARED-TYPES-PACKAGE.md`](./docs/RFC-SHARED-TYPES-PACKAGE.md) | Design decision for @happy/protocol |
+| Shared Types RFC | [`docs/RFC-SHARED-TYPES-PACKAGE.md`](./docs/RFC-SHARED-TYPES-PACKAGE.md) | Design decision for @magic-agent/protocol |
 
 ## Monorepo Structure
 
@@ -13303,49 +13303,49 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 All projects use **yarn** (not npm). The monorepo uses **yarn workspaces** configured in the root `package.json` to:
 - Share dependencies across projects (hoisted to root `node_modules/`)
-- Link shared packages like `@happy/protocol` via `workspace:*`
+- Link shared packages like `@magic-agent/protocol` via `workspace:*`
 - Maintain a single `yarn.lock` for consistent dependency versions
 
 ## Shared Packages
 
 Shared packages live in `packages/@happy/` and are tracked in the `happy-shared` GitHub repository (separate from individual project repos). Each package has its own [`CLAUDE.md`](#shared-packages) with detailed development guidelines.
 
-### @happy/protocol
+### @magic-agent/protocol
 
-> **Full documentation**: [`packages/@happy/protocol/CLAUDE.md`](./packages/@happy/protocol/CLAUDE.md)
+> **Full documentation**: [`packages/@magic-agent/protocol/CLAUDE.md`](./packages/@magic-agent/protocol/CLAUDE.md)
 
-The `@happy/protocol` package provides shared Zod schemas for:
+The `@magic-agent/protocol` package provides shared Zod schemas for:
 - **API Updates**: Session, machine, message, artifact, account schemas
 - **Ephemeral Events**: Real-time events like typing indicators, cost updates
 
 **Usage:**
 ```typescript
-import { ApiUpdateSchema, type ApiUpdate } from '@happy/protocol';
+import { ApiUpdateSchema, type ApiUpdate } from '@magic-agent/protocol';
 ```
 
 **Building:**
 ```bash
-yarn workspace @happy/protocol build
-yarn workspace @happy/protocol typecheck
+yarn workspace @magic-agent/protocol build
+yarn workspace @magic-agent/protocol typecheck
 ```
 
-### @happy/errors
+### @magic-agent/errors
 
-> **Full documentation**: [`packages/@happy/errors/CLAUDE.md`](./packages/@happy/errors/CLAUDE.md)
+> **Full documentation**: [`packages/@magic-agent/errors/CLAUDE.md`](./packages/@magic-agent/errors/CLAUDE.md)
 
-The `@happy/errors` package provides unified error handling:
+The `@magic-agent/errors` package provides unified error handling:
 - **AppError class**: Standardized error structure with error codes
 - **Error codes**: Centralized error code constants
 
 **Usage:**
 ```typescript
-import { AppError, ErrorCodes } from '@happy/errors';
+import { AppError, ErrorCodes } from '@magic-agent/errors';
 ```
 
 **Building:**
 ```bash
-yarn workspace @happy/errors build
-yarn workspace @happy/errors typecheck
+yarn workspace @magic-agent/errors build
+yarn workspace @magic-agent/errors typecheck
 ```
 
 ### @happy/lint-rules
@@ -13354,7 +13354,7 @@ yarn workspace @happy/errors typecheck
 
 The `@happy/lint-rules` package provides custom linting rules for oxlint and ESLint:
 - **happy/github-casing**: Enforces "GitHub" casing in PascalCase identifiers (HAP-502)
-- **happy/protocol-helpers**: Enforces `@happy/protocol` ID accessor helper usage (HAP-658)
+- **happy/protocol-helpers**: Enforces `@magic-agent/protocol` ID accessor helper usage (HAP-658)
 
 **Usage with oxlint:**
 ```json
@@ -13373,8 +13373,8 @@ Projects consume packages via workspace linking:
 ```json
 {
   "dependencies": {
-    "@happy/protocol": "workspace:*",
-    "@happy/errors": "workspace:*"
+    "@magic-agent/protocol": "workspace:*",
+    "@magic-agent/errors": "workspace:*"
   },
   "devDependencies": {
     "@happy/lint-rules": "workspace:*"
@@ -13427,8 +13427,8 @@ When changes span multiple projects:
    - `happy-cli` - Update API client to match
    - `happy-app` - Update sync logic to match
 
-2. **Type definitions**: Use `@happy/protocol` for shared types. Project-specific types remain in:
-   - Shared: `packages/@happy/protocol/` (Zod schemas for API updates/events)
+2. **Type definitions**: Use `@magic-agent/protocol` for shared types. Project-specific types remain in:
+   - Shared: `packages/@magic-agent/protocol/` (Zod schemas for API updates/events)
    - Server: `sources/app/api/types.ts`
    - CLI: `src/api/types.ts`
    - App: `sources/sync/types.ts`
@@ -13653,7 +13653,7 @@ All three communicate via the HTTP/WebSocket API defined by happy-server.
 2. **Respect different conventions** (ESM vs CommonJS, src vs sources, 2-space vs 4-space indentation)
 3. **Test independently** - each project has its own test suite
 4. **Consider backward compatibility** - mobile apps may be on older versions
-5. **Update @happy/protocol first** when changing shared types, then update consuming projects
+5. **Update @magic-agent/protocol first** when changing shared types, then update consuming projects
 6. **Commit to correct repo** - shared packages go to `happy-shared`, project code to individual repos
 ````
 
@@ -13673,12 +13673,12 @@ All three communicate via the HTTP/WebSocket API defined by happy-server.
     "happy-admin-api"
   ],
   "scripts": {
-    "postinstall": "yarn workspace @happy/errors build && yarn workspace @happy/protocol build",
-    "build:errors": "yarn workspace @happy/errors build",
-    "build:protocol": "yarn workspace @happy/protocol build",
-    "typecheck:errors": "yarn workspace @happy/errors typecheck",
-    "typecheck:protocol": "yarn workspace @happy/protocol typecheck",
-    "schema:extract": "yarn workspace @happy/protocol schema:extract",
+    "postinstall": "yarn workspace @magic-agent/errors build && yarn workspace @magic-agent/protocol build",
+    "build:errors": "yarn workspace @magic-agent/errors build",
+    "build:protocol": "yarn workspace @magic-agent/protocol build",
+    "typecheck:errors": "yarn workspace @magic-agent/errors typecheck",
+    "typecheck:protocol": "yarn workspace @magic-agent/protocol typecheck",
+    "schema:extract": "yarn workspace @magic-agent/protocol schema:extract",
     "schema:compare": "tsx scripts/compare-schemas.ts",
     "ncu:all": "find . -name package.json -not -path '*/node_modules/*' -execdir ncu -u \\;",
     "deploy:stack:pro": "yarn install && cd happy-cli && yarn build && cd ../happy-app && yarn deploy:workers:pro && cd ../happy-server-workers && yarn deploy:prod",
@@ -13744,7 +13744,7 @@ All three communicate via the HTTP/WebSocket API defined by happy-server.
 **Message:** Potential fix for code scanning alert no. 17: DOM text reinterpreted as HTML
 
 **Files:**
-- packages/@happy/protocol/coverage/sorter.js
+- packages/@magic-agent/protocol/coverage/sorter.js
 
 ## Commit: 2026-01-04 18:07:48 -0600
 **Message:** Potential fix for code scanning alert no. 2: Workflow does not contain permissions
@@ -13838,60 +13838,60 @@ All three communicate via the HTTP/WebSocket API defined by happy-server.
 **Files:**
 - knip.json
 - package.json
-- packages/@happy/errors/CLAUDE.md
-- packages/@happy/errors/package.tgz
+- packages/@magic-agent/errors/CLAUDE.md
+- packages/@magic-agent/errors/package.tgz
 - packages/@happy/lint-rules/package.json
-- packages/@happy/protocol/coverage/base.css
-- packages/@happy/protocol/coverage/block-navigation.js
-- packages/@happy/protocol/coverage/clover.xml
-- packages/@happy/protocol/coverage/coverage-final.json
-- packages/@happy/protocol/coverage/favicon.png
-- packages/@happy/protocol/coverage/index.html
-- packages/@happy/protocol/coverage/prettify.css
-- packages/@happy/protocol/coverage/prettify.js
-- packages/@happy/protocol/coverage/sort-arrow-sprite.png
-- packages/@happy/protocol/coverage/sorter.js
-- packages/@happy/protocol/coverage/src/common.ts.html
-- packages/@happy/protocol/coverage/src/constraints.ts.html
-- packages/@happy/protocol/coverage/src/ephemeral/events.ts.html
-- packages/@happy/protocol/coverage/src/ephemeral/index.html
-- packages/@happy/protocol/coverage/src/ephemeral/index.ts.html
-- packages/@happy/protocol/coverage/src/helpers.ts.html
-- packages/@happy/protocol/coverage/src/index.html
-- packages/@happy/protocol/coverage/src/index.ts.html
-- packages/@happy/protocol/coverage/src/mcp.ts.html
-- packages/@happy/protocol/coverage/src/payloads.ts.html
-- packages/@happy/protocol/coverage/src/updates/account.ts.html
-- packages/@happy/protocol/coverage/src/updates/artifact.ts.html
-- packages/@happy/protocol/coverage/src/updates/index.html
-- packages/@happy/protocol/coverage/src/updates/index.ts.html
-- packages/@happy/protocol/coverage/src/updates/machine.ts.html
-- packages/@happy/protocol/coverage/src/updates/message.ts.html
-- packages/@happy/protocol/coverage/src/updates/misc.ts.html
-- packages/@happy/protocol/coverage/src/updates/session.ts.html
-- packages/@happy/protocol/package.json
-- packages/@happy/protocol/src/common.ts
+- packages/@magic-agent/protocol/coverage/base.css
+- packages/@magic-agent/protocol/coverage/block-navigation.js
+- packages/@magic-agent/protocol/coverage/clover.xml
+- packages/@magic-agent/protocol/coverage/coverage-final.json
+- packages/@magic-agent/protocol/coverage/favicon.png
+- packages/@magic-agent/protocol/coverage/index.html
+- packages/@magic-agent/protocol/coverage/prettify.css
+- packages/@magic-agent/protocol/coverage/prettify.js
+- packages/@magic-agent/protocol/coverage/sort-arrow-sprite.png
+- packages/@magic-agent/protocol/coverage/sorter.js
+- packages/@magic-agent/protocol/coverage/src/common.ts.html
+- packages/@magic-agent/protocol/coverage/src/constraints.ts.html
+- packages/@magic-agent/protocol/coverage/src/ephemeral/events.ts.html
+- packages/@magic-agent/protocol/coverage/src/ephemeral/index.html
+- packages/@magic-agent/protocol/coverage/src/ephemeral/index.ts.html
+- packages/@magic-agent/protocol/coverage/src/helpers.ts.html
+- packages/@magic-agent/protocol/coverage/src/index.html
+- packages/@magic-agent/protocol/coverage/src/index.ts.html
+- packages/@magic-agent/protocol/coverage/src/mcp.ts.html
+- packages/@magic-agent/protocol/coverage/src/payloads.ts.html
+- packages/@magic-agent/protocol/coverage/src/updates/account.ts.html
+- packages/@magic-agent/protocol/coverage/src/updates/artifact.ts.html
+- packages/@magic-agent/protocol/coverage/src/updates/index.html
+- packages/@magic-agent/protocol/coverage/src/updates/index.ts.html
+- packages/@magic-agent/protocol/coverage/src/updates/machine.ts.html
+- packages/@magic-agent/protocol/coverage/src/updates/message.ts.html
+- packages/@magic-agent/protocol/coverage/src/updates/misc.ts.html
+- packages/@magic-agent/protocol/coverage/src/updates/session.ts.html
+- packages/@magic-agent/protocol/package.json
+- packages/@magic-agent/protocol/src/common.ts
 - yarn.lock
 
 ## Commit: 2026-01-04 14:26:11 -0600
 **Message:** test(HAP-780): Add tests for machine-disconnected ephemeral event
 
 **Files:**
-- packages/@happy/protocol/src/helpers.test.ts
+- packages/@magic-agent/protocol/src/helpers.test.ts
 
 ## Commit: 2026-01-04 14:18:21 -0600
 **Message:** feat(HAP-780): Add machine-disconnected ephemeral event schema
 
 **Files:**
-- packages/@happy/protocol/src/ephemeral/events.ts
-- packages/@happy/protocol/src/helpers.ts
+- packages/@magic-agent/protocol/src/ephemeral/events.ts
+- packages/@magic-agent/protocol/src/helpers.ts
 
 ## Commit: 2026-01-04 13:44:39 -0600
 **Message:** feat(HAP-778): Add ApiDeleteMachineSchema for machine disconnect
 
 **Files:**
-- packages/@happy/protocol/src/updates/index.ts
-- packages/@happy/protocol/src/updates/machine.ts
+- packages/@magic-agent/protocol/src/updates/index.ts
+- packages/@magic-agent/protocol/src/updates/machine.ts
 
 ## Commit: 2026-01-04 11:01:31 -0600
 **Message:** docs(HAP-721): Add happy-macos to encryption architecture documentation
@@ -13906,14 +13906,14 @@ All three communicate via the HTTP/WebSocket API defined by happy-server.
 - .github/workflows/ci.yml
 
 ## Commit: 2026-01-04 10:12:47 -0600
-**Message:** feat(HAP-766): Add session sharing protocol schemas to @happy/protocol
+**Message:** feat(HAP-766): Add session sharing protocol schemas to @magic-agent/protocol
 
 **Files:**
-- packages/@happy/protocol/README.md
-- packages/@happy/protocol/scripts/generate-swift.ts
-- packages/@happy/protocol/src/index.ts
-- packages/@happy/protocol/src/sharing.test.ts
-- packages/@happy/protocol/src/sharing.ts
+- packages/@magic-agent/protocol/README.md
+- packages/@magic-agent/protocol/scripts/generate-swift.ts
+- packages/@magic-agent/protocol/src/index.ts
+- packages/@magic-agent/protocol/src/sharing.test.ts
+- packages/@magic-agent/protocol/src/sharing.ts
 
 ## Commit: 2026-01-04 09:05:20 -0600
 **Message:** test(HAP-763): Add unit tests for @happy/lint-rules oxlint plugin
@@ -13944,111 +13944,111 @@ All three communicate via the HTTP/WebSocket API defined by happy-server.
 - yarn.lock
 
 ## Commit: 2026-01-04 00:37:49 -0600
-**Message:** feat(HAP-658): Add ESLint rule to enforce @happy/protocol ID accessor helper usage
+**Message:** feat(HAP-658): Add ESLint rule to enforce @magic-agent/protocol ID accessor helper usage
 
 **Files:**
 - happy-admin/eslint.config.js
 - scripts/lint-protocol-helpers.mjs
 
 ## Commit: 2026-01-02 18:09:26 -0600
-**Message:** feat(HAP-741): Add archive-session update schema to @happy/protocol
+**Message:** feat(HAP-741): Add archive-session update schema to @magic-agent/protocol
 
 **Files:**
-- packages/@happy/protocol/src/updates/index.ts
-- packages/@happy/protocol/src/updates/session.ts
+- packages/@magic-agent/protocol/src/updates/index.ts
+- packages/@magic-agent/protocol/src/updates/session.ts
 
 ## Commit: 2026-01-02 00:55:39 -0600
 **Message:** feat(HAP-733): Add SESSION_REVIVAL_FAILED error code
 
 **Files:**
-- packages/@happy/errors/src/index.ts
+- packages/@magic-agent/errors/src/index.ts
 
 ## Commit: 2026-01-01 23:28:51 -0600
-**Message:** feat(HAP-729): Add UsageLimits schema to @happy/protocol
+**Message:** feat(HAP-729): Add UsageLimits schema to @magic-agent/protocol
 
 **Files:**
-- packages/@happy/protocol/src/index.ts
-- packages/@happy/protocol/src/usageLimits.test.ts
-- packages/@happy/protocol/src/usageLimits.ts
+- packages/@magic-agent/protocol/src/index.ts
+- packages/@magic-agent/protocol/src/usageLimits.test.ts
+- packages/@magic-agent/protocol/src/usageLimits.ts
 
 ## Commit: 2026-01-01 19:11:41 -0600
-**Message:** feat(HAP-716): Add FriendStatusEventSchema to @happy/protocol
+**Message:** feat(HAP-716): Add FriendStatusEventSchema to @magic-agent/protocol
 
 **Files:**
-- packages/@happy/protocol/src/ephemeral/events.ts
+- packages/@magic-agent/protocol/src/ephemeral/events.ts
 
 ## Commit: 2026-01-01 05:15:49 -0600
 **Message:** chore(HAP-695): Migrate extract-schemas.ts to Zod 4 native JSON Schema
 
 **Files:**
-- packages/@happy/protocol/package.json
-- packages/@happy/protocol/scripts/extract-schemas.ts
+- packages/@magic-agent/protocol/package.json
+- packages/@magic-agent/protocol/scripts/extract-schemas.ts
 
 ## Commit: 2026-01-01 04:49:13 -0600
 **Message:** feat(HAP-687): Set up Zod to Swift type generation for happy-macos
 
 **Files:**
-- packages/@happy/protocol/CLAUDE.md
-- packages/@happy/protocol/package.json
-- packages/@happy/protocol/scripts/generate-swift.ts
+- packages/@magic-agent/protocol/CLAUDE.md
+- packages/@magic-agent/protocol/package.json
+- packages/@magic-agent/protocol/scripts/generate-swift.ts
 - yarn.lock
 
 ## Commit: 2025-12-29 17:45:30 -0600
 **Message:** test(HAP-654): Update common.test.ts to use `sid` field
 
 **Files:**
-- packages/@happy/protocol/src/common.test.ts
+- packages/@magic-agent/protocol/src/common.test.ts
 
 ## Commit: 2025-12-29 17:43:45 -0600
 **Message:** docs(HAP-654): Fix outdated JSDoc example in ApiUpdateSchema
 
 **Files:**
-- packages/@happy/protocol/src/updates/index.ts
+- packages/@magic-agent/protocol/src/updates/index.ts
 
 ## Commit: 2025-12-29 17:35:03 -0600
 **Message:** docs(HAP-654): Update README.md to reflect standardized field names
 
 **Files:**
-- packages/@happy/protocol/README.md
+- packages/@magic-agent/protocol/README.md
 
 ## Commit: 2025-12-29 17:25:14 -0600
-**Message:** feat(HAP-654): Standardize session ID field to 'sid' in @happy/protocol
+**Message:** feat(HAP-654): Standardize session ID field to 'sid' in @magic-agent/protocol
 
 **Files:**
-- packages/@happy/protocol/README.md
-- packages/@happy/protocol/src/updates/machine.ts
-- packages/@happy/protocol/src/updates/message.ts
-- packages/@happy/protocol/src/updates/session.ts
+- packages/@magic-agent/protocol/README.md
+- packages/@magic-agent/protocol/src/updates/machine.ts
+- packages/@magic-agent/protocol/src/updates/message.ts
+- packages/@magic-agent/protocol/src/updates/session.ts
 
 ## Commit: 2025-12-29 17:24:36 -0600
 **Message:** feat(HAP-655): Standardize machine ID field to 'machineId' in ephemeral events
 
 **Files:**
-- packages/@happy/protocol/src/ephemeral/events.ts
+- packages/@magic-agent/protocol/src/ephemeral/events.ts
 
 ## Commit: 2025-12-29 17:16:21 -0600
-**Message:** feat(HAP-653): Add type-safe session/machine ID accessor helpers to @happy/protocol
+**Message:** feat(HAP-653): Add type-safe session/machine ID accessor helpers to @magic-agent/protocol
 
 **Files:**
-- packages/@happy/protocol/src/helpers.test.ts
-- packages/@happy/protocol/src/helpers.ts
-- packages/@happy/protocol/src/index.ts
+- packages/@magic-agent/protocol/src/helpers.test.ts
+- packages/@magic-agent/protocol/src/helpers.ts
+- packages/@magic-agent/protocol/src/index.ts
 
 ## Commit: 2025-12-29 17:06:49 -0600
 **Message:** docs(HAP-651): Add JSDoc comments clarifying session/machine ID fields
 
 **Files:**
-- packages/@happy/protocol/src/ephemeral/events.ts
-- packages/@happy/protocol/src/updates/machine.ts
-- packages/@happy/protocol/src/updates/message.ts
-- packages/@happy/protocol/src/updates/session.ts
+- packages/@magic-agent/protocol/src/ephemeral/events.ts
+- packages/@magic-agent/protocol/src/updates/machine.ts
+- packages/@magic-agent/protocol/src/updates/message.ts
+- packages/@magic-agent/protocol/src/updates/session.ts
 
 ## Commit: 2025-12-29 17:04:30 -0600
-**Message:** docs(HAP-652): Add session/machine ID field name mapping to @happy/protocol
+**Message:** docs(HAP-652): Add session/machine ID field name mapping to @magic-agent/protocol
 
 **Files:**
-- packages/@happy/protocol/CLAUDE.md
-- packages/@happy/protocol/README.md
+- packages/@magic-agent/protocol/CLAUDE.md
+- packages/@magic-agent/protocol/README.md
 
 ## Commit: 2025-12-29 05:34:56 -0600
 **Message:** chore(happy-app): Remove 35 unused dependencies and 4 dead code files
@@ -14057,34 +14057,34 @@ All three communicate via the HTTP/WebSocket API defined by happy-server.
 - yarn.lock
 
 ## Commit: 2025-12-29 05:02:41 -0600
-**Message:** fix(HAP-630): Add safe error response utilities to @happy/errors
+**Message:** fix(HAP-630): Add safe error response utilities to @magic-agent/errors
 
 **Files:**
-- packages/@happy/errors/src/index.ts
-- packages/@happy/errors/src/safeError.ts
+- packages/@magic-agent/errors/src/index.ts
+- packages/@magic-agent/errors/src/safeError.ts
 
 ## Commit: 2025-12-28 19:54:44 -0600
 **Message:** feat(HAP-631): Enforce type-safe error codes in AppError class
 
 **Files:**
-- packages/@happy/errors/src/index.test.ts
-- packages/@happy/errors/src/index.ts
+- packages/@magic-agent/errors/src/index.test.ts
+- packages/@magic-agent/errors/src/index.ts
 
 ## Commit: 2025-12-28 19:43:52 -0600
 **Message:** feat(HAP-629): Add string length validation to protocol schemas
 
 **Files:**
-- packages/@happy/protocol/src/common.test.ts
-- packages/@happy/protocol/src/ephemeral/events.ts
-- packages/@happy/protocol/src/index.ts
-- packages/@happy/protocol/src/mcp.ts
-- packages/@happy/protocol/src/payloads.ts
-- packages/@happy/protocol/src/updates/account.ts
-- packages/@happy/protocol/src/updates/artifact.ts
-- packages/@happy/protocol/src/updates/machine.ts
-- packages/@happy/protocol/src/updates/message.ts
-- packages/@happy/protocol/src/updates/misc.ts
-- packages/@happy/protocol/src/updates/session.ts
+- packages/@magic-agent/protocol/src/common.test.ts
+- packages/@magic-agent/protocol/src/ephemeral/events.ts
+- packages/@magic-agent/protocol/src/index.ts
+- packages/@magic-agent/protocol/src/mcp.ts
+- packages/@magic-agent/protocol/src/payloads.ts
+- packages/@magic-agent/protocol/src/updates/account.ts
+- packages/@magic-agent/protocol/src/updates/artifact.ts
+- packages/@magic-agent/protocol/src/updates/machine.ts
+- packages/@magic-agent/protocol/src/updates/message.ts
+- packages/@magic-agent/protocol/src/updates/misc.ts
+- packages/@magic-agent/protocol/src/updates/session.ts
 
 ## Commit: 2025-12-28 19:30:12 -0600
 **Message:** fix(HAP-626): Replace .passthrough() with .strip() for security
@@ -14094,17 +14094,17 @@ All three communicate via the HTTP/WebSocket API defined by happy-server.
 - happy-admin/src/app/main.ts
 - happy-admin/src/app/views/AdminUsers.vue
 - happy-admin/src/app/views/Dashboard.vue
-- packages/@happy/protocol/src/common.test.ts
-- packages/@happy/protocol/src/common.ts
-- packages/@happy/protocol/src/constraints.ts
-- packages/@happy/protocol/src/payloads.ts
+- packages/@magic-agent/protocol/src/common.test.ts
+- packages/@magic-agent/protocol/src/common.ts
+- packages/@magic-agent/protocol/src/constraints.ts
+- packages/@magic-agent/protocol/src/payloads.ts
 
 ## Commit: 2025-12-28 07:27:08 -0600
-**Message:** feat(HAP-605): Add MCP state sync schemas to @happy/protocol
+**Message:** feat(HAP-605): Add MCP state sync schemas to @magic-agent/protocol
 
 **Files:**
-- packages/@happy/protocol/src/index.ts
-- packages/@happy/protocol/src/mcp.ts
+- packages/@magic-agent/protocol/src/index.ts
+- packages/@magic-agent/protocol/src/mcp.ts
 
 ## Commit: 2025-12-27 04:38:27 -0600
 **Message:** feat(HAP-582): Add validation metrics UI section to admin dashboard

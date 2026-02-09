@@ -11,12 +11,12 @@ This repository contains shared code used across the Happy ecosystem - a mobile 
 
 ## Packages
 
-### @happy/protocol
+### @magic-agent/protocol
 
 Shared Zod schemas and TypeScript types for the Happy sync protocol.
 
 ```typescript
-import { ApiUpdateSchema, ApiEphemeralUpdateSchema } from '@happy/protocol';
+import { ApiUpdateSchema, ApiEphemeralUpdateSchema } from '@magic-agent/protocol';
 ```
 
 See [packages/schema/protocol/README.md](packages/schema/protocol/README.md) for detailed documentation.
@@ -52,18 +52,18 @@ corepack enable
 yarn install
 
 # Build the protocol package
-yarn workspace @happy/protocol build
+yarn workspace @magic-agent/protocol build
 
 # Type check
-yarn workspace @happy/protocol typecheck
+yarn workspace @magic-agent/protocol typecheck
 ```
 
 ### Available Scripts
 
 | Script | Description |
 |--------|-------------|
-| `yarn build:protocol` | Build @happy/protocol |
-| `yarn typecheck:protocol` | Type check @happy/protocol |
+| `yarn build:protocol` | Build @magic-agent/protocol |
+| `yarn typecheck:protocol` | Type check @magic-agent/protocol |
 
 ## CI/CD Pipeline
 

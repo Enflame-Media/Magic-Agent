@@ -110,7 +110,7 @@ Schema drift occurs when the server's API schemas diverge from what clients expe
 
 ### How It Works
 
-1. **Protocol Schema Extraction**: The `@happy/protocol` package's Zod schemas are converted to JSON Schema format
+1. **Protocol Schema Extraction**: The `@magic-agent/protocol` package's Zod schemas are converted to JSON Schema format
 2. **OpenAPI Schema Extraction**: The server's OpenAPI spec contains schemas derived from route definitions
 3. **Comparison**: A comparison script identifies mismatches between protocol and server schemas
 4. **Breaking Change Detection**: Optional `oasdiff` integration detects breaking changes vs. baseline
@@ -151,7 +151,7 @@ schema-drift:
 ```
 
 **Artifacts produced:**
-- `protocol-schemas` - JSON Schema representation of `@happy/protocol`
+- `protocol-schemas` - JSON Schema representation of `@magic-agent/protocol`
 - `schema-drift-report` - Markdown report of any detected drift
 
 ### Issue Severity
@@ -244,12 +244,12 @@ app.post('/v1/sessions', {
 3. **Use appropriate Zod types** (`z.string().uuid()`, `z.string().datetime()`)
 4. **Group endpoints with tags** in route handlers
 
-## Shared Types with @happy/protocol
+## Shared Types with @magic-agent/protocol
 
-The `@happy/protocol` package contains shared Zod schemas for API payloads:
+The `@magic-agent/protocol` package contains shared Zod schemas for API payloads:
 
 ```typescript
-// In @happy/protocol
+// In @magic-agent/protocol
 export const SessionUpdateSchema = z.object({
     sessionId: z.string(),
     status: z.enum(["active", "paused", "completed"]),
@@ -257,7 +257,7 @@ export const SessionUpdateSchema = z.object({
 });
 
 // In happy-server route
-import { SessionUpdateSchema } from "@happy/protocol";
+import { SessionUpdateSchema } from "@magic-agent/protocol";
 
 app.post('/v1/sessions/update', {
     schema: {
@@ -325,8 +325,8 @@ app.addHook('onRequest', (request, reply, done) => {
 ## Related Documentation
 
 - [Encryption Architecture](./ENCRYPTION-ARCHITECTURE.md) - E2E encryption design
-- [RFC: Shared Types Package](./RFC-SHARED-TYPES-PACKAGE.md) - @happy/protocol design
-- [@happy/protocol CLAUDE.md](../packages/schema/protocol/CLAUDE.md) - Protocol package guidelines
+- [RFC: Shared Types Package](./RFC-SHARED-TYPES-PACKAGE.md) - @magic-agent/protocol design
+- [@magic-agent/protocol CLAUDE.md](../packages/schema/protocol/CLAUDE.md) - Protocol package guidelines
 
 ## Changelog
 

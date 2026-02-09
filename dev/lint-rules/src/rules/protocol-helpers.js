@@ -1,5 +1,5 @@
 /**
- * @fileoverview Enforces use of @happy/protocol ID accessor helpers.
+ * @fileoverview Enforces use of @magic-agent/protocol ID accessor helpers.
  *
  * This rule detects direct access to .sid and .machineId on update body objects
  * and recommends using getSessionId() and getMachineId() helpers instead.
@@ -24,7 +24,7 @@
 const meta = {
     type: 'suggestion',
     docs: {
-        description: 'Enforce @happy/protocol ID accessor helper usage',
+        description: 'Enforce @magic-agent/protocol ID accessor helper usage',
         category: 'Best Practices',
         recommended: true,
     },
@@ -32,9 +32,9 @@ const meta = {
     schema: [],
     messages: {
         avoidDirectSid:
-            'Avoid direct .sid access on update body. Use getSessionId(update.body) from @happy/protocol. See HAP-653.',
+            'Avoid direct .sid access on update body. Use getSessionId(update.body) from @magic-agent/protocol. See HAP-653.',
         avoidDirectMachineId:
-            'Avoid direct .machineId access on update body. Use getMachineId(update.body) from @happy/protocol. See HAP-653.',
+            'Avoid direct .machineId access on update body. Use getMachineId(update.body) from @magic-agent/protocol. See HAP-653.',
     },
 };
 

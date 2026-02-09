@@ -31,8 +31,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 | Package | Directory | Description | Documentation |
 |---------|-----------|-------------|---------------|
-| **@happy/protocol** | [`packages/schema/protocol/`](./packages/schema/protocol/) | Shared Zod schemas for API types | [`packages/schema/protocol/CLAUDE.md`](./packages/schema/protocol/CLAUDE.md) |
-| **@happy/errors** | [`packages/schema/errors/`](./packages/schema/errors/) | Unified error handling (AppError) | [`packages/schema/errors/CLAUDE.md`](./packages/schema/errors/CLAUDE.md) |
+| **@magic-agent/protocol** | [`packages/schema/protocol/`](./packages/schema/protocol/) | Shared Zod schemas for API types | [`packages/schema/protocol/CLAUDE.md`](./packages/schema/protocol/CLAUDE.md) |
+| **@magic-agent/errors** | [`packages/schema/errors/`](./packages/schema/errors/) | Unified error handling (AppError) | [`packages/schema/errors/CLAUDE.md`](./packages/schema/errors/CLAUDE.md) |
 | **@happy/lint-rules** | [`dev/lint-rules/`](./dev/lint-rules/) | Custom oxlint/ESLint rules | [`dev/lint-rules/CLAUDE.md`](./dev/lint-rules/CLAUDE.md) |
 
 ### Additional Documentation
@@ -41,7 +41,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 |----------|----------|-------------|
 | Encryption Architecture | [`docs/ENCRYPTION-ARCHITECTURE.md`](./docs/ENCRYPTION-ARCHITECTURE.md) | E2E encryption design |
 | Error Codes | [`docs/errors/`](./docs/errors/) | CLI error code documentation |
-| Shared Types RFC | [`docs/RFC-SHARED-TYPES-PACKAGE.md`](./docs/RFC-SHARED-TYPES-PACKAGE.md) | Design decision for @happy/protocol |
+| Shared Types RFC | [`docs/RFC-SHARED-TYPES-PACKAGE.md`](./docs/RFC-SHARED-TYPES-PACKAGE.md) | Design decision for @magic-agent/protocol |
 | API Versioning | [`docs/API-VERSIONING.md`](./docs/API-VERSIONING.md) | API versioning strategy |
 | Remote Logging | [`docs/REMOTE-LOGGING.md`](./docs/REMOTE-LOGGING.md) | Development debugging feature |
 | Mutation Testing | [`docs/MUTATION-TESTING.md`](./docs/MUTATION-TESTING.md) | Mutation testing best practices |
@@ -53,9 +53,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ├── CLAUDE.md               # ← You are here (root documentation)
 ├── packages/               # Shared packages
 │   └── schema/
-│       ├── protocol/       # @happy/protocol - Zod schemas for API types
+│       ├── protocol/       # @magic-agent/protocol - Zod schemas for API types
 │       │   └── CLAUDE.md   # Protocol package guidelines
-│       └── errors/         # @happy/errors - Unified error handling
+│       └── errors/         # @magic-agent/errors - Unified error handling
 │           └── CLAUDE.md   # Errors package guidelines
 ├── dev/
 │   └── lint-rules/         # @happy/lint-rules - Custom oxlint/ESLint rules
@@ -114,49 +114,49 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 All projects use **yarn** (not npm). The monorepo uses **yarn workspaces** configured in the root `package.json` to:
 - Share dependencies across projects (hoisted to root `node_modules/`)
-- Link shared packages like `@happy/protocol` via `workspace:*`
+- Link shared packages like `@magic-agent/protocol` via `workspace:*`
 - Maintain a single `yarn.lock` for consistent dependency versions
 
 ## Shared Packages
 
 Shared packages live in `packages/schema/` and are tracked in the `happy-shared` GitHub repository (separate from individual project repos). Each package has its own [`CLAUDE.md`](#shared-packages) with detailed development guidelines.
 
-### @happy/protocol
+### @magic-agent/protocol
 
 > **Full documentation**: [`packages/schema/protocol/CLAUDE.md`](./packages/schema/protocol/CLAUDE.md)
 
-The `@happy/protocol` package provides shared Zod schemas for:
+The `@magic-agent/protocol` package provides shared Zod schemas for:
 - **API Updates**: Session, machine, message, artifact, account schemas
 - **Ephemeral Events**: Real-time events like typing indicators, cost updates
 
 **Usage:**
 ```typescript
-import { ApiUpdateSchema, type ApiUpdate } from '@happy/protocol';
+import { ApiUpdateSchema, type ApiUpdate } from '@magic-agent/protocol';
 ```
 
 **Building:**
 ```bash
-yarn workspace @happy/protocol build
-yarn workspace @happy/protocol typecheck
+yarn workspace @magic-agent/protocol build
+yarn workspace @magic-agent/protocol typecheck
 ```
 
-### @happy/errors
+### @magic-agent/errors
 
 > **Full documentation**: [`packages/schema/errors/CLAUDE.md`](./packages/schema/errors/CLAUDE.md)
 
-The `@happy/errors` package provides unified error handling:
+The `@magic-agent/errors` package provides unified error handling:
 - **AppError class**: Standardized error structure with error codes
 - **Error codes**: Centralized error code constants
 
 **Usage:**
 ```typescript
-import { AppError, ErrorCodes } from '@happy/errors';
+import { AppError, ErrorCodes } from '@magic-agent/errors';
 ```
 
 **Building:**
 ```bash
-yarn workspace @happy/errors build
-yarn workspace @happy/errors typecheck
+yarn workspace @magic-agent/errors build
+yarn workspace @magic-agent/errors typecheck
 ```
 
 ### @happy/lint-rules
@@ -165,7 +165,7 @@ yarn workspace @happy/errors typecheck
 
 The `@happy/lint-rules` package provides custom linting rules for oxlint and ESLint:
 - **happy/github-casing**: Enforces "GitHub" casing in PascalCase identifiers (HAP-502)
-- **happy/protocol-helpers**: Enforces `@happy/protocol` ID accessor helper usage (HAP-658)
+- **happy/protocol-helpers**: Enforces `@magic-agent/protocol` ID accessor helper usage (HAP-658)
 
 **Usage with oxlint:**
 ```json
@@ -184,8 +184,8 @@ Projects consume packages via workspace linking:
 ```json
 {
   "dependencies": {
-    "@happy/protocol": "workspace:*",
-    "@happy/errors": "workspace:*"
+    "@magic-agent/protocol": "workspace:*",
+    "@magic-agent/errors": "workspace:*"
   },
   "devDependencies": {
     "@happy/lint-rules": "workspace:*"
@@ -256,7 +256,7 @@ When changes span multiple projects:
    - `apps/cli` - Update API client to match
    - `apps/web/react` - Update sync logic to match
 
-2. **Type definitions**: Use `@happy/protocol` for shared types. Project-specific types remain in:
+2. **Type definitions**: Use `@magic-agent/protocol` for shared types. Project-specific types remain in:
    - Shared: `packages/schema/protocol/` (Zod schemas for API updates/events)
    - Server: `sources/app/api/types.ts`
    - CLI: `src/api/types.ts`
@@ -499,8 +499,8 @@ See `apps/server/docker/docs/SECRET-ROTATION.md` for detailed procedures on rota
 ### Internal Package Dependencies
 
 All TypeScript projects can consume shared packages:
-- `@happy/protocol` - API type definitions (Zod schemas)
-- `@happy/errors` - Error handling utilities
+- `@magic-agent/protocol` - API type definitions (Zod schemas)
+- `@magic-agent/errors` - Error handling utilities
 - `@happy/lint-rules` - Linting rules (devDependency)
 
 ### Communication
@@ -527,5 +527,5 @@ All TypeScript projects can consume shared packages:
 2. **Respect different conventions** (ESM vs CommonJS, src vs sources, 2-space vs 4-space indentation)
 3. **Test independently** - each project has its own test suite
 4. **Consider backward compatibility** - mobile apps may be on older versions
-5. **Update @happy/protocol first** when changing shared types, then update consuming projects
+5. **Update @magic-agent/protocol first** when changing shared types, then update consuming projects
 6. **Commit to correct repo** - shared packages go to `happy-shared`, project code to individual repos

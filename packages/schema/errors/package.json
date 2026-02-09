@@ -1,7 +1,7 @@
 {
-  "name": "@happy/errors",
+  "name": "@magic-agent/errors",
   "version": "0.0.1",
-  "description": "Unified error handling for Happy monorepo - AppError class with options pattern",
+  "description": "Unified error handling for Magic Agent monorepo - AppError class with options pattern",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

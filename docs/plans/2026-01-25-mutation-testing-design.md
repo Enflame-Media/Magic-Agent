@@ -253,7 +253,7 @@ Create Linear issues for:
 | Priority | Project | Rationale |
 |----------|---------|-----------|
 | 1 | `apps/cli` | Core business logic |
-| 2 | `@happy/protocol` | Shared schemas |
-| 3 | `@happy/errors` | Shared utilities |
+| 2 | `@magic-agent/protocol` | Shared schemas |
+| 3 | `@magic-agent/errors` | Shared utilities |
 | 4 | `apps/admin/api` | API layer |
 | 5 | `apps/web/react` | UI testing |

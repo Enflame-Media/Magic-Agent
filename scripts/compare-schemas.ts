@@ -2,7 +2,7 @@
 /**
  * Schema Drift Detection Script
  *
- * Compares OpenAPI schemas from happy-server with JSON schemas extracted from @happy/protocol
+ * Compares OpenAPI schemas from happy-server with JSON schemas extracted from @magic-agent/protocol
  * to detect schema drift between what the server exposes and what clients expect.
  *
  * This script performs two types of checks:
@@ -17,7 +17,7 @@
  *   yarn schema:compare --ci               # Output format suitable for CI (markdown summary)
  *
  * Prerequisites:
- *   - yarn workspace @happy/protocol schema:extract (generates protocol-schemas.json)
+ *   - yarn workspace @magic-agent/protocol schema:extract (generates protocol-schemas.json)
  *   - cd apps/server/docker && yarn openapi:generate (generates openapi.json)
  *   - oasdiff (optional, for breaking change detection)
  *
@@ -394,7 +394,7 @@ async function main(): Promise<void> {
     // Check prerequisites
     if (!existsSync(PROTOCOL_SCHEMAS_PATH)) {
         console.error(`❌ Protocol schemas not found: ${PROTOCOL_SCHEMAS_PATH}`);
-        console.error('   Run: yarn workspace @happy/protocol schema:extract');
+        console.error('   Run: yarn workspace @magic-agent/protocol schema:extract');
         process.exit(1);
     }
 

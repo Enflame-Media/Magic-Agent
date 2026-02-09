@@ -90,8 +90,8 @@ jobs:
 
       - name: Build shared packages
         run: |
-          yarn workspace @happy/errors build
-          yarn workspace @happy/protocol build
+          yarn workspace @magic-agent/errors build
+          yarn workspace @magic-agent/protocol build
         working-directory: .
 
       - name: Run mutation tests

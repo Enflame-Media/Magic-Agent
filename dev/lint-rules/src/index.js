@@ -6,7 +6,7 @@
  *
  * Rules:
  *   - happy/github-casing: Enforce proper "GitHub" casing in PascalCase identifiers
- *   - happy/protocol-helpers: Enforce @happy/protocol ID accessor helper usage
+ *   - happy/protocol-helpers: Enforce @magic-agent/protocol ID accessor helper usage
  *
  * Usage with oxlint (.oxlintrc.json):
  *   {

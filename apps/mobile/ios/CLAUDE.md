@@ -297,7 +297,7 @@ class SessionViewModel: ObservableObject {
 
 ## Shared Protocol Types
 
-Use the generated Swift types from `@happy/protocol`:
+Use the generated Swift types from `@magic-agent/protocol`:
 
 ```
 apps/macos/Happy/Generated/
@@ -306,7 +306,7 @@ apps/macos/Happy/Generated/
 
 To regenerate after protocol changes:
 ```bash
-yarn workspace @happy/protocol generate:swift
+yarn workspace @magic-agent/protocol generate:swift
 ```
 
 ## Related Documentation
