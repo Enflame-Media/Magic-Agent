@@ -16,7 +16,7 @@
 
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import type { GitHubProfile, ImageRef } from '@happy/protocol';
+import type { GitHubProfile, ImageRef } from '@magic-agent/protocol';
 import {
     logout as clearStoredCredentials,
     loadCredentials,

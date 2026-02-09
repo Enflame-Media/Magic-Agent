@@ -14,7 +14,7 @@
 
 import { defineStore } from 'pinia';
 import { shallowRef, computed, triggerRef } from 'vue';
-import type { ApiMessage, EncryptedContent } from '@happy/protocol';
+import type { ApiMessage, EncryptedContent } from '@magic-agent/protocol';
 
 /**
  * Message data structure

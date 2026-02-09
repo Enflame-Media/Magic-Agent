@@ -15,7 +15,6 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { ref, nextTick } from 'vue';
 import {
   usePullToRefresh,
   type UsePullToRefreshOptions,
@@ -90,7 +89,7 @@ function createTouchEvent(
     radiusY: 0,
     rotationAngle: 0,
     force: 0,
-  } as Touch;
+  } as unknown as Touch;
 
   return {
     type,

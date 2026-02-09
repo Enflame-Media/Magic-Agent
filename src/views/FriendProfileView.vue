@@ -8,7 +8,7 @@
 
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import type { UserProfile } from '@happy/protocol';
+import type { UserProfile } from '@magic-agent/protocol';
 import { useFriends, getDisplayName } from '@/composables/useFriends';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';

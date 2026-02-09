@@ -2,7 +2,7 @@
  * Sync Event Handlers
  *
  * Processes incoming WebSocket events and updates Pinia stores.
- * All incoming data is validated with Zod schemas from @happy/protocol.
+ * All incoming data is validated with Zod schemas from @magic-agent/protocol.
  *
  * Events handled:
  * - 'update': Persistent state changes (sessions, messages, machines, etc.)
@@ -23,7 +23,7 @@ import {
     type ApiNewArtifact,
     type ApiUpdateArtifact,
     type ApiDeleteArtifact,
-} from '@happy/protocol';
+} from '@magic-agent/protocol';
 import { useSessionsStore } from '@/stores/sessions';
 import { useMessagesStore } from '@/stores/messages';
 import { useMachinesStore } from '@/stores/machines';
@@ -439,7 +439,7 @@ function handleEphemeral(data: unknown): void {
  * - context: { sessionId: string } for identifying the failed session
  */
 interface WebSocketErrorData {
-    /** Error code (string from @happy/errors ErrorCodes) */
+    /** Error code (string from @magic-agent/errors ErrorCodes) */
     code?: string;
     /** Human-readable error message */
     message?: string;

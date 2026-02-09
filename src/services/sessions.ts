@@ -1,5 +1,5 @@
-import type { ApiMessage } from '@happy/protocol';
-import type { EncryptedContent } from '@happy/protocol';
+import type { ApiMessage } from '@magic-agent/protocol';
+import type { EncryptedContent } from '@magic-agent/protocol';
 import { getApiBaseUrl } from './apiBase';
 
 const API_ENDPOINT = getApiBaseUrl();

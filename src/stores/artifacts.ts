@@ -21,7 +21,7 @@
 
 import { defineStore } from 'pinia';
 import { ref, shallowRef, computed, triggerRef } from 'vue';
-import type { ApiNewArtifact } from '@happy/protocol';
+import type { ApiNewArtifact } from '@magic-agent/protocol';
 import { artifactCache, type CacheStats, type CacheConfig } from '@/services/artifactCache';
 
 /**

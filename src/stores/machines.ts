@@ -22,7 +22,7 @@ import { ref, shallowRef, computed, triggerRef } from 'vue';
  */
 const MACHINE_OFFLINE_TIMEOUT_MS = 60_000;
 
-import type { ApiNewMachine } from '@happy/protocol';
+import type { ApiNewMachine } from '@magic-agent/protocol';
 
 /**
  * Machine data structure

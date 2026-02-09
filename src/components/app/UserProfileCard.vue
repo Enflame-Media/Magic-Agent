@@ -9,7 +9,7 @@
  */
 
 import { computed } from 'vue';
-import type { UserProfile } from '@happy/protocol';
+import type { UserProfile } from '@magic-agent/protocol';
 import { getDisplayName } from '@/composables/useFriends';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';

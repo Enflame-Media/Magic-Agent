@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { SessionSharePermission } from '@happy/protocol';
+import type { SessionSharePermission } from '@magic-agent/protocol';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Props & Emits

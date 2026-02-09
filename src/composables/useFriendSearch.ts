@@ -39,7 +39,7 @@
 import { ref, computed, watch, type Ref, type ComputedRef } from 'vue';
 import { useDebounceFn } from '@vueuse/core';
 import { useFriends } from './useFriends';
-import type { UserProfile } from '@happy/protocol';
+import type { UserProfile } from '@magic-agent/protocol';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants

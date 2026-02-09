@@ -12,7 +12,7 @@ import { useI18n } from 'vue-i18n';
 import { Mail, Clock, X, RotateCw } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import type { SessionShareInvitation, SessionSharePermission } from '@happy/protocol';
+import type { SessionShareInvitation, SessionSharePermission } from '@magic-agent/protocol';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Props & Emits

@@ -17,7 +17,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ref, type Ref } from 'vue';
 import type { UseSwipeDirection } from '@vueuse/core';
-import type { RouteLocationNormalized, Router } from 'vue-router';
+import type { RouteLocationNormalized } from 'vue-router';
 
 // Track useSwipe callback for triggering swipes in tests
 let onSwipeEndCallback: ((e: TouchEvent, direction: UseSwipeDirection) => void) | undefined;
@@ -78,7 +78,6 @@ import {
   useSwipeNavigation,
   shouldEnableSwipeForRoute,
   SWIPE_DISABLED_ROUTES,
-  type UseSwipeNavigationOptions,
   type UseSwipeNavigationReturn,
 } from './useSwipeNavigation';
 

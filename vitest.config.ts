@@ -66,11 +66,6 @@ export default defineConfig({
     // Test isolation and performance
     isolate: true,
     pool: 'threads',
-    poolOptions: {
-      threads: {
-        singleThread: false,
-      },
-    },
     // Reporting
     reporters: ['verbose', 'json'],
     outputFile: {

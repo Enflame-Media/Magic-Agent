@@ -11,7 +11,7 @@
 import { useI18n } from 'vue-i18n';
 import { Users } from 'lucide-vue-next';
 import ShareListItem from './ShareListItem.vue';
-import type { SessionShareEntry, SessionSharePermission } from '@happy/protocol';
+import type { SessionShareEntry, SessionSharePermission } from '@magic-agent/protocol';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Props & Emits

@@ -18,7 +18,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import PermissionSelect from './PermissionSelect.vue';
 import { useFriendSearch } from '@/composables/useFriendSearch';
-import type { UserProfile, SessionSharePermission } from '@happy/protocol';
+import type { UserProfile, SessionSharePermission } from '@magic-agent/protocol';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Props & Emits

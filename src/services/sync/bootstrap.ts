@@ -2,7 +2,7 @@ import { getApiBaseUrl } from '@/services/apiBase';
 import { useSessionsStore, type Session } from '@/stores/sessions';
 import { useMachinesStore, type Machine } from '@/stores/machines';
 import { useAuthStore } from '@/stores/auth';
-import type { ImageRef, GitHubProfile } from '@happy/protocol';
+import type { ImageRef, GitHubProfile } from '@magic-agent/protocol';
 
 interface ApiSession {
   id?: string;

@@ -12,7 +12,7 @@ happy-vue/
 │   └── web/           # Vue.js + Vite web application
 ├── packages/
 │   ├── shared/        # Shared composables and utilities
-│   └── protocol/      # Port of @happy/protocol (Zod schemas)
+│   └── protocol/      # Port of @magic-agent/protocol (Zod schemas)
 ├── .github/
 │   └── workflows/     # CI/CD pipelines
 ├── package.json       # Root workspace configuration
@@ -66,7 +66,7 @@ Shared utilities and composables used by the web app:
 
 ### `@happy-vue/protocol`
 
-Port of `@happy/protocol` with Zod schemas for:
+Port of `@magic-agent/protocol` with Zod schemas for:
 
 - API updates
 - Ephemeral events

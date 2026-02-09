@@ -21,7 +21,7 @@
  * @see HAP-889 - Reference implementation in happy-admin
  */
 
-import { axe, configureAxe } from 'vitest-axe';
+import { configureAxe } from 'vitest-axe';
 import type { VueWrapper } from '@vue/test-utils';
 import type { AxeResults, RunOptions } from 'axe-core';
 

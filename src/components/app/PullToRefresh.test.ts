@@ -111,7 +111,7 @@ function createTouchEvent(
     radiusY: 0,
     rotationAngle: 0,
     force: 0,
-  } as Touch;
+  } as unknown as Touch;
 
   return new TouchEvent(type, {
     touches: type === 'touchend' || type === 'touchcancel' ? [] : [touch],

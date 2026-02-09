@@ -385,15 +385,15 @@
   }
 
   .responsive-container--narrow {
-    @apply responsive-container max-w-2xl;
+    @apply w-full mx-auto px-4 sm:px-6 lg:px-8 max-w-2xl;
   }
 
   .responsive-container--default {
-    @apply responsive-container max-w-5xl;
+    @apply w-full mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl;
   }
 
   .responsive-container--wide {
-    @apply responsive-container max-w-7xl;
+    @apply w-full mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl;
   }
 
   /**

@@ -14,7 +14,7 @@ import { Trash2 } from 'lucide-vue-next';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import PermissionSelect from './PermissionSelect.vue';
-import type { SessionShareEntry, SessionSharePermission } from '@happy/protocol';
+import type { SessionShareEntry, SessionSharePermission } from '@magic-agent/protocol';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Props & Emits

@@ -37,7 +37,7 @@ apps/web/vue/
 
 ### Key Dependencies
 
-- **@happy/protocol** - Shared Zod schemas from root monorepo (`workspace:*`)
+- **@magic-agent/protocol** - Shared Zod schemas from root monorepo (`workspace:*`)
 - **Vue 3** - Frontend framework with Composition API
 - **Pinia** - State management
 - **Vue Router** - Client-side routing
@@ -67,7 +67,7 @@ yarn typecheck # Run TypeScript check
 
 - All code uses TypeScript with **strict mode**
 - Path alias: `@/*` → `./src/*`
-- Protocol types from `@happy/protocol`
+- Protocol types from `@magic-agent/protocol`
 
 ### Path Aliases
 
@@ -79,7 +79,7 @@ import { useAuthStore } from '@/stores/auth';
 import { openUrl, trackPurchaseEvent } from '@/shared';
 
 // Import protocol types (from root monorepo)
-import { ApiUpdateSchema, type ApiUpdate } from '@happy/protocol';
+import { ApiUpdateSchema, type ApiUpdate } from '@magic-agent/protocol';
 ```
 
 ### Code Style
