@@ -16,12 +16,12 @@
 // =============================================================================
 
 /**
- * Import shared protocol types from @happy/protocol
+ * Import shared protocol types from @magic-agent/protocol
  *
  * CRITICAL: These types use the correct field names (e.g., 'sid' not 'sessionId')
  * that clients expect. Using these ensures field name consistency across the stack.
  *
- * @see HAP-387 - Integrate @happy/protocol in happy-server-workers
+ * @see HAP-387 - Integrate @magic-agent/protocol in happy-server-workers
  * @see HAP-383 - RFC for shared protocol types
  */
 import {
@@ -39,7 +39,7 @@ import {
     type EphemeralPayload,
     // Common types
     type GitHubProfile,
-} from '@happy/protocol';
+} from '@magic-agent/protocol';
 
 /**
  * Re-export shared types for backward compatibility
@@ -616,5 +616,5 @@ export function calculateBackoffDelay(attempt: number, config: AlarmRetryConfig 
 // EVENT BROADCASTING TYPES
 // =============================================================================
 // NOTE: UpdateEvent, EphemeralEvent, UpdatePayload, EphemeralPayload, and GitHubProfile
-// are now imported from @happy/protocol (see top of file).
+// are now imported from @magic-agent/protocol (see top of file).
 // This ensures consistent field names across the stack (HAP-387).

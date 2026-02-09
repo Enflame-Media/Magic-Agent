@@ -145,7 +145,7 @@ export const InternalErrorSchema = z
 
 /**
  * Schema for a single usage limit entry
- * Mirrors the UsageLimitSchema from @happy/protocol for OpenAPI documentation
+ * Mirrors the UsageLimitSchema from @magic-agent/protocol for OpenAPI documentation
  */
 const UsageLimitItemSchema = z
     .object({
@@ -178,7 +178,7 @@ const UsageLimitItemSchema = z
 
 /**
  * Schema for GET /v1/usage/limits response
- * Matches the PlanLimitsResponseSchema from @happy/protocol
+ * Matches the PlanLimitsResponseSchema from @magic-agent/protocol
  */
 export const GetUsageLimitsResponseSchema = z
     .object({

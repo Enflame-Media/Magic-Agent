@@ -1,7 +1,7 @@
 import type { ErrorHandler } from 'hono';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
 import { HTTPException } from 'hono/http-exception';
-import { AppError, type ErrorCode, createSafeError, getErrorStatusCode } from '@happy/errors';
+import { AppError, type ErrorCode, createSafeError, getErrorStatusCode } from '@magic-agent/errors';
 import {
     setSentryContext,
     setSentryTag,
@@ -120,7 +120,7 @@ export const errorHandler: ErrorHandler = (err, c) => {
         data: { requestId },
     });
 
-    // Handle AppError instances from @happy/errors
+    // Handle AppError instances from @magic-agent/errors
     // AppError messages are designed to be user-safe
     if (AppError.isAppError(err)) {
         const status = getHttpStatusFromErrorCode(err.code);
