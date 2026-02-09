@@ -4,10 +4,10 @@
 //
 // AUTO-GENERATED FILE - DO NOT EDIT
 // Generated: 2026-01-04T17:25:32.951Z
-// Source: @happy/protocol Zod schemas
+// Source: @magic-agent/protocol Zod schemas
 //
 // Regenerate with:
-//   yarn workspace @happy/protocol generate:swift
+//   yarn workspace @magic-agent/protocol generate:swift
 //
 // @see HAP-687 - Set up Zod to Swift type generation for happy-macos
 //
