@@ -1,0 +1,31 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "src/durable-objects/**/*.ts",
+    "scripts/**/*.ts"
+  ],
+  "project": ["src/**/*.ts", "scripts/**/*.ts"],
+  "ignore": ["src/**/*.test.ts", "src/**/*.spec.ts", "src/__tests__/**", "load-tests/**"],
+  "ignoreDependencies": [
+    "@happy/protocol",
+    "oxlint",
+    "prettier",
+    "tsx",
+    "wrangler"
+  ],
+  "ignoreBinaries": [
+    "drizzle-kit",
+    "eslint",
+    "knip",
+    "oxlint",
+    "prettier",
+    "tsc",
+    "tsx",
+    "vitest",
+    "wrangler"
+  ],
+  "ignoreExportsUsedInFile": {
+    "interface": true,
+    "type": true
+  }
+}

@@ -1,7 +1,7 @@
 /**
  * Error utilities for standardized error management in happy-server-workers.
  *
- * This module re-exports the shared AppError from @magic-agent/errors for consistent
+ * This module re-exports the shared AppError from @happy/errors for consistent
  * error handling across the Cloudflare Workers project.
  *
  * @module utils/errors
@@ -30,5 +30,5 @@
  */
 
 // Re-export AppError, ErrorCodes, and types from shared package
-export { AppError, ErrorCodes } from '@magic-agent/errors';
-export type { AppErrorOptions, AppErrorJSON, ErrorCode } from '@magic-agent/errors';
+export { AppError, ErrorCodes } from '@happy/errors';
+export type { AppErrorOptions, AppErrorJSON, ErrorCode } from '@happy/errors';

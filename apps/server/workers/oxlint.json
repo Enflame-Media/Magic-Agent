@@ -1,0 +1,22 @@
+{
+    "$schema": "./node_modules/oxlint/configuration_schema.json",
+    "plugins": ["eslint", "typescript", "oxc", "vitest", "unicorn"],
+    "jsPlugins": ["@happy/lint-rules"],
+    "env": {
+        "node": true,
+        "es2024": true
+    },
+    "rules": {
+        "happy/github-casing": "warn",
+        "happy/protocol-helpers": "warn"
+    },
+    "overrides": [
+        {
+            "files": ["*.spec.ts", "*.test.ts"],
+            "rules": {
+                "@typescript-eslint/unbound-method": "off"
+            }
+        }
+    ],
+    "ignorePatterns": ["node_modules", "dist", "build", "coverage", "*.d.ts", ".wrangler"]
+}

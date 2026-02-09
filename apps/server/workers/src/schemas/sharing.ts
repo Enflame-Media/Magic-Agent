@@ -7,7 +7,7 @@ import { z } from '@hono/zod-openapi';
  * They provide both runtime validation (via Zod) and automatic OpenAPI
  * documentation generation (via .openapi() extensions).
  *
- * Note: We import core schemas from @magic-agent/protocol and extend them with
+ * Note: We import core schemas from @happy/protocol and extend them with
  * OpenAPI metadata for API documentation.
  */
 
