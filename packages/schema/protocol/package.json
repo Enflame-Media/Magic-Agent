@@ -29,7 +29,7 @@
   "devDependencies": {
     "quicktype": "^23.2.6",
     "quicktype-core": "^23.2.6",
-    "tsup": "^8.5.1",
+    "tsdown": "^0.20.3",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18",
@@ -37,7 +37,7 @@
   },
   "scripts": {
     "preinstall": "node -e \"if(!process.env.INIT_CWD?.endsWith('/happy')){console.error('❌ Run yarn install from monorepo root');process.exit(1)}\"",
-    "build": "tsup",
+    "build": "tsdown",
     "typecheck": "tsc --noEmit",
     "lint": "oxlint --config ../../oxlint.json src/",
     "lint:fix": "oxlint --config ../../oxlint.json --fix src/",
