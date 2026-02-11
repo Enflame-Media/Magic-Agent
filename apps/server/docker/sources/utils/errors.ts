@@ -1,7 +1,7 @@
 /**
  * Error utilities for standardized error management in happy-server.
  *
- * This module re-exports the shared AppError from @happy/errors and provides
+ * This module re-exports the shared AppError from @magic-agent/errors and provides
  * server-specific error codes.
  *
  * @module utils/errors
@@ -27,8 +27,8 @@
  */
 
 // Re-export AppError, ErrorCodes, and types from shared package
-export { AppError, ErrorCodes } from '@happy/errors';
-export type { AppErrorOptions, AppErrorJSON, ErrorCode } from '@happy/errors';
+export { AppError, ErrorCodes } from '@magic-agent/errors';
+export type { AppErrorOptions, AppErrorJSON, ErrorCode } from '@magic-agent/errors';
 
-// ErrorCodes and ErrorCode type are now imported from @happy/errors above.
+// ErrorCodes and ErrorCode type are now imported from @magic-agent/errors above.
 // This provides unified error codes across all Happy projects (CLI, App, Server).

@@ -17,7 +17,7 @@ import { db } from '@/storage/db';
 import { eventRouter } from '@/app/events/eventRouter';
 import { log } from '@/utils/log';
 import { RelationshipStatus } from '@prisma/client';
-import type { ApiEphemeralFriendStatusUpdate } from '@happy/protocol';
+import type { ApiEphemeralFriendStatusUpdate } from '@magic-agent/protocol';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Configuration

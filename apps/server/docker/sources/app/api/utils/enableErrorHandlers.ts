@@ -1,5 +1,5 @@
 import { log } from "@/utils/log";
-import { createSafeError } from "@happy/errors";
+import { createSafeError } from "@magic-agent/errors";
 import { Fastify } from "../types";
 
 // Type guard to check if an error has Fastify error properties

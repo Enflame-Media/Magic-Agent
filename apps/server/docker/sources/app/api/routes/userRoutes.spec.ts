@@ -145,6 +145,149 @@ describe('userRoutes', () => {
             const body = JSON.parse(response.payload);
             expect(body.user.status).toBe('none');
         });
+
+        // HAP-786: profileVisibility privacy enforcement tests
+        describe('profileVisibility privacy enforcement (HAP-786)', () => {
+            it('should return full profile for friends-only profile when viewer is a friend', async () => {
+                const mockUser = {
+                    id: TEST_USER_ID_2,
+                    firstName: 'Private',
+                    lastName: 'Person',
+                    username: 'privateperson',
+                    profileVisibility: 'friends-only',
+                    avatar: { path: 'avatars/private.jpg', width: 100, height: 100 },
+                    githubUser: { profile: { login: 'privateperson', bio: 'Private bio' } },
+                };
+                vi.mocked(db.account.findUnique).mockResolvedValue(mockUser as any);
+                vi.mocked(db.userRelationship.findFirst).mockResolvedValue({
+                    status: RelationshipStatus.friend,
+                } as any);
+
+                const response = await app.inject({
+                    method: 'GET',
+                    url: `/v1/user/${TEST_USER_ID_2}`,
+                    headers: authHeader(),
+                });
+
+                expect(response.statusCode).toBe(200);
+                const body = JSON.parse(response.payload);
+                expect(body.user.id).toBe(TEST_USER_ID_2);
+                expect(body.user.firstName).toBe('Private');
+                expect(body.user.lastName).toBe('Person');
+                expect(body.user.bio).toBe('Private bio');
+                expect(body.user.isPrivate).toBeUndefined();
+            });
+
+            it('should return restricted profile with isPrivate flag for friends-only profile when viewer is not a friend', async () => {
+                const mockUser = {
+                    id: TEST_USER_ID_2,
+                    firstName: 'Private',
+                    lastName: 'Person',
+                    username: 'privateperson',
+                    profileVisibility: 'friends-only',
+                    avatar: { path: 'avatars/private.jpg', width: 100, height: 100 },
+                    githubUser: { profile: { login: 'privateperson', bio: 'Private bio' } },
+                };
+                vi.mocked(db.account.findUnique).mockResolvedValue(mockUser as any);
+                vi.mocked(db.userRelationship.findFirst).mockResolvedValue(null);
+
+                const response = await app.inject({
+                    method: 'GET',
+                    url: `/v1/user/${TEST_USER_ID_2}`,
+                    headers: authHeader(),
+                });
+
+                expect(response.statusCode).toBe(200);
+                const body = JSON.parse(response.payload);
+                expect(body.user.id).toBe(TEST_USER_ID_2);
+                expect(body.user.firstName).toBe('Private');
+                expect(body.user.lastName).toBeNull();
+                expect(body.user.bio).toBeNull();
+                expect(body.user.isPrivate).toBe(true);
+            });
+
+            it('should return restricted profile for friends-only profile when relationship is pending', async () => {
+                const mockUser = {
+                    id: TEST_USER_ID_2,
+                    firstName: 'Private',
+                    lastName: 'Person',
+                    username: 'privateperson',
+                    profileVisibility: 'friends-only',
+                    avatar: null,
+                    githubUser: { profile: { login: 'privateperson', bio: 'Secret bio' } },
+                };
+                vi.mocked(db.account.findUnique).mockResolvedValue(mockUser as any);
+                vi.mocked(db.userRelationship.findFirst).mockResolvedValue({
+                    status: RelationshipStatus.pending,
+                } as any);
+
+                const response = await app.inject({
+                    method: 'GET',
+                    url: `/v1/user/${TEST_USER_ID_2}`,
+                    headers: authHeader(),
+                });
+
+                expect(response.statusCode).toBe(200);
+                const body = JSON.parse(response.payload);
+                expect(body.user.isPrivate).toBe(true);
+                expect(body.user.lastName).toBeNull();
+                expect(body.user.bio).toBeNull();
+            });
+
+            it('should return full profile for public visibility to all users', async () => {
+                const mockUser = {
+                    id: TEST_USER_ID_2,
+                    firstName: 'Public',
+                    lastName: 'Person',
+                    username: 'publicperson',
+                    profileVisibility: 'public',
+                    avatar: null,
+                    githubUser: { profile: { login: 'publicperson', bio: 'Public bio' } },
+                };
+                vi.mocked(db.account.findUnique).mockResolvedValue(mockUser as any);
+                vi.mocked(db.userRelationship.findFirst).mockResolvedValue(null);
+
+                const response = await app.inject({
+                    method: 'GET',
+                    url: `/v1/user/${TEST_USER_ID_2}`,
+                    headers: authHeader(),
+                });
+
+                expect(response.statusCode).toBe(200);
+                const body = JSON.parse(response.payload);
+                expect(body.user.firstName).toBe('Public');
+                expect(body.user.lastName).toBe('Person');
+                expect(body.user.bio).toBe('Public bio');
+                expect(body.user.isPrivate).toBeUndefined();
+            });
+
+            it('should return full profile when profileVisibility is not set (default public)', async () => {
+                const mockUser = {
+                    id: TEST_USER_ID_2,
+                    firstName: 'Default',
+                    lastName: 'User',
+                    username: 'defaultuser',
+                    // profileVisibility is undefined (not set)
+                    avatar: null,
+                    githubUser: { profile: { login: 'defaultuser', bio: 'Default bio' } },
+                };
+                vi.mocked(db.account.findUnique).mockResolvedValue(mockUser as any);
+                vi.mocked(db.userRelationship.findFirst).mockResolvedValue(null);
+
+                const response = await app.inject({
+                    method: 'GET',
+                    url: `/v1/user/${TEST_USER_ID_2}`,
+                    headers: authHeader(),
+                });
+
+                expect(response.statusCode).toBe(200);
+                const body = JSON.parse(response.payload);
+                expect(body.user.firstName).toBe('Default');
+                expect(body.user.lastName).toBe('User');
+                expect(body.user.bio).toBe('Default bio');
+                expect(body.user.isPrivate).toBeUndefined();
+            });
+        });
     });
 
     describe('GET /v1/user/search', () => {
@@ -231,6 +374,145 @@ describe('userRoutes', () => {
             expect(response.statusCode).toBe(200);
             const body = JSON.parse(response.payload);
             expect(body.users[0].status).toBe('friend');
+        });
+
+        // HAP-786: profileVisibility privacy enforcement tests for search
+        describe('profileVisibility privacy enforcement (HAP-786)', () => {
+            it('should return full profiles for friends-only users when viewer is their friend', async () => {
+                const mockUsers = [
+                    {
+                        id: 'private-friend',
+                        firstName: 'Private',
+                        lastName: 'Friend',
+                        username: 'privatefriend',
+                        profileVisibility: 'friends-only',
+                        avatar: null,
+                        githubUser: { profile: { login: 'privatefriend', bio: 'Friend bio' } },
+                    },
+                ];
+                vi.mocked(db.account.findMany).mockResolvedValue(mockUsers as any);
+                vi.mocked(db.userRelationship.findFirst).mockResolvedValue({
+                    status: RelationshipStatus.friend,
+                } as any);
+
+                const response = await app.inject({
+                    method: 'GET',
+                    url: '/v1/user/search?query=private',
+                    headers: authHeader(),
+                });
+
+                expect(response.statusCode).toBe(200);
+                const body = JSON.parse(response.payload);
+                expect(body.users).toHaveLength(1);
+                expect(body.users[0].firstName).toBe('Private');
+                expect(body.users[0].lastName).toBe('Friend');
+                expect(body.users[0].bio).toBe('Friend bio');
+                expect(body.users[0].isPrivate).toBeUndefined();
+            });
+
+            it('should return restricted profiles with isPrivate flag for friends-only users when viewer is not a friend', async () => {
+                const mockUsers = [
+                    {
+                        id: 'private-stranger',
+                        firstName: 'Private',
+                        lastName: 'Stranger',
+                        username: 'privatestranger',
+                        profileVisibility: 'friends-only',
+                        avatar: null,
+                        githubUser: { profile: { login: 'privatestranger', bio: 'Hidden bio' } },
+                    },
+                ];
+                vi.mocked(db.account.findMany).mockResolvedValue(mockUsers as any);
+                vi.mocked(db.userRelationship.findFirst).mockResolvedValue(null);
+
+                const response = await app.inject({
+                    method: 'GET',
+                    url: '/v1/user/search?query=private',
+                    headers: authHeader(),
+                });
+
+                expect(response.statusCode).toBe(200);
+                const body = JSON.parse(response.payload);
+                expect(body.users).toHaveLength(1);
+                expect(body.users[0].firstName).toBe('Private');
+                expect(body.users[0].lastName).toBeNull();
+                expect(body.users[0].bio).toBeNull();
+                expect(body.users[0].isPrivate).toBe(true);
+            });
+
+            it('should correctly apply profileVisibility to multiple users with mixed privacy settings', async () => {
+                const mockUsers = [
+                    {
+                        id: 'private-user',
+                        firstName: 'Private',
+                        lastName: 'User',
+                        username: 'private1',
+                        profileVisibility: 'friends-only',
+                        avatar: null,
+                        githubUser: { profile: { login: 'private1', bio: 'Private bio' } },
+                    },
+                    {
+                        id: 'public-user',
+                        firstName: 'Public',
+                        lastName: 'User',
+                        username: 'public1',
+                        profileVisibility: 'public',
+                        avatar: null,
+                        githubUser: { profile: { login: 'public1', bio: 'Public bio' } },
+                    },
+                ];
+                vi.mocked(db.account.findMany).mockResolvedValue(mockUsers as any);
+                // No relationship with either user
+                vi.mocked(db.userRelationship.findFirst).mockResolvedValue(null);
+
+                const response = await app.inject({
+                    method: 'GET',
+                    url: '/v1/user/search?query=user',
+                    headers: authHeader(),
+                });
+
+                expect(response.statusCode).toBe(200);
+                const body = JSON.parse(response.payload);
+                expect(body.users).toHaveLength(2);
+                // Private user should have restricted profile
+                const privateUser = body.users.find((u: any) => u.id === 'private-user');
+                expect(privateUser.isPrivate).toBe(true);
+                expect(privateUser.lastName).toBeNull();
+                expect(privateUser.bio).toBeNull();
+                // Public user should have full profile
+                const publicUser = body.users.find((u: any) => u.id === 'public-user');
+                expect(publicUser.isPrivate).toBeUndefined();
+                expect(publicUser.lastName).toBe('User');
+                expect(publicUser.bio).toBe('Public bio');
+            });
+
+            it('should return full profile for public visibility in search results', async () => {
+                const mockUsers = [
+                    {
+                        id: 'public-user',
+                        firstName: 'Openly',
+                        lastName: 'Public',
+                        username: 'openlypublic',
+                        profileVisibility: 'public',
+                        avatar: null,
+                        githubUser: { profile: { login: 'openlypublic', bio: 'Everyone can see this' } },
+                    },
+                ];
+                vi.mocked(db.account.findMany).mockResolvedValue(mockUsers as any);
+                vi.mocked(db.userRelationship.findFirst).mockResolvedValue(null);
+
+                const response = await app.inject({
+                    method: 'GET',
+                    url: '/v1/user/search?query=openly',
+                    headers: authHeader(),
+                });
+
+                expect(response.statusCode).toBe(200);
+                const body = JSON.parse(response.payload);
+                expect(body.users[0].lastName).toBe('Public');
+                expect(body.users[0].bio).toBe('Everyone can see this');
+                expect(body.users[0].isPrivate).toBeUndefined();
+            });
         });
     });
 

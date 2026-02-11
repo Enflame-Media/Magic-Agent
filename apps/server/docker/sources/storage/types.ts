@@ -2,7 +2,7 @@ import { GitHubProfile as GitHubProfileType, GitHubOrg as GitHubOrgType } from "
 import { ImageRef as ImageRefType } from "./files";
 
 // Note: These Prisma JSON types are intentionally kept local rather than importing from
-// @happy/protocol because they represent the database storage format which may differ
+// @magic-agent/protocol because they represent the database storage format which may differ
 // from the wire protocol (e.g., SessionMessageContent is server-storage specific).
 // See eventRouter.ts for protocol type usage.
 

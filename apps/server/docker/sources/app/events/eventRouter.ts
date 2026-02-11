@@ -4,13 +4,13 @@ import { GitHubProfile } from "@/app/api/types";
 import { AccountProfile } from "@/types";
 import { getPublicUrl } from "@/storage/files";
 
-// Import shared protocol types from @happy/protocol
+// Import shared protocol types from @magic-agent/protocol
 import type {
     ApiUpdate,
     ApiEphemeralUpdate,
     UpdatePayload,
     EphemeralPayload,
-} from '@happy/protocol';
+} from '@magic-agent/protocol';
 
 // === CONNECTION TYPES ===
 
@@ -45,7 +45,7 @@ export type RecipientFilter =
     | { type: 'all-user-authenticated-connections' };
 
 // === UPDATE EVENT TYPES (Persistent) ===
-// Now using shared types from @happy/protocol
+// Now using shared types from @magic-agent/protocol
 // ApiUpdate uses 't' as discriminator field
 
 /**
@@ -55,7 +55,7 @@ export type RecipientFilter =
 export type UpdateEvent = ApiUpdate;
 
 // === EPHEMERAL EVENT TYPES (Transient) ===
-// Now using shared types from @happy/protocol
+// Now using shared types from @magic-agent/protocol
 
 /**
  * Re-export ApiEphemeralUpdate as EphemeralEvent for backward compatibility
@@ -64,7 +64,7 @@ export type UpdateEvent = ApiUpdate;
 export type EphemeralEvent = ApiEphemeralUpdate;
 
 // === EVENT PAYLOAD TYPES ===
-// Re-export from @happy/protocol for type consistency
+// Re-export from @magic-agent/protocol for type consistency
 // Note: These are re-exported with the same names from the import above
 export type { UpdatePayload, EphemeralPayload };
 

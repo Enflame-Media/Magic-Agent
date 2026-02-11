@@ -1,5 +1,5 @@
-// Re-export FeedBodySchema from @happy/protocol for consistency
-import { FeedBodySchema, type FeedBody } from '@happy/protocol';
+// Re-export FeedBodySchema from @magic-agent/protocol for consistency
+import { FeedBodySchema, type FeedBody } from '@magic-agent/protocol';
 export { FeedBodySchema, type FeedBody };
 
 export interface UserFeedItem {
