@@ -1,0 +1,158 @@
+/*
+  Localizable.strings (Chinese Simplified)
+  Happy
+
+  Created by Happy Engineering
+  Copyright © 2024 Enflame Media. All rights reserved.
+
+  Chinese Simplified localization file for the Happy macOS app.
+*/
+
+// MARK: - General
+"app.name" = "Happy";
+"app.tagline" = "Claude Code 远程控制";
+
+// MARK: - Common Actions
+"action.cancel" = "取消";
+"action.done" = "完成";
+"action.save" = "保存";
+"action.delete" = "删除";
+"action.refresh" = "刷新";
+"action.connect" = "连接";
+"action.disconnect" = "断开连接";
+"action.ok" = "确定";
+"action.yes" = "是";
+"action.no" = "否";
+"action.continue" = "继续";
+"action.back" = "返回";
+"action.copy" = "复制";
+"action.retry" = "重试";
+
+// MARK: - Setup
+"setup.title" = "需要设置";
+"setup.instruction" = "扫描 Claude Code CLI 的二维码以连接";
+"setup.scanQR" = "扫描二维码";
+
+// MARK: - Sessions
+"sessions.title" = "会话";
+"sessions.empty" = "没有活动会话";
+"sessions.status.active" = "活动";
+"sessions.status.paused" = "暂停";
+"sessions.status.completed" = "已完成";
+"sessions.status.error" = "错误";
+"sessions.quickStart" = "快速开始";
+
+// MARK: - Machines
+"machines.title" = "机器";
+"machines.empty" = "没有已连接的机器";
+"machines.status.connected" = "已连接";
+"machines.status.disconnected" = "已断开";
+"machines.status.connecting" = "连接中...";
+
+// MARK: - Errors
+"error.connection.failed" = "连接失败";
+"error.connection.lost" = "连接丢失";
+"error.encryption.failed" = "加密错误";
+"error.network.unavailable" = "网络不可用";
+"error.unknown" = "发生未知错误";
+"error.tryAgain" = "请重试";
+
+// MARK: - Settings
+"settings.title" = "设置";
+"settings.general" = "通用";
+"settings.account" = "账户";
+"settings.subscription" = "订阅";
+"settings.privacy" = "隐私";
+"settings.notifications" = "通知";
+"settings.advanced" = "高级";
+"settings.language" = "语言";
+
+// MARK: - General Settings
+"settings.general.launchAtLogin" = "登录时启动 Happy";
+"settings.general.appearance" = "外观";
+"settings.general.playSounds" = "播放声音";
+"settings.general.theme.system" = "跟随系统";
+"settings.general.theme.light" = "浅色";
+"settings.general.theme.dark" = "深色";
+
+// MARK: - Account Settings
+"settings.account.connectedMachine" = "已连接的机器";
+"settings.account.machineId" = "机器 ID";
+"settings.account.connected" = "已连接";
+"settings.account.noMachineInfo" = "没有可用的机器信息";
+"settings.account.notConnected" = "未连接";
+"settings.account.scanToConnect" = "扫描 Claude Code CLI 的二维码以连接";
+
+// MARK: - Privacy Settings
+"settings.privacy.onlineStatus" = "在线状态";
+"settings.privacy.showOnlineStatus" = "向好友显示在线状态";
+"settings.privacy.showOnlineStatusEnabled" = "好友可以看到你何时在线";
+"settings.privacy.showOnlineStatusDisabled" = "你对所有好友显示为离线";
+"settings.privacy.syncing" = "同步中...";
+"settings.privacy.footer" = "禁用后，你将对所有好友显示为离线，但你仍然可以看到他们何时在线。";
+
+// MARK: - Notifications Settings
+"settings.notifications.enable" = "启用通知";
+"settings.notifications.description" = "当 Claude 完成任务或需要输入时，你将收到通知";
+
+// MARK: - Advanced Settings
+"settings.advanced.server" = "服务器";
+"settings.advanced.serverUrl" = "服务器 URL";
+"settings.advanced.serverWarning" = "仅在运行自定义 Happy 服务器时更改此设置";
+"settings.advanced.resetToDefaults" = "重置为默认值";
+
+// MARK: - Language Settings
+"settings.language.title" = "语言";
+"settings.language.description" = "选择应用界面的首选语言。";
+"settings.language.current" = "当前语言";
+"settings.language.automatic" = "自动";
+"settings.language.automaticDescription" = "使用系统语言";
+"settings.language.restartRequired" = "需要重启";
+"settings.language.restartMessage" = "应用需要重启才能完全应用新的语言设置。";
+"settings.language.restartNow" = "立即重启";
+"settings.language.restartLater" = "稍后";
+
+// MARK: - Subscription
+"subscription.status" = "订阅状态";
+"subscription.pro" = "Happy Pro";
+"subscription.free" = "免费计划";
+"subscription.proDescription" = "所有高级功能已解锁";
+"subscription.freeDescription" = "升级以解锁所有功能";
+"subscription.upgrade" = "升级到 Pro";
+"subscription.restore" = "恢复购买";
+"subscription.restoring" = "恢复中...";
+"subscription.manage" = "管理订阅";
+"subscription.product" = "产品";
+
+// MARK: - Menu Items
+"menu.file.scanQR" = "扫描二维码...";
+"menu.session" = "会话";
+"menu.session.refresh" = "刷新";
+"menu.session.copy" = "复制会话";
+"menu.session.export" = "导出会话...";
+"menu.friends" = "好友";
+"menu.friends.show" = "显示好友";
+"menu.friends.add" = "添加好友...";
+"menu.friends.refresh" = "刷新好友";
+"menu.connection" = "连接";
+"menu.connection.connect" = "连接";
+"menu.connection.disconnect" = "断开连接";
+"menu.connection.status" = "连接状态...";
+"menu.subscription" = "订阅";
+"menu.subscription.upgrade" = "升级到 Pro...";
+"menu.subscription.restore" = "恢复购买";
+"menu.help.docs" = "Happy 文档";
+"menu.help.reportIssue" = "报告问题";
+
+// MARK: - Time
+"time.justNow" = "刚刚";
+"time.minutesAgo" = "%d 分钟前";
+"time.hoursAgo" = "%d 小时前";
+"time.daysAgo" = "%d 天前";
+
+// MARK: - Status
+"status.connected" = "已连接";
+"status.disconnected" = "已断开";
+"status.connecting" = "连接中...";
+"status.online" = "在线";
+"status.offline" = "离线";

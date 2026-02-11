@@ -1,0 +1,158 @@
+/*
+  Localizable.strings (Spanish)
+  Happy
+
+  Created by Happy Engineering
+  Copyright © 2024 Enflame Media. All rights reserved.
+
+  Spanish localization file for the Happy macOS app.
+*/
+
+// MARK: - General
+"app.name" = "Happy";
+"app.tagline" = "Control remoto para Claude Code";
+
+// MARK: - Common Actions
+"action.cancel" = "Cancelar";
+"action.done" = "Listo";
+"action.save" = "Guardar";
+"action.delete" = "Eliminar";
+"action.refresh" = "Actualizar";
+"action.connect" = "Conectar";
+"action.disconnect" = "Desconectar";
+"action.ok" = "OK";
+"action.yes" = "Sí";
+"action.no" = "No";
+"action.continue" = "Continuar";
+"action.back" = "Atrás";
+"action.copy" = "Copiar";
+"action.retry" = "Reintentar";
+
+// MARK: - Setup
+"setup.title" = "Configuración requerida";
+"setup.instruction" = "Escanea el código QR de Claude Code CLI para conectar";
+"setup.scanQR" = "Escanear código QR";
+
+// MARK: - Sessions
+"sessions.title" = "Sesiones";
+"sessions.empty" = "No hay sesiones activas";
+"sessions.status.active" = "Activa";
+"sessions.status.paused" = "Pausada";
+"sessions.status.completed" = "Completada";
+"sessions.status.error" = "Error";
+"sessions.quickStart" = "Inicio rápido";
+
+// MARK: - Machines
+"machines.title" = "Máquinas";
+"machines.empty" = "No hay máquinas conectadas";
+"machines.status.connected" = "Conectada";
+"machines.status.disconnected" = "Desconectada";
+"machines.status.connecting" = "Conectando...";
+
+// MARK: - Errors
+"error.connection.failed" = "Falló la conexión";
+"error.connection.lost" = "Conexión perdida";
+"error.encryption.failed" = "Error de cifrado";
+"error.network.unavailable" = "Red no disponible";
+"error.unknown" = "Ocurrió un error desconocido";
+"error.tryAgain" = "Por favor, inténtalo de nuevo";
+
+// MARK: - Settings
+"settings.title" = "Configuración";
+"settings.general" = "General";
+"settings.account" = "Cuenta";
+"settings.subscription" = "Suscripción";
+"settings.privacy" = "Privacidad";
+"settings.notifications" = "Notificaciones";
+"settings.advanced" = "Avanzado";
+"settings.language" = "Idioma";
+
+// MARK: - General Settings
+"settings.general.launchAtLogin" = "Iniciar Happy al iniciar sesión";
+"settings.general.appearance" = "Apariencia";
+"settings.general.playSounds" = "Reproducir sonidos";
+"settings.general.theme.system" = "Sistema";
+"settings.general.theme.light" = "Claro";
+"settings.general.theme.dark" = "Oscuro";
+
+// MARK: - Account Settings
+"settings.account.connectedMachine" = "Máquina conectada";
+"settings.account.machineId" = "ID de máquina";
+"settings.account.connected" = "Conectado";
+"settings.account.noMachineInfo" = "Información de máquina no disponible";
+"settings.account.notConnected" = "No conectado";
+"settings.account.scanToConnect" = "Escanea un código QR de Claude Code CLI para conectar";
+
+// MARK: - Privacy Settings
+"settings.privacy.onlineStatus" = "Estado en línea";
+"settings.privacy.showOnlineStatus" = "Mostrar estado en línea a amigos";
+"settings.privacy.showOnlineStatusEnabled" = "Los amigos pueden ver cuando estás en línea";
+"settings.privacy.showOnlineStatusDisabled" = "Apareces sin conexión para todos los amigos";
+"settings.privacy.syncing" = "Sincronizando...";
+"settings.privacy.footer" = "Cuando está desactivado, aparecerás sin conexión para todos los amigos, pero aún puedes ver cuando ellos están en línea.";
+
+// MARK: - Notifications Settings
+"settings.notifications.enable" = "Activar notificaciones";
+"settings.notifications.description" = "Recibirás notificaciones cuando Claude complete tareas o necesite entrada";
+
+// MARK: - Advanced Settings
+"settings.advanced.server" = "Servidor";
+"settings.advanced.serverUrl" = "URL del servidor";
+"settings.advanced.serverWarning" = "Cambia esto solo si estás ejecutando un servidor Happy personalizado";
+"settings.advanced.resetToDefaults" = "Restablecer valores predeterminados";
+
+// MARK: - Language Settings
+"settings.language.title" = "Idioma";
+"settings.language.description" = "Elige tu idioma preferido para la interfaz de la aplicación.";
+"settings.language.current" = "Idioma actual";
+"settings.language.automatic" = "Automático";
+"settings.language.automaticDescription" = "Usar idioma del sistema";
+"settings.language.restartRequired" = "Reinicio requerido";
+"settings.language.restartMessage" = "La aplicación necesita reiniciarse para aplicar completamente la nueva configuración de idioma.";
+"settings.language.restartNow" = "Reiniciar ahora";
+"settings.language.restartLater" = "Más tarde";
+
+// MARK: - Subscription
+"subscription.status" = "Estado de suscripción";
+"subscription.pro" = "Happy Pro";
+"subscription.free" = "Plan gratuito";
+"subscription.proDescription" = "Todas las funciones premium desbloqueadas";
+"subscription.freeDescription" = "Actualiza para desbloquear todas las funciones";
+"subscription.upgrade" = "Actualizar a Pro";
+"subscription.restore" = "Restaurar compras";
+"subscription.restoring" = "Restaurando...";
+"subscription.manage" = "Gestionar suscripción";
+"subscription.product" = "Producto";
+
+// MARK: - Menu Items
+"menu.file.scanQR" = "Escanear código QR...";
+"menu.session" = "Sesión";
+"menu.session.refresh" = "Actualizar";
+"menu.session.copy" = "Copiar sesión";
+"menu.session.export" = "Exportar sesión...";
+"menu.friends" = "Amigos";
+"menu.friends.show" = "Mostrar amigos";
+"menu.friends.add" = "Agregar amigo...";
+"menu.friends.refresh" = "Actualizar amigos";
+"menu.connection" = "Conexión";
+"menu.connection.connect" = "Conectar";
+"menu.connection.disconnect" = "Desconectar";
+"menu.connection.status" = "Estado de conexión...";
+"menu.subscription" = "Suscripción";
+"menu.subscription.upgrade" = "Actualizar a Pro...";
+"menu.subscription.restore" = "Restaurar compras";
+"menu.help.docs" = "Documentación de Happy";
+"menu.help.reportIssue" = "Reportar un problema";
+
+// MARK: - Time
+"time.justNow" = "ahora mismo";
+"time.minutesAgo" = "hace %d minuto(s)";
+"time.hoursAgo" = "hace %d hora(s)";
+"time.daysAgo" = "hace %d día(s)";
+
+// MARK: - Status
+"status.connected" = "Conectado";
+"status.disconnected" = "Desconectado";
+"status.connecting" = "Conectando...";
+"status.online" = "En línea";
+"status.offline" = "Sin conexión";

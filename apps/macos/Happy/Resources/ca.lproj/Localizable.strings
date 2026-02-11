@@ -1,0 +1,158 @@
+/*
+  Localizable.strings (Catalan)
+  Happy
+
+  Created by Happy Engineering
+  Copyright © 2024 Enflame Media. All rights reserved.
+
+  Catalan localization file for the Happy macOS app.
+*/
+
+// MARK: - General
+"app.name" = "Happy";
+"app.tagline" = "Control remot per a Claude Code";
+
+// MARK: - Common Actions
+"action.cancel" = "Cancel·lar";
+"action.done" = "Fet";
+"action.save" = "Desar";
+"action.delete" = "Eliminar";
+"action.refresh" = "Actualitzar";
+"action.connect" = "Connectar";
+"action.disconnect" = "Desconnectar";
+"action.ok" = "D'acord";
+"action.yes" = "Sí";
+"action.no" = "No";
+"action.continue" = "Continuar";
+"action.back" = "Enrere";
+"action.copy" = "Copiar";
+"action.retry" = "Tornar a intentar";
+
+// MARK: - Setup
+"setup.title" = "Configuració necessària";
+"setup.instruction" = "Escaneja el codi QR de Claude Code CLI per connectar";
+"setup.scanQR" = "Escanejar codi QR";
+
+// MARK: - Sessions
+"sessions.title" = "Sessions";
+"sessions.empty" = "No hi ha sessions actives";
+"sessions.status.active" = "Activa";
+"sessions.status.paused" = "Pausada";
+"sessions.status.completed" = "Completada";
+"sessions.status.error" = "Error";
+"sessions.quickStart" = "Inici ràpid";
+
+// MARK: - Machines
+"machines.title" = "Màquines";
+"machines.empty" = "No hi ha màquines connectades";
+"machines.status.connected" = "Connectada";
+"machines.status.disconnected" = "Desconnectada";
+"machines.status.connecting" = "Connectant...";
+
+// MARK: - Errors
+"error.connection.failed" = "Error de connexió";
+"error.connection.lost" = "Connexió perduda";
+"error.encryption.failed" = "Error de xifrat";
+"error.network.unavailable" = "Xarxa no disponible";
+"error.unknown" = "S'ha produït un error desconegut";
+"error.tryAgain" = "Si us plau, torna-ho a intentar";
+
+// MARK: - Settings
+"settings.title" = "Configuració";
+"settings.general" = "General";
+"settings.account" = "Compte";
+"settings.subscription" = "Subscripció";
+"settings.privacy" = "Privacitat";
+"settings.notifications" = "Notificacions";
+"settings.advanced" = "Avançat";
+"settings.language" = "Idioma";
+
+// MARK: - General Settings
+"settings.general.launchAtLogin" = "Iniciar Happy en iniciar sessió";
+"settings.general.appearance" = "Aparença";
+"settings.general.playSounds" = "Reproduir sons";
+"settings.general.theme.system" = "Sistema";
+"settings.general.theme.light" = "Clar";
+"settings.general.theme.dark" = "Fosc";
+
+// MARK: - Account Settings
+"settings.account.connectedMachine" = "Màquina connectada";
+"settings.account.machineId" = "ID de màquina";
+"settings.account.connected" = "Connectat";
+"settings.account.noMachineInfo" = "Informació de màquina no disponible";
+"settings.account.notConnected" = "No connectat";
+"settings.account.scanToConnect" = "Escaneja un codi QR de Claude Code CLI per connectar";
+
+// MARK: - Privacy Settings
+"settings.privacy.onlineStatus" = "Estat en línia";
+"settings.privacy.showOnlineStatus" = "Mostrar estat en línia als amics";
+"settings.privacy.showOnlineStatusEnabled" = "Els amics poden veure quan ets en línia";
+"settings.privacy.showOnlineStatusDisabled" = "Apareixes fora de línia per a tots els amics";
+"settings.privacy.syncing" = "Sincronitzant...";
+"settings.privacy.footer" = "Quan està desactivat, apareixes fora de línia per a tots els amics, però encara pots veure quan ells estan en línia.";
+
+// MARK: - Notifications Settings
+"settings.notifications.enable" = "Activar notificacions";
+"settings.notifications.description" = "Rebràs notificacions quan Claude completi tasques o necessiti entrada";
+
+// MARK: - Advanced Settings
+"settings.advanced.server" = "Servidor";
+"settings.advanced.serverUrl" = "URL del servidor";
+"settings.advanced.serverWarning" = "Canvia això només si estàs executant un servidor Happy personalitzat";
+"settings.advanced.resetToDefaults" = "Restablir valors predeterminats";
+
+// MARK: - Language Settings
+"settings.language.title" = "Idioma";
+"settings.language.description" = "Tria el teu idioma preferit per a la interfície de l'aplicació.";
+"settings.language.current" = "Idioma actual";
+"settings.language.automatic" = "Automàtic";
+"settings.language.automaticDescription" = "Usar idioma del sistema";
+"settings.language.restartRequired" = "Reinici necessari";
+"settings.language.restartMessage" = "L'aplicació necessita reiniciar-se per aplicar completament la nova configuració d'idioma.";
+"settings.language.restartNow" = "Reiniciar ara";
+"settings.language.restartLater" = "Més tard";
+
+// MARK: - Subscription
+"subscription.status" = "Estat de la subscripció";
+"subscription.pro" = "Happy Pro";
+"subscription.free" = "Pla gratuït";
+"subscription.proDescription" = "Totes les funcions premium desbloquejades";
+"subscription.freeDescription" = "Actualitza per desbloquejar totes les funcions";
+"subscription.upgrade" = "Actualitzar a Pro";
+"subscription.restore" = "Restaurar compres";
+"subscription.restoring" = "Restaurant...";
+"subscription.manage" = "Gestionar subscripció";
+"subscription.product" = "Producte";
+
+// MARK: - Menu Items
+"menu.file.scanQR" = "Escanejar codi QR...";
+"menu.session" = "Sessió";
+"menu.session.refresh" = "Actualitzar";
+"menu.session.copy" = "Copiar sessió";
+"menu.session.export" = "Exportar sessió...";
+"menu.friends" = "Amics";
+"menu.friends.show" = "Mostrar amics";
+"menu.friends.add" = "Afegir amic...";
+"menu.friends.refresh" = "Actualitzar amics";
+"menu.connection" = "Connexió";
+"menu.connection.connect" = "Connectar";
+"menu.connection.disconnect" = "Desconnectar";
+"menu.connection.status" = "Estat de la connexió...";
+"menu.subscription" = "Subscripció";
+"menu.subscription.upgrade" = "Actualitzar a Pro...";
+"menu.subscription.restore" = "Restaurar compres";
+"menu.help.docs" = "Documentació de Happy";
+"menu.help.reportIssue" = "Informar d'un problema";
+
+// MARK: - Time
+"time.justNow" = "ara mateix";
+"time.minutesAgo" = "fa %d minut(s)";
+"time.hoursAgo" = "fa %d hora/es";
+"time.daysAgo" = "fa %d dia/es";
+
+// MARK: - Status
+"status.connected" = "Connectat";
+"status.disconnected" = "Desconnectat";
+"status.connecting" = "Connectant...";
+"status.online" = "En línia";
+"status.offline" = "Fora de línia";

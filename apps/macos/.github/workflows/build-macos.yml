@@ -1,0 +1,356 @@
+# macOS CI/CD Workflow for Happy
+# Builds, signs, and deploys to TestFlight/App Store
+# Part of HAP-680 implementation
+
+name: Build macOS
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Happy/**'
+      - 'HappyTests/**'
+      - 'HappyUITests/**'
+      - 'Happy.xcodeproj/**'
+      - '.github/workflows/build-macos.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'Happy/**'
+      - 'HappyTests/**'
+      - 'HappyUITests/**'
+      - 'Happy.xcodeproj/**'
+  workflow_dispatch:
+    inputs:
+      destination:
+        description: 'Build destination'
+        required: true
+        default: 'testflight'
+        type: choice
+        options:
+          - testflight
+          - app-store
+
+# Prevent concurrent builds on the same ref
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  SCHEME: Happy
+  PROJECT: Happy.xcodeproj
+  XCODE_VERSION: '15.2'
+
+jobs:
+  # ============================================
+  # Build and Test (runs on all triggers)
+  # ============================================
+  build-and-test:
+    name: Build and Test
+    runs-on: macos-14
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Select Xcode version
+        run: |
+          sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app/Contents/Developer
+          xcodebuild -version
+
+      - name: Cache Swift Package Manager
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/org.swift.swiftpm
+            .build
+          key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
+
+      - name: Build for testing
+        run: |
+          xcodebuild build-for-testing \
+            -project "${{ env.PROJECT }}" \
+            -scheme "${{ env.SCHEME }}" \
+            -destination "platform=macOS" \
+            -configuration Debug \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_REQUIRED=NO \
+            | xcpretty --color
+
+      - name: Run tests
+        run: |
+          xcodebuild test-without-building \
+            -project "${{ env.PROJECT }}" \
+            -scheme "${{ env.SCHEME }}" \
+            -destination "platform=macOS" \
+            -configuration Debug \
+            -resultBundlePath TestResults.xcresult \
+            | xcpretty --color
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: TestResults.xcresult
+          retention-days: 7
+
+  # ============================================
+  # Archive and Deploy (only on main or manual)
+  # ============================================
+  archive-and-deploy:
+    name: Archive and Deploy
+    runs-on: macos-14
+    timeout-minutes: 45
+    needs: build-and-test
+    # Only run on push to main or manual trigger (not PRs)
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Select Xcode version
+        run: |
+          sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app/Contents/Developer
+          xcodebuild -version
+
+      # ----------------------------------------
+      # Install Certificates and Profiles
+      # ----------------------------------------
+      - name: Install Apple certificate
+        env:
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.MAC_BUILD_CERTIFICATE_BASE64 }}
+          P12_PASSWORD: ${{ secrets.MAC_P12_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          # Create variables
+          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+
+          # Decode certificate from base64
+          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
+
+          # Create temporary keychain
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          # Import certificate to keychain
+          security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          # Add keychain to search list
+          security list-keychain -d user -s $KEYCHAIN_PATH
+
+          # Verify certificate is installed
+          security find-identity -v -p codesigning $KEYCHAIN_PATH
+
+      - name: Install provisioning profile
+        env:
+          PROVISIONING_PROFILE_BASE64: ${{ secrets.MAC_PROVISIONING_PROFILE_BASE64 }}
+        run: |
+          # Create Provisioning Profiles directory
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+
+          # Decode and install profile
+          PROFILE_PATH=~/Library/MobileDevice/Provisioning\ Profiles/build_profile.provisionprofile
+          echo -n "$PROVISIONING_PROFILE_BASE64" | base64 --decode -o "$PROFILE_PATH"
+
+          # Verify profile
+          echo "Installed provisioning profile:"
+          security cms -D -i "$PROFILE_PATH" | grep -A1 "Name"
+
+      # ----------------------------------------
+      # Build Archive
+      # ----------------------------------------
+      - name: Increment build number
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          # Use GitHub run number as build number for uniqueness
+          echo "Setting build number to: $BUILD_NUMBER"
+
+          # Update Info.plist with new build number
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" Happy/Info.plist
+
+          # Verify the change
+          /usr/libexec/PlistBuddy -c "Print :CFBundleVersion" Happy/Info.plist
+
+      - name: Build archive
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          xcodebuild archive \
+            -project "${{ env.PROJECT }}" \
+            -scheme "${{ env.SCHEME }}" \
+            -archivePath $RUNNER_TEMP/Happy.xcarchive \
+            -destination "generic/platform=macOS" \
+            -configuration Release \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+            | xcpretty --color
+
+      - name: Verify archive
+        run: |
+          echo "Archive contents:"
+          ls -la $RUNNER_TEMP/Happy.xcarchive/
+          echo ""
+          echo "Archive Info.plist:"
+          cat $RUNNER_TEMP/Happy.xcarchive/Info.plist
+
+      # ----------------------------------------
+      # Export for Distribution
+      # ----------------------------------------
+      - name: Export archive
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          # Create ExportOptions.plist with team ID
+          cat > $RUNNER_TEMP/ExportOptions.plist << EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>app-store</string>
+              <key>teamID</key>
+              <string>$APPLE_TEAM_ID</string>
+              <key>destination</key>
+              <string>upload</string>
+              <key>signingStyle</key>
+              <string>automatic</string>
+          </dict>
+          </plist>
+          EOF
+
+          xcodebuild -exportArchive \
+            -archivePath $RUNNER_TEMP/Happy.xcarchive \
+            -exportPath $RUNNER_TEMP/export \
+            -exportOptionsPlist $RUNNER_TEMP/ExportOptions.plist \
+            | xcpretty --color
+
+      - name: Verify export
+        run: |
+          echo "Exported files:"
+          ls -la $RUNNER_TEMP/export/
+
+      # ----------------------------------------
+      # Upload to App Store Connect
+      # ----------------------------------------
+      - name: Upload to App Store Connect
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY: ${{ secrets.ASC_KEY }}
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          # Write API key to file
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo "$ASC_KEY" > ~/.appstoreconnect/private_keys/AuthKey_$ASC_KEY_ID.p8
+
+          # Find the .pkg file (macOS apps export as .pkg for App Store)
+          PKG_FILE=$(find $RUNNER_TEMP/export -name "*.pkg" | head -1)
+
+          if [ -z "$PKG_FILE" ]; then
+            echo "No .pkg file found, looking for .app..."
+            APP_FILE=$(find $RUNNER_TEMP/export -name "*.app" | head -1)
+            if [ -n "$APP_FILE" ]; then
+              echo "Found .app, creating .pkg..."
+              productbuild --component "$APP_FILE" /Applications $RUNNER_TEMP/export/Happy.pkg
+              PKG_FILE=$RUNNER_TEMP/export/Happy.pkg
+            else
+              echo "Error: No .pkg or .app found in export"
+              ls -laR $RUNNER_TEMP/export/
+              exit 1
+            fi
+          fi
+
+          echo "Uploading: $PKG_FILE"
+
+          # Upload using xcrun notarytool (modern approach, replaces altool)
+          xcrun notarytool submit "$PKG_FILE" \
+            --key ~/.appstoreconnect/private_keys/AuthKey_$ASC_KEY_ID.p8 \
+            --key-id "$ASC_KEY_ID" \
+            --issuer "$ASC_ISSUER_ID" \
+            --wait
+
+      - name: Upload archive artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Happy-Archive-${{ github.run_number }}
+          path: ${{ runner.temp }}/Happy.xcarchive
+          retention-days: 30
+
+      - name: Upload exported app artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Happy-Export-${{ github.run_number }}
+          path: ${{ runner.temp }}/export/
+          retention-days: 30
+
+      # ----------------------------------------
+      # Cleanup (always runs)
+      # ----------------------------------------
+      - name: Cleanup keychain and secrets
+        if: always()
+        run: |
+          # Delete temporary keychain
+          security delete-keychain $RUNNER_TEMP/app-signing.keychain-db || true
+
+          # Remove provisioning profile
+          rm -f ~/Library/MobileDevice/Provisioning\ Profiles/build_profile.provisionprofile || true
+
+          # Remove API key
+          rm -rf ~/.appstoreconnect || true
+
+          # Remove certificate file
+          rm -f $RUNNER_TEMP/build_certificate.p12 || true
+
+          echo "Cleanup complete"
+
+  # ============================================
+  # Summary Job
+  # ============================================
+  summary:
+    name: Build Summary
+    runs-on: ubuntu-latest
+    needs: [build-and-test, archive-and-deploy]
+    if: always()
+
+    steps:
+      - name: Generate summary
+        env:
+          BUILD_RESULT: ${{ needs.build-and-test.result }}
+          DEPLOY_RESULT: ${{ needs.archive-and-deploy.result }}
+          EVENT_NAME: ${{ github.event_name }}
+          DESTINATION: ${{ github.event.inputs.destination }}
+          RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          echo "## macOS Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Stage | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+
+          get_status() {
+            case "$1" in
+              success) echo "✅ Passed" ;;
+              failure) echo "❌ Failed" ;;
+              skipped) echo "⏭️ Skipped" ;;
+              *) echo "⚠️ $1" ;;
+            esac
+          }
+
+          echo "| Build and Test | $(get_status "$BUILD_RESULT") |" >> $GITHUB_STEP_SUMMARY
+          echo "| Archive and Deploy | $(get_status "$DEPLOY_RESULT") |" >> $GITHUB_STEP_SUMMARY
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Build Number:** $RUN_NUMBER" >> $GITHUB_STEP_SUMMARY
+          echo "**Trigger:** $EVENT_NAME" >> $GITHUB_STEP_SUMMARY
+
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "**Destination:** $DESTINATION" >> $GITHUB_STEP_SUMMARY
+          fi

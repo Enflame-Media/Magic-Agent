@@ -1,0 +1,158 @@
+/*
+  Localizable.strings (Russian)
+  Happy
+
+  Created by Happy Engineering
+  Copyright © 2024 Enflame Media. All rights reserved.
+
+  Russian localization file for the Happy macOS app.
+*/
+
+// MARK: - General
+"app.name" = "Happy";
+"app.tagline" = "Удалённое управление для Claude Code";
+
+// MARK: - Common Actions
+"action.cancel" = "Отмена";
+"action.done" = "Готово";
+"action.save" = "Сохранить";
+"action.delete" = "Удалить";
+"action.refresh" = "Обновить";
+"action.connect" = "Подключить";
+"action.disconnect" = "Отключить";
+"action.ok" = "OK";
+"action.yes" = "Да";
+"action.no" = "Нет";
+"action.continue" = "Продолжить";
+"action.back" = "Назад";
+"action.copy" = "Копировать";
+"action.retry" = "Повторить";
+
+// MARK: - Setup
+"setup.title" = "Требуется настройка";
+"setup.instruction" = "Отсканируйте QR-код из Claude Code CLI для подключения";
+"setup.scanQR" = "Сканировать QR-код";
+
+// MARK: - Sessions
+"sessions.title" = "Сессии";
+"sessions.empty" = "Нет активных сессий";
+"sessions.status.active" = "Активна";
+"sessions.status.paused" = "Приостановлена";
+"sessions.status.completed" = "Завершена";
+"sessions.status.error" = "Ошибка";
+"sessions.quickStart" = "Быстрый запуск";
+
+// MARK: - Machines
+"machines.title" = "Машины";
+"machines.empty" = "Нет подключённых машин";
+"machines.status.connected" = "Подключена";
+"machines.status.disconnected" = "Отключена";
+"machines.status.connecting" = "Подключение...";
+
+// MARK: - Errors
+"error.connection.failed" = "Ошибка подключения";
+"error.connection.lost" = "Соединение потеряно";
+"error.encryption.failed" = "Ошибка шифрования";
+"error.network.unavailable" = "Сеть недоступна";
+"error.unknown" = "Произошла неизвестная ошибка";
+"error.tryAgain" = "Пожалуйста, попробуйте снова";
+
+// MARK: - Settings
+"settings.title" = "Настройки";
+"settings.general" = "Основные";
+"settings.account" = "Аккаунт";
+"settings.subscription" = "Подписка";
+"settings.privacy" = "Конфиденциальность";
+"settings.notifications" = "Уведомления";
+"settings.advanced" = "Дополнительно";
+"settings.language" = "Язык";
+
+// MARK: - General Settings
+"settings.general.launchAtLogin" = "Запускать Happy при входе в систему";
+"settings.general.appearance" = "Оформление";
+"settings.general.playSounds" = "Воспроизводить звуки";
+"settings.general.theme.system" = "Системная";
+"settings.general.theme.light" = "Светлая";
+"settings.general.theme.dark" = "Тёмная";
+
+// MARK: - Account Settings
+"settings.account.connectedMachine" = "Подключённая машина";
+"settings.account.machineId" = "ID машины";
+"settings.account.connected" = "Подключено";
+"settings.account.noMachineInfo" = "Информация о машине недоступна";
+"settings.account.notConnected" = "Не подключено";
+"settings.account.scanToConnect" = "Отсканируйте QR-код из Claude Code CLI для подключения";
+
+// MARK: - Privacy Settings
+"settings.privacy.onlineStatus" = "Статус онлайн";
+"settings.privacy.showOnlineStatus" = "Показывать статус онлайн друзьям";
+"settings.privacy.showOnlineStatusEnabled" = "Друзья могут видеть, когда вы в сети";
+"settings.privacy.showOnlineStatusDisabled" = "Вы отображаетесь как оффлайн для всех друзей";
+"settings.privacy.syncing" = "Синхронизация...";
+"settings.privacy.footer" = "Когда отключено, вы будете отображаться как оффлайн для всех друзей, но сможете видеть, когда они в сети.";
+
+// MARK: - Notifications Settings
+"settings.notifications.enable" = "Включить уведомления";
+"settings.notifications.description" = "Вы будете получать уведомления, когда Claude завершит задачи или потребуется ввод";
+
+// MARK: - Advanced Settings
+"settings.advanced.server" = "Сервер";
+"settings.advanced.serverUrl" = "URL сервера";
+"settings.advanced.serverWarning" = "Изменяйте это, только если вы используете собственный сервер Happy";
+"settings.advanced.resetToDefaults" = "Сбросить настройки";
+
+// MARK: - Language Settings
+"settings.language.title" = "Язык";
+"settings.language.description" = "Выберите предпочитаемый язык интерфейса приложения.";
+"settings.language.current" = "Текущий язык";
+"settings.language.automatic" = "Автоматически";
+"settings.language.automaticDescription" = "Использовать язык системы";
+"settings.language.restartRequired" = "Требуется перезапуск";
+"settings.language.restartMessage" = "Приложение необходимо перезапустить для полного применения новой языковой настройки.";
+"settings.language.restartNow" = "Перезапустить сейчас";
+"settings.language.restartLater" = "Позже";
+
+// MARK: - Subscription
+"subscription.status" = "Статус подписки";
+"subscription.pro" = "Happy Pro";
+"subscription.free" = "Бесплатный план";
+"subscription.proDescription" = "Все премиум-функции разблокированы";
+"subscription.freeDescription" = "Обновите, чтобы разблокировать все функции";
+"subscription.upgrade" = "Перейти на Pro";
+"subscription.restore" = "Восстановить покупки";
+"subscription.restoring" = "Восстановление...";
+"subscription.manage" = "Управление подпиской";
+"subscription.product" = "Продукт";
+
+// MARK: - Menu Items
+"menu.file.scanQR" = "Сканировать QR-код...";
+"menu.session" = "Сессия";
+"menu.session.refresh" = "Обновить";
+"menu.session.copy" = "Копировать сессию";
+"menu.session.export" = "Экспортировать сессию...";
+"menu.friends" = "Друзья";
+"menu.friends.show" = "Показать друзей";
+"menu.friends.add" = "Добавить друга...";
+"menu.friends.refresh" = "Обновить друзей";
+"menu.connection" = "Соединение";
+"menu.connection.connect" = "Подключить";
+"menu.connection.disconnect" = "Отключить";
+"menu.connection.status" = "Статус соединения...";
+"menu.subscription" = "Подписка";
+"menu.subscription.upgrade" = "Перейти на Pro...";
+"menu.subscription.restore" = "Восстановить покупки";
+"menu.help.docs" = "Документация Happy";
+"menu.help.reportIssue" = "Сообщить о проблеме";
+
+// MARK: - Time
+"time.justNow" = "только что";
+"time.minutesAgo" = "%d мин. назад";
+"time.hoursAgo" = "%d ч. назад";
+"time.daysAgo" = "%d дн. назад";
+
+// MARK: - Status
+"status.connected" = "Подключено";
+"status.disconnected" = "Отключено";
+"status.connecting" = "Подключение...";
+"status.online" = "В сети";
+"status.offline" = "Не в сети";

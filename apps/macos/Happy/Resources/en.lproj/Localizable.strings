@@ -1,0 +1,158 @@
+/*
+  Localizable.strings (English)
+  Happy
+
+  Created by Happy Engineering
+  Copyright © 2024 Enflame Media. All rights reserved.
+
+  English localization file for the Happy macOS app.
+*/
+
+// MARK: - General
+"app.name" = "Happy";
+"app.tagline" = "Remote control for Claude Code";
+
+// MARK: - Common Actions
+"action.cancel" = "Cancel";
+"action.done" = "Done";
+"action.save" = "Save";
+"action.delete" = "Delete";
+"action.refresh" = "Refresh";
+"action.connect" = "Connect";
+"action.disconnect" = "Disconnect";
+"action.ok" = "OK";
+"action.yes" = "Yes";
+"action.no" = "No";
+"action.continue" = "Continue";
+"action.back" = "Back";
+"action.copy" = "Copy";
+"action.retry" = "Retry";
+
+// MARK: - Setup
+"setup.title" = "Setup Required";
+"setup.instruction" = "Scan the QR code from Claude Code CLI to connect";
+"setup.scanQR" = "Scan QR Code";
+
+// MARK: - Sessions
+"sessions.title" = "Sessions";
+"sessions.empty" = "No active sessions";
+"sessions.status.active" = "Active";
+"sessions.status.paused" = "Paused";
+"sessions.status.completed" = "Completed";
+"sessions.status.error" = "Error";
+"sessions.quickStart" = "Quick Start";
+
+// MARK: - Machines
+"machines.title" = "Machines";
+"machines.empty" = "No connected machines";
+"machines.status.connected" = "Connected";
+"machines.status.disconnected" = "Disconnected";
+"machines.status.connecting" = "Connecting...";
+
+// MARK: - Errors
+"error.connection.failed" = "Connection failed";
+"error.connection.lost" = "Connection lost";
+"error.encryption.failed" = "Encryption error";
+"error.network.unavailable" = "Network unavailable";
+"error.unknown" = "An unknown error occurred";
+"error.tryAgain" = "Please try again";
+
+// MARK: - Settings
+"settings.title" = "Settings";
+"settings.general" = "General";
+"settings.account" = "Account";
+"settings.subscription" = "Subscription";
+"settings.privacy" = "Privacy";
+"settings.notifications" = "Notifications";
+"settings.advanced" = "Advanced";
+"settings.language" = "Language";
+
+// MARK: - General Settings
+"settings.general.launchAtLogin" = "Launch Happy at login";
+"settings.general.appearance" = "Appearance";
+"settings.general.playSounds" = "Play sounds";
+"settings.general.theme.system" = "System";
+"settings.general.theme.light" = "Light";
+"settings.general.theme.dark" = "Dark";
+
+// MARK: - Account Settings
+"settings.account.connectedMachine" = "Connected Machine";
+"settings.account.machineId" = "Machine ID";
+"settings.account.connected" = "Connected";
+"settings.account.noMachineInfo" = "No machine information available";
+"settings.account.notConnected" = "Not Connected";
+"settings.account.scanToConnect" = "Scan a QR code from Claude Code CLI to connect";
+
+// MARK: - Privacy Settings
+"settings.privacy.onlineStatus" = "Online Status";
+"settings.privacy.showOnlineStatus" = "Show online status to friends";
+"settings.privacy.showOnlineStatusEnabled" = "Friends can see when you're online";
+"settings.privacy.showOnlineStatusDisabled" = "You appear offline to all friends";
+"settings.privacy.syncing" = "Syncing...";
+"settings.privacy.footer" = "When disabled, you'll appear offline to all friends, but you can still see when they're online.";
+
+// MARK: - Notifications Settings
+"settings.notifications.enable" = "Enable notifications";
+"settings.notifications.description" = "You'll receive notifications when Claude completes tasks or needs input";
+
+// MARK: - Advanced Settings
+"settings.advanced.server" = "Server";
+"settings.advanced.serverUrl" = "Server URL";
+"settings.advanced.serverWarning" = "Change this only if you're running a custom Happy server";
+"settings.advanced.resetToDefaults" = "Reset to Defaults";
+
+// MARK: - Language Settings
+"settings.language.title" = "Language";
+"settings.language.description" = "Choose your preferred language for the app interface.";
+"settings.language.current" = "Current Language";
+"settings.language.automatic" = "Automatic";
+"settings.language.automaticDescription" = "Use system language";
+"settings.language.restartRequired" = "Restart Required";
+"settings.language.restartMessage" = "The app needs to restart to fully apply the new language setting.";
+"settings.language.restartNow" = "Restart Now";
+"settings.language.restartLater" = "Later";
+
+// MARK: - Subscription
+"subscription.status" = "Subscription Status";
+"subscription.pro" = "Happy Pro";
+"subscription.free" = "Free Plan";
+"subscription.proDescription" = "All premium features unlocked";
+"subscription.freeDescription" = "Upgrade to unlock all features";
+"subscription.upgrade" = "Upgrade to Pro";
+"subscription.restore" = "Restore Purchases";
+"subscription.restoring" = "Restoring...";
+"subscription.manage" = "Manage Subscription";
+"subscription.product" = "Product";
+
+// MARK: - Menu Items
+"menu.file.scanQR" = "Scan QR Code...";
+"menu.session" = "Session";
+"menu.session.refresh" = "Refresh";
+"menu.session.copy" = "Copy Session";
+"menu.session.export" = "Export Session...";
+"menu.friends" = "Friends";
+"menu.friends.show" = "Show Friends";
+"menu.friends.add" = "Add Friend...";
+"menu.friends.refresh" = "Refresh Friends";
+"menu.connection" = "Connection";
+"menu.connection.connect" = "Connect";
+"menu.connection.disconnect" = "Disconnect";
+"menu.connection.status" = "Connection Status...";
+"menu.subscription" = "Subscription";
+"menu.subscription.upgrade" = "Upgrade to Pro...";
+"menu.subscription.restore" = "Restore Purchases";
+"menu.help.docs" = "Happy Documentation";
+"menu.help.reportIssue" = "Report an Issue";
+
+// MARK: - Time
+"time.justNow" = "just now";
+"time.minutesAgo" = "%d minute(s) ago";
+"time.hoursAgo" = "%d hour(s) ago";
+"time.daysAgo" = "%d day(s) ago";
+
+// MARK: - Status
+"status.connected" = "Connected";
+"status.disconnected" = "Disconnected";
+"status.connecting" = "Connecting...";
+"status.online" = "Online";
+"status.offline" = "Offline";
