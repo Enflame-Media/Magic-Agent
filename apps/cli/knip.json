@@ -1,0 +1,25 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "src/lib.ts",
+    "scripts/claude_local_launcher.cjs!",
+    "scripts/claude_remote_launcher.cjs!",
+    "scripts/claude_version_utils.cjs!",
+    "scripts/ripgrep_launcher.cjs!"
+  ],
+  "project": ["src/**/*.ts", "scripts/**/*.{js,cjs,mjs}"],
+  "ignore": ["src/**/*.test.ts", "src/**/*.spec.ts"],
+  "ignoreDependencies": [
+    "@fastify/swagger",
+    "openapi-types",
+    "oxlint",
+    "pkgroll",
+    "release-it"
+  ],
+  "ignoreBinaries": ["oxlint", "pkgroll", "release-it", "tsc", "tsx", "vitest"],
+  "ignoreFiles": ["pkgroll.config.js"],
+  "ignoreExportsUsedInFile": {
+    "interface": true,
+    "type": true
+  }
+}

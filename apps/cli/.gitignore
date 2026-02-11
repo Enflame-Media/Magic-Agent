@@ -1,0 +1,48 @@
+*-debug.log
+*-error.log
+**/.DS_Store
+/.idea
+/dist
+/tmp
+/node_modules
+oclif.manifest.json
+
+# Unpacked binaries (keep archives)
+/tools/unpacked/
+
+
+
+pnpm-lock.yaml
+
+# Environment variables (protect production secrets)
+.env
+.env.local
+.env.*.local
+.env.production
+
+# Keep templates and development configs committed to repo
+!.env.example
+!.env.dev
+!.env.dev-local-server
+!.env.integration-test
+!.env.staging
+
+# Claude code session level settings
+.claude/settings.local.json
+
+# Local installation
+.enfm-happy/
+.dev/
+
+**/*.log
+.release-notes-temp.md
+
+# test coverage
+coverage/
+
+# Stryker mutation testing
+.stryker-tmp/
+reports/mutation/
+
+# npm auth token (never commit)
+.npmrc
