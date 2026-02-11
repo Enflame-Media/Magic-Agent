@@ -226,11 +226,23 @@ yarn db:migrate:prod
 
 **Security Note (HAP-616)**: All state-changing requests (POST, PUT, DELETE, PATCH) require CSRF protection. The API uses the double-submit cookie pattern - requests must include an `X-CSRF-Token` header matching the `csrf-token` cookie.
 
+**Security Note (HAP-617)**: Rate limiting is enforced on authentication endpoints to prevent brute force attacks:
+| Endpoint | Limit | Window | Purpose |
+|----------|-------|--------|---------|
+| `/api/auth/sign-in/*` | 5 | 1 min | Prevent brute force password attacks |
+| `/api/auth/sign-up/*` | 3 | 1 min | Prevent mass registration |
+| `/api/auth/forgot-password` | 3 | 5 min | Prevent email flooding |
+| Other auth endpoints | 10 | 1 min | General protection |
+
+Rate limited requests receive 429 Too Many Requests with `Retry-After` header and `X-RateLimit-*` headers.
+
 ### Metrics API (Protected - Admin Only)
 
 All metrics endpoints require admin authorization (HAP-612). Users must:
 1. Be authenticated (valid session)
 2. Have `role = 'admin'` in the database
+
+**Rate Limiting (HAP-617)**: Metrics endpoints are limited to 60 requests per minute per IP to prevent Analytics Engine abuse.
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
@@ -307,6 +319,46 @@ The initial admin is configured in `auth.ts`:
 - Has Better-Auth admin privileges
 - Should have `role = 'admin'` in database (set by migration 0002)
 
+## Audit Log Retention Policy (HAP-865)
+
+Admin audit logs (role changes, user management actions) are automatically cleaned up after a retention period.
+
+### Policy Details
+
+| Setting | Value | Description |
+|---------|-------|-------------|
+| Retention Period | 90 days | Logs older than 90 days are permanently deleted |
+| Schedule | Daily at 03:00 UTC | Cloudflare Cron Trigger runs cleanup |
+| Archive | No | Logs are deleted without archival to R2 |
+
+### Configuration
+
+Retention period is configured in `src/lib/constants.ts`:
+
+```typescript
+export const AUDIT_LOG_RETENTION = {
+    RETENTION_DAYS: 90,
+    RETENTION_MS: 90 * MILLISECONDS.DAY,
+} as const;
+```
+
+### Scheduled Handler
+
+The cleanup job runs via Cloudflare Cron Trigger:
+- Configured in `wrangler.toml` under `[env.dev.triggers]` and `[env.prod.triggers]`
+- Handler in `src/scheduled/auditLogCleanup.ts`
+- Logs results to console for observability
+
+### Manual Cleanup (if needed)
+
+```bash
+# Delete audit logs older than 90 days manually
+wrangler d1 execute DB --env dev --remote --command "
+DELETE FROM admin_audit_logs
+WHERE created_at < (cast((unixepoch('subsecond') - 90*24*60*60) * 1000 as integer));
+"
+```
+
 ## Environment Variables & Secrets
 
 ### Required Secrets (via wrangler secret)
@@ -365,7 +417,7 @@ BETTER_AUTH_URL=http://localhost:8788
 ## Related Documentation
 
 - [Root CLAUDE.md](../CLAUDE.md) - Monorepo overview
-- [happy-admin CLAUDE.md](../happy-admin/CLAUDE.md) - Dashboard frontend
+- [apps/admin/web CLAUDE.md](../web/CLAUDE.md) - Dashboard frontend
 - [Analytics Engine Docs](https://developers.cloudflare.com/analytics/analytics-engine/)
 - [Better-Auth Docs](https://www.better-auth.com/)
 - [Hono CORS](https://hono.dev/docs/middleware/builtin/cors)

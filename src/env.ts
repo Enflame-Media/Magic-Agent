@@ -54,6 +54,13 @@ export interface Env {
      * @required Set in wrangler.toml vars
      */
     BETTER_AUTH_URL?: string;
+
+    /**
+     * KV namespace for rate limiting (HAP-617)
+     * Used to track request counts per IP for auth endpoints
+     * @required Set in wrangler.toml
+     */
+    RATE_LIMIT_KV?: KVNamespace;
 }
 
 /**

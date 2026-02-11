@@ -37,6 +37,17 @@ binding = "DB"
 database_name = "happy-dev"
 database_id = "402f86c0-7405-49cc-9667-93ad06fe4206"
 
+# KV namespace for rate limiting (HAP-617)
+# Tracks request counts per IP for authentication endpoints
+[[env.dev.kv_namespaces]]
+binding = "RATE_LIMIT_KV"
+id = "43ee509c96d741df94da3ca88ddc5978"
+
+# Cron Triggers (HAP-865)
+# Scheduled job to clean up expired audit logs (runs daily at 03:00 UTC)
+[env.dev.triggers]
+crons = ["0 3 * * *"]
+
 [env.dev.observability]
 [env.dev.observability.logs]
 enabled = true
@@ -67,6 +78,17 @@ secrets_store_secrets = [
 binding = "DB"
 database_name = "happy-prod"
 database_id = "f547b6d8-035d-4550-a5cf-acea4c533901"
+
+# KV namespace for rate limiting (HAP-617)
+# Tracks request counts per IP for authentication endpoints
+[[env.prod.kv_namespaces]]
+binding = "RATE_LIMIT_KV"
+id = "cab477e623494d9cac1cf0204ff9d2d9"
+
+# Cron Triggers (HAP-865)
+# Scheduled job to clean up expired audit logs (runs daily at 03:00 UTC)
+[env.prod.triggers]
+crons = ["0 3 * * *"]
 
 [env.prod.observability]
 [env.prod.observability.logs]

@@ -10,8 +10,11 @@ import { adminAuthMiddleware } from './middleware/auth';
 import { csrfMiddleware } from './middleware/csrf';
 import { bodySizeLimits } from './middleware/bodySize';
 import { requestIdMiddleware } from './middleware/requestId';
+import { securityHeadersMiddleware } from './middleware/securityHeaders';
+import { authRateLimitMiddleware, rateLimits } from './middleware/rateLimit';
 import { CORS_CONFIG, getAllowedOrigins } from './lib/constants';
 import { createSafeError, getErrorStatusCode } from '@happy/errors';
+import { cleanupExpiredAuditLogs } from './scheduled/auditLogCleanup';
 
 /**
  * Application version (should match package.json)
@@ -65,6 +68,22 @@ app.use('*', async (c, next) => {
 });
 
 /**
+ * Security Headers Middleware (HAP-627)
+ *
+ * Adds standard security headers to all responses:
+ * - Content-Security-Policy: Prevents XSS and data injection
+ * - X-Frame-Options: Prevents clickjacking
+ * - X-Content-Type-Options: Prevents MIME sniffing
+ * - Strict-Transport-Security: Enforces HTTPS (production only)
+ * - X-XSS-Protection: Legacy XSS protection
+ * - Referrer-Policy: Controls referrer leakage
+ * - Permissions-Policy: Restricts browser features
+ *
+ * Applied after CORS to ensure headers are on final responses.
+ */
+app.use('*', securityHeadersMiddleware());
+
+/**
  * CSRF Protection Middleware
  *
  * SECURITY FIX (HAP-616): Implements double-submit cookie pattern.
@@ -79,6 +98,19 @@ app.use('*', csrfMiddleware());
  * API Routes
  */
 
+/**
+ * Rate Limiting for Authentication Endpoints
+ *
+ * SECURITY FIX (HAP-617): Implements per-endpoint rate limiting to prevent:
+ * - Brute force password attacks (5 req/min on sign-in)
+ * - Mass account registration (3 req/min on sign-up)
+ * - Email flooding (3 req/5min on forgot-password)
+ *
+ * Rate limits are tracked per IP using Cloudflare KV.
+ * Returns 429 Too Many Requests with Retry-After header when exceeded.
+ */
+app.use('/api/auth/*', authRateLimitMiddleware());
+
 // Mount authentication routes (Better-Auth) - public
 app.route('/api/auth', authRoutes);
 
@@ -89,7 +121,10 @@ app.route('/api/auth', authRoutes);
  * Now requires both:
  * 1. Valid session (authentication)
  * 2. Admin role (authorization)
+ *
+ * SECURITY FIX (HAP-617): Rate limited to 60 req/min to prevent Analytics abuse.
  */
+app.use('/api/metrics/*', rateLimits.metrics());
 app.use('/api/metrics/*', adminAuthMiddleware());
 app.route('/api/metrics', metricsRoutes);
 
@@ -268,7 +303,48 @@ app.notFound((c) => {
 
 /**
  * Export the Worker
+ *
+ * Includes both HTTP fetch handler and scheduled handler for cron triggers.
+ *
+ * @remarks
+ * Scheduled handler (HAP-865):
+ * - Runs daily at 03:00 UTC via Cloudflare Cron Trigger
+ * - Cleans up audit logs older than 90 days
  */
 export default {
     fetch: app.fetch,
+
+    /**
+     * Scheduled event handler for Cloudflare Cron Triggers
+     *
+     * @param event - Scheduled event from Cloudflare
+     * @param env - Environment bindings
+     * @param ctx - Execution context for waitUntil
+     *
+     * @remarks
+     * Currently handles:
+     * - Audit log cleanup (HAP-865): Deletes records older than 90 days
+     */
+    async scheduled(
+        event: ScheduledEvent,
+        env: Env,
+        _ctx: ExecutionContext
+    ): Promise<void> {
+        console.log(`[Scheduled] Cron trigger fired: ${event.cron} at ${new Date(event.scheduledTime).toISOString()}`);
+
+        try {
+            const result = await cleanupExpiredAuditLogs(env);
+
+            console.log(
+                `[Scheduled] Audit log cleanup completed: deleted=${result.deleted}, ` +
+                `cutoff=${result.cutoffDate}, duration=${result.durationMs}ms`
+            );
+        } catch (error) {
+            console.error(
+                '[Scheduled] Audit log cleanup failed:',
+                error instanceof Error ? error.message : error
+            );
+            throw error; // Re-throw to mark the scheduled event as failed
+        }
+    },
 };

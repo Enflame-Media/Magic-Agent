@@ -62,6 +62,30 @@ export const CORS_CONFIG = {
 } as const;
 
 /**
+ * Audit Log Retention Policy Configuration (HAP-865)
+ *
+ * Defines the retention period for admin audit logs stored in D1.
+ * After this period, logs are automatically deleted by the scheduled cleanup job.
+ *
+ * @remarks
+ * - 90 days is a standard compliance period, balancing:
+ *   - Sufficient time for incident response and investigations
+ *   - Storage cost management for D1
+ *   - Performance optimization for queries
+ *
+ * - Cloudflare Cron Trigger runs daily at 03:00 UTC to clean expired logs
+ * - Records older than RETENTION_DAYS are permanently deleted (no archive)
+ *
+ * @see HAP-804 for audit log implementation
+ */
+export const AUDIT_LOG_RETENTION = {
+    /** Retention period in days (90 days = ~3 months) */
+    RETENTION_DAYS: 90,
+    /** Retention period in milliseconds for timestamp comparison */
+    RETENTION_MS: 90 * MILLISECONDS.DAY,
+} as const;
+
+/**
  * Origin configuration for CORS and trusted origins
  *
  * @remarks

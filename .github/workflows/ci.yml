@@ -1,0 +1,88 @@
+# CI workflow for happy-admin-api
+# Created for HAP-636: Add CI pipeline with security test automation
+#
+# This workflow runs on every push to main and on all PRs.
+# It verifies code quality through typecheck, lint, and tests (including security tests).
+
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+# Cancel in-progress runs when a new run is triggered for the same branch
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ============================================
+  # Quality Gates - Typecheck, Lint, Tests
+  # ============================================
+  quality:
+    name: Quality Checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+          cache-dependency-path: yarn.lock
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install Dependencies
+        run: yarn install --immutable
+
+      - name: Type Check
+        run: yarn typecheck
+
+      - name: Lint
+        run: yarn lint
+
+      - name: Run Tests
+        run: yarn test
+
+  # ============================================
+  # Security Tests - Run separately for visibility
+  # ============================================
+  security:
+    name: Security Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+          cache-dependency-path: yarn.lock
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install Dependencies
+        run: yarn install --immutable
+
+      - name: Run Security Tests
+        run: yarn test:security
+
+      - name: Create Security Summary
+        if: always()
+        run: |
+          echo "## Security Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Security tests verify:" >> $GITHUB_STEP_SUMMARY
+          echo "- SQL injection protection in analytics queries" >> $GITHUB_STEP_SUMMARY
+          echo "- Input validation and sanitization" >> $GITHUB_STEP_SUMMARY

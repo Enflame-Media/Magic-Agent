@@ -83,7 +83,7 @@ happy-admin (dashboard UI)
 
 ### sync_metrics Dataset
 
-Written by `happy-server-workers/src/routes/analytics.ts`:
+Written by `apps/server/workers/src/routes/analytics.ts`:
 
 | Field | Type | Content |
 |-------|------|---------|
@@ -158,21 +158,61 @@ If datasets exist but return no data:
 
 ## API Response Format
 
-All metrics endpoints now include an `isMockData` flag:
+### Successful Response (HTTP 200)
+
+When data is available, endpoints return the data directly:
 
 ```json
 {
   "data": [...],
-  "isMockData": false,
   "timestamp": "2025-12-29T00:00:00Z"
 }
 ```
 
-When `isMockData: true`, the dashboard is showing fallback mock data because:
-- Analytics Engine is not configured
-- Secrets Store is empty
-- No data exists in the dataset
-- Query failed
+### Data Unavailable Response (HTTP 503)
+
+HAP-872: Mock data fallbacks have been removed. When data is unavailable, endpoints now return
+HTTP 503 Service Unavailable with a structured error response:
+
+```json
+{
+  "error": "Data unavailable",
+  "reason": "empty_dataset",
+  "message": "No sync metrics data found in the last 24 hours. Ensure happy-server-workers is writing to Analytics Engine."
+}
+```
+
+#### Reason Codes
+
+| Reason | Description |
+|--------|-------------|
+| `not_configured` | Analytics Engine credentials not set in Secrets Store |
+| `empty_dataset` | Query succeeded but returned no data |
+| `query_failed` | Analytics Engine query returned an error |
+
+### Frontend Behavior
+
+The dashboard handles 503 responses gracefully:
+- Displays a **Data Unavailable** error banner (red) instead of charts
+- Shows which specific data sources are unavailable
+- Provides troubleshooting steps for configuration issues
+- Does NOT display fake/demo data
+
+This ensures administrators see accurate error states rather than misleading mock data
+that could mask real configuration issues.
+
+## Migration from Mock Data (HAP-872)
+
+Prior to HAP-872, the API returned mock data when Analytics Engine was unavailable or empty.
+This has been replaced with explicit error responses because:
+
+1. **User Impact**: Mock data could mask real configuration issues
+2. **Business Impact**: Decisions made from mock data are meaningless
+3. **Technical Impact**: Silent fallbacks hide problems that need fixing
+
+The `isMockData` response field has been removed. The `MockDataBanner` component has been
+renamed to `DataUnavailableBanner` and updated to display error state (red styling) instead
+of demo mode (amber styling).
 
 ## Related Issues
 
@@ -181,4 +221,5 @@ When `isMockData: true`, the dashboard is showing fallback mock data because:
 - HAP-548: Admin Project Scaffold + Dashboard API
 - HAP-564: Bundle size metrics integration
 - HAP-577: Validation failure metrics
-- HAP-638: Fix mock data fallbacks (this fix)
+- HAP-638: Added mock data indicators (now superseded by HAP-872)
+- HAP-872: Removed mock data fallbacks, return 503 errors instead

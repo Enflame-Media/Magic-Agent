@@ -147,15 +147,15 @@ function createTestableAuthMiddleware(getSession: () => Promise<MockSession | nu
 
 describe('Admin Authorization Middleware (HAP-618)', () => {
     let app: Hono<{ Bindings: Env; Variables: Variables }>;
-    let mockGetSession: ReturnType<typeof vi.fn>;
-    let mockGetDbUser: ReturnType<typeof vi.fn>;
+    let mockGetSession: ReturnType<typeof vi.fn<() => Promise<MockSession | null>>>;
+    let mockGetDbUser: ReturnType<typeof vi.fn<(userId: string) => Promise<MockDbUser | undefined>>>;
 
     beforeEach(() => {
         vi.clearAllMocks();
 
-        // Set up mock functions
-        mockGetSession = vi.fn();
-        mockGetDbUser = vi.fn();
+        // Set up mock functions with proper types
+        mockGetSession = vi.fn<() => Promise<MockSession | null>>();
+        mockGetDbUser = vi.fn<(userId: string) => Promise<MockDbUser | undefined>>();
 
         // Create test app with testable admin middleware
         app = new Hono<{ Bindings: Env; Variables: Variables }>();
@@ -376,11 +376,11 @@ describe('Admin Authorization Middleware (HAP-618)', () => {
 
 describe('Basic Auth Middleware (authentication-only)', () => {
     let app: Hono<{ Bindings: Env; Variables: Variables }>;
-    let mockGetSession: ReturnType<typeof vi.fn>;
+    let mockGetSession: ReturnType<typeof vi.fn<() => Promise<MockSession | null>>>;
 
     beforeEach(() => {
         vi.clearAllMocks();
-        mockGetSession = vi.fn();
+        mockGetSession = vi.fn<() => Promise<MockSession | null>>();
 
         // Create test app with basic auth middleware (no role check)
         app = new Hono<{ Bindings: Env; Variables: Variables }>();
@@ -420,13 +420,13 @@ describe('Basic Auth Middleware (authentication-only)', () => {
 
 describe('Security Edge Cases', () => {
     let app: Hono<{ Bindings: Env; Variables: Variables }>;
-    let mockGetSession: ReturnType<typeof vi.fn>;
-    let mockGetDbUser: ReturnType<typeof vi.fn>;
+    let mockGetSession: ReturnType<typeof vi.fn<() => Promise<MockSession | null>>>;
+    let mockGetDbUser: ReturnType<typeof vi.fn<(userId: string) => Promise<MockDbUser | undefined>>>;
 
     beforeEach(() => {
         vi.clearAllMocks();
-        mockGetSession = vi.fn();
-        mockGetDbUser = vi.fn();
+        mockGetSession = vi.fn<() => Promise<MockSession | null>>();
+        mockGetDbUser = vi.fn<(userId: string) => Promise<MockDbUser | undefined>>();
 
         app = new Hono<{ Bindings: Env; Variables: Variables }>();
         app.use('/api/metrics/*', createTestableAdminMiddleware(mockGetSession, mockGetDbUser) as never);

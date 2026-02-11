@@ -104,6 +104,20 @@ type BundleSizeLatest = z.infer<typeof BundleSizeLatestSchema>;
  * Auth checking will be done via middleware
  */
 
+// HAP-872: Error response schema for data unavailable scenarios
+const DataUnavailableResponseSchema = z
+    .object({
+        error: z.string().openapi({ example: 'Data unavailable' }),
+        reason: z.enum(['not_configured', 'empty_dataset', 'query_failed']).openapi({
+            description: 'Reason why data is unavailable',
+            example: 'empty_dataset',
+        }),
+        message: z.string().openapi({
+            example: 'Analytics Engine returned no results. Check configuration.',
+        }),
+    })
+    .openapi('DataUnavailableResponse');
+
 const summaryRoute = createRoute({
     method: 'get',
     path: '/summary',
@@ -117,12 +131,16 @@ const summaryRoute = createRoute({
                 'application/json': {
                     schema: z.object({
                         data: z.array(MetricsSummarySchema),
-                        isMockData: z.boolean().openapi({
-                            description: 'True if using fallback mock data (Analytics Engine unavailable or empty)',
-                            example: false,
-                        }),
                         timestamp: z.string(),
                     }),
+                },
+            },
+        },
+        503: {
+            description: 'Data unavailable - Analytics Engine not configured or empty',
+            content: {
+                'application/json': {
+                    schema: DataUnavailableResponseSchema,
                 },
             },
         },
@@ -158,10 +176,6 @@ const timeseriesRoute = createRoute({
                 'application/json': {
                     schema: z.object({
                         data: z.array(TimeseriesPointSchema),
-                        isMockData: z.boolean().openapi({
-                            description: 'True if using fallback mock data',
-                            example: false,
-                        }),
                         timestamp: z.string(),
                     }),
                 },
@@ -172,6 +186,14 @@ const timeseriesRoute = createRoute({
             content: {
                 'application/json': {
                     schema: ErrorResponseSchema,
+                },
+            },
+        },
+        503: {
+            description: 'Data unavailable - Analytics Engine not configured or empty',
+            content: {
+                'application/json': {
+                    schema: DataUnavailableResponseSchema,
                 },
             },
         },
@@ -191,12 +213,16 @@ const cacheHitsRoute = createRoute({
                 'application/json': {
                     schema: z.object({
                         data: CacheHitRateSchema,
-                        isMockData: z.boolean().openapi({
-                            description: 'True if using fallback mock data',
-                            example: false,
-                        }),
                         timestamp: z.string(),
                     }),
+                },
+            },
+        },
+        503: {
+            description: 'Data unavailable - Analytics Engine not configured or empty',
+            content: {
+                'application/json': {
+                    schema: DataUnavailableResponseSchema,
                 },
             },
         },
@@ -216,12 +242,16 @@ const modeDistributionRoute = createRoute({
                 'application/json': {
                     schema: z.object({
                         data: ModeDistributionSchema,
-                        isMockData: z.boolean().openapi({
-                            description: 'True if using fallback mock data',
-                            example: false,
-                        }),
                         timestamp: z.string(),
                     }),
+                },
+            },
+        },
+        503: {
+            description: 'Data unavailable - Analytics Engine not configured or empty',
+            content: {
+                'application/json': {
+                    schema: DataUnavailableResponseSchema,
                 },
             },
         },
@@ -266,10 +296,6 @@ const bundleTrendsRoute = createRoute({
                 'application/json': {
                     schema: z.object({
                         data: z.array(BundleSizePointSchema),
-                        isMockData: z.boolean().openapi({
-                            description: 'True if using fallback mock data',
-                            example: false,
-                        }),
                         timestamp: z.string(),
                     }),
                 },
@@ -280,6 +306,14 @@ const bundleTrendsRoute = createRoute({
             content: {
                 'application/json': {
                     schema: ErrorResponseSchema,
+                },
+            },
+        },
+        503: {
+            description: 'Data unavailable - Analytics Engine not configured or empty',
+            content: {
+                'application/json': {
+                    schema: DataUnavailableResponseSchema,
                 },
             },
         },
@@ -299,12 +333,16 @@ const bundleLatestRoute = createRoute({
                 'application/json': {
                     schema: z.object({
                         data: z.array(BundleSizeLatestSchema),
-                        isMockData: z.boolean().openapi({
-                            description: 'True if using fallback mock data',
-                            example: false,
-                        }),
                         timestamp: z.string(),
                     }),
+                },
+            },
+        },
+        503: {
+            description: 'Data unavailable - Analytics Engine not configured or empty',
+            content: {
+                'application/json': {
+                    schema: DataUnavailableResponseSchema,
                 },
             },
         },
@@ -314,6 +352,19 @@ const bundleLatestRoute = createRoute({
 /*
  * Route Handlers
  */
+
+/**
+ * HAP-872: Type for data unavailability reasons
+ */
+type DataUnavailableReason = 'not_configured' | 'empty_dataset' | 'query_failed';
+
+/**
+ * HAP-872: Result type for Analytics Engine queries
+ * Either returns data or an error reason
+ */
+type AnalyticsQueryResult =
+    | { success: true; data: unknown[]; meta: unknown }
+    | { success: false; reason: DataUnavailableReason; message: string };
 
 /**
  * Helper to query Analytics Engine SQL API
@@ -331,14 +382,19 @@ const bundleLatestRoute = createRoute({
  * - index1: userId/accountId
  *
  * @see HAP-638 Fixed field mappings to match actual ingestion schema
+ * @see HAP-872 Returns typed error reasons instead of null for better error handling
  */
 async function queryAnalyticsEngine(
     env: Env,
     sql: string
-): Promise<{ data: unknown[]; meta: unknown } | null> {
+): Promise<AnalyticsQueryResult> {
     if (!env.ANALYTICS_ACCOUNT_ID || !env.ANALYTICS_API_TOKEN) {
         console.warn('[Metrics] Analytics Engine not configured - ANALYTICS_ACCOUNT_ID or ANALYTICS_API_TOKEN binding missing');
-        return null;
+        return {
+            success: false,
+            reason: 'not_configured',
+            message: 'Analytics Engine not configured. Ensure ANALYTICS_ACCOUNT_ID and ANALYTICS_API_TOKEN are set in Secrets Store.',
+        };
     }
 
     // Retrieve secrets from Secrets Store
@@ -349,12 +405,20 @@ async function queryAnalyticsEngine(
         apiToken = await env.ANALYTICS_API_TOKEN.get();
     } catch (error) {
         console.error('[Metrics] Failed to retrieve secrets from Secrets Store:', error);
-        return null;
+        return {
+            success: false,
+            reason: 'not_configured',
+            message: 'Failed to retrieve Analytics Engine credentials from Secrets Store.',
+        };
     }
 
     if (!accountId || !apiToken) {
         console.warn('[Metrics] Secrets Store returned empty values for ANALYTICS_ACCOUNT_ID or ANALYTICS_API_TOKEN');
-        return null;
+        return {
+            success: false,
+            reason: 'not_configured',
+            message: 'Secrets Store returned empty values for ANALYTICS_ACCOUNT_ID or ANALYTICS_API_TOKEN.',
+        };
     }
 
     const response = await fetch(
@@ -377,7 +441,11 @@ async function queryAnalyticsEngine(
             body: text,
             query: sql.substring(0, 200) + (sql.length > 200 ? '...' : ''),
         });
-        return null;
+        return {
+            success: false,
+            reason: 'query_failed',
+            message: `Analytics Engine query failed: ${response.status} ${response.statusText}`,
+        };
     }
 
     const result = await response.json() as { data: unknown[]; meta: unknown };
@@ -391,7 +459,7 @@ async function queryAnalyticsEngine(
         meta: result.meta,
     });
 
-    return result;
+    return { success: true, data: result.data, meta: result.meta };
 }
 
 /**
@@ -403,6 +471,8 @@ async function queryAnalyticsEngine(
  * - blob1 = syncType, blob2 = syncMode
  * - double4 = durationMs (NOT double1 which is bytesReceived)
  * - successRate is estimated as (itemsReceived > 0) since explicit success flag isn't tracked
+ *
+ * HAP-872: Removed mock data fallback - returns 503 when data unavailable
  */
 metricsRoutes.openapi(summaryRoute, async (c) => {
     const result = await queryAnalyticsEngine(
@@ -422,39 +492,35 @@ metricsRoutes.openapi(summaryRoute, async (c) => {
         `
     );
 
-    // Determine if we're using mock data
-    const isMockData = !result?.data || (Array.isArray(result.data) && result.data.length === 0);
-
-    if (isMockData) {
-        console.warn('[Metrics] /summary returning mock data - Analytics Engine query returned no results');
+    // HAP-872: Return 503 if Analytics Engine is not configured or query failed
+    if (!result.success) {
+        console.warn(`[Metrics] /summary returning 503 - ${result.reason}: ${result.message}`);
+        return c.json(
+            {
+                error: 'Data unavailable',
+                reason: result.reason,
+                message: result.message,
+            },
+            503
+        );
     }
 
-    // Return real data or mock fallback
-    const data: MetricsSummary[] = isMockData
-        ? [
-              {
-                  syncType: 'session',
-                  syncMode: 'full',
-                  count: 150,
-                  avgDurationMs: 245.5,
-                  p95DurationMs: 890,
-                  successRate: 0.98,
-              },
-              {
-                  syncType: 'session',
-                  syncMode: 'incremental',
-                  count: 450,
-                  avgDurationMs: 85.2,
-                  p95DurationMs: 210,
-                  successRate: 0.99,
-              },
-          ]
-        : (result.data as MetricsSummary[]);
+    // HAP-872: Return 503 if dataset is empty
+    if (!result.data || result.data.length === 0) {
+        console.warn('[Metrics] /summary returning 503 - empty dataset');
+        return c.json(
+            {
+                error: 'Data unavailable',
+                reason: 'empty_dataset' as const,
+                message: 'No sync metrics data found in the last 24 hours. Ensure happy-server-workers is writing to Analytics Engine.',
+            },
+            503
+        );
+    }
 
     return c.json(
         {
-            data,
-            isMockData,
+            data: result.data as MetricsSummary[],
             timestamp: new Date().toISOString(),
         },
         200
@@ -468,6 +534,8 @@ metricsRoutes.openapi(summaryRoute, async (c) => {
  * @remarks
  * Field mappings (HAP-638):
  * - double4 = durationMs (NOT double1 which is bytesReceived)
+ *
+ * HAP-872: Removed mock data fallback - returns 503 when data unavailable
  */
 metricsRoutes.openapi(timeseriesRoute, async (c) => {
     const { hours = '24', bucket = 'hour' } = c.req.valid('query');
@@ -495,22 +563,35 @@ metricsRoutes.openapi(timeseriesRoute, async (c) => {
 
     const result = await queryAnalyticsEngine(c.env, query.build());
 
-    // Determine if we're using mock data
-    const isMockData = !result?.data || (Array.isArray(result.data) && result.data.length === 0);
-
-    if (isMockData) {
-        console.warn('[Metrics] /timeseries returning mock data - Analytics Engine query returned no results');
+    // HAP-872: Return 503 if Analytics Engine is not configured or query failed
+    if (!result.success) {
+        console.warn(`[Metrics] /timeseries returning 503 - ${result.reason}: ${result.message}`);
+        return c.json(
+            {
+                error: 'Data unavailable',
+                reason: result.reason,
+                message: result.message,
+            },
+            503
+        );
     }
 
-    // Return real data or mock fallback
-    const data: TimeseriesPoint[] = isMockData
-        ? generateMockTimeseries(hoursNum, bucket)
-        : (result.data as TimeseriesPoint[]);
+    // HAP-872: Return 503 if dataset is empty
+    if (!result.data || result.data.length === 0) {
+        console.warn('[Metrics] /timeseries returning 503 - empty dataset');
+        return c.json(
+            {
+                error: 'Data unavailable',
+                reason: 'empty_dataset' as const,
+                message: `No sync metrics data found in the last ${hoursNum} hours. Ensure happy-server-workers is writing to Analytics Engine.`,
+            },
+            503
+        );
+    }
 
     return c.json(
         {
-            data,
-            isMockData,
+            data: result.data as TimeseriesPoint[],
             timestamp: new Date().toISOString(),
         },
         200
@@ -531,6 +612,8 @@ metricsRoutes.openapi(timeseriesRoute, async (c) => {
  *
  * For backward compatibility with older data that lacks blob4:
  * - Falls back to blob2='cached' heuristic if blob4 is empty
+ *
+ * HAP-872: Removed mock data fallback - returns 503 when data unavailable
  */
 metricsRoutes.openapi(cacheHitsRoute, async (c) => {
     // HAP-808: Query using explicit cache status field (blob4)
@@ -557,34 +640,55 @@ metricsRoutes.openapi(cacheHitsRoute, async (c) => {
         `
     );
 
-    // Calculate from result or use mock
-    let data: CacheHitRate;
-    let isMockData = false;
+    // HAP-872: Return 503 if Analytics Engine is not configured or query failed
+    if (!result.success) {
+        console.warn(`[Metrics] /cache-hits returning 503 - ${result.reason}: ${result.message}`);
+        return c.json(
+            {
+                error: 'Data unavailable',
+                reason: result.reason,
+                message: result.message,
+            },
+            503
+        );
+    }
 
-    if (result?.data && Array.isArray(result.data) && result.data.length > 0) {
-        const row = result.data[0] as { hits: number; misses: number };
-        const total = (row.hits ?? 0) + (row.misses ?? 0);
-        if (total > 0) {
-            data = {
-                hits: row.hits ?? 0,
-                misses: row.misses ?? 0,
-                hitRate: row.hits / total,
-            };
-        } else {
-            // No profile syncs in timeframe, use mock
-            isMockData = true;
-            data = { hits: 850, misses: 150, hitRate: 0.85 };
-        }
-    } else {
-        isMockData = true;
-        console.warn('[Metrics] /cache-hits returning mock data - Analytics Engine query returned no results');
-        data = { hits: 850, misses: 150, hitRate: 0.85 };
+    // HAP-872: Return 503 if dataset is empty or no profile syncs occurred
+    if (!result.data || result.data.length === 0) {
+        console.warn('[Metrics] /cache-hits returning 503 - empty dataset');
+        return c.json(
+            {
+                error: 'Data unavailable',
+                reason: 'empty_dataset' as const,
+                message: 'No profile sync data found in the last 24 hours.',
+            },
+            503
+        );
+    }
+
+    const row = result.data[0] as { hits: number; misses: number };
+    const total = (row.hits ?? 0) + (row.misses ?? 0);
+
+    // HAP-872: Return 503 if no profile syncs in timeframe
+    if (total === 0) {
+        console.warn('[Metrics] /cache-hits returning 503 - no profile syncs in timeframe');
+        return c.json(
+            {
+                error: 'Data unavailable',
+                reason: 'empty_dataset' as const,
+                message: 'No profile sync data found in the last 24 hours. Profile syncs may not have occurred.',
+            },
+            503
+        );
     }
 
     return c.json(
         {
-            data,
-            isMockData,
+            data: {
+                hits: row.hits ?? 0,
+                misses: row.misses ?? 0,
+                hitRate: (row.hits ?? 0) / total,
+            },
             timestamp: new Date().toISOString(),
         },
         200
@@ -597,6 +701,8 @@ metricsRoutes.openapi(cacheHitsRoute, async (c) => {
  *
  * @remarks
  * Field mappings (HAP-638): blob2 = syncMode - this query is correct
+ *
+ * HAP-872: Removed mock data fallback - returns 503 when data unavailable
  */
 metricsRoutes.openapi(modeDistributionRoute, async (c) => {
     const result = await queryAnalyticsEngine(
@@ -611,63 +717,67 @@ metricsRoutes.openapi(modeDistributionRoute, async (c) => {
         `
     );
 
-    // Transform result or use mock
-    let data: ModeDistribution;
-    let isMockData = false;
+    // HAP-872: Return 503 if Analytics Engine is not configured or query failed
+    if (!result.success) {
+        console.warn(`[Metrics] /mode-distribution returning 503 - ${result.reason}: ${result.message}`);
+        return c.json(
+            {
+                error: 'Data unavailable',
+                reason: result.reason,
+                message: result.message,
+            },
+            503
+        );
+    }
 
-    if (result?.data && Array.isArray(result.data) && result.data.length > 0) {
-        const modeMap: Record<string, number> = {};
-        for (const row of result.data as { mode: string; count: number }[]) {
-            modeMap[row.mode] = row.count;
-        }
-        const total = Object.values(modeMap).reduce((a, b) => a + b, 0);
-        if (total > 0) {
-            data = {
-                full: modeMap['full'] ?? 0,
-                incremental: modeMap['incremental'] ?? 0,
-                cached: modeMap['cached'] ?? 0,
-                total,
-            };
-        } else {
-            isMockData = true;
-            data = { full: 200, incremental: 450, cached: 350, total: 1000 };
-        }
-    } else {
-        isMockData = true;
-        console.warn('[Metrics] /mode-distribution returning mock data - Analytics Engine query returned no results');
-        data = { full: 200, incremental: 450, cached: 350, total: 1000 };
+    // HAP-872: Return 503 if dataset is empty
+    if (!result.data || result.data.length === 0) {
+        console.warn('[Metrics] /mode-distribution returning 503 - empty dataset');
+        return c.json(
+            {
+                error: 'Data unavailable',
+                reason: 'empty_dataset' as const,
+                message: 'No sync metrics data found in the last 24 hours. Ensure happy-server-workers is writing to Analytics Engine.',
+            },
+            503
+        );
+    }
+
+    // Transform result
+    const modeMap: Record<string, number> = {};
+    for (const row of result.data as { mode: string; count: number }[]) {
+        modeMap[row.mode] = row.count;
+    }
+    const total = Object.values(modeMap).reduce((a, b) => a + b, 0);
+
+    // HAP-872: Return 503 if no syncs in timeframe
+    if (total === 0) {
+        console.warn('[Metrics] /mode-distribution returning 503 - no syncs in timeframe');
+        return c.json(
+            {
+                error: 'Data unavailable',
+                reason: 'empty_dataset' as const,
+                message: 'No sync metrics data found in the last 24 hours.',
+            },
+            503
+        );
     }
 
     return c.json(
         {
-            data,
-            isMockData,
+            data: {
+                full: modeMap['full'] ?? 0,
+                incremental: modeMap['incremental'] ?? 0,
+                cached: modeMap['cached'] ?? 0,
+                total,
+            },
             timestamp: new Date().toISOString(),
         },
         200
     );
 });
 
-/**
- * Generate mock timeseries data for development
- */
-function generateMockTimeseries(hours: number, bucket: string): TimeseriesPoint[] {
-    const data: TimeseriesPoint[] = [];
-    const now = new Date();
-    const bucketSize = bucket === 'day' ? 24 : 1;
-    const numBuckets = Math.ceil(hours / bucketSize);
-
-    for (let i = numBuckets - 1; i >= 0; i--) {
-        const timestamp = new Date(now.getTime() - i * bucketSize * 60 * 60 * 1000);
-        data.push({
-            timestamp: timestamp.toISOString(),
-            count: Math.floor(Math.random() * 50) + 10,
-            avgDurationMs: Math.floor(Math.random() * 200) + 50,
-        });
-    }
-
-    return data;
-}
+// HAP-872: Removed generateMockTimeseries function - mock data fallbacks are no longer used
 
 // ============================================================================
 // Bundle Size Route Handlers (HAP-564)
@@ -679,6 +789,8 @@ function generateMockTimeseries(hours: number, bucket: string): TimeseriesPoint[
  *
  * SECURITY: This endpoint was vulnerable to SQL injection via the branch parameter.
  * Fixed in HAP-611 by using AnalyticsQueryBuilder with strict input validation.
+ *
+ * HAP-872: Removed mock data fallback - returns 503 when data unavailable
  */
 metricsRoutes.openapi(bundleTrendsRoute, async (c) => {
     const { days = '30', platform, branch = 'main' } = c.req.valid('query');
@@ -716,36 +828,51 @@ metricsRoutes.openapi(bundleTrendsRoute, async (c) => {
 
     const result = await queryAnalyticsEngine(c.env, query.build());
 
-    // Transform result or use mock data
-    let data: BundleSizePoint[];
-    const isMockData = !result?.data || (Array.isArray(result.data) && result.data.length === 0);
-
-    if (!isMockData) {
-        data = (result.data as Array<{
-            date: string;
-            platform: string;
-            avgTotalSize: number;
-            avgJsSize: number;
-            avgAssetsSize: number;
-            buildCount: number;
-        }>).map((row) => ({
-            date: row.date,
-            platform: row.platform,
-            avgTotalSize: Math.round(row.avgTotalSize),
-            avgJsSize: Math.round(row.avgJsSize),
-            avgAssetsSize: Math.round(row.avgAssetsSize),
-            buildCount: row.buildCount,
-        }));
-    } else {
-        // Generate mock data for development
-        console.warn('[Metrics] /bundle-trends returning mock data - Analytics Engine query returned no results');
-        data = generateMockBundleTrends(daysNum, platform);
+    // HAP-872: Return 503 if Analytics Engine is not configured or query failed
+    if (!result.success) {
+        console.warn(`[Metrics] /bundle-trends returning 503 - ${result.reason}: ${result.message}`);
+        return c.json(
+            {
+                error: 'Data unavailable',
+                reason: result.reason,
+                message: result.message,
+            },
+            503
+        );
     }
+
+    // HAP-872: Return 503 if dataset is empty
+    if (!result.data || result.data.length === 0) {
+        console.warn('[Metrics] /bundle-trends returning 503 - empty dataset');
+        return c.json(
+            {
+                error: 'Data unavailable',
+                reason: 'empty_dataset' as const,
+                message: `No bundle metrics data found in the last ${daysNum} days for branch '${branch}'.`,
+            },
+            503
+        );
+    }
+
+    const data = (result.data as Array<{
+        date: string;
+        platform: string;
+        avgTotalSize: number;
+        avgJsSize: number;
+        avgAssetsSize: number;
+        buildCount: number;
+    }>).map((row) => ({
+        date: row.date,
+        platform: row.platform,
+        avgTotalSize: Math.round(row.avgTotalSize),
+        avgJsSize: Math.round(row.avgJsSize),
+        avgAssetsSize: Math.round(row.avgAssetsSize),
+        buildCount: row.buildCount,
+    }));
 
     return c.json(
         {
             data,
-            isMockData,
             timestamp: new Date().toISOString(),
         },
         200
@@ -755,6 +882,8 @@ metricsRoutes.openapi(bundleTrendsRoute, async (c) => {
 /**
  * GET /api/metrics/bundle-latest
  * Returns the most recent bundle size for each platform
+ *
+ * HAP-872: Removed mock data fallback - returns 503 when data unavailable
  */
 metricsRoutes.openapi(bundleLatestRoute, async (c) => {
     const result = await queryAnalyticsEngine(
@@ -776,93 +905,66 @@ metricsRoutes.openapi(bundleLatestRoute, async (c) => {
         `
     );
 
-    // Transform result or use mock data
-    let data: BundleSizeLatest[];
-    const isMockData = !result?.data || (Array.isArray(result.data) && result.data.length === 0);
-
-    if (!isMockData) {
-        // Get the latest entry for each platform
-        const platformMap = new Map<string, BundleSizeLatest>();
-        for (const row of result.data as Array<{
-            platform: string;
-            branch: string;
-            commitHash: string;
-            totalSize: number;
-            jsSize: number;
-            assetsSize: number;
-            timestamp: string;
-        }>) {
-            if (!platformMap.has(row.platform)) {
-                platformMap.set(row.platform, {
-                    platform: row.platform,
-                    branch: row.branch,
-                    commitHash: row.commitHash,
-                    totalSize: Math.round(row.totalSize),
-                    jsSize: Math.round(row.jsSize),
-                    assetsSize: Math.round(row.assetsSize),
-                    timestamp: row.timestamp,
-                });
-            }
-        }
-        data = Array.from(platformMap.values());
-    } else {
-        // Mock data for development
-        console.warn('[Metrics] /bundle-latest returning mock data - Analytics Engine query returned no results');
-        data = [
+    // HAP-872: Return 503 if Analytics Engine is not configured or query failed
+    if (!result.success) {
+        console.warn(`[Metrics] /bundle-latest returning 503 - ${result.reason}: ${result.message}`);
+        return c.json(
             {
-                platform: 'web',
-                branch: 'main',
-                commitHash: 'abc1234',
-                totalSize: 1572864,
-                jsSize: 1048576,
-                assetsSize: 524288,
-                timestamp: new Date().toISOString(),
+                error: 'Data unavailable',
+                reason: result.reason,
+                message: result.message,
             },
-        ];
+            503
+        );
+    }
+
+    // HAP-872: Return 503 if dataset is empty
+    if (!result.data || result.data.length === 0) {
+        console.warn('[Metrics] /bundle-latest returning 503 - empty dataset');
+        return c.json(
+            {
+                error: 'Data unavailable',
+                reason: 'empty_dataset' as const,
+                message: 'No bundle metrics data found in the last 7 days for main branch.',
+            },
+            503
+        );
+    }
+
+    // Get the latest entry for each platform
+    const platformMap = new Map<string, BundleSizeLatest>();
+    for (const row of result.data as Array<{
+        platform: string;
+        branch: string;
+        commitHash: string;
+        totalSize: number;
+        jsSize: number;
+        assetsSize: number;
+        timestamp: string;
+    }>) {
+        if (!platformMap.has(row.platform)) {
+            platformMap.set(row.platform, {
+                platform: row.platform,
+                branch: row.branch,
+                commitHash: row.commitHash,
+                totalSize: Math.round(row.totalSize),
+                jsSize: Math.round(row.jsSize),
+                assetsSize: Math.round(row.assetsSize),
+                timestamp: row.timestamp,
+            });
+        }
     }
 
     return c.json(
         {
-            data,
-            isMockData,
+            data: Array.from(platformMap.values()),
             timestamp: new Date().toISOString(),
         },
         200
     );
 });
 
-/**
- * Generate mock bundle trends data for development
- */
-function generateMockBundleTrends(days: number, platform?: string): BundleSizePoint[] {
-    const data: BundleSizePoint[] = [];
-    const now = new Date();
-    const platforms = platform ? [platform] : ['web'];
-    const baseSize = 1500000; // ~1.5MB base
-
-    for (let i = days - 1; i >= 0; i--) {
-        const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-        for (const p of platforms) {
-            // Simulate gradual growth with some variance
-            const growth = (days - i) * 1000; // ~1KB per day growth
-            const variance = Math.floor(Math.random() * 20000) - 10000; // ±10KB variance
-            const totalSize = baseSize + growth + variance;
-            const jsSize = Math.floor(totalSize * 0.7); // ~70% JS
-            const assetsSize = totalSize - jsSize;
-
-            data.push({
-                date: date.toISOString().split('T')[0] ?? date.toISOString(),
-                platform: p,
-                avgTotalSize: totalSize,
-                avgJsSize: jsSize,
-                avgAssetsSize: assetsSize,
-                buildCount: Math.floor(Math.random() * 5) + 1,
-            });
-        }
-    }
-
-    return data;
-}
+// HAP-872: Removed generateMockBundleTrends function - mock data fallbacks are no longer used
 
 // ============================================================================
 // Validation Metrics Route Handlers (HAP-577)
@@ -929,10 +1031,6 @@ const validationSummaryRoute = createRoute({
                 'application/json': {
                     schema: z.object({
                         data: ValidationSummarySchema,
-                        isMockData: z.boolean().openapi({
-                            description: 'True if using fallback mock data',
-                            example: false,
-                        }),
                         timestamp: z.string(),
                     }),
                 },
@@ -943,6 +1041,14 @@ const validationSummaryRoute = createRoute({
             content: {
                 'application/json': {
                     schema: ErrorResponseSchema,
+                },
+            },
+        },
+        503: {
+            description: 'Data unavailable - Analytics Engine not configured or empty',
+            content: {
+                'application/json': {
+                    schema: DataUnavailableResponseSchema,
                 },
             },
         },
@@ -984,10 +1090,6 @@ const unknownTypeBreakdownRoute = createRoute({
                     schema: z.object({
                         data: z.array(UnknownTypeBreakdownSchema),
                         total: z.number(),
-                        isMockData: z.boolean().openapi({
-                            description: 'True if using fallback mock data',
-                            example: false,
-                        }),
                         timestamp: z.string(),
                     }),
                 },
@@ -998,6 +1100,14 @@ const unknownTypeBreakdownRoute = createRoute({
             content: {
                 'application/json': {
                     schema: ErrorResponseSchema,
+                },
+            },
+        },
+        503: {
+            description: 'Data unavailable - Analytics Engine not configured or empty',
+            content: {
+                'application/json': {
+                    schema: DataUnavailableResponseSchema,
                 },
             },
         },
@@ -1034,10 +1144,6 @@ const validationTimeseriesRoute = createRoute({
                 'application/json': {
                     schema: z.object({
                         data: z.array(ValidationTimeseriesPointSchema),
-                        isMockData: z.boolean().openapi({
-                            description: 'True if using fallback mock data',
-                            example: false,
-                        }),
                         timestamp: z.string(),
                     }),
                 },
@@ -1051,6 +1157,14 @@ const validationTimeseriesRoute = createRoute({
                 },
             },
         },
+        503: {
+            description: 'Data unavailable - Analytics Engine not configured or empty',
+            content: {
+                'application/json': {
+                    schema: DataUnavailableResponseSchema,
+                },
+            },
+        },
     },
 });
 
@@ -1058,6 +1172,7 @@ const validationTimeseriesRoute = createRoute({
  * GET /api/metrics/validation-summary
  * Returns validation failure summary for the specified time range
  * HAP-638: Added hours parameter support
+ * HAP-872: Removed mock data fallback - returns 503 when data unavailable
  */
 metricsRoutes.openapi(validationSummaryRoute, async (c) => {
     const { hours = '24' } = c.req.valid('query');
@@ -1085,43 +1200,50 @@ metricsRoutes.openapi(validationSummaryRoute, async (c) => {
 
     const result = await queryAnalyticsEngine(c.env, query.build());
 
-    // Calculate unknown types from total - schema - strict
-    let data: ValidationSummary;
-    const isMockData = !result?.data || (Array.isArray(result.data) && result.data.length === 0);
-
-    if (!isMockData) {
-        const row = result.data[0] as {
-            totalFailures: number;
-            schemaFailures: number;
-            strictFailures: number;
-            uniqueUsers: number;
-            avgSessionDurationMs: number;
-        };
-        data = {
-            totalFailures: row.totalFailures ?? 0,
-            schemaFailures: row.schemaFailures ?? 0,
-            unknownTypes: (row.totalFailures ?? 0) - (row.schemaFailures ?? 0) - (row.strictFailures ?? 0),
-            strictFailures: row.strictFailures ?? 0,
-            uniqueUsers: row.uniqueUsers ?? 0,
-            avgSessionDurationMs: Math.round(row.avgSessionDurationMs ?? 0),
-        };
-    } else {
-        // Mock data for development
-        console.warn('[Metrics] /validation-summary returning mock data - Analytics Engine query returned no results');
-        data = {
-            totalFailures: 150,
-            schemaFailures: 20,
-            unknownTypes: 125,
-            strictFailures: 5,
-            uniqueUsers: 42,
-            avgSessionDurationMs: 180000,
-        };
+    // HAP-872: Return 503 if Analytics Engine is not configured or query failed
+    if (!result.success) {
+        console.warn(`[Metrics] /validation-summary returning 503 - ${result.reason}: ${result.message}`);
+        return c.json(
+            {
+                error: 'Data unavailable',
+                reason: result.reason,
+                message: result.message,
+            },
+            503
+        );
     }
+
+    // HAP-872: Return 503 if dataset is empty
+    if (!result.data || result.data.length === 0) {
+        console.warn('[Metrics] /validation-summary returning 503 - empty dataset');
+        return c.json(
+            {
+                error: 'Data unavailable',
+                reason: 'empty_dataset' as const,
+                message: `No validation metrics data found in the last ${hoursNum} hours.`,
+            },
+            503
+        );
+    }
+
+    const row = result.data[0] as {
+        totalFailures: number;
+        schemaFailures: number;
+        strictFailures: number;
+        uniqueUsers: number;
+        avgSessionDurationMs: number;
+    };
 
     return c.json(
         {
-            data,
-            isMockData,
+            data: {
+                totalFailures: row.totalFailures ?? 0,
+                schemaFailures: row.schemaFailures ?? 0,
+                unknownTypes: (row.totalFailures ?? 0) - (row.schemaFailures ?? 0) - (row.strictFailures ?? 0),
+                strictFailures: row.strictFailures ?? 0,
+                uniqueUsers: row.uniqueUsers ?? 0,
+                avgSessionDurationMs: Math.round(row.avgSessionDurationMs ?? 0),
+            },
             timestamp: new Date().toISOString(),
         },
         200
@@ -1131,6 +1253,8 @@ metricsRoutes.openapi(validationSummaryRoute, async (c) => {
 /**
  * GET /api/metrics/validation-unknown-types
  * Returns breakdown of unknown message types
+ *
+ * HAP-872: Removed mock data fallback - returns 503 when data unavailable
  */
 metricsRoutes.openapi(unknownTypeBreakdownRoute, async (c) => {
     const { hours = '24', limit = '10' } = c.req.valid('query');
@@ -1161,34 +1285,44 @@ metricsRoutes.openapi(unknownTypeBreakdownRoute, async (c) => {
 
     const result = await queryAnalyticsEngine(c.env, query.build());
 
-    let data: UnknownTypeBreakdown[];
-    let total = 0;
-    const isMockData = !result?.data || (Array.isArray(result.data) && result.data.length === 0);
-
-    if (!isMockData) {
-        const rows = result.data as Array<{ typeName: string; count: number }>;
-        total = rows.reduce((sum, row) => sum + row.count, 0);
-        data = rows.map((row) => ({
-            typeName: row.typeName,
-            count: row.count,
-            percentage: total > 0 ? Math.round((row.count / total) * 1000) / 10 : 0,
-        }));
-    } else {
-        // Mock data for development
-        console.warn('[Metrics] /validation-unknown-types returning mock data - Analytics Engine query returned no results');
-        data = [
-            { typeName: 'thinking', count: 75, percentage: 60.0 },
-            { typeName: 'status', count: 30, percentage: 24.0 },
-            { typeName: 'progress', count: 20, percentage: 16.0 },
-        ];
-        total = 125;
+    // HAP-872: Return 503 if Analytics Engine is not configured or query failed
+    if (!result.success) {
+        console.warn(`[Metrics] /validation-unknown-types returning 503 - ${result.reason}: ${result.message}`);
+        return c.json(
+            {
+                error: 'Data unavailable',
+                reason: result.reason,
+                message: result.message,
+            },
+            503
+        );
     }
+
+    // HAP-872: Return 503 if dataset is empty
+    if (!result.data || result.data.length === 0) {
+        console.warn('[Metrics] /validation-unknown-types returning 503 - empty dataset');
+        return c.json(
+            {
+                error: 'Data unavailable',
+                reason: 'empty_dataset' as const,
+                message: `No unknown type data found in the last ${hoursNum} hours.`,
+            },
+            503
+        );
+    }
+
+    const rows = result.data as Array<{ typeName: string; count: number }>;
+    const total = rows.reduce((sum, row) => sum + row.count, 0);
+    const data = rows.map((row) => ({
+        typeName: row.typeName,
+        count: row.count,
+        percentage: total > 0 ? Math.round((row.count / total) * 1000) / 10 : 0,
+    }));
 
     return c.json(
         {
             data,
             total,
-            isMockData,
             timestamp: new Date().toISOString(),
         },
         200
@@ -1198,6 +1332,8 @@ metricsRoutes.openapi(unknownTypeBreakdownRoute, async (c) => {
 /**
  * GET /api/metrics/validation-timeseries
  * Returns time-bucketed validation metrics
+ *
+ * HAP-872: Removed mock data fallback - returns 503 when data unavailable
  */
 metricsRoutes.openapi(validationTimeseriesRoute, async (c) => {
     const { hours = '24', bucket = 'hour' } = c.req.valid('query');
@@ -1227,32 +1363,459 @@ metricsRoutes.openapi(validationTimeseriesRoute, async (c) => {
 
     const result = await queryAnalyticsEngine(c.env, query.build());
 
-    let data: ValidationTimeseriesPoint[];
-    const isMockData = !result?.data || (Array.isArray(result.data) && result.data.length === 0);
-
-    if (!isMockData) {
-        data = (result.data as Array<{
-            timestamp: string;
-            totalFailures: number;
-            schemaFailures: number;
-            strictFailures: number;
-        }>).map((row) => ({
-            timestamp: row.timestamp,
-            totalFailures: row.totalFailures ?? 0,
-            schemaFailures: row.schemaFailures ?? 0,
-            unknownTypes: (row.totalFailures ?? 0) - (row.schemaFailures ?? 0) - (row.strictFailures ?? 0),
-            strictFailures: row.strictFailures ?? 0,
-        }));
-    } else {
-        // Generate mock timeseries data
-        console.warn('[Metrics] /validation-timeseries returning mock data - Analytics Engine query returned no results');
-        data = generateMockValidationTimeseries(hoursNum, bucket);
+    // HAP-872: Return 503 if Analytics Engine is not configured or query failed
+    if (!result.success) {
+        console.warn(`[Metrics] /validation-timeseries returning 503 - ${result.reason}: ${result.message}`);
+        return c.json(
+            {
+                error: 'Data unavailable',
+                reason: result.reason,
+                message: result.message,
+            },
+            503
+        );
     }
+
+    // HAP-872: Return 503 if dataset is empty
+    if (!result.data || result.data.length === 0) {
+        console.warn('[Metrics] /validation-timeseries returning 503 - empty dataset');
+        return c.json(
+            {
+                error: 'Data unavailable',
+                reason: 'empty_dataset' as const,
+                message: `No validation metrics data found in the last ${hoursNum} hours.`,
+            },
+            503
+        );
+    }
+
+    const data = (result.data as Array<{
+        timestamp: string;
+        totalFailures: number;
+        schemaFailures: number;
+        strictFailures: number;
+    }>).map((row) => ({
+        timestamp: row.timestamp,
+        totalFailures: row.totalFailures ?? 0,
+        schemaFailures: row.schemaFailures ?? 0,
+        unknownTypes: (row.totalFailures ?? 0) - (row.schemaFailures ?? 0) - (row.strictFailures ?? 0),
+        strictFailures: row.strictFailures ?? 0,
+    }));
 
     return c.json(
         {
             data,
-            isMockData,
+            timestamp: new Date().toISOString(),
+        },
+        200
+    );
+});
+
+// HAP-872: Removed generateMockValidationTimeseries function - mock data fallbacks are no longer used
+
+// ============================================================================
+// WebSocket Metrics Route Handlers (HAP-896)
+// ============================================================================
+
+// WebSocket Metrics Schemas
+const WebSocketSummarySchema = z
+    .object({
+        totalConnections: z.number().openapi({ example: 1250 }),
+        totalBroadcasts: z.number().openapi({ example: 8500 }),
+        totalErrors: z.number().openapi({ example: 25 }),
+        avgConnectionTimeMs: z.number().openapi({ example: 45.5 }),
+        avgBroadcastLatencyMs: z.number().openapi({ example: 2.3 }),
+        avgSessionDurationMs: z.number().openapi({ example: 180000 }),
+        byClientType: z.object({
+            userScoped: z.number().openapi({ example: 500 }),
+            sessionScoped: z.number().openapi({ example: 350 }),
+            machineScoped: z.number().openapi({ example: 400 }),
+        }),
+        byAuthMethod: z.object({
+            ticketAuth: z.number().openapi({ example: 600 }),
+            headerAuth: z.number().openapi({ example: 400 }),
+            messageAuth: z.number().openapi({ example: 250 }),
+        }),
+    })
+    .openapi('WebSocketSummary');
+
+const ConnectionTimePointSchema = z
+    .object({
+        timestamp: z.string().openapi({ example: '2025-12-26T00:00:00Z' }),
+        count: z.number().openapi({ example: 42 }),
+        avgTimeMs: z.number().openapi({ example: 45.5 }),
+        p50TimeMs: z.number().openapi({ example: 35 }),
+        p95TimeMs: z.number().openapi({ example: 120 }),
+        p99TimeMs: z.number().openapi({ example: 250 }),
+    })
+    .openapi('ConnectionTimePoint');
+
+const BroadcastLatencyPointSchema = z
+    .object({
+        timestamp: z.string().openapi({ example: '2025-12-26T00:00:00Z' }),
+        count: z.number().openapi({ example: 150 }),
+        avgLatencyMs: z.number().openapi({ example: 2.3 }),
+        p50LatencyMs: z.number().openapi({ example: 1.5 }),
+        p95LatencyMs: z.number().openapi({ example: 8 }),
+        avgRecipients: z.number().openapi({ example: 3.2 }),
+    })
+    .openapi('BroadcastLatencyPoint');
+
+const ErrorBreakdownSchema = z
+    .object({
+        errorType: z.string().openapi({ example: 'error:4001' }),
+        count: z.number().openapi({ example: 15 }),
+        percentage: z.number().openapi({ example: 60.0 }),
+    })
+    .openapi('ErrorBreakdown');
+
+type WebSocketSummary = z.infer<typeof WebSocketSummarySchema>;
+type ConnectionTimePoint = z.infer<typeof ConnectionTimePointSchema>;
+type BroadcastLatencyPoint = z.infer<typeof BroadcastLatencyPointSchema>;
+type ErrorBreakdown = z.infer<typeof ErrorBreakdownSchema>;
+
+// WebSocket Summary Route
+const websocketSummaryRoute = createRoute({
+    method: 'get',
+    path: '/websocket/summary',
+    tags: ['Metrics', 'WebSocket'],
+    summary: 'Get WebSocket performance summary',
+    description: 'Returns aggregated WebSocket metrics including connection times, broadcast latency, and error rates.',
+    request: {
+        query: z.object({
+            hours: z
+                .string()
+                .regex(/^\d{1,3}$/, 'Hours must be a number between 1-720')
+                .optional()
+                .openapi({
+                    example: '24',
+                    description: 'Number of hours to look back (1-720, default: 24)',
+                }),
+        }),
+    },
+    responses: {
+        200: {
+            description: 'WebSocket summary retrieved successfully',
+            content: {
+                'application/json': {
+                    schema: z.object({
+                        data: WebSocketSummarySchema,
+                        timestamp: z.string(),
+                    }),
+                },
+            },
+        },
+        400: {
+            description: 'Validation error',
+            content: {
+                'application/json': {
+                    schema: ErrorResponseSchema,
+                },
+            },
+        },
+        503: {
+            description: 'Data unavailable',
+            content: {
+                'application/json': {
+                    schema: DataUnavailableResponseSchema,
+                },
+            },
+        },
+    },
+});
+
+// WebSocket Connections Timeseries Route
+const websocketConnectionsRoute = createRoute({
+    method: 'get',
+    path: '/websocket/connections',
+    tags: ['Metrics', 'WebSocket'],
+    summary: 'Get WebSocket connection time trends',
+    description: 'Returns time-bucketed connection establishment time metrics.',
+    request: {
+        query: z.object({
+            hours: z
+                .string()
+                .regex(/^\d{1,3}$/, 'Hours must be a number between 1-720')
+                .optional()
+                .openapi({
+                    example: '24',
+                    description: 'Number of hours to look back (1-720, default: 24)',
+                }),
+            bucket: z.enum(['hour', 'day']).optional().openapi({
+                example: 'hour',
+                description: 'Time bucket size (default: hour)',
+            }),
+        }),
+    },
+    responses: {
+        200: {
+            description: 'Connection metrics retrieved successfully',
+            content: {
+                'application/json': {
+                    schema: z.object({
+                        data: z.array(ConnectionTimePointSchema),
+                        timestamp: z.string(),
+                    }),
+                },
+            },
+        },
+        400: {
+            description: 'Validation error',
+            content: {
+                'application/json': {
+                    schema: ErrorResponseSchema,
+                },
+            },
+        },
+        503: {
+            description: 'Data unavailable',
+            content: {
+                'application/json': {
+                    schema: DataUnavailableResponseSchema,
+                },
+            },
+        },
+    },
+});
+
+// WebSocket Broadcast Latency Route
+const websocketBroadcastsRoute = createRoute({
+    method: 'get',
+    path: '/websocket/broadcasts',
+    tags: ['Metrics', 'WebSocket'],
+    summary: 'Get WebSocket broadcast latency trends',
+    description: 'Returns time-bucketed broadcast delivery latency metrics.',
+    request: {
+        query: z.object({
+            hours: z
+                .string()
+                .regex(/^\d{1,3}$/, 'Hours must be a number between 1-720')
+                .optional()
+                .openapi({
+                    example: '24',
+                    description: 'Number of hours to look back (1-720, default: 24)',
+                }),
+            bucket: z.enum(['hour', 'day']).optional().openapi({
+                example: 'hour',
+                description: 'Time bucket size (default: hour)',
+            }),
+        }),
+    },
+    responses: {
+        200: {
+            description: 'Broadcast metrics retrieved successfully',
+            content: {
+                'application/json': {
+                    schema: z.object({
+                        data: z.array(BroadcastLatencyPointSchema),
+                        timestamp: z.string(),
+                    }),
+                },
+            },
+        },
+        400: {
+            description: 'Validation error',
+            content: {
+                'application/json': {
+                    schema: ErrorResponseSchema,
+                },
+            },
+        },
+        503: {
+            description: 'Data unavailable',
+            content: {
+                'application/json': {
+                    schema: DataUnavailableResponseSchema,
+                },
+            },
+        },
+    },
+});
+
+// WebSocket Errors Route
+const websocketErrorsRoute = createRoute({
+    method: 'get',
+    path: '/websocket/errors',
+    tags: ['Metrics', 'WebSocket'],
+    summary: 'Get WebSocket error breakdown',
+    description: 'Returns breakdown of WebSocket errors by type.',
+    request: {
+        query: z.object({
+            hours: z
+                .string()
+                .regex(/^\d{1,3}$/, 'Hours must be a number between 1-720')
+                .optional()
+                .openapi({
+                    example: '24',
+                    description: 'Number of hours to look back (1-720, default: 24)',
+                }),
+        }),
+    },
+    responses: {
+        200: {
+            description: 'Error breakdown retrieved successfully',
+            content: {
+                'application/json': {
+                    schema: z.object({
+                        data: z.array(ErrorBreakdownSchema),
+                        total: z.number(),
+                        timestamp: z.string(),
+                    }),
+                },
+            },
+        },
+        400: {
+            description: 'Validation error',
+            content: {
+                'application/json': {
+                    schema: ErrorResponseSchema,
+                },
+            },
+        },
+        503: {
+            description: 'Data unavailable',
+            content: {
+                'application/json': {
+                    schema: DataUnavailableResponseSchema,
+                },
+            },
+        },
+    },
+});
+
+/**
+ * GET /api/metrics/websocket/summary
+ * Returns WebSocket performance summary
+ *
+ * @remarks
+ * Field mappings for ws_metrics dataset:
+ * - blob1: metric type ('ws_connect' | 'ws_broadcast' | 'ws_disconnect' | 'ws_error')
+ * - blob2: userId
+ * - blob3: clientType ('user-scoped' | 'session-scoped' | 'machine-scoped')
+ * - blob4: context (auth method for connect, filter type for broadcast, error code for error)
+ * - double1: durationMs / latencyMs
+ * - double2: recipientCount (for broadcasts)
+ * - index1: sessionId or machineId
+ */
+metricsRoutes.openapi(websocketSummaryRoute, async (c) => {
+    const { hours = '24' } = c.req.valid('query');
+
+    // Validate hours with bounds checking
+    const hoursResult = validateNumber(hours, NumericBounds.HOURS, 'hours', 24);
+    if (!hoursResult.success) {
+        return c.json({ error: hoursResult.error }, 400);
+    }
+    const hoursNum = hoursResult.value;
+
+    // Query for overall metrics
+    const summaryQuery = createQueryBuilder('ws_metrics', c.env.ENVIRONMENT);
+    summaryQuery
+        .select([
+            'blob1 as metricType',
+            'COUNT() as count',
+            'AVG(double1) as avgValue',
+        ])
+        .whereTimestampInterval(hoursNum, 'HOUR')
+        .groupBy(['blob1']);
+
+    // Query for client type breakdown
+    const clientTypeQuery = createQueryBuilder('ws_metrics', c.env.ENVIRONMENT);
+    clientTypeQuery
+        .select([
+            'blob3 as clientType',
+            'COUNT() as count',
+        ])
+        .whereTimestampInterval(hoursNum, 'HOUR')
+        .whereRaw("blob1 = 'ws_connect'")
+        .groupBy(['blob3']);
+
+    // Query for auth method breakdown
+    const authMethodQuery = createQueryBuilder('ws_metrics', c.env.ENVIRONMENT);
+    authMethodQuery
+        .select([
+            'blob4 as authMethod',
+            'COUNT() as count',
+        ])
+        .whereTimestampInterval(hoursNum, 'HOUR')
+        .whereRaw("blob1 = 'ws_connect'")
+        .groupBy(['blob4']);
+
+    const [summaryResult, clientTypeResult, authMethodResult] = await Promise.all([
+        queryAnalyticsEngine(c.env, summaryQuery.build()),
+        queryAnalyticsEngine(c.env, clientTypeQuery.build()),
+        queryAnalyticsEngine(c.env, authMethodQuery.build()),
+    ]);
+
+    // HAP-872: Return 503 if Analytics Engine is not configured or query failed
+    if (!summaryResult.success) {
+        console.warn(`[Metrics] /websocket/summary returning 503 - ${summaryResult.reason}: ${summaryResult.message}`);
+        return c.json(
+            {
+                error: 'Data unavailable',
+                reason: summaryResult.reason,
+                message: summaryResult.message,
+            },
+            503
+        );
+    }
+
+    // HAP-872: Return 503 if dataset is empty
+    if (!summaryResult.data || summaryResult.data.length === 0) {
+        console.warn('[Metrics] /websocket/summary returning 503 - empty dataset');
+        return c.json(
+            {
+                error: 'Data unavailable',
+                reason: 'empty_dataset' as const,
+                message: `No WebSocket metrics data found in the last ${hoursNum} hours.`,
+            },
+            503
+        );
+    }
+
+    // Process summary metrics
+    const metricsMap: Record<string, { count: number; avgValue: number }> = {};
+    for (const row of summaryResult.data as Array<{ metricType: string; count: number; avgValue: number }>) {
+        metricsMap[row.metricType] = { count: row.count, avgValue: row.avgValue };
+    }
+
+    // Process client type breakdown
+    const clientTypeMap: Record<string, number> = {};
+    if (clientTypeResult.success && clientTypeResult.data) {
+        for (const row of clientTypeResult.data as Array<{ clientType: string; count: number }>) {
+            clientTypeMap[row.clientType] = row.count;
+        }
+    }
+
+    // Process auth method breakdown
+    const authMethodMap: Record<string, number> = {};
+    if (authMethodResult.success && authMethodResult.data) {
+        for (const row of authMethodResult.data as Array<{ authMethod: string; count: number }>) {
+            authMethodMap[row.authMethod] = row.count;
+        }
+    }
+
+    const data: WebSocketSummary = {
+        totalConnections: metricsMap['ws_connect']?.count ?? 0,
+        totalBroadcasts: metricsMap['ws_broadcast']?.count ?? 0,
+        totalErrors: metricsMap['ws_error']?.count ?? 0,
+        avgConnectionTimeMs: Math.round((metricsMap['ws_connect']?.avgValue ?? 0) * 10) / 10,
+        avgBroadcastLatencyMs: Math.round((metricsMap['ws_broadcast']?.avgValue ?? 0) * 10) / 10,
+        avgSessionDurationMs: Math.round(metricsMap['ws_disconnect']?.avgValue ?? 0),
+        byClientType: {
+            userScoped: clientTypeMap['user-scoped'] ?? 0,
+            sessionScoped: clientTypeMap['session-scoped'] ?? 0,
+            machineScoped: clientTypeMap['machine-scoped'] ?? 0,
+        },
+        byAuthMethod: {
+            ticketAuth: authMethodMap['ticket-auth'] ?? 0,
+            headerAuth: authMethodMap['header-auth'] ?? 0,
+            messageAuth: authMethodMap['message-auth'] ?? 0,
+        },
+    };
+
+    return c.json(
+        {
+            data,
             timestamp: new Date().toISOString(),
         },
         200
@@ -1260,27 +1823,240 @@ metricsRoutes.openapi(validationTimeseriesRoute, async (c) => {
 });
 
 /**
- * Generate mock validation timeseries data for development
+ * GET /api/metrics/websocket/connections
+ * Returns connection time trends
  */
-function generateMockValidationTimeseries(hours: number, bucket: string): ValidationTimeseriesPoint[] {
-    const data: ValidationTimeseriesPoint[] = [];
-    const now = new Date();
-    const bucketSize = bucket === 'day' ? 24 : 1;
-    const numBuckets = Math.ceil(hours / bucketSize);
+metricsRoutes.openapi(websocketConnectionsRoute, async (c) => {
+    const { hours = '24', bucket = 'hour' } = c.req.valid('query');
 
-    for (let i = numBuckets - 1; i >= 0; i--) {
-        const timestamp = new Date(now.getTime() - i * bucketSize * 60 * 60 * 1000);
-        const schemaFailures = Math.floor(Math.random() * 5);
-        const unknownTypes = Math.floor(Math.random() * 20) + 5;
-        const strictFailures = Math.floor(Math.random() * 2);
-        data.push({
-            timestamp: timestamp.toISOString(),
-            totalFailures: schemaFailures + unknownTypes + strictFailures,
-            schemaFailures,
-            unknownTypes,
-            strictFailures,
-        });
+    // Validate hours with bounds checking
+    const hoursResult = validateNumber(hours, NumericBounds.HOURS, 'hours', 24);
+    if (!hoursResult.success) {
+        return c.json({ error: hoursResult.error }, 400);
+    }
+    const hoursNum = hoursResult.value;
+
+    const bucketFunc = bucket === 'day' ? 'Day' : 'Hour';
+    const query = createQueryBuilder('ws_metrics', c.env.ENVIRONMENT);
+    query
+        .select([
+            `toStartOf${bucketFunc}(timestamp) as timestamp`,
+            'COUNT() as count',
+            'AVG(double1) as avgTimeMs',
+            'quantile(0.50)(double1) as p50TimeMs',
+            'quantile(0.95)(double1) as p95TimeMs',
+            'quantile(0.99)(double1) as p99TimeMs',
+        ])
+        .whereTimestampInterval(hoursNum, 'HOUR')
+        .whereRaw("blob1 = 'ws_connect'")
+        .groupBy(['timestamp'])
+        .orderBy('timestamp', 'ASC');
+
+    const result = await queryAnalyticsEngine(c.env, query.build());
+
+    // HAP-872: Return 503 if Analytics Engine is not configured or query failed
+    if (!result.success) {
+        console.warn(`[Metrics] /websocket/connections returning 503 - ${result.reason}: ${result.message}`);
+        return c.json(
+            {
+                error: 'Data unavailable',
+                reason: result.reason,
+                message: result.message,
+            },
+            503
+        );
     }
 
-    return data;
-}
+    // HAP-872: Return 503 if dataset is empty
+    if (!result.data || result.data.length === 0) {
+        console.warn('[Metrics] /websocket/connections returning 503 - empty dataset');
+        return c.json(
+            {
+                error: 'Data unavailable',
+                reason: 'empty_dataset' as const,
+                message: `No WebSocket connection metrics data found in the last ${hoursNum} hours.`,
+            },
+            503
+        );
+    }
+
+    const data = (result.data as Array<{
+        timestamp: string;
+        count: number;
+        avgTimeMs: number;
+        p50TimeMs: number;
+        p95TimeMs: number;
+        p99TimeMs: number;
+    }>).map((row) => ({
+        timestamp: row.timestamp,
+        count: row.count,
+        avgTimeMs: Math.round(row.avgTimeMs * 10) / 10,
+        p50TimeMs: Math.round(row.p50TimeMs),
+        p95TimeMs: Math.round(row.p95TimeMs),
+        p99TimeMs: Math.round(row.p99TimeMs),
+    }));
+
+    return c.json(
+        {
+            data,
+            timestamp: new Date().toISOString(),
+        },
+        200
+    );
+});
+
+/**
+ * GET /api/metrics/websocket/broadcasts
+ * Returns broadcast latency trends
+ */
+metricsRoutes.openapi(websocketBroadcastsRoute, async (c) => {
+    const { hours = '24', bucket = 'hour' } = c.req.valid('query');
+
+    // Validate hours with bounds checking
+    const hoursResult = validateNumber(hours, NumericBounds.HOURS, 'hours', 24);
+    if (!hoursResult.success) {
+        return c.json({ error: hoursResult.error }, 400);
+    }
+    const hoursNum = hoursResult.value;
+
+    const bucketFunc = bucket === 'day' ? 'Day' : 'Hour';
+    const query = createQueryBuilder('ws_metrics', c.env.ENVIRONMENT);
+    query
+        .select([
+            `toStartOf${bucketFunc}(timestamp) as timestamp`,
+            'COUNT() as count',
+            'AVG(double1) as avgLatencyMs',
+            'quantile(0.50)(double1) as p50LatencyMs',
+            'quantile(0.95)(double1) as p95LatencyMs',
+            'AVG(double2) as avgRecipients',
+        ])
+        .whereTimestampInterval(hoursNum, 'HOUR')
+        .whereRaw("blob1 = 'ws_broadcast'")
+        .groupBy(['timestamp'])
+        .orderBy('timestamp', 'ASC');
+
+    const result = await queryAnalyticsEngine(c.env, query.build());
+
+    // HAP-872: Return 503 if Analytics Engine is not configured or query failed
+    if (!result.success) {
+        console.warn(`[Metrics] /websocket/broadcasts returning 503 - ${result.reason}: ${result.message}`);
+        return c.json(
+            {
+                error: 'Data unavailable',
+                reason: result.reason,
+                message: result.message,
+            },
+            503
+        );
+    }
+
+    // HAP-872: Return 503 if dataset is empty
+    if (!result.data || result.data.length === 0) {
+        console.warn('[Metrics] /websocket/broadcasts returning 503 - empty dataset');
+        return c.json(
+            {
+                error: 'Data unavailable',
+                reason: 'empty_dataset' as const,
+                message: `No WebSocket broadcast metrics data found in the last ${hoursNum} hours.`,
+            },
+            503
+        );
+    }
+
+    const data = (result.data as Array<{
+        timestamp: string;
+        count: number;
+        avgLatencyMs: number;
+        p50LatencyMs: number;
+        p95LatencyMs: number;
+        avgRecipients: number;
+    }>).map((row) => ({
+        timestamp: row.timestamp,
+        count: row.count,
+        avgLatencyMs: Math.round(row.avgLatencyMs * 10) / 10,
+        p50LatencyMs: Math.round(row.p50LatencyMs * 10) / 10,
+        p95LatencyMs: Math.round(row.p95LatencyMs * 10) / 10,
+        avgRecipients: Math.round(row.avgRecipients * 10) / 10,
+    }));
+
+    return c.json(
+        {
+            data,
+            timestamp: new Date().toISOString(),
+        },
+        200
+    );
+});
+
+/**
+ * GET /api/metrics/websocket/errors
+ * Returns error breakdown
+ */
+metricsRoutes.openapi(websocketErrorsRoute, async (c) => {
+    const { hours = '24' } = c.req.valid('query');
+
+    // Validate hours with bounds checking
+    const hoursResult = validateNumber(hours, NumericBounds.HOURS, 'hours', 24);
+    if (!hoursResult.success) {
+        return c.json({ error: hoursResult.error }, 400);
+    }
+    const hoursNum = hoursResult.value;
+
+    const query = createQueryBuilder('ws_metrics', c.env.ENVIRONMENT);
+    query
+        .select([
+            'blob4 as errorType',
+            'COUNT() as count',
+        ])
+        .whereTimestampInterval(hoursNum, 'HOUR')
+        .whereRaw("blob1 = 'ws_disconnect'")
+        .whereRaw("blob4 != 'clean'")
+        .groupBy(['blob4'])
+        .orderBy('count', 'DESC')
+        .limit(20);
+
+    const result = await queryAnalyticsEngine(c.env, query.build());
+
+    // HAP-872: Return 503 if Analytics Engine is not configured or query failed
+    if (!result.success) {
+        console.warn(`[Metrics] /websocket/errors returning 503 - ${result.reason}: ${result.message}`);
+        return c.json(
+            {
+                error: 'Data unavailable',
+                reason: result.reason,
+                message: result.message,
+            },
+            503
+        );
+    }
+
+    // HAP-872: Return 503 if dataset is empty
+    if (!result.data || result.data.length === 0) {
+        console.warn('[Metrics] /websocket/errors returning 503 - empty dataset');
+        return c.json(
+            {
+                error: 'Data unavailable',
+                reason: 'empty_dataset' as const,
+                message: `No WebSocket error data found in the last ${hoursNum} hours.`,
+            },
+            503
+        );
+    }
+
+    const rows = result.data as Array<{ errorType: string; count: number }>;
+    const total = rows.reduce((sum, row) => sum + row.count, 0);
+    const data: ErrorBreakdown[] = rows.map((row) => ({
+        errorType: row.errorType,
+        count: row.count,
+        percentage: total > 0 ? Math.round((row.count / total) * 1000) / 10 : 0,
+    }));
+
+    return c.json(
+        {
+            data,
+            total,
+            timestamp: new Date().toISOString(),
+        },
+        200
+    );
+});

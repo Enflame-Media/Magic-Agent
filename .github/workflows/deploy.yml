@@ -5,13 +5,21 @@ on:
     branches:
       - main
     paths:
-      - 'happy-admin-api/**'
+      - 'src/**'
+      - 'migrations/**'
+      - 'package.json'
+      - 'wrangler.toml'
+      - 'tsconfig.json'
       - '.github/workflows/deploy.yml'
   pull_request:
     branches:
       - main
     paths:
-      - 'happy-admin-api/**'
+      - 'src/**'
+      - 'migrations/**'
+      - 'package.json'
+      - 'wrangler.toml'
+      - 'tsconfig.json'
   workflow_dispatch:
     inputs:
       environment:
@@ -22,10 +30,6 @@ on:
         options:
           - dev
           - prod
-
-defaults:
-  run:
-    working-directory: happy-admin-api
 
 jobs:
   # ============================================
