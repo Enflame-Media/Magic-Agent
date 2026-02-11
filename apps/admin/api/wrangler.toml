@@ -1,0 +1,98 @@
+name = "happy-admin-api"
+main = "src/index.ts"
+compatibility_date = "2025-01-08"
+compatibility_flags = ["nodejs_compat"]
+
+# Cloudflare Account ID
+account_id = "81f483e6767ea3194467ecef42840f79"
+
+# Enable Node.js compatibility for AsyncLocalStorage (required by Better-Auth)
+[build]
+command = ""
+
+# No static assets - this is an API-only worker
+# Frontend is served by happy-admin (separate worker)
+
+#############################
+# Development Environment
+#############################
+[env.dev]
+name = "happy-admin-api-dev"
+vars = { ENVIRONMENT = "development", BETTER_AUTH_URL = "https://happy-admin-api-dev.enflamemedia.com" }
+routes = [
+    { pattern = "happy-admin-api-dev.enflamemedia.com", custom_domain = true }
+]
+
+# Analytics Engine SQL API configuration via Secrets Store
+# Dataset: sync_metrics_dev (from happy-server-workers)
+secrets_store_secrets = [
+    { binding = "ANALYTICS_ACCOUNT_ID", store_id = "acdad5c326b0456aa453d78b7133983a", secret_name = "ANALYTICS_ACCOUNT_ID" },
+    { binding = "ANALYTICS_API_TOKEN", store_id = "acdad5c326b0456aa453d78b7133983a", secret_name = "ANALYTICS_API_TOKEN" }
+]
+
+# D1 Database binding (development) - using MAIN happy D1 database
+# This allows Better-Auth tables to be shared across the Happy ecosystem
+[[env.dev.d1_databases]]
+binding = "DB"
+database_name = "happy-dev"
+database_id = "402f86c0-7405-49cc-9667-93ad06fe4206"
+
+# KV namespace for rate limiting (HAP-617)
+# Tracks request counts per IP for authentication endpoints
+[[env.dev.kv_namespaces]]
+binding = "RATE_LIMIT_KV"
+id = "43ee509c96d741df94da3ca88ddc5978"
+
+# Cron Triggers (HAP-865)
+# Scheduled job to clean up expired audit logs (runs daily at 03:00 UTC)
+[env.dev.triggers]
+crons = ["0 3 * * *"]
+
+[env.dev.observability]
+[env.dev.observability.logs]
+enabled = true
+head_sampling_rate = 1
+invocation_logs = true
+persist = true
+
+#############################
+# Production Environment
+#############################
+[env.prod]
+name = "happy-admin-api-prod"
+vars = { ENVIRONMENT = "production", BETTER_AUTH_URL = "https://happy-admin-api.enflamemedia.com" }
+routes = [
+    { pattern = "happy-admin-api.enflamemedia.com", custom_domain = true }
+]
+
+# Analytics Engine SQL API configuration via Secrets Store
+# Dataset: sync_metrics_prod (from happy-server-workers)
+secrets_store_secrets = [
+    { binding = "ANALYTICS_ACCOUNT_ID", store_id = "acdad5c326b0456aa453d78b7133983a", secret_name = "ANALYTICS_ACCOUNT_ID" },
+    { binding = "ANALYTICS_API_TOKEN", store_id = "acdad5c326b0456aa453d78b7133983a", secret_name = "ANALYTICS_API_TOKEN" }
+]
+
+# D1 Database binding (production) - using MAIN happy D1 database
+# This allows Better-Auth tables to be shared across the Happy ecosystem
+[[env.prod.d1_databases]]
+binding = "DB"
+database_name = "happy-prod"
+database_id = "f547b6d8-035d-4550-a5cf-acea4c533901"
+
+# KV namespace for rate limiting (HAP-617)
+# Tracks request counts per IP for authentication endpoints
+[[env.prod.kv_namespaces]]
+binding = "RATE_LIMIT_KV"
+id = "cab477e623494d9cac1cf0204ff9d2d9"
+
+# Cron Triggers (HAP-865)
+# Scheduled job to clean up expired audit logs (runs daily at 03:00 UTC)
+[env.prod.triggers]
+crons = ["0 3 * * *"]
+
+[env.prod.observability]
+[env.prod.observability.logs]
+enabled = true
+head_sampling_rate = 1
+invocation_logs = true
+persist = true
