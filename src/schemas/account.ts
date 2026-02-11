@@ -17,12 +17,12 @@ import { z } from '@hono/zod-openapi';
 /**
  * Schema for GitHub profile data with OpenAPI metadata
  *
- * Uses the canonical factory from `@happy/protocol` to build an OpenAPI-ready
+ * Uses the canonical factory from `@magic-agent/protocol` to build an OpenAPI-ready
  * schema at runtime. This relies on the protocol package being built so the
  * factory is available as a static import.
  * @internal Used for composing account profile schema
  */
-import { makeOpenApiGitHubProfileSchema } from '@happy/protocol';
+import { makeOpenApiGitHubProfileSchema } from '@magic-agent/protocol';
 
 const GitHubProfileSchema = makeOpenApiGitHubProfileSchema(z);
 

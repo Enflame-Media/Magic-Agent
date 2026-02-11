@@ -5,7 +5,7 @@
  * - Error message fallback (empty message -> 'Internal server error')
  * - Error cause handling (with and without cause property)
  * - HTTPException handling
- * - AppError handling (from @happy/errors package)
+ * - AppError handling (from @magic-agent/errors package)
  * - Status code branches (>= 500 server errors vs < 500 client errors)
  *
  * Note: HTTPException responses use the SafeErrorResponse format (HAP-646),
@@ -18,7 +18,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
-import { AppError, ErrorCodes } from '@happy/errors';
+import { AppError, ErrorCodes } from '@magic-agent/errors';
 import { errorHandler } from '@/middleware/error';
 
 /**

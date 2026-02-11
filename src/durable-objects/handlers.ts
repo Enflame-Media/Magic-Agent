@@ -1611,5 +1611,5 @@ export async function handleRequestUpdatesSince(
 // =============================================================================
 // HELPER TYPES
 // =============================================================================
-// NOTE: UpdatePayload is now imported from @happy/protocol via ./types
+// NOTE: UpdatePayload is now imported from @magic-agent/protocol via ./types
 // This ensures consistent field names across the stack (HAP-387).

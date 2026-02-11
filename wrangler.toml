@@ -1,6 +1,6 @@
 name = "happy-server-workers"
 main = "src/index.ts"
-compatibility_date = "2026-01-01"
+compatibility_date = "2026-02-01"
 compatibility_flags = ["nodejs_compat"]
 
 # Cloudflare Account ID
@@ -107,8 +107,8 @@ workers_dev = false
 ENVIRONMENT = "production"
 DEBUG_RPC_ROUTING = "false"
 GITHUB_CLIENT_ID = "Ov23liIbGVFF64wNeSAN"
-GITHUB_REDIRECT_URL = "https://happy-api.enflamemedia.com/v1/connect/github/callback"
-HAPPY_APP_URL = "https://happy.enflamemedia.com"
+GITHUB_REDIRECT_URL = "https://api.magicagent.app/v1/connect/github/callback"
+HAPPY_APP_URL = "https://api.magicagent.app"
 SENTRY_DSN = "https://af2fba0efa2a35d5d45cb73a04913f8c@o4509604128817152.ingest.us.sentry.io/4510650134691840"
 
 # Version metadata binding for Sentry releases

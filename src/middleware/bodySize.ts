@@ -8,7 +8,7 @@
  */
 
 import type { Context, Next, MiddlewareHandler } from 'hono';
-import { BODY_SIZE_LIMITS } from '@happy/protocol';
+import { BODY_SIZE_LIMITS } from '@magic-agent/protocol';
 
 /**
  * Response for 413 Payload Too Large
