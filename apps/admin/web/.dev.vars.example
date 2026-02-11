@@ -1,0 +1,37 @@
+# Happy Admin - Local Development Environment Variables
+# Copy this file to .dev.vars and fill in actual values
+# NEVER commit .dev.vars to version control!
+
+# Environment identifier
+ENVIRONMENT=development
+
+# Analytics Engine SQL API credentials
+# Get from Cloudflare Dashboard > Account Settings > API Tokens
+# Required permission: Account Analytics Read
+ANALYTICS_ACCOUNT_ID=your-cloudflare-account-id
+ANALYTICS_API_TOKEN=your-analytics-api-token
+
+# Better-Auth session signing secret
+# Generate with: openssl rand -hex 32
+BETTER_AUTH_SECRET=your-secret-min-32-characters-long
+
+# Better-Auth URL (for callbacks)
+BETTER_AUTH_URL=http://localhost:8787
+
+# ============================================
+# E2E Test Credentials
+# ============================================
+# These credentials are used by Playwright E2E tests to authenticate.
+# For local development, create a test user in your local D1 database
+# or use the Better-Auth sign-up endpoint.
+#
+# IMPORTANT: Do NOT use production credentials here!
+# Create a dedicated test account for E2E testing.
+#
+# See: docs/E2E-TEST-SECRETS.md for detailed setup instructions
+
+# Test user email (must exist in Better-Auth users table)
+E2E_TEST_EMAIL=e2e-test@test.local
+
+# Test user password (must match the password set during sign-up)
+E2E_TEST_PASSWORD=TestPassword123!

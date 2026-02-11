@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+/**
+ * Custom theme configuration for Tailwind CSS v4
+ */
+@theme {
+    /* Happy brand colors */
+    --color-happy-50: #f0f9ff;
+    --color-happy-100: #e0f2fe;
+    --color-happy-200: #bae6fd;
+    --color-happy-300: #7dd3fc;
+    --color-happy-400: #38bdf8;
+    --color-happy-500: #0ea5e9;
+    --color-happy-600: #0284c7;
+    --color-happy-700: #0369a1;
+    --color-happy-800: #075985;
+    --color-happy-900: #0c4a6e;
+    --color-happy-950: #082f49;
+}
+
+/**
+ * Custom styles for Happy Admin Dashboard
+ */
+
+/* Base styles */
+body {
+    @apply antialiased;
+}
+
+/* Custom component utilities */
+@layer components {
+    .btn-primary {
+        @apply bg-happy-600 hover:bg-happy-700 text-white font-medium py-2 px-4 rounded-lg
+               transition-colors duration-200 focus:outline-hidden focus:ring-2
+               focus:ring-happy-500 focus:ring-offset-2;
+    }
+
+    .btn-secondary {
+        @apply bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg
+               transition-colors duration-200 focus:outline-hidden focus:ring-2
+               focus:ring-gray-500 focus:ring-offset-2;
+    }
+
+    .card {
+        @apply bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200
+               dark:border-gray-700 p-6;
+    }
+
+    .input {
+        @apply w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
+               bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+               focus:outline-hidden focus:ring-2 focus:ring-happy-500 focus:border-transparent;
+    }
+
+    .label {
+        @apply block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1;
+    }
+}
