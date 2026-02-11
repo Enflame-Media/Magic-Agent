@@ -1,0 +1,27 @@
+# Happy Vue Web Application - Custom Headers
+# This file configures HTTP response headers for Cloudflare Workers static assets.
+# See: https://developers.cloudflare.com/workers/static-assets/headers/
+
+# Apply security headers to all routes
+/*
+  # Content Security Policy
+  # - 'self': Allow scripts/styles from same origin (includes /assets/*, /gmetrics/, /cdn-cgi/*)
+  # - 'unsafe-inline': Required for Vue's runtime and Cloudflare Zaraz inline scripts
+  # - 'unsafe-eval': Required for Vue devtools and some dynamic code
+  # - static.cloudflareinsights.com: Cloudflare Web Analytics beacon
+  # - challenges.cloudflare.com: Cloudflare Turnstile (if used)
+  # - connect-src: API endpoints, WebSockets, and Cloudflare analytics
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' static.cloudflareinsights.com challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://happy-api.enflamemedia.com https://happy-api-dev.enflamemedia.com https://*.cloudflareinsights.com wss: https://*.ingest.sentry.io; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests
+
+  # Remove any Report-Only policy that may conflict
+  ! Content-Security-Policy-Report-Only
+
+  # Other security headers
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(self), microphone=(), geolocation=()
+
+# Cache fingerprinted assets aggressively (Vite adds hashes to filenames)
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable

@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+.yarn/
+
+# Build outputs
+dist/
+build/
+coverage/
+.turbo/
+
+# Platform-specific (NativeScript)
+platforms/
+App_Resources/
+
+# Generated files
+*.d.ts
+*.lock
+yarn.lock
+pnpm-lock.yaml
+package-lock.json
+
+# IDE
+.idea/
+.vscode/
+
+# Misc
+.DS_Store
+*.log

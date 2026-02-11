@@ -1,0 +1,351 @@
+# Mobile Testing CI/CD Pipeline
+#
+# Runs unit tests, E2E tests, and mobile tests on iOS and Android.
+# BrowserStack tests are run on push to main and for release tags.
+#
+# @see HAP-720 - NativeScript Mobile Testing Suite
+# @see HAP-875 - BrowserStack Device Matrix Maintenance (Q1 2026 update)
+
+name: Mobile Tests
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'apps/web/**'
+      - 'packages/**'
+      - '.github/workflows/mobile-tests.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/web/**'
+      - 'packages/**'
+  workflow_dispatch:
+    inputs:
+      run_browserstack:
+        description: 'Run BrowserStack tests'
+        required: false
+        default: 'false'
+        type: boolean
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '20'
+  WORKING_DIRECTORY: 'apps/web'
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Unit Tests
+  # ─────────────────────────────────────────────────────────────────────────────
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+          cache-dependency-path: '${{ env.WORKING_DIRECTORY }}/yarn.lock'
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Build packages
+        run: yarn workspaces foreach -A run build
+
+      - name: Run unit tests
+        run: yarn workspace @happy-vue/web test:coverage
+
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v5
+        with:
+          files: apps/web/coverage/coverage-final.json
+          flags: unit-tests
+          name: happy-vue-unit
+          fail_ci_if_error: false
+
+      - name: Upload test artifacts
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: unit-test-results
+          path: |
+            ${{ env.WORKING_DIRECTORY }}/coverage
+            ${{ env.WORKING_DIRECTORY }}/test-results
+          retention-days: 7
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # E2E Web Tests (Playwright)
+  # ─────────────────────────────────────────────────────────────────────────────
+  e2e-web-tests:
+    name: E2E Web Tests
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+          cache-dependency-path: '${{ env.WORKING_DIRECTORY }}/yarn.lock'
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Build packages
+        run: yarn workspaces foreach -A run build
+
+      - name: Run E2E tests
+        run: yarn workspace @happy-vue/web test:e2e
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: playwright-report
+          path: ${{ env.WORKING_DIRECTORY }}/apps/web/playwright-report
+          retention-days: 14
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: playwright-results
+          path: ${{ env.WORKING_DIRECTORY }}/apps/web/test-results
+          retention-days: 7
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # BrowserStack Mobile Tests (iOS)
+  # ─────────────────────────────────────────────────────────────────────────────
+  browserstack-ios:
+    name: BrowserStack iOS Tests
+    runs-on: ubuntu-latest
+    needs: [unit-tests, e2e-web-tests]
+    if: |
+      github.ref == 'refs/heads/main' ||
+      github.event_name == 'workflow_dispatch' && github.event.inputs.run_browserstack == 'true' ||
+      startsWith(github.ref, 'refs/tags/v')
+
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+
+    environment:
+      name: browserstack
+      url: https://app-automate.browserstack.com
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+          cache-dependency-path: '${{ env.WORKING_DIRECTORY }}/yarn.lock'
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Build packages
+        run: yarn workspaces foreach -A run build
+
+      - name: Download iOS app artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: ios-app
+          path: ${{ env.WORKING_DIRECTORY }}/apps/web/
+        continue-on-error: true
+
+      - name: Upload app to BrowserStack
+        id: upload-app
+        if: steps.download-artifact.outcome == 'success'
+        env:
+          BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
+          BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+        run: |
+          response=$(curl -u "${BROWSERSTACK_USERNAME}:${BROWSERSTACK_ACCESS_KEY}" \
+            -X POST https://api-cloud.browserstack.com/app-automate/upload \
+            -F "file=@happyvue.ipa" 2>/dev/null)
+          app_url=$(echo $response | jq -r '.app_url')
+          echo "app_id=$app_url" >> "$GITHUB_OUTPUT"
+
+      - name: Run BrowserStack iOS tests
+        if: steps.upload-app.outputs.app_id != ''
+        env:
+          BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
+          BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+          BROWSERSTACK_APP_ID: ${{ steps.upload-app.outputs.app_id }}
+          MOBILE_PLATFORM: ios
+          MAX_DEVICES: 6
+          CI_BUILD_NUMBER: ${{ github.run_number }}
+        run: yarn workspace @happy-vue/web test:browserstack:ios
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: browserstack-ios-results
+          path: |
+            ${{ env.WORKING_DIRECTORY }}/apps/web/test-results
+            ${{ env.WORKING_DIRECTORY }}/apps/web/allure-results
+          retention-days: 14
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # BrowserStack Mobile Tests (Android)
+  # ─────────────────────────────────────────────────────────────────────────────
+  browserstack-android:
+    name: BrowserStack Android Tests
+    runs-on: ubuntu-latest
+    needs: [unit-tests, e2e-web-tests]
+    if: |
+      github.ref == 'refs/heads/main' ||
+      github.event_name == 'workflow_dispatch' && github.event.inputs.run_browserstack == 'true' ||
+      startsWith(github.ref, 'refs/tags/v')
+
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+
+    environment:
+      name: browserstack
+      url: https://app-automate.browserstack.com
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+          cache-dependency-path: '${{ env.WORKING_DIRECTORY }}/yarn.lock'
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Build packages
+        run: yarn workspaces foreach -A run build
+
+      - name: Download Android app artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: android-app
+          path: ${{ env.WORKING_DIRECTORY }}/apps/web/
+        continue-on-error: true
+
+      - name: Upload app to BrowserStack
+        id: upload-app
+        if: steps.download-artifact.outcome == 'success'
+        env:
+          BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
+          BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+        run: |
+          response=$(curl -u "${BROWSERSTACK_USERNAME}:${BROWSERSTACK_ACCESS_KEY}" \
+            -X POST https://api-cloud.browserstack.com/app-automate/upload \
+            -F "file=@app-release.apk" 2>/dev/null)
+          app_url=$(echo $response | jq -r '.app_url')
+          echo "app_id=$app_url" >> "$GITHUB_OUTPUT"
+
+      - name: Run BrowserStack Android tests
+        if: steps.upload-app.outputs.app_id != ''
+        env:
+          BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
+          BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+          BROWSERSTACK_APP_ID: ${{ steps.upload-app.outputs.app_id }}
+          MOBILE_PLATFORM: android
+          MAX_DEVICES: 6
+          CI_BUILD_NUMBER: ${{ github.run_number }}
+        run: yarn workspace @happy-vue/web test:browserstack:android
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: browserstack-android-results
+          path: |
+            ${{ env.WORKING_DIRECTORY }}/apps/web/test-results
+            ${{ env.WORKING_DIRECTORY }}/apps/web/allure-results
+          retention-days: 14
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Test Summary
+  # ─────────────────────────────────────────────────────────────────────────────
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [unit-tests, e2e-web-tests]
+    if: always()
+
+    steps:
+      - name: Check test results
+        env:
+          UNIT_RESULT: ${{ needs.unit-tests.result }}
+          E2E_RESULT: ${{ needs.e2e-web-tests.result }}
+        run: |
+          if [ "$UNIT_RESULT" != "success" ]; then
+            echo "Unit tests failed"
+            exit 1
+          fi
+          if [ "$E2E_RESULT" != "success" ]; then
+            echo "E2E web tests failed"
+            exit 1
+          fi
+          echo "All required tests passed!"
+
+      - name: Post summary
+        env:
+          UNIT_PASSED: ${{ needs.unit-tests.result == 'success' }}
+          E2E_PASSED: ${{ needs.e2e-web-tests.result == 'success' }}
+        run: |
+          {
+            echo "## Test Results Summary"
+            echo ""
+            echo "| Test Suite | Status |"
+            echo "|------------|--------|"
+            if [ "$UNIT_PASSED" = "true" ]; then
+              echo "| Unit Tests | Passed |"
+            else
+              echo "| Unit Tests | Failed |"
+            fi
+            if [ "$E2E_PASSED" = "true" ]; then
+              echo "| E2E Web Tests | Passed |"
+            else
+              echo "| E2E Web Tests | Failed |"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
