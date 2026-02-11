@@ -34,13 +34,13 @@
   "license": "MIT",
   "private": true,
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20260207.0",
+    "@cloudflare/workers-types": "^4.20260210.0",
     "@happy/lint-rules": "workspace:*",
-    "@types/node": "^25.2.2",
-    "oxlint": "^1.43.0",
+    "@types/node": "^25.2.3",
+    "oxlint": "^1.46.0",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18",
-    "wrangler": "^4.63.0"
+    "wrangler": "^4.64.0"
   },
   "dependencies": {
     "@hono/swagger-ui": "^0.5.3",
