@@ -223,6 +223,6 @@ Configure retention in the Cloudflare Dashboard under Analytics Engine settings.
 ## Related Resources
 
 - [Cloudflare Analytics Engine Docs](https://developers.cloudflare.com/analytics/analytics-engine/)
-- [happy-server-workers Analytics Route](../../../happy-server-workers/src/routes/analytics.ts)
-- [happy-server-workers CI Metrics Route](../../../happy-server-workers/src/routes/ciMetrics.ts)
-- [happy-server-workers Client Metrics Route](../../../happy-server-workers/src/routes/clientMetrics.ts)
+- [apps/server/workers Analytics Route](../../../server/workers/src/routes/analytics.ts)
+- [apps/server/workers CI Metrics Route](../../../server/workers/src/routes/ciMetrics.ts)
+- [apps/server/workers Client Metrics Route](../../../server/workers/src/routes/clientMetrics.ts)

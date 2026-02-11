@@ -80,6 +80,12 @@ export interface ModeDistribution {
 export interface ApiResponse<T> {
     data: T;
     timestamp: string;
+    /**
+     * HAP-638: True if the response contains mock/fallback data
+     * because Analytics Engine queries failed or returned no results.
+     * Frontend should display a visual indicator when this is true.
+     */
+    isMockData?: boolean;
 }
 
 /*
@@ -367,5 +373,116 @@ export async function fetchValidationTimeseries(
     });
     return apiFetch<ApiResponse<ValidationTimeseriesPoint[]>>(
         `/api/metrics/validation-timeseries?${params}`
+    );
+}
+
+/*
+ * WebSocket Metrics Types (HAP-896)
+ */
+
+export interface WebSocketSummary {
+    totalConnections: number;
+    totalBroadcasts: number;
+    totalErrors: number;
+    avgConnectionTimeMs: number;
+    avgBroadcastLatencyMs: number;
+    avgSessionDurationMs: number;
+    byClientType: {
+        userScoped: number;
+        sessionScoped: number;
+        machineScoped: number;
+    };
+    byAuthMethod: {
+        ticketAuth: number;
+        headerAuth: number;
+        messageAuth: number;
+    };
+}
+
+export interface ConnectionTimePoint {
+    timestamp: string;
+    count: number;
+    avgTimeMs: number;
+    p50TimeMs: number;
+    p95TimeMs: number;
+    p99TimeMs: number;
+}
+
+export interface BroadcastLatencyPoint {
+    timestamp: string;
+    count: number;
+    avgLatencyMs: number;
+    p50LatencyMs: number;
+    p95LatencyMs: number;
+    avgRecipients: number;
+}
+
+export interface WebSocketErrorBreakdown {
+    errorType: string;
+    count: number;
+    percentage: number;
+}
+
+/*
+ * WebSocket Metrics API Functions (HAP-896)
+ */
+
+/**
+ * Fetch WebSocket performance summary
+ */
+export async function fetchWebSocketSummary(
+    hours: number = 24
+): Promise<ApiResponse<WebSocketSummary>> {
+    const params = new URLSearchParams({
+        hours: String(hours),
+    });
+    return apiFetch<ApiResponse<WebSocketSummary>>(
+        `/api/metrics/websocket/summary?${params}`
+    );
+}
+
+/**
+ * Fetch WebSocket connection time trends
+ */
+export async function fetchWebSocketConnections(
+    hours: number = 24,
+    bucket: 'hour' | 'day' = 'hour'
+): Promise<ApiResponse<ConnectionTimePoint[]>> {
+    const params = new URLSearchParams({
+        hours: String(hours),
+        bucket,
+    });
+    return apiFetch<ApiResponse<ConnectionTimePoint[]>>(
+        `/api/metrics/websocket/connections?${params}`
+    );
+}
+
+/**
+ * Fetch WebSocket broadcast latency trends
+ */
+export async function fetchWebSocketBroadcasts(
+    hours: number = 24,
+    bucket: 'hour' | 'day' = 'hour'
+): Promise<ApiResponse<BroadcastLatencyPoint[]>> {
+    const params = new URLSearchParams({
+        hours: String(hours),
+        bucket,
+    });
+    return apiFetch<ApiResponse<BroadcastLatencyPoint[]>>(
+        `/api/metrics/websocket/broadcasts?${params}`
+    );
+}
+
+/**
+ * Fetch WebSocket error breakdown
+ */
+export async function fetchWebSocketErrors(
+    hours: number = 24
+): Promise<{ data: WebSocketErrorBreakdown[]; total: number; timestamp: string }> {
+    const params = new URLSearchParams({
+        hours: String(hours),
+    });
+    return apiFetch<{ data: WebSocketErrorBreakdown[]; total: number; timestamp: string }>(
+        `/api/metrics/websocket/errors?${params}`
     );
 }

@@ -80,6 +80,21 @@ const ca: AdminTranslations = {
             p95Duration: 'Durada P95',
             successRate: "Taxa d'Èxit",
         },
+        // HAP-872: Data unavailable banner translations (replaces mock data banner)
+        dataUnavailableBanner: {
+            title: 'Dades No Disponibles',
+            description: "El panell no pot mostrar mètriques perquè l'Analytics Engine no ha retornat dades. Aquest és un estat d'error que requereix configuració.",
+            troubleshootingHint: 'Passos de resolució',
+            checkSecrets: 'Verificar que Secrets Store té valors per ANALYTICS_ACCOUNT_ID i ANALYTICS_API_TOKEN',
+            checkDatasets: "Verificar que existeixen els conjunts de dades de l'Analytics Engine (sync_metrics_dev, sync_metrics_prod)",
+            checkIngestion: "Verificar que happy-server-workers està escrivint mètriques a l'Analytics Engine",
+            checkLogs: 'Comprovar els logs de happy-admin-api per errors de consulta',
+            errorBadge: 'ERROR',
+            reasonNotConfigured: "Motiu: Credencials de l'Analytics Engine no configurades",
+            reasonEmptyDataset: "Motiu: No s'han trobat dades als conjunts de dades de l'Analytics Engine",
+            reasonQueryFailed: "Motiu: Ha fallat la consulta de l'Analytics Engine",
+            reasonUnknown: 'Motiu: Error desconegut',
+        },
     },
 
     users: {
@@ -194,6 +209,31 @@ const ca: AdminTranslations = {
         avgResponseTime: 'Temps de Resposta Mitjà',
         errorRate: "Taxa d'Errors",
         successRate: "Taxa d'Èxit",
+        // HAP-896: WebSocket metrics (using English as fallback)
+        websocket: {
+            title: 'WebSocket Performance',
+            connections: 'Connections',
+            broadcasts: 'Broadcasts',
+            errors: 'Errors',
+            avgConnectionTime: 'Avg Connect Time',
+            avgLatency: 'Avg Latency',
+            avgSessionDuration: 'Avg Session',
+            messagesSent: 'Messages sent',
+            disconnectErrors: 'Disconnect errors',
+            establishTime: 'Establish time',
+            broadcastDelivery: 'Broadcast delivery',
+            connectionDuration: 'Connection duration',
+            connectionsByType: 'Connections by Type',
+            userScoped: 'User-Scoped',
+            sessionScoped: 'Session-Scoped',
+            machineScoped: 'Machine-Scoped',
+            connectionTimeChart: 'Connection Time Trends',
+            broadcastLatencyChart: 'Broadcast Latency Trends',
+            errorBreakdown: 'Error Breakdown',
+        },
+        timeRange: {
+            last24h: 'Last 24 hours',
+        },
     },
 };
 

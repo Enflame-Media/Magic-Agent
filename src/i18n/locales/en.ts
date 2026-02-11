@@ -81,6 +81,21 @@ export default {
             p95Duration: 'P95 Duration',
             successRate: 'Success Rate',
         },
+        // HAP-872: Data unavailable banner translations (replaces mock data banner)
+        dataUnavailableBanner: {
+            title: 'Data Unavailable',
+            description: 'The dashboard cannot display metrics because Analytics Engine returned no data. This is an error state that requires configuration.',
+            troubleshootingHint: 'Troubleshooting steps',
+            checkSecrets: 'Verify Secrets Store has ANALYTICS_ACCOUNT_ID and ANALYTICS_API_TOKEN values',
+            checkDatasets: 'Verify Analytics Engine datasets exist (sync_metrics_dev, sync_metrics_prod)',
+            checkIngestion: 'Verify happy-server-workers is writing metrics to Analytics Engine',
+            checkLogs: 'Check happy-admin-api worker logs for query failures',
+            errorBadge: 'ERROR',
+            reasonNotConfigured: 'Reason: Analytics Engine credentials not configured',
+            reasonEmptyDataset: 'Reason: No data found in Analytics Engine datasets',
+            reasonQueryFailed: 'Reason: Analytics Engine query failed',
+            reasonUnknown: 'Reason: Unknown error',
+        },
     },
 
     users: {
@@ -195,6 +210,31 @@ export default {
         avgResponseTime: 'Avg Response Time',
         errorRate: 'Error Rate',
         successRate: 'Success Rate',
+        // HAP-896: WebSocket metrics
+        websocket: {
+            title: 'WebSocket Performance',
+            connections: 'Connections',
+            broadcasts: 'Broadcasts',
+            errors: 'Errors',
+            avgConnectionTime: 'Avg Connect Time',
+            avgLatency: 'Avg Latency',
+            avgSessionDuration: 'Avg Session',
+            messagesSent: 'Messages sent',
+            disconnectErrors: 'Disconnect errors',
+            establishTime: 'Establish time',
+            broadcastDelivery: 'Broadcast delivery',
+            connectionDuration: 'Connection duration',
+            connectionsByType: 'Connections by Type',
+            userScoped: 'User-Scoped',
+            sessionScoped: 'Session-Scoped',
+            machineScoped: 'Machine-Scoped',
+            connectionTimeChart: 'Connection Time Trends',
+            broadcastLatencyChart: 'Broadcast Latency Trends',
+            errorBreakdown: 'Error Breakdown',
+        },
+        timeRange: {
+            last24h: 'Last 24 hours',
+        },
     },
 };
 
@@ -275,6 +315,21 @@ export interface AdminTranslations {
             avgDuration: string;
             p95Duration: string;
             successRate: string;
+        };
+        // HAP-872: Data unavailable banner translations (replaces mock data banner)
+        dataUnavailableBanner: {
+            title: string;
+            description: string;
+            troubleshootingHint: string;
+            checkSecrets: string;
+            checkDatasets: string;
+            checkIngestion: string;
+            checkLogs: string;
+            errorBadge: string;
+            reasonNotConfigured: string;
+            reasonEmptyDataset: string;
+            reasonQueryFailed: string;
+            reasonUnknown: string;
         };
     };
     users: {
@@ -384,5 +439,30 @@ export interface AdminTranslations {
         avgResponseTime: string;
         errorRate: string;
         successRate: string;
+        // HAP-896: WebSocket metrics
+        websocket: {
+            title: string;
+            connections: string;
+            broadcasts: string;
+            errors: string;
+            avgConnectionTime: string;
+            avgLatency: string;
+            avgSessionDuration: string;
+            messagesSent: string;
+            disconnectErrors: string;
+            establishTime: string;
+            broadcastDelivery: string;
+            connectionDuration: string;
+            connectionsByType: string;
+            userScoped: string;
+            sessionScoped: string;
+            machineScoped: string;
+            connectionTimeChart: string;
+            broadcastLatencyChart: string;
+            errorBreakdown: string;
+        };
+        timeRange: {
+            last24h: string;
+        };
     };
 }

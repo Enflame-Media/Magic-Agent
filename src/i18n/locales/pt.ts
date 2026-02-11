@@ -80,6 +80,21 @@ const pt: AdminTranslations = {
             p95Duration: 'Duração P95',
             successRate: 'Taxa de Sucesso',
         },
+        // HAP-872: Data unavailable banner translations (replaces mock data banner)
+        dataUnavailableBanner: {
+            title: 'Dados Indisponíveis',
+            description: 'O painel não pode exibir métricas porque o Analytics Engine não retornou dados. Este é um estado de erro que requer configuração.',
+            troubleshootingHint: 'Passos de solução',
+            checkSecrets: 'Verificar se o Secrets Store tem valores para ANALYTICS_ACCOUNT_ID e ANALYTICS_API_TOKEN',
+            checkDatasets: 'Verificar se existem os conjuntos de dados do Analytics Engine (sync_metrics_dev, sync_metrics_prod)',
+            checkIngestion: 'Verificar se o happy-server-workers está gravando métricas no Analytics Engine',
+            checkLogs: 'Verificar os logs do happy-admin-api para erros de consulta',
+            errorBadge: 'ERRO',
+            reasonNotConfigured: 'Motivo: Credenciais do Analytics Engine não configuradas',
+            reasonEmptyDataset: 'Motivo: Nenhum dado encontrado nos conjuntos de dados do Analytics Engine',
+            reasonQueryFailed: 'Motivo: Falha na consulta do Analytics Engine',
+            reasonUnknown: 'Motivo: Erro desconhecido',
+        },
     },
 
     users: {
@@ -194,6 +209,31 @@ const pt: AdminTranslations = {
         avgResponseTime: 'Tempo de Resposta Médio',
         errorRate: 'Taxa de Erros',
         successRate: 'Taxa de Sucesso',
+        // HAP-896: WebSocket metrics (using English as fallback)
+        websocket: {
+            title: 'WebSocket Performance',
+            connections: 'Connections',
+            broadcasts: 'Broadcasts',
+            errors: 'Errors',
+            avgConnectionTime: 'Avg Connect Time',
+            avgLatency: 'Avg Latency',
+            avgSessionDuration: 'Avg Session',
+            messagesSent: 'Messages sent',
+            disconnectErrors: 'Disconnect errors',
+            establishTime: 'Establish time',
+            broadcastDelivery: 'Broadcast delivery',
+            connectionDuration: 'Connection duration',
+            connectionsByType: 'Connections by Type',
+            userScoped: 'User-Scoped',
+            sessionScoped: 'Session-Scoped',
+            machineScoped: 'Machine-Scoped',
+            connectionTimeChart: 'Connection Time Trends',
+            broadcastLatencyChart: 'Broadcast Latency Trends',
+            errorBreakdown: 'Error Breakdown',
+        },
+        timeRange: {
+            last24h: 'Last 24 hours',
+        },
     },
 };
 

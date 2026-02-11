@@ -378,6 +378,158 @@ database_name = "happy-admin-dev"
 database_id = "YOUR_DEV_DB_ID"  # From: wrangler d1 create happy-admin-dev
 ```
 
+## Testing
+
+### Unit Tests (Vitest)
+
+Unit tests use Vitest with Vue Test Utils and happy-dom:
+
+```bash
+# Run unit tests
+yarn test
+
+# Run unit tests in watch mode
+yarn test:watch
+
+# Run unit tests with coverage
+yarn test:coverage
+```
+
+Test files are located alongside source files with `.test.ts` suffix.
+
+### E2E Tests (Playwright)
+
+End-to-end tests use Playwright for browser automation:
+
+```bash
+# Run E2E tests
+yarn test:e2e
+
+# Run E2E tests with UI mode
+yarn test:e2e:ui
+
+# View test report
+yarn test:e2e:report
+
+# Update visual regression snapshots
+yarn test:e2e:update-snapshots
+```
+
+E2E test files are in the `e2e/` directory:
+- `auth.spec.ts` - Authentication flow tests
+- `dashboard.spec.ts` - Dashboard navigation tests
+- `charts.spec.ts` - Chart interaction tests
+- `visual.spec.ts` - Visual regression tests
+- `accessibility.spec.ts` - WCAG accessibility tests (axe-core)
+- `auth.setup.ts` - Authentication setup for test isolation
+
+### Test Configuration
+
+- **Unit tests**: `vitest.config.ts`
+- **E2E tests**: `playwright.config.ts`
+
+### Accessibility Tests (axe-core)
+
+Accessibility tests use `@axe-core/playwright` for automated WCAG compliance testing:
+
+```bash
+# Run accessibility tests only
+yarn test:e2e --grep "Accessibility"
+
+# Run accessibility tests with verbose output
+yarn test:e2e --grep "Accessibility" --reporter=list
+```
+
+The accessibility tests check for:
+- **WCAG 2.0/2.1 Level A & AA compliance** - Core accessibility standards
+- **Keyboard navigation** - All interactive elements must be keyboard accessible
+- **Color contrast** - Text must have sufficient contrast ratios
+- **Form accessibility** - Form elements must have proper labels
+- **Semantic structure** - Proper heading hierarchy and landmark regions
+- **ARIA compliance** - Valid ARIA attributes and roles
+
+Tests cover:
+- Login page (unauthenticated state)
+- Dashboard page (authenticated state)
+- Admin users page (authenticated state)
+- Responsive viewports (mobile/tablet)
+- Error states (validation messages)
+
+### CI Integration
+
+E2E tests run in GitHub Actions via `.github/workflows/e2e.yml`:
+- Parallel test execution across 3 shards
+- Multi-browser testing (Chromium, Firefox, WebKit)
+- Visual regression testing on main branch
+- Accessibility testing with axe-core on every PR
+- Test artifacts uploaded on failure
+
+### Visual Regression Baselines
+
+Visual regression tests compare screenshots against baseline images stored in `e2e/__snapshots__/`.
+
+**IMPORTANT**: Baselines must be generated in a CI environment (Ubuntu) to ensure consistency. Do not generate baselines locally as rendering may differ across operating systems.
+
+**Generating New Baselines:**
+
+1. Create a feature branch with your UI changes
+2. Push to GitHub to trigger the E2E workflow
+3. If visual regression tests fail, download the artifacts and review
+4. If the new screenshots are correct, trigger the baseline update workflow:
+   - Go to **Actions** > **E2E Tests** > **Run workflow**
+   - Check **Update visual regression snapshots** checkbox
+   - Select the target branch
+   - Click **Run workflow**
+5. The workflow will automatically commit updated baselines
+
+**Manual Update (CI):**
+```bash
+# Run this in CI environment only
+yarn test:e2e:update-snapshots --project=chromium --grep "visual regression"
+```
+
+**Baseline Directory Structure:**
+```
+e2e/__snapshots__/
+├── visual.spec.ts-snapshots/
+│   ├── login-page-chromium.png
+│   ├── dashboard-full-chromium.png
+│   ├── dashboard-mobile-chromium.png
+│   └── ...
+└── charts.spec.ts-snapshots/
+    ├── sync-metrics-charts-chromium.png
+    ├── bundle-size-section-chromium.png
+    └── ...
+```
+
+**Troubleshooting Visual Regression Failures:**
+
+1. **Flaky tests**: Ensure `maxDiffPixelRatio` is set appropriately (0.05-0.1 for charts)
+2. **Animation artifacts**: Tests disable animations via `animations: 'disabled'`
+3. **Loading states**: Tests wait for `networkidle` before screenshots
+4. **Platform differences**: Only update baselines from CI (Ubuntu), not locally
+
+### Environment Variables for E2E
+
+E2E tests require dedicated test credentials configured as GitHub Actions secrets:
+
+| Secret | Purpose | Documentation |
+|--------|---------|---------------|
+| `E2E_TEST_EMAIL` | Test account email | [docs/E2E-TEST-SECRETS.md](./docs/E2E-TEST-SECRETS.md) |
+| `E2E_TEST_PASSWORD` | Test account password | [docs/E2E-TEST-SECRETS.md](./docs/E2E-TEST-SECRETS.md) |
+
+**Setup Steps:**
+1. Navigate to **Repository Settings** > **Secrets and variables** > **Actions**
+2. Add `E2E_TEST_EMAIL` secret (e.g., `e2e-test@enflamemedia.com`)
+3. Add `E2E_TEST_PASSWORD` secret (secure password)
+4. Create the test user in the target environment (see [docs/E2E-TEST-SECRETS.md](./docs/E2E-TEST-SECRETS.md))
+
+For local E2E testing, add credentials to `.dev.vars`:
+```bash
+E2E_TEST_EMAIL=e2e-test@test.local
+E2E_TEST_PASSWORD=TestPassword123!
+```
+
 ## Important Reminders
 
 1. **Use 4 spaces** for indentation (not 2)
@@ -392,7 +544,10 @@ database_id = "YOUR_DEV_DB_ID"  # From: wrangler d1 create happy-admin-dev
 ## Related Documentation
 
 - [Root CLAUDE.md](../CLAUDE.md) - Monorepo overview
-- [happy-server-workers CLAUDE.md](../happy-server-workers/CLAUDE.md) - Similar patterns
+- [apps/server/workers CLAUDE.md](../../server/workers/CLAUDE.md) - Similar patterns
+- [E2E Test Secrets Setup](./docs/E2E-TEST-SECRETS.md) - Configuring E2E test credentials
 - [Analytics Engine Docs](https://developers.cloudflare.com/analytics/analytics-engine/)
 - [Better-Auth Docs](https://www.better-auth.com/)
 - [Hono OpenAPI Docs](https://hono.dev/examples/zod-openapi)
+- [axe-core Playwright Docs](https://github.com/dequelabs/axe-core-npm/tree/develop/packages/playwright) - Accessibility testing
+- [WCAG 2.1 Guidelines](https://www.w3.org/WAI/WCAG21/quickref/) - Accessibility standards

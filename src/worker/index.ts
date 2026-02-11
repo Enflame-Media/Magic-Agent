@@ -6,6 +6,7 @@ import type { Env, Variables } from './env';
 import { metricsRoutes } from './routes/metrics';
 import { authRoutes } from './routes/auth';
 import { authMiddleware } from './middleware/auth';
+import { securityHeadersMiddleware } from './middleware/securityHeaders';
 
 /**
  * Application version (should match package.json)
@@ -20,7 +21,7 @@ const app = new OpenAPIHono<{ Bindings: Env; Variables: Variables }>();
 
 /*
  * Global Middleware
- * Applied in order: logging → CORS → routes → error handling
+ * Applied in order: logging → CORS → security headers → routes → error handling
  */
 app.use('*', logger());
 app.use(
@@ -32,6 +33,20 @@ app.use(
         credentials: true,
     })
 );
+
+/*
+ * Security Headers Middleware (HAP-627)
+ *
+ * Adds standard security headers to all responses:
+ * - Content-Security-Policy: Prevents XSS and data injection
+ * - X-Frame-Options: Prevents clickjacking
+ * - X-Content-Type-Options: Prevents MIME sniffing
+ * - Strict-Transport-Security: Enforces HTTPS (production only)
+ * - X-XSS-Protection: Legacy XSS protection
+ * - Referrer-Policy: Controls referrer leakage
+ * - Permissions-Policy: Restricts browser features
+ */
+app.use('*', securityHeadersMiddleware());
 
 /*
  * API Routes

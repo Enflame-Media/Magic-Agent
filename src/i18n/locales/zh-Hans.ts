@@ -80,6 +80,21 @@ const zhHans: AdminTranslations = {
             p95Duration: 'P95时长',
             successRate: '成功率',
         },
+        // HAP-872: Data unavailable banner translations (replaces mock data banner)
+        dataUnavailableBanner: {
+            title: '数据不可用',
+            description: '仪表板无法显示指标，因为 Analytics Engine 未返回数据。这是一个需要配置的错误状态。',
+            troubleshootingHint: '故障排除步骤',
+            checkSecrets: '验证 Secrets Store 中是否有 ANALYTICS_ACCOUNT_ID 和 ANALYTICS_API_TOKEN 的值',
+            checkDatasets: '验证 Analytics Engine 数据集是否存在（sync_metrics_dev、sync_metrics_prod）',
+            checkIngestion: '验证 happy-server-workers 是否正在向 Analytics Engine 写入指标',
+            checkLogs: '检查 happy-admin-api 工作程序日志是否有查询失败',
+            errorBadge: '错误',
+            reasonNotConfigured: '原因：Analytics Engine 凭据未配置',
+            reasonEmptyDataset: '原因：在 Analytics Engine 数据集中未找到数据',
+            reasonQueryFailed: '原因：Analytics Engine 查询失败',
+            reasonUnknown: '原因：未知错误',
+        },
     },
 
     users: {
@@ -194,6 +209,31 @@ const zhHans: AdminTranslations = {
         avgResponseTime: '平均响应时间',
         errorRate: '错误率',
         successRate: '成功率',
+        // HAP-896: WebSocket metrics (using English as fallback)
+        websocket: {
+            title: 'WebSocket Performance',
+            connections: 'Connections',
+            broadcasts: 'Broadcasts',
+            errors: 'Errors',
+            avgConnectionTime: 'Avg Connect Time',
+            avgLatency: 'Avg Latency',
+            avgSessionDuration: 'Avg Session',
+            messagesSent: 'Messages sent',
+            disconnectErrors: 'Disconnect errors',
+            establishTime: 'Establish time',
+            broadcastDelivery: 'Broadcast delivery',
+            connectionDuration: 'Connection duration',
+            connectionsByType: 'Connections by Type',
+            userScoped: 'User-Scoped',
+            sessionScoped: 'Session-Scoped',
+            machineScoped: 'Machine-Scoped',
+            connectionTimeChart: 'Connection Time Trends',
+            broadcastLatencyChart: 'Broadcast Latency Trends',
+            errorBreakdown: 'Error Breakdown',
+        },
+        timeRange: {
+            last24h: 'Last 24 hours',
+        },
     },
 };
 

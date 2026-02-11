@@ -26,3 +26,10 @@ yarn-error.log*
 
 # Test coverage
 coverage/
+
+# Playwright
+.playwright/
+e2e-results/
+test-results/
+playwright-report/
+playwright/.cache/

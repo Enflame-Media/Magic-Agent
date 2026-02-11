@@ -23,10 +23,13 @@ import BundleSizeLatest from '../components/BundleSizeLatest.vue';
 import ValidationSummary from '../components/ValidationSummary.vue';
 import ValidationTrendsChart from '../components/ValidationTrendsChart.vue';
 import UnknownTypeBreakdown from '../components/UnknownTypeBreakdown.vue';
+import WebSocketSummary from '../components/WebSocketSummary.vue';
 import LanguageSelector from '../components/app/LanguageSelector.vue';
+import MockDataBanner from '../components/MockDataBanner.vue';
 import { formatDuration, formatPercent, API_BASE_URL, apiRequest } from '../lib/api';
 import { useBundleSize, useBundleSizeCharts } from '../composables/useBundleSize';
 import { useValidation, useValidationCharts } from '../composables/useValidation';
+import { useWebSocketMetrics, useWebSocketCharts } from '../composables/useWebSocketMetrics';
 
 const router = useRouter();
 const { t } = useTranslation();
@@ -88,6 +91,18 @@ const { validationTimeseriesChartData } = useValidationCharts(
     toRef(() => validationState.value.timeseries)
 );
 
+// Initialize WebSocket metrics composable (HAP-896)
+const {
+    state: wsState,
+    fetchWebSocketData,
+} = useWebSocketMetrics();
+
+// Chart data for WebSocket metrics (HAP-896)
+const { connectionTimeChartData, broadcastLatencyChartData, errorBreakdownChartData } = useWebSocketCharts(
+    toRef(() => wsState.value.connections),
+    toRef(() => wsState.value.broadcasts)
+);
+
 /**
  * Handle platform filter change (HAP-571)
  */
@@ -98,7 +113,7 @@ async function handlePlatformChange(platform: Platform) {
 }
 
 /**
- * Refresh all dashboard data (HAP-582)
+ * Refresh all dashboard data (HAP-582, HAP-896)
  * Called by manual Refresh button and auto-refresh cycle
  */
 async function refreshAllData() {
@@ -106,6 +121,7 @@ async function refreshAllData() {
         fetchAll(),
         fetchBundleData(),
         fetchValidationData(),
+        fetchWebSocketData(),
     ]);
 }
 
@@ -140,10 +156,11 @@ onMounted(() => {
     fetchAll();
     fetchBundleData();
     fetchValidationData();
+    fetchWebSocketData();
     startAutoRefresh();
 });
 
-// Auto-refresh bundle and validation data when analytics auto-refreshes (HAP-582)
+// Auto-refresh bundle, validation, and WebSocket data when analytics auto-refreshes (HAP-582, HAP-896)
 // Watch for lastUpdated changes triggered by the analytics auto-refresh interval
 let isInitialLoad = true;
 watch(
@@ -154,10 +171,11 @@ watch(
             isInitialLoad = false;
             return;
         }
-        // When analytics auto-refreshes, also refresh bundle and validation data
+        // When analytics auto-refreshes, also refresh bundle, validation, and WebSocket data
         if (autoRefreshEnabled.value) {
             fetchBundleData();
             fetchValidationData();
+            fetchWebSocketData();
         }
     }
 );
@@ -267,6 +285,12 @@ watch(
 
             <!-- Dashboard Content -->
             <div v-else class="space-y-6 md:space-y-8">
+                <!-- HAP-638: Mock Data Warning Banner -->
+                <MockDataBanner
+                    :is-mock-data="state.isMockData"
+                    :mock-sources="state.mockDataSources"
+                />
+
                 <!-- Summary Cards -->
                 <MetricsSummary
                     :total-syncs="totalSyncs"
@@ -363,6 +387,35 @@ watch(
                                 :loading="validationState.loading && !validationState.unknownTypes.length"
                             />
                         </div>
+                    </div>
+                </div>
+
+                <!-- WebSocket Performance Metrics Section (HAP-896) -->
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-6 md:pt-8">
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">
+                        {{ t('metrics.websocket.title') }}
+                    </h2>
+
+                    <!-- WebSocket Summary Cards -->
+                    <WebSocketSummary
+                        :data="wsState.summary"
+                        :loading="wsState.loading && !wsState.summary"
+                    />
+
+                    <!-- WebSocket Charts Row -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                        <SyncMetricsChart
+                            :data="connectionTimeChartData"
+                            :title="t('metrics.websocket.connectionTimeChart')"
+                            y-axis-label="Time (ms)"
+                            :loading="wsState.loading && !wsState.connections.length"
+                        />
+                        <SyncMetricsChart
+                            :data="broadcastLatencyChartData"
+                            :title="t('metrics.websocket.broadcastLatencyChart')"
+                            y-axis-label="Latency (ms)"
+                            :loading="wsState.loading && !wsState.broadcasts.length"
+                        />
                     </div>
                 </div>
 
