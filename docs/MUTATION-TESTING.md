@@ -50,9 +50,10 @@ A file with 100% code coverage can still have a low mutation score if tests exec
 
 ### Currently Enabled Projects
 
-| Project | Directory | Configuration |
-|---------|-----------|---------------|
-| **happy-server-workers** | `apps/server/workers/` | `stryker.config.mjs` |
+| Project | Directory | Configuration | Break Threshold |
+|---------|-----------|---------------|-----------------|
+| **happy-server-workers** | `apps/server/workers/` | `stryker.config.mjs` | 60% |
+| **happy-cli** | `apps/cli/` | `stryker.config.mjs` | 40% |
 
 ### Commands
 
@@ -102,13 +103,44 @@ After running mutation tests:
 Mutation Score = (Killed + Timeout + Error) / (Total - Ignored - No Coverage)
 ```
 
-**Target Thresholds** (advisory, not enforced):
+**Target Thresholds** (enforced per-project since HAP-905):
 
 | Score | Rating | Interpretation |
 |-------|--------|----------------|
 | >= 80% | High | Excellent test quality |
 | 60-79% | Medium | Good, room for improvement |
 | < 60% | Low | Consider adding more tests |
+
+### Threshold Enforcement Policy (HAP-905)
+
+Mutation score thresholds are enforced per-project to prevent test quality regression. Stryker's `break` threshold causes CI to fail if the mutation score drops below the configured value.
+
+**Current Thresholds:**
+
+| Project | Break Threshold | High | Low | Rationale |
+|---------|----------------|------|-----|-----------|
+| `apps/server/workers` | 60% | 80% | 60% | 95% line coverage; conservative floor |
+| `apps/cli` | 40% | 80% | 60% | 60% line coverage; many excluded modules |
+
+**Enforcement Phases:**
+
+| Phase | Status | Description |
+|-------|--------|-------------|
+| Phase 1: Advisory | Complete | `break: null` - no build failure |
+| Phase 2: Soft enforcement | **Active** | Conservative `break` thresholds set; CI fails below threshold |
+| Phase 3: Hard enforcement | Planned | Raise thresholds (workers: 70%, CLI: 50%) after stabilization |
+
+**Threshold Rationale:**
+- Thresholds are per-project, not monorepo-wide, because projects have different coverage levels and module compositions
+- Break thresholds are set conservatively below current expected scores to avoid blocking legitimate PRs
+- Thresholds will be raised incrementally as mutation scores stabilize
+- Baseline data was collected from 2026-01-25 to 2026-02-19 (3.5 weeks)
+
+**Adjusting Thresholds:**
+To modify thresholds, edit `thresholds.break` in the project's `stryker.config.mjs`. Consider:
+1. Current mutation score trends (check CI artifacts for recent reports)
+2. Whether any module exclusions changed (could lower overall score)
+3. Team capacity to address surviving mutants
 
 ### Reading the HTML Report
 
@@ -499,4 +531,4 @@ export default {
 
 ---
 
-*Document created for HAP-907. Generated with Claude Code.*
+*Document created for HAP-907. Updated for HAP-905 (threshold enforcement). Generated with Claude Code.*

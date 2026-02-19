@@ -145,7 +145,7 @@ Configuration is in `stryker.config.mjs`. Key settings:
 - **checkers**: TypeScript checker filters type-invalid mutants
 - **inPlace**: Enabled for compatibility with workspace path aliases
 - **incremental**: Enabled for faster subsequent runs
-- **thresholds**: Advisory only (80% high, 60% low, no break threshold)
+- **thresholds**: Enforced (80% high, 60% low, 40% break - CI fails below this)
 
 ### Excluded Modules
 

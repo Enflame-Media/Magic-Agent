@@ -1,0 +1,49 @@
+name: Mutation Testing
+
+# HAP-905: Phase 2 soft enforcement of mutation score thresholds.
+# Stryker will fail if mutation score drops below the break threshold
+# configured in stryker.config.mjs (currently 40% for CLI).
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'src/**'
+      - 'stryker.config.mjs'
+      - 'vitest.stryker.config.ts'
+  workflow_dispatch:
+
+jobs:
+  mutation-test:
+    name: Mutation Testing
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: yarn install
+
+      - name: Build package
+        run: yarn build
+
+      - name: Run Mutation Tests
+        run: yarn mutate
+
+      - name: Upload Mutation Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-report
+          path: |
+            reports/mutation/html/
+            reports/mutation/mutation.json
+          retention-days: 14

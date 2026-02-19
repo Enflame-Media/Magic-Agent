@@ -82,11 +82,14 @@ export default {
     incremental: true,
     incrementalFile: 'reports/mutation/stryker-incremental.json',
 
-    // Thresholds (advisory only - no break threshold)
+    // Thresholds - Phase 2: Soft enforcement (HAP-905)
+    // Baseline period (2026-01-25 to 2026-02-19) complete.
+    // CLI has 60% line coverage with many excluded modules; break threshold set conservatively.
+    // Phase 3 (hard enforcement) will raise break to 50 after stabilization.
     thresholds: {
         high: 80, // Green: mutation score >= 80%
         low: 60, // Yellow: mutation score >= 60%
-        break: null, // Don't fail build based on score
+        break: 40, // Fail build if mutation score drops below 40%
     },
 
     // Optimization

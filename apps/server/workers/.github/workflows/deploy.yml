@@ -61,6 +61,45 @@ jobs:
         run: yarn test
 
   # ============================================
+  # Mutation Testing (HAP-905)
+  # Runs on PRs to enforce mutation score thresholds.
+  # Phase 2: Soft enforcement - fails if score drops below break threshold.
+  # ============================================
+  mutation-test:
+    name: Mutation Testing
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+          cache-dependency-path: yarn.lock
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install Dependencies
+        run: yarn install --immutable
+
+      - name: Run Mutation Tests
+        run: yarn mutate
+
+      - name: Upload Mutation Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-report
+          path: |
+            happy-server-workers/reports/mutation/html/
+            happy-server-workers/reports/mutation/mutation.json
+          retention-days: 14
+
+  # ============================================
   # Deploy to Development
   # ============================================
   deploy-dev:

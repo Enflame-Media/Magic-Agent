@@ -423,7 +423,7 @@ Configuration is in `stryker.config.mjs`. Key settings:
 - **testRunner**: Vitest with existing vitest.config.ts
 - **checkers**: TypeScript checker filters type-invalid mutants
 - **incremental**: Enabled for faster subsequent runs
-- **thresholds**: Advisory only (80% high, 60% low, no break threshold)
+- **thresholds**: Enforced (80% high, 60% low, 60% break - CI fails below this)
 
 ## Deployment
 
