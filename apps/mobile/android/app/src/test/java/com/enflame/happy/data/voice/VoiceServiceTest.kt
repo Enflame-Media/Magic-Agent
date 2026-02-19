@@ -45,6 +45,7 @@ class VoiceServiceTest {
     private lateinit var mockElevenLabsApiService: ElevenLabsApiService
     private lateinit var mockTokenStorage: TokenStorage
     private lateinit var mockAudioManager: AudioManager
+    private lateinit var mockAudioDeviceManager: AudioDeviceManager
 
     private val testDispatcher = StandardTestDispatcher()
 
@@ -56,6 +57,7 @@ class VoiceServiceTest {
         mockElevenLabsApiService = mockk(relaxed = true)
         mockTokenStorage = mockk(relaxed = true)
         mockAudioManager = mockk(relaxed = true)
+        mockAudioDeviceManager = mockk(relaxed = true)
 
         every { mockContext.getSystemService(Context.AUDIO_SERVICE) } returns mockAudioManager
         every { mockContext.cacheDir } returns java.io.File(System.getProperty("java.io.tmpdir"))
@@ -217,7 +219,8 @@ class VoiceServiceTest {
         return VoiceService(
             context = mockContext,
             elevenLabsApiService = mockElevenLabsApiService,
-            tokenStorage = mockTokenStorage
+            tokenStorage = mockTokenStorage,
+            audioDeviceManager = mockAudioDeviceManager
         )
     }
 }

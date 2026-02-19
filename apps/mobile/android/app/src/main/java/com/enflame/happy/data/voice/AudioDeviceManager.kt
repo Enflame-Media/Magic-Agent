@@ -127,6 +127,17 @@ class AudioDeviceManager @Inject constructor(
     /** Whether Bluetooth audio devices are currently available. */
     val isBluetoothAvailable: StateFlow<Boolean> = _isBluetoothAvailable.asStateFlow()
 
+    private val _bluetoothPermissionDenied = MutableStateFlow(false)
+
+    /**
+     * Whether the Bluetooth permission was denied by the user.
+     *
+     * When `true`, Bluetooth devices are filtered from the available devices
+     * list and a message should be shown to the user explaining why Bluetooth
+     * devices are unavailable.
+     */
+    val bluetoothPermissionDenied: StateFlow<Boolean> = _bluetoothPermissionDenied.asStateFlow()
+
     private var isMonitoring = false
 
     /**
@@ -286,12 +297,52 @@ class AudioDeviceManager @Inject constructor(
     }
 
     /**
+     * Handle the result of the BLUETOOTH_CONNECT runtime permission request.
+     *
+     * Updates the permission denied state and refreshes the device list.
+     * When permission is granted, Bluetooth devices will appear in the list.
+     * When denied, Bluetooth devices are filtered out.
+     *
+     * @param granted Whether the permission was granted.
+     */
+    fun onBluetoothPermissionResult(granted: Boolean) {
+        _bluetoothPermissionDenied.value = !granted
+        if (granted && isMonitoring) {
+            // Re-register Bluetooth receiver now that we have permission
+            try {
+                val filter = IntentFilter().apply {
+                    addAction(android.bluetooth.BluetoothDevice.ACTION_ACL_CONNECTED)
+                    addAction(android.bluetooth.BluetoothDevice.ACTION_ACL_DISCONNECTED)
+                }
+                context.registerReceiver(bluetoothReceiver, filter)
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to register Bluetooth receiver after permission grant", e)
+            }
+        }
+        refreshDevices()
+        Log.i(TAG, "Bluetooth permission result: granted=$granted")
+    }
+
+    /**
      * Refresh the list of available audio output devices.
+     *
+     * Bluetooth devices are filtered from the list when the BLUETOOTH_CONNECT
+     * permission is not granted on Android 12+ (API 31+).
      */
     fun refreshDevices() {
+        val hasBtPermission = hasBluetoothPermission()
+
         val outputDevices = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
             .filter { isRelevantOutputDevice(it) }
             .map { AudioDevice.fromDeviceInfo(it) }
+            .filter { device ->
+                // Filter out Bluetooth devices if permission is not granted
+                if (device.isBluetoothDevice && !hasBtPermission) {
+                    false
+                } else {
+                    true
+                }
+            }
             .sortedWith(deviceSortComparator)
 
         _availableDevices.value = outputDevices

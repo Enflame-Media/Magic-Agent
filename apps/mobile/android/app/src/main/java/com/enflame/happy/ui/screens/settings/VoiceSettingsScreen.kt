@@ -1,5 +1,12 @@
 package com.enflame.happy.ui.screens.settings
 
+import android.Manifest
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings as AndroidProviderSettings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -54,6 +61,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -85,6 +93,14 @@ fun VoiceSettingsScreen(
     onNavigateBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+
+    // Bluetooth permission launcher (Android 12+ / API 31+)
+    val bluetoothPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        viewModel.onBluetoothPermissionResult(granted)
+    }
 
     VoiceSettingsScreenContent(
         uiState = uiState,
@@ -101,10 +117,27 @@ fun VoiceSettingsScreen(
         onTestVoice = { viewModel.speak(TEST_PHRASE) },
         onStopVoice = viewModel::stop,
         onDismissError = viewModel::dismissError,
-        onShowAudioDeviceSelection = viewModel::showAudioDeviceSelection,
+        onShowAudioDeviceSelection = {
+            // Request Bluetooth permission proactively when opening device selection
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && viewModel.needsBluetoothPermission()) {
+                bluetoothPermissionLauncher.launch(Manifest.permission.BLUETOOTH_CONNECT)
+            }
+            viewModel.showAudioDeviceSelection()
+        },
         onSelectAudioDevice = viewModel::selectAudioDevice,
         onUseDefaultAudioDevice = viewModel::useDefaultAudioDevice,
-        onHideAudioDeviceSelection = viewModel::hideAudioDeviceSelection
+        onHideAudioDeviceSelection = viewModel::hideAudioDeviceSelection,
+        onRequestBluetoothPermission = {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                bluetoothPermissionLauncher.launch(Manifest.permission.BLUETOOTH_CONNECT)
+            }
+        },
+        onOpenAppSettings = {
+            val intent = Intent(AndroidProviderSettings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = Uri.fromParts("package", context.packageName, null)
+            }
+            context.startActivity(intent)
+        }
     )
 }
 
@@ -133,7 +166,9 @@ fun VoiceSettingsScreenContent(
     onShowAudioDeviceSelection: () -> Unit = {},
     onSelectAudioDevice: (AudioDevice) -> Unit = {},
     onUseDefaultAudioDevice: () -> Unit = {},
-    onHideAudioDeviceSelection: () -> Unit = {}
+    onHideAudioDeviceSelection: () -> Unit = {},
+    onRequestBluetoothPermission: () -> Unit = {},
+    onOpenAppSettings: () -> Unit = {}
 ) {
     Scaffold(
         topBar = {
@@ -211,7 +246,10 @@ fun VoiceSettingsScreenContent(
             AudioOutputCard(
                 selectedDeviceName = uiState.selectedAudioDeviceName,
                 isBluetoothAvailable = uiState.isBluetoothAvailable,
-                onSelectDevice = onShowAudioDeviceSelection
+                bluetoothPermissionDenied = uiState.bluetoothPermissionDenied,
+                onSelectDevice = onShowAudioDeviceSelection,
+                onRequestBluetoothPermission = onRequestBluetoothPermission,
+                onOpenAppSettings = onOpenAppSettings
             )
 
             // --- Behavior Section ---
@@ -772,7 +810,10 @@ private fun TestVoiceCard(
 private fun AudioOutputCard(
     selectedDeviceName: String,
     isBluetoothAvailable: Boolean,
-    onSelectDevice: () -> Unit
+    bluetoothPermissionDenied: Boolean,
+    onSelectDevice: () -> Unit,
+    onRequestBluetoothPermission: () -> Unit,
+    onOpenAppSettings: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -824,6 +865,69 @@ private fun AudioOutputCard(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(stringResource(R.string.audio_output_select))
+            }
+
+            // Bluetooth permission denied message (HAP-1027)
+            if (bluetoothPermissionDenied && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
+                    )
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Bluetooth,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = stringResource(R.string.bluetooth_permission_title),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = stringResource(R.string.bluetooth_permission_rationale),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedButton(
+                                onClick = onRequestBluetoothPermission,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.bluetooth_permission_request),
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                            }
+
+                            OutlinedButton(
+                                onClick = onOpenAppSettings,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.bluetooth_permission_open_settings),
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                            }
+                        }
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(4.dp))

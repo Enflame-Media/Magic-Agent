@@ -61,7 +61,8 @@ data class VoiceUiState(
     val audioDevices: List<AudioDevice> = emptyList(),
     val selectedAudioDevice: AudioDevice? = null,
     val isBluetoothAvailable: Boolean = false,
-    val showAudioDeviceSheet: Boolean = false
+    val showAudioDeviceSheet: Boolean = false,
+    val bluetoothPermissionDenied: Boolean = false
 ) {
     /** Whether speech is currently in progress. */
     val isSpeaking: Boolean
@@ -143,16 +144,18 @@ class VoiceViewModel @Inject constructor(
             audioDeviceManager.availableDevices,
             audioDeviceManager.selectedDevice,
             audioDeviceManager.isBluetoothAvailable,
-            _showAudioDeviceSheet
-        ) { devices, selected, btAvailable, showSheet ->
-            AudioDeviceState(devices, selected, btAvailable, showSheet)
+            _showAudioDeviceSheet,
+            audioDeviceManager.bluetoothPermissionDenied
+        ) { devices, selected, btAvailable, showSheet, btDenied ->
+            AudioDeviceState(devices, selected, btAvailable, showSheet, btDenied)
         }
     ) { voiceState, audioState ->
         voiceState.copy(
             audioDevices = audioState.devices,
             selectedAudioDevice = audioState.selectedDevice,
             isBluetoothAvailable = audioState.isBluetoothAvailable,
-            showAudioDeviceSheet = audioState.showSheet
+            showAudioDeviceSheet = audioState.showSheet,
+            bluetoothPermissionDenied = audioState.bluetoothPermissionDenied
         )
     }.stateIn(
         scope = viewModelScope,
@@ -370,6 +373,28 @@ class VoiceViewModel @Inject constructor(
         _showAudioDeviceSheet.value = false
     }
 
+    /**
+     * Handle the result of the BLUETOOTH_CONNECT runtime permission request.
+     *
+     * Delegates to [AudioDeviceManager.onBluetoothPermissionResult] to update
+     * the device list based on the permission grant status.
+     *
+     * @param granted Whether the permission was granted by the user.
+     */
+    fun onBluetoothPermissionResult(granted: Boolean) {
+        audioDeviceManager.onBluetoothPermissionResult(granted)
+    }
+
+    /**
+     * Check if the Bluetooth permission needs to be requested.
+     *
+     * @return `true` if the app needs to request BLUETOOTH_CONNECT permission
+     *         (Android 12+ and permission not yet granted).
+     */
+    fun needsBluetoothPermission(): Boolean {
+        return !audioDeviceManager.hasBluetoothPermission()
+    }
+
     // --- Error Handling ---
 
     /**
@@ -409,7 +434,8 @@ class VoiceViewModel @Inject constructor(
         val devices: List<AudioDevice>,
         val selectedDevice: AudioDevice?,
         val isBluetoothAvailable: Boolean,
-        val showSheet: Boolean
+        val showSheet: Boolean,
+        val bluetoothPermissionDenied: Boolean
     )
 
     companion object {

@@ -174,6 +174,8 @@
     <string name="bluetooth_permission_title">Bluetooth Permission</string>
     <string name="bluetooth_permission_description">Happy needs Bluetooth access to discover and connect to your Bluetooth audio devices for audio output.</string>
     <string name="bluetooth_permission_rationale">Bluetooth permission was denied. To select Bluetooth audio devices, please grant Bluetooth access in Settings.</string>
+    <string name="bluetooth_permission_request">Request Permission</string>
+    <string name="bluetooth_permission_open_settings">Open Settings</string>
 
     <!-- Media Playback Notification (HAP-1021) -->
     <string name="notification_channel_media_playback">Media Playback</string>
