@@ -9,6 +9,8 @@ import { log } from "@/utils/log";
 import { AccountProfile } from "@/types";
 import { createHash } from "crypto";
 import { RateLimitTiers } from "../utils/enableRateLimiting";
+import { PlanLimitsResponseSchema } from "@magic-agent/protocol";
+import { accountUsageLimitsGet } from "@/app/account/accountUsageLimitsGet";
 
 export function accountRoutes(app: Fastify) {
     app.get('/v1/account/profile', {
@@ -204,6 +206,30 @@ export function accountRoutes(app: Fastify) {
                 success: false,
                 error: 'Failed to update account settings'
             });
+        }
+    });
+
+    // Get Account Usage Limits API (HAP-1023)
+    app.get('/v1/account/usage/limits', {
+        preHandler: app.authenticate,
+        config: {
+            rateLimit: RateLimitTiers.MEDIUM  // 60/min - usage limits lookup
+        },
+        schema: {
+            response: {
+                200: PlanLimitsResponseSchema,
+                500: z.object({
+                    error: z.literal('Failed to get usage limits')
+                })
+            }
+        }
+    }, async (request, reply) => {
+        try {
+            const result = await accountUsageLimitsGet(request.userId);
+            return reply.send(result);
+        } catch (error) {
+            log({ module: 'api', level: 'error' }, `Failed to get usage limits: ${error}`);
+            return reply.code(500).send({ error: 'Failed to get usage limits' });
         }
     });
 

@@ -19,8 +19,13 @@ vi.mock('@/storage/db', () => ({
         },
         session: {
             findFirst: vi.fn(),
+            count: vi.fn(),
         },
     },
+}));
+
+vi.mock('@/app/account/accountUsageLimitsGet', () => ({
+    accountUsageLimitsGet: vi.fn(),
 }));
 
 vi.mock('@/app/events/eventRouter', () => ({
@@ -47,6 +52,7 @@ vi.mock('@/storage/files', () => ({
 }));
 
 import { db } from '@/storage/db';
+import { accountUsageLimitsGet } from '@/app/account/accountUsageLimitsGet';
 
 describe('accountRoutes', () => {
     let app: Fastify;
@@ -477,6 +483,99 @@ describe('accountRoutes', () => {
             });
 
             expect(eventRouter.emitUpdate).toHaveBeenCalled();
+        });
+    });
+
+    describe('GET /v1/account/usage/limits', () => {
+        it('should return usage limits for authenticated user', async () => {
+            vi.mocked(accountUsageLimitsGet).mockResolvedValue({
+                sessionLimit: {
+                    id: 'active_sessions',
+                    label: 'Active Sessions',
+                    percentageUsed: 30,
+                    resetsAt: null,
+                    resetDisplayType: 'datetime',
+                    description: '3 of 10 sessions',
+                },
+                weeklyLimits: [
+                    {
+                        id: 'weekly_tokens',
+                        label: 'Weekly Tokens',
+                        percentageUsed: 15,
+                        resetsAt: Date.now() + 86400000,
+                        resetDisplayType: 'countdown',
+                        description: '150,000 of 1,000,000 tokens',
+                    },
+                ],
+                lastUpdatedAt: Date.now(),
+                limitsAvailable: true,
+                provider: 'anthropic',
+            });
+
+            const response = await app.inject({
+                method: 'GET',
+                url: '/v1/account/usage/limits',
+                headers: authHeader(),
+            });
+
+            expect(response.statusCode).toBe(200);
+            const body = JSON.parse(response.payload);
+            expect(body.limitsAvailable).toBe(true);
+            expect(body.provider).toBe('anthropic');
+            expect(body.sessionLimit).toBeDefined();
+            expect(body.sessionLimit.id).toBe('active_sessions');
+            expect(body.weeklyLimits).toHaveLength(1);
+            expect(body.weeklyLimits[0].id).toBe('weekly_tokens');
+            expect(body.lastUpdatedAt).toBeGreaterThan(0);
+        });
+
+        it('should return 401 without authorization', async () => {
+            const response = await app.inject({
+                method: 'GET',
+                url: '/v1/account/usage/limits',
+            });
+
+            expect(response.statusCode).toBe(401);
+        });
+
+        it('should return 401 with invalid token', async () => {
+            const response = await app.inject({
+                method: 'GET',
+                url: '/v1/account/usage/limits',
+                headers: authHeader('invalid-token'),
+            });
+
+            expect(response.statusCode).toBe(401);
+        });
+
+        it('should return 500 when action throws', async () => {
+            vi.mocked(accountUsageLimitsGet).mockRejectedValue(new Error('Database error'));
+
+            const response = await app.inject({
+                method: 'GET',
+                url: '/v1/account/usage/limits',
+                headers: authHeader(),
+            });
+
+            expect(response.statusCode).toBe(500);
+            const body = JSON.parse(response.payload);
+            expect(body.error).toBe('Failed to get usage limits');
+        });
+
+        it('should call accountUsageLimitsGet with correct userId', async () => {
+            vi.mocked(accountUsageLimitsGet).mockResolvedValue({
+                weeklyLimits: [],
+                lastUpdatedAt: Date.now(),
+                limitsAvailable: false,
+            });
+
+            await app.inject({
+                method: 'GET',
+                url: '/v1/account/usage/limits',
+                headers: authHeader(),
+            });
+
+            expect(accountUsageLimitsGet).toHaveBeenCalledWith(TEST_USER_ID);
         });
     });
 
