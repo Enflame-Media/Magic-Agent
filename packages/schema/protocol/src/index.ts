@@ -54,3 +54,6 @@ export * from './usageLimits';
 
 // Session sharing schemas for sharing sessions with other users
 export * from './sharing';
+
+// Agent Client Protocol (ACP) schemas for universal agent communication
+export * from './acp';
