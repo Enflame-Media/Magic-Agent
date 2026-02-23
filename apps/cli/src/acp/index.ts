@@ -8,6 +8,8 @@
  * - Capability querying: Runtime feature-gating based on agent capabilities
  * - Session management: Full session lifecycle (create, load, resume, fork, config, mode, model, list)
  * - Resource handlers: Client-side fs and terminal operations
+ * - Prompt handling: Full prompt turn lifecycle with streaming updates
+ * - Message accumulation: Streaming content chunk aggregation
  *
  * Uses @agentclientprotocol/sdk for the protocol implementation and
  * @magic-agent/protocol for typed Zod schemas.
@@ -31,7 +33,7 @@
  *
  * transport.spawn((agent) => ({
  *     requestPermission: async (params) => { ... },
- *     sessionUpdate: async (params) => { ... },
+ *     sessionUpdate: async (params) => promptHandler.handleSessionUpdate(params),
  *     readTextFile: resources.readTextFile,
  *     writeTextFile: resources.writeTextFile,
  *     createTerminal: resources.createTerminal,
@@ -112,6 +114,24 @@ export {
 // Resource handlers for client-side fs and terminal operations
 export { createResourceHandlers, TerminalRegistry } from './resources';
 export type { AcpResourceHandlers } from './resources';
+
+// Prompt turn lifecycle and streaming updates
+export {
+    PromptHandler,
+    type PromptResult,
+    type PromptHandlerEvents,
+    type PromptHandlerListener,
+} from './prompt';
+
+// Message accumulation for streaming content chunks
+export { MessageAccumulator } from './accumulator';
+
+// Session update routing and typed events
+export {
+    UpdateRouter,
+    type UpdateEvents,
+    type UpdateListener,
+} from './updates';
 
 // Re-export key SDK types for convenience
 export {
