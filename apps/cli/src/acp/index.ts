@@ -10,6 +10,9 @@
  * - Resource handlers: Client-side fs and terminal operations
  * - Prompt handling: Full prompt turn lifecycle with streaming updates
  * - Message accumulation: Streaming content chunk aggregation
+ * - Agent registry: Multi-agent discovery, configuration, and persistence
+ * - Agent switching: Graceful agent switching with rollback
+ * - Extension methods: Happy-specific ACP extensions under `_happy.app/`
  *
  * Uses @agentclientprotocol/sdk for the protocol implementation and
  * @magic-agent/protocol for typed Zod schemas.
@@ -151,6 +154,43 @@ export {
     type PermissionHandlerEvents,
     type PermissionHandlerListener,
 } from './permissions';
+
+// Agent registry for multi-agent support
+export {
+    AgentRegistry,
+    AgentNotFoundError,
+    DuplicateAgentError,
+    AgentBinaryNotFoundError,
+    KNOWN_AGENTS,
+    type AgentConfig,
+    type AgentAuthState,
+    type KnownAgentDefinition,
+    type DiscoveryResult,
+} from './registry';
+
+// Agent switching with graceful shutdown and rollback
+export {
+    AgentSwitcher,
+    type AgentSwitcherEvents,
+    type AgentSwitcherListener,
+    type AgentSwitcherState,
+    type SwitchOptions,
+} from './switcher';
+
+// Happy extension methods under _happy.app/ namespace
+export {
+    ExtensionMethodClient,
+    EXTENSION_PREFIX,
+    EXTENSION_METHODS,
+    type SessionInfoRequest,
+    type SessionInfoResponse,
+    type EncryptionKeysRequest,
+    type EncryptionKeysResponse,
+    type RemotePromptRequest,
+    type RemotePromptResponse,
+    type RemoteCancelRequest,
+    type RemoteCancelResponse,
+} from './extensions';
 
 // Re-export key SDK types for convenience
 export {
