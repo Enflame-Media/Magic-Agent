@@ -6,6 +6,7 @@
  * - Initialization: Protocol handshake with version and capability negotiation
  * - Authentication: Agent Auth (OAuth) and Terminal Auth flows
  * - Capability querying: Runtime feature-gating based on agent capabilities
+ * - Session management: Full session lifecycle (create, load, resume, fork, config, mode, model, list)
  * - Resource handlers: Client-side fs and terminal operations
  *
  * Uses @agentclientprotocol/sdk for the protocol implementation and
@@ -97,6 +98,16 @@ export {
     handleAuthIfRequired,
     isAuthRequiredError,
 } from './auth';
+
+// Session lifecycle management
+export {
+    SessionManager,
+    SessionCapabilityError,
+    SessionNotFoundError,
+    type SessionState,
+    type ListSessionsParams,
+    type SessionListResult,
+} from './sessions';
 
 // Resource handlers for client-side fs and terminal operations
 export { createResourceHandlers, TerminalRegistry } from './resources';

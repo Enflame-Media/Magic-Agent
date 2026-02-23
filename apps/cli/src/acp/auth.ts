@@ -143,5 +143,10 @@ export function isAuthRequiredError(error: unknown): boolean {
     if (error instanceof RequestError) {
         return error.code === ACP_ERROR_CODES.AUTH_REQUIRED;
     }
+    // The SDK's Connection rejects with raw JSON-RPC error objects { code, message }
+    // when the agent returns an error response, so also check plain objects
+    if (error !== null && typeof error === 'object' && 'code' in error) {
+        return (error as { code: number }).code === ACP_ERROR_CODES.AUTH_REQUIRED;
+    }
     return false;
 }
