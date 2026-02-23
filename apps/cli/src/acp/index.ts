@@ -133,6 +133,25 @@ export {
     type UpdateListener,
 } from './updates';
 
+// Tool call lifecycle tracking
+export {
+    ToolCallRegistry,
+    type ToolCallState,
+    type ToolCallTrackedStatus,
+    type ToolCallRegistryEvents,
+    type ToolCallRegistryListener,
+} from './toolcalls';
+
+// Permission handling and policy store
+export {
+    PermissionHandler,
+    PermissionPolicyStore,
+    type PendingPermission,
+    type PermissionPolicy,
+    type PermissionHandlerEvents,
+    type PermissionHandlerListener,
+} from './permissions';
+
 // Re-export key SDK types for convenience
 export {
     ClientSideConnection,
