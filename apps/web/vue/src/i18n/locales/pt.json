@@ -1081,5 +1081,39 @@
     "createAccount": "Criar conta",
     "linkOrRestoreAccount": "Vincular ou restaurar conta",
     "loginWithMobileApp": "Fazer login com aplicativo movel"
+  },
+  "acp": {
+    "thought": {
+      "title": "Pensando"
+    },
+    "plan": "Plano de execucao",
+    "toolCall": {
+      "completed": "Concluido",
+      "failed": "Falhou",
+      "inProgress": "Executando",
+      "pending": "Pendente"
+    },
+    "usage": {
+      "title": "Janela de contexto",
+      "tokens": "{used} / {total} tokens"
+    },
+    "commandPalette": {
+      "title": "Comandos",
+      "searchPlaceholder": "Pesquisar comandos...",
+      "emptyTitle": "Sem comandos",
+      "emptyDescription": "Nenhum comando slash disponivel do agente.",
+      "noResults": "Nenhum comando encontrado.",
+      "commandCount": "{count} comandos"
+    },
+    "config": {
+      "title": "Configuracao",
+      "emptyTitle": "Sem opcoes",
+      "emptyDescription": "Nenhuma opcao de configuracao disponivel."
+    },
+    "content": {
+      "image": "Imagem do agente",
+      "audioUnsupported": "Reproducao de audio nao suportada.",
+      "unknownType": "Tipo de conteudo nao suportado: {type}"
+    }
   }
 }

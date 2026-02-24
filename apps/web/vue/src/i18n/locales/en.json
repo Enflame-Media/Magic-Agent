@@ -1121,5 +1121,39 @@
     "createAccount": "Create account",
     "linkOrRestoreAccount": "Link or restore account",
     "loginWithMobileApp": "Login with mobile app"
+  },
+  "acp": {
+    "thought": {
+      "title": "Thinking"
+    },
+    "plan": "Execution Plan",
+    "toolCall": {
+      "completed": "Done",
+      "failed": "Failed",
+      "inProgress": "Running",
+      "pending": "Pending"
+    },
+    "usage": {
+      "title": "Context Window",
+      "tokens": "{used} / {total} tokens"
+    },
+    "commandPalette": {
+      "title": "Commands",
+      "searchPlaceholder": "Search commands...",
+      "emptyTitle": "No Commands",
+      "emptyDescription": "No slash commands are available from the agent.",
+      "noResults": "No commands found.",
+      "commandCount": "{count} commands"
+    },
+    "config": {
+      "title": "Configuration",
+      "emptyTitle": "No Options",
+      "emptyDescription": "No configuration options are available."
+    },
+    "content": {
+      "image": "Agent image",
+      "audioUnsupported": "Audio playback is not supported.",
+      "unknownType": "Unsupported content type: {type}"
+    }
   }
 }

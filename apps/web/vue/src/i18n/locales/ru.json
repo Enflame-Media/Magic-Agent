@@ -1081,5 +1081,39 @@
     "createAccount": "Создать аккаунт",
     "linkOrRestoreAccount": "Связать или восстановить аккаунт",
     "loginWithMobileApp": "Войти через мобильное приложение"
+  },
+  "acp": {
+    "thought": {
+      "title": "Размышление"
+    },
+    "plan": "План выполнения",
+    "toolCall": {
+      "completed": "Готово",
+      "failed": "Ошибка",
+      "inProgress": "Выполняется",
+      "pending": "Ожидание"
+    },
+    "usage": {
+      "title": "Окно контекста",
+      "tokens": "{used} / {total} токенов"
+    },
+    "commandPalette": {
+      "title": "Команды",
+      "searchPlaceholder": "Поиск команд...",
+      "emptyTitle": "Нет команд",
+      "emptyDescription": "Нет доступных slash-команд от агента.",
+      "noResults": "Команды не найдены.",
+      "commandCount": "{count} команд"
+    },
+    "config": {
+      "title": "Конфигурация",
+      "emptyTitle": "Нет опций",
+      "emptyDescription": "Нет доступных опций конфигурации."
+    },
+    "content": {
+      "image": "Изображение агента",
+      "audioUnsupported": "Воспроизведение аудио не поддерживается.",
+      "unknownType": "Неподдерживаемый тип контента: {type}"
+    }
   }
 }

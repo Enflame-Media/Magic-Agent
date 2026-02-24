@@ -663,7 +663,7 @@
   "modals": {
     "authenticateTerminal": "Autentica el terminal",
     "pasteUrlFromTerminal": "Enganxa l'URL d'autenticacio del teu terminal",
-    "deviceLinkedSuccessfully": "Dispositiu enlla\u00e7at amb exit",
+    "deviceLinkedSuccessfully": "Dispositiu enllaçat amb exit",
     "terminalConnectedSuccessfully": "Terminal connectat amb exit",
     "invalidAuthUrl": "URL d'autenticacio no valida",
     "developerMode": "Mode desenvolupador",
@@ -676,12 +676,12 @@
     "disconnect": "Desconnecta",
     "failedToConnectTerminal": "Ha fallat connectar el terminal",
     "cameraPermissionsRequiredToConnectTerminal": "Es requereixen permisos de camera per connectar el terminal",
-    "failedToLinkDevice": "Ha fallat enlla\u00e7ar el dispositiu",
+    "failedToLinkDevice": "Ha fallat enllaçar el dispositiu",
     "cameraPermissionsRequiredToScanQr": "Es requereixen permisos de camera per escanejar codis QR"
   },
   "navigation": {
     "connectTerminal": "Connecta el terminal",
-    "linkNewDevice": "Enlla\u00e7a un nou dispositiu",
+    "linkNewDevice": "Enllaça un nou dispositiu",
     "restoreWithSecretKey": "Restaura amb clau secreta",
     "whatsNew": "Novetats",
     "friends": "Amics"
@@ -830,8 +830,8 @@
     "anonymousId": "ID anonim",
     "publicId": "ID public",
     "notAvailable": "No disponible",
-    "linkNewDevice": "Enlla\u00e7a un nou dispositiu",
-    "linkNewDeviceSubtitle": "Escaneja el codi QR per enlla\u00e7ar el dispositiu",
+    "linkNewDevice": "Enllaça un nou dispositiu",
+    "linkNewDeviceSubtitle": "Escaneja el codi QR per enllaçar el dispositiu",
     "profile": "Perfil",
     "name": "Nom",
     "github": "GitHub",
@@ -954,10 +954,10 @@
   },
   "terminal": {
     "webBrowserRequired": "Es requereix un navegador web",
-    "webBrowserRequiredDescription": "Els enlla\u00e7os de connexio de terminal nomes es poden obrir en un navegador web per raons de seguretat. Utilitza l'escaner de codi QR o obre aquest enlla\u00e7 en un ordinador.",
+    "webBrowserRequiredDescription": "Els enllaços de connexio de terminal nomes es poden obrir en un navegador web per raons de seguretat. Utilitza l'escaner de codi QR o obre aquest enllaç en un ordinador.",
     "processingConnection": "Processant la connexio...",
-    "invalidConnectionLink": "Enlla\u00e7 de connexio no valid",
-    "invalidConnectionLinkDescription": "L'enlla\u00e7 de connexio falta o no es valid. Comprova l'URL i torna-ho a provar.",
+    "invalidConnectionLink": "Enllaç de connexio no valid",
+    "invalidConnectionLinkDescription": "L'enllaç de connexio falta o no es valid. Comprova l'URL i torna-ho a provar.",
     "connectTerminal": "Connecta el terminal",
     "terminalRequestDescription": "Un terminal esta sol·licitant connectar-se al teu compte de Happy Coder. Aixo permetra al terminal enviar i rebre missatges de forma segura.",
     "connectionDetails": "Detalls de la connexio",
@@ -968,11 +968,11 @@
     "connecting": "Connectant...",
     "reject": "Rebutja",
     "security": "Seguretat",
-    "securityFooter": "Aquest enlla\u00e7 de connexio s'ha processat de forma segura al teu navegador i mai s'ha enviat a cap servidor. Les teves dades privades es mantindran segures i nomes tu pots desxifrar els missatges.",
+    "securityFooter": "Aquest enllaç de connexio s'ha processat de forma segura al teu navegador i mai s'ha enviat a cap servidor. Les teves dades privades es mantindran segures i nomes tu pots desxifrar els missatges.",
     "securityFooterDevice": "Aquesta connexio s'ha processat de forma segura al teu dispositiu i mai s'ha enviat a cap servidor. Les teves dades privades es mantindran segures i nomes tu pots desxifrar els missatges.",
     "clientSideProcessing": "Processament del costat del client",
-    "linkProcessedLocally": "Enlla\u00e7 processat localment al navegador",
-    "linkProcessedOnDevice": "Enlla\u00e7 processat localment al dispositiu"
+    "linkProcessedLocally": "Enllaç processat localment al navegador",
+    "linkProcessedOnDevice": "Enllaç processat localment al dispositiu"
   },
   "textSelection": {
     "selectText": "Seleccionar rang de text",
@@ -1078,7 +1078,41 @@
     "title": "Client mobil de Codex i Claude Code",
     "subtitle": "Xifrat punt a punt i el teu compte s'emmagatzema nomes al teu dispositiu.",
     "createAccount": "Crea un compte",
-    "linkOrRestoreAccount": "Enlla\u00e7a o restaura un compte",
+    "linkOrRestoreAccount": "Enllaça o restaura un compte",
     "loginWithMobileApp": "Inicia sessio amb l'aplicacio mobil"
+  },
+  "acp": {
+    "thought": {
+      "title": "Pensant"
+    },
+    "plan": "Pla d'execucio",
+    "toolCall": {
+      "completed": "Completat",
+      "failed": "Fallit",
+      "inProgress": "Executant",
+      "pending": "Pendent"
+    },
+    "usage": {
+      "title": "Finestra de context",
+      "tokens": "{used} / {total} tokens"
+    },
+    "commandPalette": {
+      "title": "Comandes",
+      "searchPlaceholder": "Cercar comandes...",
+      "emptyTitle": "Sense comandes",
+      "emptyDescription": "No hi ha comandes slash disponibles de l'agent.",
+      "noResults": "No s'han trobat comandes.",
+      "commandCount": "{count} comandes"
+    },
+    "config": {
+      "title": "Configuracio",
+      "emptyTitle": "Sense opcions",
+      "emptyDescription": "No hi ha opcions de configuracio disponibles."
+    },
+    "content": {
+      "image": "Imatge de l'agent",
+      "audioUnsupported": "La reproduccio d'audio no es compatible.",
+      "unknownType": "Tipus de contingut no compatible: {type}"
+    }
   }
 }

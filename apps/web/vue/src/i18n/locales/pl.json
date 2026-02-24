@@ -1080,5 +1080,39 @@
     "createAccount": "Utworz konto",
     "linkOrRestoreAccount": "Polacz lub przywroc konto",
     "loginWithMobileApp": "Zaloguj sie przez aplikacje mobilna"
+  },
+  "acp": {
+    "thought": {
+      "title": "Myslenie"
+    },
+    "plan": "Plan wykonania",
+    "toolCall": {
+      "completed": "Ukonczone",
+      "failed": "Nieudane",
+      "inProgress": "W trakcie",
+      "pending": "Oczekujace"
+    },
+    "usage": {
+      "title": "Okno kontekstu",
+      "tokens": "{used} / {total} tokenow"
+    },
+    "commandPalette": {
+      "title": "Komendy",
+      "searchPlaceholder": "Szukaj komend...",
+      "emptyTitle": "Brak komend",
+      "emptyDescription": "Brak dostepnych komend slash od agenta.",
+      "noResults": "Nie znaleziono komend.",
+      "commandCount": "{count} komend"
+    },
+    "config": {
+      "title": "Konfiguracja",
+      "emptyTitle": "Brak opcji",
+      "emptyDescription": "Brak dostepnych opcji konfiguracji."
+    },
+    "content": {
+      "image": "Obraz agenta",
+      "audioUnsupported": "Odtwarzanie dzwieku nie jest obslugiwane.",
+      "unknownType": "Nieobslugiwany typ tresci: {type}"
+    }
   }
 }

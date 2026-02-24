@@ -1080,5 +1080,39 @@
     "createAccount": "Crear cuenta",
     "linkOrRestoreAccount": "Vincular o restaurar cuenta",
     "loginWithMobileApp": "Iniciar sesión con aplicación móvil"
+  },
+  "acp": {
+    "thought": {
+      "title": "Pensando"
+    },
+    "plan": "Plan de ejecucion",
+    "toolCall": {
+      "completed": "Completado",
+      "failed": "Fallido",
+      "inProgress": "Ejecutando",
+      "pending": "Pendiente"
+    },
+    "usage": {
+      "title": "Ventana de contexto",
+      "tokens": "{used} / {total} tokens"
+    },
+    "commandPalette": {
+      "title": "Comandos",
+      "searchPlaceholder": "Buscar comandos...",
+      "emptyTitle": "Sin comandos",
+      "emptyDescription": "No hay comandos slash disponibles del agente.",
+      "noResults": "No se encontraron comandos.",
+      "commandCount": "{count} comandos"
+    },
+    "config": {
+      "title": "Configuracion",
+      "emptyTitle": "Sin opciones",
+      "emptyDescription": "No hay opciones de configuracion disponibles."
+    },
+    "content": {
+      "image": "Imagen del agente",
+      "audioUnsupported": "La reproduccion de audio no es compatible.",
+      "unknownType": "Tipo de contenido no compatible: {type}"
+    }
   }
 }
