@@ -38,11 +38,15 @@ import {
 } from './types';
 import { verifyToken, initAuth } from '@/lib/auth';
 import { getDb } from '@/db/client';
-import { machines } from '@/db/schema';
+import { machines, sessions } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { getMasterSecret } from '@/config/env';
 import type { HandlerResult, HandlerContext } from './handlers';
 import { buildSentryOptions, instrumentDurableObjectWithSentry } from '@/lib/sentry';
+import {
+    buildAcpSessionUpdateEphemeral,
+    buildAcpPermissionRequestEphemeral,
+} from '@/lib/eventRouter';
 import {
     handleSessionMetadataUpdate,
     handleSessionStateUpdate,
@@ -998,6 +1002,132 @@ class ConnectionManagerBase extends DurableObject<ConnectionManagerEnv> {
                     }
                 );
                 await this.processHandlerResult(ws, result, normalized.messageId);
+                break;
+            }
+
+            // =========================================================================
+            // ACP RELAY HANDLERS (HAP-1050)
+            // =========================================================================
+            case 'acp-session-update': {
+                // Relay encrypted ACP session updates from CLI to user-scoped connections
+                // Server treats the update payload as an opaque blob (zero-knowledge relay)
+                if (handlerCtx && metadata) {
+                    const payload = normalized.payload as { sid: string; update: string } | undefined;
+                    const sid = payload?.sid;
+                    const update = payload?.update;
+
+                    if (sid && typeof sid === 'string' && update && typeof update === 'string') {
+                        // Validate session belongs to user
+                        const [session] = await handlerCtx.db
+                            .select({ id: sessions.id })
+                            .from(sessions)
+                            .where(and(eq(sessions.id, sid), eq(sessions.accountId, handlerCtx.userId)));
+
+                        if (session) {
+                            const ephemeral = buildAcpSessionUpdateEphemeral(sid, update);
+                            // Relay to user-scoped + session-scoped connections interested in this session
+                            // Machine-scoped (CLI sender) is naturally excluded by 'all-interested-in-session' filter
+                            this.broadcastClientMessage(
+                                {
+                                    event: 'ephemeral',
+                                    data: ephemeral,
+                                },
+                                { type: 'all-interested-in-session', sessionId: sid }
+                            );
+                        }
+                    }
+                }
+                break;
+            }
+
+            case 'acp-permission-request': {
+                // Relay encrypted ACP permission requests from CLI to mobile/web apps
+                // Server treats the payload as an opaque blob (zero-knowledge relay)
+                if (handlerCtx && metadata) {
+                    const payload = normalized.payload as {
+                        sid: string;
+                        requestId: string;
+                        payload: string;
+                        timeoutMs?: number;
+                    } | undefined;
+                    const sid = payload?.sid;
+                    const requestId = payload?.requestId;
+                    const permPayload = payload?.payload;
+                    const timeoutMs = payload?.timeoutMs;
+
+                    if (
+                        sid && typeof sid === 'string' &&
+                        requestId && typeof requestId === 'string' &&
+                        permPayload && typeof permPayload === 'string'
+                    ) {
+                        // Validate session belongs to user
+                        const [session] = await handlerCtx.db
+                            .select({ id: sessions.id })
+                            .from(sessions)
+                            .where(and(eq(sessions.id, sid), eq(sessions.accountId, handlerCtx.userId)));
+
+                        if (session) {
+                            const ephemeral = buildAcpPermissionRequestEphemeral(
+                                sid, requestId, permPayload, timeoutMs
+                            );
+                            // Relay to user-scoped connections only (mobile/web apps)
+                            // Machine-scoped (CLI sender) is naturally excluded by 'user-scoped-only' filter
+                            this.broadcastClientMessage(
+                                {
+                                    event: 'ephemeral',
+                                    data: ephemeral,
+                                },
+                                { type: 'user-scoped-only' }
+                            );
+                        }
+                    }
+                }
+                break;
+            }
+
+            case 'acp-permission-response': {
+                // Relay encrypted ACP permission responses from mobile/web app to all connections
+                // CLI machines need this to forward the approval/denial to the agent
+                if (handlerCtx && metadata) {
+                    const payload = normalized.payload as {
+                        sid: string;
+                        requestId: string;
+                        payload: string;
+                    } | undefined;
+                    const sid = payload?.sid;
+                    const requestId = payload?.requestId;
+                    const permPayload = payload?.payload;
+
+                    if (
+                        sid && typeof sid === 'string' &&
+                        requestId && typeof requestId === 'string' &&
+                        permPayload && typeof permPayload === 'string'
+                    ) {
+                        // Validate session belongs to user
+                        const [session] = await handlerCtx.db
+                            .select({ id: sessions.id })
+                            .from(sessions)
+                            .where(and(eq(sessions.id, sid), eq(sessions.accountId, handlerCtx.userId)));
+
+                        if (session) {
+                            // Relay to all authenticated connections EXCEPT the sender
+                            // Uses 'exclude' filter to skip the mobile/web app that sent the response
+                            // CLI machines receive this to forward the permission decision to the agent
+                            this.broadcastClientMessage(
+                                {
+                                    event: 'ephemeral',
+                                    data: {
+                                        type: 'acp-permission-response',
+                                        sid,
+                                        requestId,
+                                        payload: permPayload,
+                                    },
+                                },
+                                { type: 'exclude', connectionId: metadata.connectionId }
+                            );
+                        }
+                    }
+                }
                 break;
             }
 

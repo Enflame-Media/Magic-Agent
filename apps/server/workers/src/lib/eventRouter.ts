@@ -693,6 +693,48 @@ export function buildMachineStatusEphemeral(machineId: string, online: boolean):
     };
 }
 
+/**
+ * HAP-1050: Build an ACP session update ephemeral payload.
+ *
+ * Carries an encrypted ACP session update through the server relay.
+ * The server treats the update as an opaque blob (zero-knowledge).
+ *
+ * @see HAP-1036 - Docker server equivalent
+ */
+export function buildAcpSessionUpdateEphemeral(
+    sessionId: string,
+    update: string
+): EphemeralPayload {
+    return {
+        type: 'acp-session-update',
+        sid: sessionId,
+        update,
+    };
+}
+
+/**
+ * HAP-1050: Build an ACP permission request ephemeral payload.
+ *
+ * Carries an encrypted permission request from CLI to mobile app.
+ * The server treats the payload as an opaque blob (zero-knowledge).
+ *
+ * @see HAP-1043 - Docker server equivalent
+ */
+export function buildAcpPermissionRequestEphemeral(
+    sessionId: string,
+    requestId: string,
+    payload: string,
+    timeoutMs?: number
+): EphemeralPayload {
+    return {
+        type: 'acp-permission-request',
+        sid: sessionId,
+        requestId,
+        payload,
+        ...(timeoutMs != null && { timeoutMs }),
+    };
+}
+
 // =============================================================================
 // UTILITIES
 // =============================================================================
