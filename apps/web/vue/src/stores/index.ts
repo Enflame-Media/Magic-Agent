@@ -13,6 +13,7 @@
  * - settings: User preferences
  * - ui: UI state (modals, toasts, navigation)
  * - voice: Voice assistant state (ElevenLabs)
+ * - acp: ACP (Agent Client Protocol) session state
  *
  * @example
  * ```typescript
@@ -80,3 +81,8 @@ export {
     type ArtifactFileType,
     type FileTreeNode,
 } from './artifacts';
+
+export {
+    useAcpStore,
+    type AcpSessionState,
+} from './acp';

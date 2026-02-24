@@ -32,6 +32,7 @@ import { useSyncStore } from '@/stores/sync';
 import { useAuthStore } from '@/stores/auth';
 import { wsService } from './WebSocketService';
 import { getEncryptionManager, getArtifactEncryption, storeArtifactKey, removeArtifactKey } from './artifactSync';
+import { handleAcpSessionUpdate } from './acpSync';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Update Handler
@@ -414,9 +415,22 @@ function handleEphemeral(data: unknown): void {
             break;
         }
 
+        case 'machine-disconnected': {
+            // Machine disconnected notification (HAP-780)
+            console.debug('[sync] Machine disconnected:', event.machineId, event.reason);
+            break;
+        }
+
+        case 'acp-session-update': {
+            // HAP-1046: ACP session update from server relay
+            // Decrypt and apply to ACP store asynchronously
+            handleAcpSessionUpdate(event.sid, event.update);
+            break;
+        }
+
         default: {
             // TypeScript exhaustiveness check
-            const _exhaustiveCheck = event;
+            const _exhaustiveCheck: never = event;
             console.warn('[sync] Unknown ephemeral type:', (_exhaustiveCheck as { type: string }).type);
         }
     }

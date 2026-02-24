@@ -33,3 +33,4 @@ export {
 export { sendSessionMessage } from './messages';
 export { sessionRPC } from './rpc';
 export { sessionAllow, sessionDeny } from './ops';
+export { clearAcpSyncCache } from './acpSync';
