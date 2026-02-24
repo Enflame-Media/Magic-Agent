@@ -1225,6 +1225,97 @@ export const en = {
         tapToEnd: 'Tap to end',
     },
 
+    acp: {
+        // ACP session update display (HAP-1036)
+        plan: 'Plan',
+        thought: {
+            title: 'Thinking',
+        },
+        toolCall: {
+            pending: 'Pending',
+            inProgress: 'Running',
+            completed: 'Done',
+            failed: 'Failed',
+        },
+        toolCalls: 'Tool Calls',
+        mode: 'Mode',
+        content: {
+            // HAP-1042: Rich content block rendering
+            imageLoadError: 'Failed to load image',
+            audioUnsupported: 'Audio playback is not supported',
+            unknownType: ({ type }: { type: string }) => `Unsupported content type: ${type}`,
+            terminal: 'Terminal',
+            terminalRef: ({ id }: { id: string }) => `Terminal session: ${id}`,
+            terminalCopied: 'Terminal output copied',
+            diffCollapse: 'Show less',
+            diffExpand: ({ count }: { count: number }) => `Show ${count} more lines`,
+        },
+        usage: {
+            title: 'Context Window',
+            tokens: ({ used, total }: { used: string; total: string }) => `${used} / ${total} tokens`,
+        },
+        commandPalette: {
+            title: 'Commands',
+            searchPlaceholder: 'Search commands...',
+            emptyTitle: 'No Commands Available',
+            emptyDescription: 'This agent has not registered any slash commands.',
+            noResults: 'No commands match your search',
+            commandCount: ({ count }: { count: number }) => `${count}`,
+        },
+        config: {
+            title: 'Configuration',
+            emptyTitle: 'No Configuration Options',
+            emptyDescription: 'This agent has not exposed any configurable options.',
+            applying: 'Applying...',
+            readOnly: 'Read-only',
+            unknownType: 'Unsupported option type',
+            selectPlaceholder: 'Select a value',
+        },
+        sessionBrowser: {
+            // HAP-1044: Session browser and manager
+            title: 'Sessions',
+            emptyTitle: 'No Sessions',
+            emptyDescription: 'No previous sessions found for this agent.',
+            active: 'Active',
+            load: 'Load',
+            resume: 'Resume',
+            fork: 'Fork',
+            switchSessionTitle: 'Switch Session?',
+            switchSessionMessage: 'You have an active session. Switching will leave the current session.',
+            sessionCount: ({ count }: { count: number }) => count === 1 ? '1 session' : `${count} sessions`,
+        },
+        agentPicker: {
+            // HAP-1045: Agent picker and live switching
+            title: 'Agents',
+            active: 'Active',
+            statusConnected: 'Connected',
+            statusAvailable: 'Available',
+            statusUnavailable: 'Unavailable',
+            statusError: 'Error',
+            agentCount: ({ count }: { count: number }) => count === 1 ? '1 agent' : `${count} agents`,
+            switchTitle: 'Switch Agent?',
+            switchMessage: ({ name }: { name: string }) => `Switch to ${name}? The current session state will be preserved.`,
+            switchConfirm: 'Switch',
+            switchSuccess: ({ name }: { name: string }) => `Switched to ${name}`,
+            switchFailed: ({ name }: { name: string }) => `Failed to switch to ${name}. Rolled back to previous agent.`,
+            rollbackNotice: 'Agent switch failed. Rolled back to previous agent.',
+        },
+        permission: {
+            // HAP-1043: ACP permission request UI
+            title: 'Permission Required',
+            expired: 'This permission request has expired',
+            rawInput: 'Show raw input',
+            queueCount: ({ count }: { count: number }) => `${count} pending`,
+            notificationTitle: 'Permission Requested',
+            notificationBody: ({ tool }: { tool: string }) => `Agent needs permission to run: ${tool}`,
+            historyTitle: 'Permission History',
+            historyEmpty: 'No permission decisions yet',
+            outcomeSelected: 'Approved',
+            outcomeExpired: 'Expired',
+            outcomeCancelled: 'Cancelled',
+        },
+    },
+
     sharing: {
         // Session sharing UI (HAP-770)
         title: 'Share Session',
