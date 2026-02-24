@@ -1114,6 +1114,45 @@
       "image": "Изображение агента",
       "audioUnsupported": "Воспроизведение аудио не поддерживается.",
       "unknownType": "Неподдерживаемый тип контента: {type}"
+    },
+    "permission": {
+      "title": "Требуется разрешение",
+      "description": "Агент запрашивает разрешение на выполнение инструмента.",
+      "expired": "Этот запрос разрешения истек.",
+      "expiredHint": "Агент продолжит без этого разрешения. Может последовать новый запрос.",
+      "rawInput": "Показать входные данные",
+      "queueCount": "{count} в очереди",
+      "historyTitle": "История разрешений ({count})"
+    },
+    "sessionBrowser": {
+      "title": "Сессии",
+      "active": "Активна",
+      "load": "Загрузить",
+      "resume": "Возобновить",
+      "fork": "Ответвить",
+      "emptyTitle": "Нет сессий",
+      "emptyDescription": "Нет доступных сессий от подключенного агента.",
+      "switchSessionTitle": "Переключить сессию?",
+      "switchSessionMessage": "У вас есть активная сессия. Переключение покинет текущую сессию.",
+      "justNow": "только что",
+      "minutesAgo": "{count} мин назад",
+      "hoursAgo": "{count}ч назад",
+      "daysAgo": "{count}д назад"
+    },
+    "agentPicker": {
+      "title": "Агенты",
+      "active": "Активный",
+      "agentCount": "{count} агентов",
+      "switchTitle": "Переключить агента?",
+      "switchMessage": "Переключиться на {name}? Текущий агент будет отключен.",
+      "switchConfirm": "Переключить",
+      "switchSuccess": "Переключено на {name}",
+      "switchFailed": "Не удалось переключиться на {name}",
+      "rollbackNotice": "Переключение агента не удалось. Откат к предыдущему агенту.",
+      "statusConnected": "Подключен",
+      "statusAvailable": "Доступен",
+      "statusUnavailable": "Недоступен",
+      "statusError": "Ошибка"
     }
   }
 }

@@ -6,6 +6,7 @@
  * underlying ACP store changes.
  *
  * @see HAP-1046 - Build Vue ACP foundation
+ * @see HAP-1048 - Build Vue ACP interactive features
  *
  * @example
  * ```vue
@@ -13,9 +14,11 @@
  * import { useAcpSession } from '@/composables/useAcpSession';
  *
  * const props = defineProps<{ sessionId: string }>();
- * const { session, hasSession, agentMessage, toolCalls } = useAcpSession(
- *   () => props.sessionId
- * );
+ * const {
+ *   session, hasSession, agentMessage, toolCalls,
+ *   pendingPermission, permissionHistory,
+ *   agentRegistry, activeAgent,
+ * } = useAcpSession(() => props.sessionId);
  * </script>
  *
  * <template>
@@ -28,6 +31,8 @@
 
 import { computed, type MaybeRefOrGetter, toValue } from 'vue';
 import { useAcpStore, type AcpSessionState } from '@/stores/acp';
+import { getNextPendingPermission } from '@/stores/acpTypes';
+import type { AcpAgentRegistryState, AcpRegisteredAgent } from '@/stores/acpTypes';
 
 /**
  * Reactive composable for ACP session state.
@@ -81,6 +86,58 @@ export function useAcpSession(sessionId: MaybeRefOrGetter<string>) {
   /** Timestamp of last ACP update */
   const lastUpdateAt = computed(() => session.value?.lastUpdateAt ?? 0);
 
+  // ─── Permission State (HAP-1048) ───────────────────────────────────────
+
+  /** All pending permission requests */
+  const permissionRequests = computed(() => session.value?.permissionRequests ?? {});
+
+  /** The next pending permission request (oldest first) */
+  const pendingPermission = computed(() => {
+    if (!session.value) return null;
+    return getNextPendingPermission(session.value);
+  });
+
+  /** Count of pending permission requests */
+  const pendingPermissionCount = computed(() => {
+    return Object.values(permissionRequests.value)
+      .filter((r) => r.status === 'pending').length;
+  });
+
+  /** History of resolved permission decisions */
+  const permissionHistory = computed(() => session.value?.permissionHistory ?? []);
+
+  // ─── Agent Registry State (HAP-1048) ──────────────────────────────────
+
+  /** Agent registry state for this session */
+  const agentRegistry = computed<AcpAgentRegistryState | null>(() => {
+    return acpStore.getAgentRegistry(toValue(sessionId)) ?? null;
+  });
+
+  /** Currently active agent */
+  const activeAgent = computed<AcpRegisteredAgent | null>(() => {
+    const registry = agentRegistry.value;
+    if (!registry?.activeAgentId) return null;
+    return registry.agents[registry.activeAgentId] ?? null;
+  });
+
+  /** All registered agents sorted: active first, then by status */
+  const sortedAgents = computed<AcpRegisteredAgent[]>(() => {
+    const registry = agentRegistry.value;
+    if (!registry) return [];
+    const agents = Object.values(registry.agents);
+    const statusOrder: Record<string, number> = {
+      connected: 0,
+      available: 1,
+      unavailable: 2,
+      error: 3,
+    };
+    return [...agents].sort((a, b) => {
+      if (a.id === registry.activeAgentId) return -1;
+      if (b.id === registry.activeAgentId) return 1;
+      return (statusOrder[a.status] ?? 4) - (statusOrder[b.status] ?? 4);
+    });
+  });
+
   return {
     session,
     hasSession,
@@ -95,5 +152,14 @@ export function useAcpSession(sessionId: MaybeRefOrGetter<string>) {
     sessionTitle,
     usage,
     lastUpdateAt,
+    // Permission state
+    permissionRequests,
+    pendingPermission,
+    pendingPermissionCount,
+    permissionHistory,
+    // Agent registry
+    agentRegistry,
+    activeAgent,
+    sortedAgents,
   };
 }

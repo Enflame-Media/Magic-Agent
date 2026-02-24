@@ -1113,6 +1113,45 @@
       "image": "Imagen del agente",
       "audioUnsupported": "La reproduccion de audio no es compatible.",
       "unknownType": "Tipo de contenido no compatible: {type}"
+    },
+    "permission": {
+      "title": "Permiso requerido",
+      "description": "El agente solicita permiso para ejecutar una herramienta.",
+      "expired": "Esta solicitud de permiso ha expirado.",
+      "expiredHint": "El agente continuara sin este permiso. Puede seguir una nueva solicitud.",
+      "rawInput": "Ver entrada sin procesar",
+      "queueCount": "{count} pendientes",
+      "historyTitle": "Historial de permisos ({count})"
+    },
+    "sessionBrowser": {
+      "title": "Sesiones",
+      "active": "Activa",
+      "load": "Cargar",
+      "resume": "Reanudar",
+      "fork": "Bifurcar",
+      "emptyTitle": "Sin sesiones",
+      "emptyDescription": "No hay sesiones disponibles del agente conectado.",
+      "switchSessionTitle": "Cambiar sesion?",
+      "switchSessionMessage": "Tienes una sesion activa. Cambiar dejara la sesion actual.",
+      "justNow": "ahora mismo",
+      "minutesAgo": "hace {count} min",
+      "hoursAgo": "hace {count}h",
+      "daysAgo": "hace {count}d"
+    },
+    "agentPicker": {
+      "title": "Agentes",
+      "active": "Activo",
+      "agentCount": "{count} agentes",
+      "switchTitle": "Cambiar agente?",
+      "switchMessage": "Cambiar a {name}? El agente actual sera desconectado.",
+      "switchConfirm": "Cambiar",
+      "switchSuccess": "Cambiado a {name}",
+      "switchFailed": "Error al cambiar a {name}",
+      "rollbackNotice": "El cambio de agente fallo. Se revirtio al agente anterior.",
+      "statusConnected": "Conectado",
+      "statusAvailable": "Disponible",
+      "statusUnavailable": "No disponible",
+      "statusError": "Error"
     }
   }
 }

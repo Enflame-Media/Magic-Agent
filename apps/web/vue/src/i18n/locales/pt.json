@@ -1114,6 +1114,45 @@
       "image": "Imagem do agente",
       "audioUnsupported": "Reproducao de audio nao suportada.",
       "unknownType": "Tipo de conteudo nao suportado: {type}"
+    },
+    "permission": {
+      "title": "Permissao necessaria",
+      "description": "O agente esta solicitando permissao para executar uma ferramenta.",
+      "expired": "Esta solicitacao de permissao expirou.",
+      "expiredHint": "O agente continuara sem esta permissao. Uma nova solicitacao pode seguir.",
+      "rawInput": "Ver entrada bruta",
+      "queueCount": "{count} pendentes",
+      "historyTitle": "Historico de permissoes ({count})"
+    },
+    "sessionBrowser": {
+      "title": "Sessoes",
+      "active": "Ativa",
+      "load": "Carregar",
+      "resume": "Retomar",
+      "fork": "Bifurcar",
+      "emptyTitle": "Sem sessoes",
+      "emptyDescription": "Nenhuma sessao disponivel do agente conectado.",
+      "switchSessionTitle": "Trocar sessao?",
+      "switchSessionMessage": "Voce tem uma sessao ativa. Trocar deixara a sessao atual.",
+      "justNow": "agora mesmo",
+      "minutesAgo": "ha {count} min",
+      "hoursAgo": "ha {count}h",
+      "daysAgo": "ha {count}d"
+    },
+    "agentPicker": {
+      "title": "Agentes",
+      "active": "Ativo",
+      "agentCount": "{count} agentes",
+      "switchTitle": "Trocar agente?",
+      "switchMessage": "Trocar para {name}? O agente atual sera desconectado.",
+      "switchConfirm": "Trocar",
+      "switchSuccess": "Trocado para {name}",
+      "switchFailed": "Falha ao trocar para {name}",
+      "rollbackNotice": "A troca de agente falhou. Revertido para o agente anterior.",
+      "statusConnected": "Conectado",
+      "statusAvailable": "Disponivel",
+      "statusUnavailable": "Indisponivel",
+      "statusError": "Erro"
     }
   }
 }

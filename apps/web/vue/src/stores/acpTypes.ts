@@ -8,6 +8,7 @@
  * Mirrors the React implementation at apps/web/react/sources/sync/acpTypes.ts.
  *
  * @see HAP-1046 - Build Vue ACP foundation
+ * @see HAP-1048 - Build Vue ACP interactive features
  * @see HAP-1036 - Adapt happy-server relay and happy-app display for ACP session updates
  */
 
@@ -18,6 +19,11 @@ import type {
   AcpToolCall,
   AcpSessionConfigOption,
   AcpContentBlock,
+  AcpAgentCapabilities,
+  AcpPermissionOption,
+  AcpPermissionOptionKind,
+  AcpToolCallLocation,
+  AcpSessionInfo,
 } from '@magic-agent/protocol';
 
 /**
@@ -61,9 +67,188 @@ export interface AcpSessionState {
     cost: { amount: number; currency: string } | null;
   } | null;
 
+  /** HAP-1048: Pending permission requests, keyed by requestId */
+  permissionRequests: Record<string, AcpPermissionRequestState>;
+
+  /** HAP-1048: History of resolved permission decisions */
+  permissionHistory: AcpPermissionDecision[];
+
   /** Timestamp of last ACP update received */
   lastUpdateAt: number;
 }
+
+// ─── Permission Request Types (HAP-1048) ─────────────────────────────────────
+
+/**
+ * Status of a permission request in the Vue app.
+ */
+export type AcpPermissionRequestStatus = 'pending' | 'responded' | 'expired';
+
+/**
+ * A permission request received from the CLI agent.
+ *
+ * Contains the tool details and available options for user approval/denial.
+ * Relayed from CLI through the server as an ACP session update.
+ */
+export interface AcpPermissionRequestState {
+  /** Unique request ID for correlating response */
+  requestId: string;
+  /** Session ID this request belongs to */
+  sessionId: string;
+  /** Tool call that needs permission */
+  toolCall: {
+    toolCallId: string;
+    title: string;
+    kind?: string;
+    rawInput?: unknown;
+    locations?: AcpToolCallLocation[];
+  };
+  /** Available permission options */
+  options: AcpPermissionOption[];
+  /** When the request was received */
+  receivedAt: number;
+  /** Timeout deadline (timestamp), if specified by the agent */
+  timeoutAt: number | null;
+  /** Current status */
+  status: AcpPermissionRequestStatus;
+  /** Selected option ID, if responded */
+  selectedOptionId: string | null;
+}
+
+/**
+ * A resolved permission decision for the history log.
+ */
+export interface AcpPermissionDecision {
+  requestId: string;
+  toolTitle: string;
+  toolKind: string | null;
+  selectedOption: {
+    optionId: string;
+    name: string;
+    kind: AcpPermissionOptionKind;
+  } | null;
+  outcome: 'selected' | 'expired' | 'cancelled';
+  decidedAt: number;
+}
+
+// ─── Agent Registry Types (HAP-1048) ────────────────────────────────────────
+
+/**
+ * Connection status for a registered ACP agent.
+ */
+export type AcpAgentStatus = 'connected' | 'available' | 'unavailable' | 'error';
+
+/**
+ * A registered ACP agent in the agent registry.
+ * Relayed from CLI's AgentRegistry to the Vue app.
+ */
+export interface AcpRegisteredAgent {
+  /** Unique agent identifier (e.g., "claude-code", "gemini-cli") */
+  id: string;
+  /** Human-readable agent name */
+  name: string;
+  /** Optional description of the agent */
+  description: string | null;
+  /** Agent connection status */
+  status: AcpAgentStatus;
+  /** Agent version string */
+  version: string | null;
+  /** Capability summary from ACP initialization */
+  capabilities: AcpAgentCapabilities | null;
+}
+
+/**
+ * Agent registry state relayed from CLI.
+ * Contains all registered agents and which one is currently active.
+ */
+export interface AcpAgentRegistryState {
+  /** All registered agents, keyed by agent ID */
+  agents: Record<string, AcpRegisteredAgent>;
+  /** ID of the currently active agent, or null if none */
+  activeAgentId: string | null;
+  /** Whether an agent switch is currently in progress */
+  switching: boolean;
+  /** Error message from last failed switch attempt */
+  switchError: string | null;
+}
+
+/**
+ * Create a fresh agent registry state.
+ */
+export function createAcpAgentRegistryState(): AcpAgentRegistryState {
+  return {
+    agents: {},
+    activeAgentId: null,
+    switching: false,
+    switchError: null,
+  };
+}
+
+// ─── Session Browser Types (HAP-1048) ────────────────────────────────────────
+
+/**
+ * Session browser capability helpers.
+ *
+ * Derived from AcpAgentCapabilities to determine which session
+ * actions (load, resume, fork, list) are available for the current agent.
+ */
+export interface AcpSessionBrowserCapabilities {
+  canListSessions: boolean;
+  canLoadSession: boolean;
+  canResumeSession: boolean;
+  canForkSession: boolean;
+}
+
+/**
+ * Extract session browser capabilities from agent capabilities.
+ */
+export function getSessionBrowserCapabilities(
+  capabilities: AcpAgentCapabilities | null
+): AcpSessionBrowserCapabilities {
+  if (!capabilities) {
+    return {
+      canListSessions: false,
+      canLoadSession: false,
+      canResumeSession: false,
+      canForkSession: false,
+    };
+  }
+  return {
+    canListSessions: capabilities.sessionCapabilities?.list != null,
+    canLoadSession: capabilities.loadSession === true,
+    canResumeSession: capabilities.sessionCapabilities?.resume != null,
+    canForkSession: capabilities.sessionCapabilities?.fork != null,
+  };
+}
+
+/**
+ * Session item for the browser list, enriched from AcpSessionInfo.
+ */
+export interface AcpBrowserSession {
+  sessionId: string;
+  title: string;
+  cwd: string;
+  updatedAt: string | null;
+  isActive: boolean;
+}
+
+/**
+ * Convert AcpSessionInfo items to browser session items.
+ */
+export function toBrowserSessions(
+  sessions: AcpSessionInfo[],
+  activeSessionId: string | null
+): AcpBrowserSession[] {
+  return sessions.map((s) => ({
+    sessionId: s.sessionId,
+    title: s.title ?? s.cwd,
+    cwd: s.cwd,
+    updatedAt: s.updatedAt ?? null,
+    isActive: s.sessionId === activeSessionId,
+  }));
+}
+
+// ─── State Factory ──────────────────────────────────────────────────────────
 
 /**
  * Create a fresh ACP session state with defaults.
@@ -80,6 +265,8 @@ export function createAcpSessionState(): AcpSessionState {
     configOptions: [],
     sessionTitle: null,
     usage: null,
+    permissionRequests: {},
+    permissionHistory: [],
     lastUpdateAt: 0,
   };
 }
@@ -94,6 +281,85 @@ export function extractTextFromContentBlock(content: AcpContentBlock): string {
   }
   return '';
 }
+
+// ─── Permission Helpers ─────────────────────────────────────────────────────
+
+/** Maximum number of permission decisions to keep in history */
+const PERMISSION_HISTORY_MAX = 50;
+
+/**
+ * Add a permission request to the session state.
+ */
+export function addPermissionRequest(
+  state: AcpSessionState,
+  request: AcpPermissionRequestState
+): AcpSessionState {
+  return {
+    ...state,
+    permissionRequests: {
+      ...state.permissionRequests,
+      [request.requestId]: request,
+    },
+    lastUpdateAt: Date.now(),
+  };
+}
+
+/**
+ * Resolve a permission request (user responded or timeout expired).
+ * Moves the request to history and removes from pending.
+ */
+export function resolvePermissionRequest(
+  state: AcpSessionState,
+  requestId: string,
+  outcome: 'selected' | 'expired' | 'cancelled',
+  selectedOptionId: string | null
+): AcpSessionState {
+  const request = state.permissionRequests[requestId];
+  if (!request) return state;
+
+  const selectedOption = selectedOptionId
+    ? request.options.find((o) => o.optionId === selectedOptionId)
+    : null;
+
+  const decision: AcpPermissionDecision = {
+    requestId,
+    toolTitle: request.toolCall.title,
+    toolKind: request.toolCall.kind ?? null,
+    selectedOption: selectedOption
+      ? {
+          optionId: selectedOption.optionId,
+          name: selectedOption.name,
+          kind: selectedOption.kind,
+        }
+      : null,
+    outcome,
+    decidedAt: Date.now(),
+  };
+
+  const { [requestId]: _, ...remainingRequests } = state.permissionRequests;
+  const updatedHistory = [decision, ...state.permissionHistory].slice(0, PERMISSION_HISTORY_MAX);
+
+  return {
+    ...state,
+    permissionRequests: remainingRequests,
+    permissionHistory: updatedHistory,
+    lastUpdateAt: Date.now(),
+  };
+}
+
+/**
+ * Get the oldest pending permission request (first in queue).
+ */
+export function getNextPendingPermission(
+  state: AcpSessionState
+): AcpPermissionRequestState | null {
+  const pending = Object.values(state.permissionRequests)
+    .filter((r) => r.status === 'pending')
+    .sort((a, b) => a.receivedAt - b.receivedAt);
+  return pending[0] ?? null;
+}
+
+// ─── Session Update Reducer ─────────────────────────────────────────────────
 
 /**
  * Apply an ACP session update to the accumulated state.

@@ -1113,6 +1113,45 @@
       "image": "Obraz agenta",
       "audioUnsupported": "Odtwarzanie dzwieku nie jest obslugiwane.",
       "unknownType": "Nieobslugiwany typ tresci: {type}"
+    },
+    "permission": {
+      "title": "Wymagane uprawnienie",
+      "description": "Agent prosi o pozwolenie na wykonanie narzedzia.",
+      "expired": "To zadanie uprawnienia wygaslo.",
+      "expiredHint": "Agent bedzie kontynuowal bez tego uprawnienia. Moze pojawic sie nowe zadanie.",
+      "rawInput": "Pokaz surowe dane",
+      "queueCount": "{count} oczekujacych",
+      "historyTitle": "Historia uprawnien ({count})"
+    },
+    "sessionBrowser": {
+      "title": "Sesje",
+      "active": "Aktywna",
+      "load": "Zaladuj",
+      "resume": "Wznow",
+      "fork": "Rozwidl",
+      "emptyTitle": "Brak sesji",
+      "emptyDescription": "Brak dostepnych sesji od podlaczonego agenta.",
+      "switchSessionTitle": "Przelacz sesje?",
+      "switchSessionMessage": "Masz aktywna sesje. Przelaczenie opusci biezaca sesje.",
+      "justNow": "wlasnie teraz",
+      "minutesAgo": "{count} min temu",
+      "hoursAgo": "{count}g temu",
+      "daysAgo": "{count}d temu"
+    },
+    "agentPicker": {
+      "title": "Agenci",
+      "active": "Aktywny",
+      "agentCount": "{count} agentow",
+      "switchTitle": "Przelacz agenta?",
+      "switchMessage": "Przelacz na {name}? Biezacy agent zostanie odlaczony.",
+      "switchConfirm": "Przelacz",
+      "switchSuccess": "Przelaczono na {name}",
+      "switchFailed": "Nie udalo sie przelacz na {name}",
+      "rollbackNotice": "Przelaczenie agenta nie powiodlo sie. Przywrocono poprzedniego agenta.",
+      "statusConnected": "Polaczony",
+      "statusAvailable": "Dostepny",
+      "statusUnavailable": "Niedostepny",
+      "statusError": "Blad"
     }
   }
 }

@@ -1113,6 +1113,45 @@
       "image": "Imatge de l'agent",
       "audioUnsupported": "La reproduccio d'audio no es compatible.",
       "unknownType": "Tipus de contingut no compatible: {type}"
+    },
+    "permission": {
+      "title": "Permis necessari",
+      "description": "L agent sol licita permis per executar una eina.",
+      "expired": "Aquesta sol licitud de permis ha expirat.",
+      "expiredHint": "L agent continuara sense aquest permis. Pot seguir una nova sol licitud.",
+      "rawInput": "Veure entrada sense processar",
+      "queueCount": "{count} pendents",
+      "historyTitle": "Historial de permisos ({count})"
+    },
+    "sessionBrowser": {
+      "title": "Sessions",
+      "active": "Activa",
+      "load": "Carregar",
+      "resume": "Reprendre",
+      "fork": "Bifurcar",
+      "emptyTitle": "Sense sessions",
+      "emptyDescription": "No hi ha sessions disponibles de l agent connectat.",
+      "switchSessionTitle": "Canviar sessio?",
+      "switchSessionMessage": "Tens una sessio activa. Canviar deixara la sessio actual.",
+      "justNow": "ara mateix",
+      "minutesAgo": "fa {count} min",
+      "hoursAgo": "fa {count}h",
+      "daysAgo": "fa {count}d"
+    },
+    "agentPicker": {
+      "title": "Agents",
+      "active": "Actiu",
+      "agentCount": "{count} agents",
+      "switchTitle": "Canviar agent?",
+      "switchMessage": "Canviar a {name}? L agent actual sera desconnectat.",
+      "switchConfirm": "Canviar",
+      "switchSuccess": "Canviat a {name}",
+      "switchFailed": "Error en canviar a {name}",
+      "rollbackNotice": "El canvi d agent ha fallat. S ha revertit a l agent anterior.",
+      "statusConnected": "Connectat",
+      "statusAvailable": "Disponible",
+      "statusUnavailable": "No disponible",
+      "statusError": "Error"
     }
   }
 }

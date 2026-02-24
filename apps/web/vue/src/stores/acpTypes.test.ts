@@ -46,6 +46,8 @@ describe('ACP Session State Types', () => {
         configOptions: [],
         sessionTitle: null,
         usage: null,
+        permissionRequests: {},
+        permissionHistory: [],
         lastUpdateAt: 0,
       });
     });

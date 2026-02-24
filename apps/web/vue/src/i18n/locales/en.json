@@ -1154,6 +1154,45 @@
       "image": "Agent image",
       "audioUnsupported": "Audio playback is not supported.",
       "unknownType": "Unsupported content type: {type}"
+    },
+    "permission": {
+      "title": "Permission Required",
+      "description": "The agent is requesting permission to execute a tool.",
+      "expired": "This permission request has expired.",
+      "expiredHint": "The agent will continue without this permission. A new request may follow.",
+      "rawInput": "View raw input",
+      "queueCount": "{count} pending",
+      "historyTitle": "Permission History ({count})"
+    },
+    "sessionBrowser": {
+      "title": "Sessions",
+      "active": "Active",
+      "load": "Load",
+      "resume": "Resume",
+      "fork": "Fork",
+      "emptyTitle": "No Sessions",
+      "emptyDescription": "No sessions are available from the connected agent.",
+      "switchSessionTitle": "Switch Session?",
+      "switchSessionMessage": "You have an active session. Switching will leave the current session.",
+      "justNow": "just now",
+      "minutesAgo": "{count} min ago",
+      "hoursAgo": "{count}h ago",
+      "daysAgo": "{count}d ago"
+    },
+    "agentPicker": {
+      "title": "Agents",
+      "active": "Active",
+      "agentCount": "{count} agents",
+      "switchTitle": "Switch Agent?",
+      "switchMessage": "Switch to {name}? The current agent will be disconnected.",
+      "switchConfirm": "Switch",
+      "switchSuccess": "Switched to {name}",
+      "switchFailed": "Failed to switch to {name}",
+      "rollbackNotice": "Agent switch failed. Rolled back to previous agent.",
+      "statusConnected": "Connected",
+      "statusAvailable": "Available",
+      "statusUnavailable": "Unavailable",
+      "statusError": "Error"
     }
   }
 }
