@@ -7,6 +7,7 @@ import { NormalizedMessage } from "./typesRaw";
 import { applySettings, Settings } from "./settings";
 import { LocalSettings, applyLocalSettings } from "./localSettings";
 import { Purchases, customerInfoToPurchases } from "./purchases";
+import { AcpSessionState, createAcpSessionState, applyAcpSessionUpdate, AcpAgentRegistryState, createAcpAgentRegistryState, AcpRegisteredAgent, AcpPermissionRequestState, addPermissionRequest, resolvePermissionRequest, getNextPendingPermission } from "./acpTypes";
 // HAP-851: Zen is experimental - type-only import for TodoState (no runtime impact)
 import type { TodoState } from "../trash/experimental/-zen/model/ops";
 import { Profile } from "./profile";
@@ -98,6 +99,10 @@ interface StorageState {
     nativeUpdateStatus: { available: boolean; updateUrl?: string } | null;
     todoState: TodoState | null;
     todosLoaded: boolean;
+    /** HAP-1036: Per-session ACP state from real-time ACP session updates */
+    acpSessions: Record<string, AcpSessionState>;
+    /** HAP-1045: Per-session agent registry state from CLI relay */
+    acpAgentRegistries: Record<string, AcpAgentRegistryState>;
     applySessions: (sessions: (Omit<Session, 'presence'> & { presence?: "online" | number })[]) => void;
     applyMachines: (machines: Machine[], replace?: boolean) => void;
     applyLoaded: () => void;
@@ -152,6 +157,15 @@ interface StorageState {
     // HAP-648: Message pagination methods
     setOlderMessagesPagination: (sessionId: string, cursor: string | null, hasMore: boolean) => void;
     setLoadingOlderMessages: (sessionId: string, isLoading: boolean) => void;
+    // HAP-1036: ACP session state methods
+    applyAcpUpdate: (sessionId: string, update: import('@magic-agent/protocol').AcpSessionUpdate) => void;
+    resetAcpSession: (sessionId: string) => void;
+    // HAP-1043: ACP permission state methods
+    addAcpPermissionRequest: (sessionId: string, request: AcpPermissionRequestState) => void;
+    resolveAcpPermissionRequest: (sessionId: string, requestId: string, outcome: 'selected' | 'expired' | 'cancelled', selectedOptionId: string | null) => void;
+    // HAP-1045: Agent registry state methods
+    updateAgentRegistry: (sessionId: string, agents: AcpRegisteredAgent[], activeAgentId: string | null) => void;
+    setAgentSwitching: (sessionId: string, switching: boolean, error?: string | null) => void;
 }
 
 // Cache for date boundary calculations - invalidates when day changes
@@ -411,6 +425,8 @@ export const storage = create<StorageState>()((set, get) => {
         friendsLoaded: false,  // Initialize as false
         todoState: null,  // Initialize todo state
         todosLoaded: false,  // Initialize todos loaded state
+        acpSessions: {},  // HAP-1036: ACP session state
+        acpAgentRegistries: {},  // HAP-1045: Agent registry state
         sessionsData: null,  // Legacy - to be removed
         sessionListViewData: null,
         sessionMessages: {},
@@ -1345,6 +1361,90 @@ export const storage = create<StorageState>()((set, get) => {
                 }
             };
         }),
+
+        // HAP-1036: ACP session state methods
+        applyAcpUpdate: (sessionId: string, update: import('@magic-agent/protocol').AcpSessionUpdate) => set((state) => {
+            const existing = state.acpSessions[sessionId] ?? createAcpSessionState();
+            const updated = applyAcpSessionUpdate(existing, update);
+            return {
+                ...state,
+                acpSessions: {
+                    ...state.acpSessions,
+                    [sessionId]: updated,
+                },
+            };
+        }),
+
+        resetAcpSession: (sessionId: string) => set((state) => {
+            const { [sessionId]: _, ...rest } = state.acpSessions;
+            return {
+                ...state,
+                acpSessions: rest,
+            };
+        }),
+
+        // HAP-1043: ACP permission state methods
+        addAcpPermissionRequest: (sessionId: string, request: AcpPermissionRequestState) => set((state) => {
+            const existing = state.acpSessions[sessionId] ?? createAcpSessionState();
+            const updated = addPermissionRequest(existing, request);
+            return {
+                ...state,
+                acpSessions: {
+                    ...state.acpSessions,
+                    [sessionId]: updated,
+                },
+            };
+        }),
+
+        resolveAcpPermissionRequest: (sessionId: string, requestId: string, outcome: 'selected' | 'expired' | 'cancelled', selectedOptionId: string | null) => set((state) => {
+            const existing = state.acpSessions[sessionId];
+            if (!existing) return state;
+            const updated = resolvePermissionRequest(existing, requestId, outcome, selectedOptionId);
+            return {
+                ...state,
+                acpSessions: {
+                    ...state.acpSessions,
+                    [sessionId]: updated,
+                },
+            };
+        }),
+
+        // HAP-1045: Agent registry state methods
+        updateAgentRegistry: (sessionId: string, agents: AcpRegisteredAgent[], activeAgentId: string | null) => set((state) => {
+            const existing = state.acpAgentRegistries[sessionId] ?? createAcpAgentRegistryState();
+            const agentsMap: Record<string, AcpRegisteredAgent> = {};
+            for (const agent of agents) {
+                agentsMap[agent.id] = agent;
+            }
+            return {
+                ...state,
+                acpAgentRegistries: {
+                    ...state.acpAgentRegistries,
+                    [sessionId]: {
+                        ...existing,
+                        agents: agentsMap,
+                        activeAgentId,
+                        // Clear switch state on registry update (switch completed)
+                        switching: false,
+                        switchError: null,
+                    },
+                },
+            };
+        }),
+        setAgentSwitching: (sessionId: string, switching: boolean, error?: string | null) => set((state) => {
+            const existing = state.acpAgentRegistries[sessionId] ?? createAcpAgentRegistryState();
+            return {
+                ...state,
+                acpAgentRegistries: {
+                    ...state.acpAgentRegistries,
+                    [sessionId]: {
+                        ...existing,
+                        switching,
+                        switchError: error ?? null,
+                    },
+                },
+            };
+        }),
     }
 });
 
@@ -1355,6 +1455,57 @@ export function useSessions() {
 export function useSession(id: string): Session | null {
     return storage(useShallow((state) => state.sessions[id] ?? null));
 }
+
+/**
+ * HAP-1036: Hook for consuming ACP session state.
+ * Returns the accumulated ACP state for a session, or null if no ACP updates received.
+ */
+export function useAcpSession(sessionId: string): AcpSessionState | null {
+    return storage(useShallow((state) => state.acpSessions[sessionId] ?? null));
+}
+
+/**
+ * HAP-1045: Hook for consuming ACP agent registry state.
+ * Returns the agent registry for a session, or null if no agent data received.
+ */
+export function useAcpAgentRegistry(sessionId: string): AcpAgentRegistryState | null {
+    return storage(useShallow((state) => state.acpAgentRegistries[sessionId] ?? null));
+}
+
+/**
+ * HAP-1043: Hook for the next pending ACP permission request.
+ * Returns the oldest pending permission request for the session, or null.
+ */
+export function useAcpPendingPermission(sessionId: string): AcpPermissionRequestState | null {
+    return storage(useShallow((state) => {
+        const acpState = state.acpSessions[sessionId];
+        if (!acpState) return null;
+        return getNextPendingPermission(acpState);
+    }));
+}
+
+/**
+ * HAP-1043: Hook for the count of pending ACP permission requests.
+ */
+export function useAcpPendingPermissionCount(sessionId: string): number {
+    return storage(useShallow((state) => {
+        const acpState = state.acpSessions[sessionId];
+        if (!acpState) return 0;
+        return Object.values(acpState.permissionRequests).filter((r) => r.status === 'pending').length;
+    }));
+}
+
+/**
+ * HAP-1043: Hook for ACP permission decision history.
+ */
+export function useAcpPermissionHistory(sessionId: string): import('./acpTypes').AcpPermissionDecision[] {
+    return storage(useShallow((state) => {
+        const acpState = state.acpSessions[sessionId];
+        return acpState?.permissionHistory ?? emptyPermissionHistory;
+    }));
+}
+
+const emptyPermissionHistory: import('./acpTypes').AcpPermissionDecision[] = [];
 
 const emptyArray: unknown[] = [];
 

@@ -13,6 +13,7 @@ import { sessionUpdateHandler } from "./socket/sessionUpdateHandler";
 import { machineUpdateHandler } from "./socket/machineUpdateHandler";
 import { artifactUpdateHandler } from "./socket/artifactUpdateHandler";
 import { accessKeyHandler } from "./socket/accessKeyHandler";
+import { acpSessionUpdateHandler } from "./socket/acpSessionUpdateHandler";
 import { generateCorrelationId, isValidCorrelationId } from "@/utils/correlationId";
 import { presenceTracker } from "@/app/social/presenceTracker";
 
@@ -191,6 +192,7 @@ export function startSocket(app: Fastify) {
         machineUpdateHandler(userId, socket);
         artifactUpdateHandler(userId, socket);
         accessKeyHandler(userId, socket);
+        acpSessionUpdateHandler(userId, socket, connection);
 
         // Ready
         log({ module: 'websocket', correlationId, userId }, `User connected`);

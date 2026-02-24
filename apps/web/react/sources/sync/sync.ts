@@ -57,7 +57,8 @@ import {
     getLastKnownSeq as getLastKnownSeqUtil,
 } from './deltaSyncUtils';
 import { orchestrateDeltaSync } from './deltaSyncOrchestrator';
-import { getSessionId } from '@magic-agent/protocol';
+import { getSessionId, AcpSessionUpdateSchema, AcpRequestPermissionRequestSchema } from '@magic-agent/protocol';
+import type { AcpPermissionRequestState } from './acpTypes';
 
 /**
  * HAP-441: Delta sync response type from server.
@@ -2805,6 +2806,179 @@ class Sync {
         }
 
         // daemon-status ephemeral updates are deprecated, machine status is handled via machine-activity
+
+        // HAP-1036: Handle ACP session update ephemeral events
+        if (updateData.type === 'acp-session-update') {
+            this.handleAcpSessionUpdate(updateData);
+        }
+
+        // HAP-1043: Handle ACP permission request ephemeral events
+        // Cast needed until @magic-agent/protocol is rebuilt with the new ephemeral type
+        if ((updateData as { type: string }).type === 'acp-permission-request') {
+            this.handleAcpPermissionRequest(updateData as any);
+        }
+    }
+
+    //
+    // HAP-1036: ACP Session Update Processing
+    //
+
+    /**
+     * HAP-1036: Process an encrypted ACP session update received via the server relay.
+     * Decrypts the update using session encryption, parses it as an ACP session update,
+     * and applies it to the per-session ACP state in the store.
+     */
+    private handleAcpSessionUpdate = async (update: { sid: string; update: string }) => {
+        const { sid: sessionId, update: encryptedUpdate } = update;
+
+        // Get session encryption for decryption
+        const sessionEncryption = this.encryption.getSessionEncryption(sessionId);
+        if (!sessionEncryption) {
+            logger.debug(`ACP update for unknown session ${sessionId}, ignoring`);
+            return;
+        }
+
+        try {
+            // Decrypt the ACP update
+            const decrypted = await sessionEncryption.decryptRaw(encryptedUpdate);
+            if (!decrypted) {
+                logger.debug(`Failed to decrypt ACP update for session ${sessionId}`);
+                return;
+            }
+
+            // Parse as ACP session update
+            const parsed = AcpSessionUpdateSchema.safeParse(decrypted);
+            if (!parsed.success) {
+                logger.debug(`Invalid ACP session update for ${sessionId}:`, parsed.error);
+                return;
+            }
+
+            // Apply to store
+            storage.getState().applyAcpUpdate(sessionId, parsed.data);
+        } catch (error) {
+            logger.debug(`Error processing ACP update for ${sessionId}:`, error);
+        }
+    }
+
+    //
+    // HAP-1043: ACP Permission Request Processing
+    //
+
+    /**
+     * HAP-1043: Process an encrypted ACP permission request received via the server relay.
+     * Decrypts the request, parses it, and adds it to the permission request queue.
+     * Sends a push notification if the app is backgrounded.
+     */
+    private handleAcpPermissionRequest = async (update: {
+        sid: string;
+        requestId: string;
+        payload: string;
+        timeoutMs?: number;
+    }) => {
+        const { sid: sessionId, requestId, payload: encryptedPayload, timeoutMs } = update;
+
+        const sessionEncryption = this.encryption.getSessionEncryption(sessionId);
+        if (!sessionEncryption) {
+            logger.debug(`ACP permission request for unknown session ${sessionId}, ignoring`);
+            return;
+        }
+
+        try {
+            const decrypted = await sessionEncryption.decryptRaw(encryptedPayload);
+            if (!decrypted) {
+                logger.debug(`Failed to decrypt ACP permission request for session ${sessionId}`);
+                return;
+            }
+
+            const parsed = AcpRequestPermissionRequestSchema.safeParse(decrypted);
+            if (!parsed.success) {
+                logger.debug(`Invalid ACP permission request for ${sessionId}:`, parsed.error);
+                return;
+            }
+
+            const permRequest = parsed.data;
+            const now = Date.now();
+
+            const requestState: AcpPermissionRequestState = {
+                requestId,
+                sessionId,
+                toolCall: {
+                    toolCallId: permRequest.toolCall.toolCallId,
+                    title: permRequest.toolCall.title ?? 'Unknown Tool',
+                    kind: permRequest.toolCall.kind ?? undefined,
+                    rawInput: permRequest.toolCall.rawInput ?? undefined,
+                    locations: permRequest.toolCall.locations ?? undefined,
+                },
+                options: permRequest.options,
+                receivedAt: now,
+                timeoutAt: timeoutMs != null ? now + timeoutMs : null,
+                status: 'pending',
+                selectedOptionId: null,
+            };
+
+            storage.getState().addAcpPermissionRequest(sessionId, requestState);
+
+            // Notify voice assistant about permission request
+            const toolName = requestState.toolCall.title;
+            voiceHooks.onPermissionRequested(sessionId, requestId, toolName, requestState.toolCall.rawInput);
+
+            // Schedule timeout expiration if timeout is set
+            if (timeoutMs != null && timeoutMs > 0) {
+                setTimeout(() => {
+                    const currentState = storage.getState().acpSessions[sessionId];
+                    if (currentState?.permissionRequests[requestId]?.status === 'pending') {
+                        storage.getState().resolveAcpPermissionRequest(sessionId, requestId, 'expired', null);
+                    }
+                }, timeoutMs);
+            }
+        } catch (error) {
+            logger.debug(`Error processing ACP permission request for ${sessionId}:`, error);
+        }
+    }
+
+    /**
+     * HAP-1043: Send a permission response back to the CLI through the server relay.
+     * Encrypts the response and sends it via the 'acp-permission-response' socket event.
+     */
+    sendAcpPermissionResponse = async (
+        sessionId: string,
+        requestId: string,
+        optionId: string
+    ) => {
+        const sessionEncryption = this.encryption.getSessionEncryption(sessionId);
+        if (!sessionEncryption) {
+            logger.debug(`Cannot send permission response: no encryption for session ${sessionId}`);
+            return;
+        }
+
+        try {
+            // Build the ACP permission outcome
+            const outcome = {
+                _meta: {},
+                outcome: {
+                    outcome: 'selected' as const,
+                    _meta: {},
+                    optionId,
+                },
+            };
+
+            const encrypted = await sessionEncryption.encryptRaw(outcome);
+            if (!encrypted) {
+                logger.debug(`Failed to encrypt permission response for session ${sessionId}`);
+                return;
+            }
+
+            apiSocket.send('acp-permission-response', {
+                sid: sessionId,
+                requestId,
+                payload: encrypted,
+            });
+
+            // Update local state
+            storage.getState().resolveAcpPermissionRequest(sessionId, requestId, 'selected', optionId);
+        } catch (error) {
+            logger.debug(`Error sending ACP permission response for ${sessionId}:`, error);
+        }
     }
 
     //

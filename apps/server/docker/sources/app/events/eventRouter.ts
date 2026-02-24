@@ -386,6 +386,39 @@ export function buildMachineActivityEphemeral(machineId: string, active: boolean
     };
 }
 
+/**
+ * HAP-1036: Build an ACP session update ephemeral event.
+ * Carries an encrypted ACP session update through the server relay.
+ * The server treats the update as an opaque blob (zero-knowledge).
+ */
+export function buildAcpSessionUpdateEphemeral(sessionId: string, update: string): EphemeralPayload {
+    return {
+        type: 'acp-session-update',
+        sid: sessionId,
+        update
+    };
+}
+
+/**
+ * HAP-1043: Build an ACP permission request ephemeral event.
+ * Carries an encrypted permission request from CLI to mobile app.
+ * The server treats the payload as an opaque blob (zero-knowledge).
+ */
+export function buildAcpPermissionRequestEphemeral(
+    sessionId: string,
+    requestId: string,
+    payload: string,
+    timeoutMs?: number
+): EphemeralPayload {
+    return {
+        type: 'acp-permission-request',
+        sid: sessionId,
+        requestId,
+        payload,
+        ...(timeoutMs != null && { timeoutMs }),
+    };
+}
+
 export function buildUsageEphemeral(sessionId: string, key: string, tokens: Record<string, number>, cost: Record<string, number>): EphemeralPayload {
     return {
         type: 'usage',

@@ -207,6 +207,70 @@ export const ApiEphemeralFriendStatusUpdateSchema = z.object({
 export type ApiEphemeralFriendStatusUpdate = z.infer<typeof ApiEphemeralFriendStatusUpdateSchema>;
 
 /**
+ * ACP session update relay
+ *
+ * Carries an encrypted ACP session update through the server relay.
+ * The server treats this as an opaque blob — zero-knowledge relay.
+ * The app decrypts and parses the inner update using AcpSessionUpdateSchema.
+ *
+ * @see HAP-1036 - Adapt happy-server relay and happy-app display for ACP session updates
+ */
+export const ApiEphemeralAcpSessionUpdateSchema = z.object({
+    type: z.literal('acp-session-update'),
+    /**
+     * Session ID — identifies which session the ACP update belongs to
+     *
+     * @remarks
+     * Uses `sid` for consistency with other session-related ephemeral events.
+     *
+     * @see HAP-654 - Standardization of session ID field names
+     */
+    sid: z.string().min(1).max(STRING_LIMITS.ID_MAX),
+    /**
+     * Encrypted ACP session update payload.
+     * Contains the serialized AcpSessionUpdate, encrypted with the session's
+     * data encryption key. The server never reads this content.
+     */
+    update: z.string().min(1).max(STRING_LIMITS.CONTENT_MAX),
+});
+
+export type ApiEphemeralAcpSessionUpdate = z.infer<typeof ApiEphemeralAcpSessionUpdateSchema>;
+
+/**
+ * ACP permission request relay
+ *
+ * Carries an encrypted ACP permission request from CLI to mobile app.
+ * The server treats this as an opaque blob — zero-knowledge relay.
+ * The app decrypts and displays the permission UI for user approval.
+ *
+ * @see HAP-1043 - Add ACP remote permission approval flow
+ */
+export const ApiEphemeralAcpPermissionRequestSchema = z.object({
+    type: z.literal('acp-permission-request'),
+    /**
+     * Session ID — identifies which session the permission request belongs to
+     */
+    sid: z.string().min(1).max(STRING_LIMITS.ID_MAX),
+    /**
+     * Unique request ID for correlating the response back to the CLI
+     */
+    requestId: z.string().min(1).max(STRING_LIMITS.ID_MAX),
+    /**
+     * Encrypted permission request payload.
+     * Contains the serialized AcpRequestPermissionRequest, encrypted with the session's
+     * data encryption key. The server never reads this content.
+     */
+    payload: z.string().min(1).max(STRING_LIMITS.CONTENT_MAX),
+    /**
+     * Optional timeout in milliseconds from when the request was created.
+     * If present, the mobile app should show a countdown and expire the request.
+     */
+    timeoutMs: z.number().int().min(0).optional(),
+});
+
+export type ApiEphemeralAcpPermissionRequest = z.infer<typeof ApiEphemeralAcpPermissionRequestSchema>;
+
+/**
  * Union of all ephemeral update types
  */
 export const ApiEphemeralUpdateSchema = z.union([
@@ -216,6 +280,8 @@ export const ApiEphemeralUpdateSchema = z.union([
     ApiEphemeralMachineStatusUpdateSchema,
     ApiEphemeralMachineDisconnectedUpdateSchema,
     ApiEphemeralFriendStatusUpdateSchema,
+    ApiEphemeralAcpSessionUpdateSchema,
+    ApiEphemeralAcpPermissionRequestSchema,
 ]);
 
 export type ApiEphemeralUpdate = z.infer<typeof ApiEphemeralUpdateSchema>;
