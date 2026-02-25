@@ -10,14 +10,29 @@ import { SessionRevivalBanner } from '@/components/SessionRevivalBanner';
 import { SyncFailedBanner } from '@/components/SyncFailedBanner';
 import { VoiceAssistantStatusBar } from '@/components/VoiceAssistantStatusBar';
 import { SessionTabs } from '@/components/SessionTabs';
+import {
+    AcpAgentBadge,
+    AcpModeIndicator,
+    AcpStreamingText,
+    AcpThoughtView,
+    AcpToolCallView,
+    AcpPlanView,
+    AcpUsageWidget,
+    AcpCommandPalette,
+    AcpConfigPanel,
+    AcpSessionBrowser,
+    AcpAgentPicker,
+    AcpPermissionRequest,
+} from '@/components/acp';
 import { useDraft } from '@/hooks/useDraft';
 import { Modal } from '@/modal';
 import { voiceHooks } from '@/realtime/hooks/voiceHooks';
 import { startRealtimeSession, stopRealtimeSession } from '@/realtime/RealtimeSession';
 import { gitStatusSync } from '@/sync/gitStatusSync';
 import { sessionAbort, machineSpawnNewSession, isTemporaryPidSessionId, pollForRealSession } from '@/sync/ops';
-import { storage, useIsDataReady, useLocalSetting, useRealtimeStatus, useSessionMessages, useSessionUsage, useSetting, useAllSessions, useMachine } from '@/sync/storage';
+import { storage, useIsDataReady, useLocalSetting, useRealtimeStatus, useSessionMessages, useSessionUsage, useSetting, useAllSessions, useMachine, useAcpSession, useAcpPendingPermission, useAcpPendingPermissionCount, useAcpAgentRegistry } from '@/sync/storage';
 import { useSession } from '@/sync/storage';
+import { getSessionBrowserCapabilities } from '@/sync/acpTypes';
 import { isMachineOnline } from '@/utils/machineUtils';
 import { useHappyAction } from '@/hooks/useHappyAction';
 import { useSessionRevival } from '@/hooks/useSessionRevival';
@@ -490,6 +505,45 @@ function SessionViewLoaded({ sessionId, session }: { sessionId: string, session:
     const alwaysShowContextSize = useSetting('alwaysShowContextSize');
     const experiments = useSetting('experiments');
 
+    // HAP-1049: ACP session integration hooks
+    const acpSession = useAcpSession(sessionId);
+    const acpPendingPermission = useAcpPendingPermission(sessionId);
+    const acpPendingPermissionCount = useAcpPendingPermissionCount(sessionId);
+    const acpAgentRegistry = useAcpAgentRegistry(sessionId);
+    const [showCommandPalette, setShowCommandPalette] = useState(false);
+    const [showConfigPanel, setShowConfigPanel] = useState(false);
+    const [showAgentPicker, setShowAgentPicker] = useState(false);
+    const [showSessionBrowser, setShowSessionBrowser] = useState(false);
+
+    // HAP-1049: Derive session browser capabilities from active agent
+    const sessionBrowserCapabilities = useMemo(() => {
+        if (!acpAgentRegistry?.activeAgentId) return null;
+        const activeAgent = acpAgentRegistry.agents[acpAgentRegistry.activeAgentId];
+        if (!activeAgent) return null;
+        return getSessionBrowserCapabilities(activeAgent.capabilities);
+    }, [acpAgentRegistry]);
+
+    // HAP-1049: ACP permission response handler
+    const handlePermissionSelect = useCallback((requestId: string, optionId: string) => {
+        sync.sendAcpPermissionResponse(sessionId, requestId, optionId);
+    }, [sessionId]);
+
+    // HAP-1049: ACP command invocation handler
+    const handleInvokeCommand = useCallback((command: { name: string }) => {
+        setShowCommandPalette(false);
+        sync.sendMessage(sessionId, `/${command.name}`);
+    }, [sessionId]);
+
+    // HAP-1049: ACP agent switch handler
+    const handleSwitchAgent = useCallback(async (agentId: string) => {
+        sync.sendMessage(sessionId, `/agent ${agentId}`);
+    }, [sessionId]);
+
+    // HAP-1049: ACP config change handler
+    const handleConfigChange = useCallback((configId: string, value: string) => {
+        sync.sendMessage(sessionId, `/config ${configId} ${value}`);
+    }, [sessionId]);
+
     // HAP-752: Auto-dismiss revival banner when session becomes active
     useEffect(() => {
         if (reviving && sessionStatus.isConnected) {
@@ -566,6 +620,12 @@ function SessionViewLoaded({ sessionId, session }: { sessionId: string, session:
     // Show when: sync not complete (!isLoaded), timeout occurred, but we have cached messages
     const showSyncFailedBanner = !isLoaded && loadingTimedOut && messages.length > 0;
 
+    // HAP-1049: Memoize active tool calls array to avoid re-renders
+    const activeToolCalls = useMemo(() => {
+        if (!acpSession) return [];
+        return Object.values(acpSession.toolCalls);
+    }, [acpSession]);
+
     let content = (
         <>
             {/* HAP-586: Show banner when displaying cached messages due to sync failure */}
@@ -577,6 +637,31 @@ function SessionViewLoaded({ sessionId, session }: { sessionId: string, session:
                     <ChatList session={session} />
                 )}
             </Deferred>
+
+            {/* HAP-1049: ACP real-time content stream */}
+            {acpSession && (
+                <View style={acpStyles.contentStream}>
+                    {/* Agent thought (collapsible) */}
+                    {acpSession.agentThought.length > 0 && (
+                        <AcpThoughtView thought={acpSession.agentThought} />
+                    )}
+
+                    {/* Execution plan */}
+                    {acpSession.plan.length > 0 && (
+                        <AcpPlanView entries={acpSession.plan} />
+                    )}
+
+                    {/* Active tool calls */}
+                    {activeToolCalls.map((tc) => (
+                        <AcpToolCallView key={tc.toolCallId} toolCall={tc} />
+                    ))}
+
+                    {/* Streaming agent message */}
+                    {acpSession.agentMessage.length > 0 && (
+                        <AcpStreamingText text={acpSession.agentMessage} />
+                    )}
+                </View>
+            )}
         </>
     );
     const placeholder = messages.length === 0 ? (
@@ -788,6 +873,25 @@ function SessionViewLoaded({ sessionId, session }: { sessionId: string, session:
                         isConnected={sessionStatus.isConnected}
                         flavor={session.metadata?.flavor}
                     />
+
+                    {/* HAP-1049: ACP header badges (agent + mode) */}
+                    {acpSession && (
+                        <View style={acpStyles.headerBadges}>
+                            <Pressable onPress={() => setShowAgentPicker(true)}>
+                                <AcpAgentBadge sessionId={sessionId} />
+                            </Pressable>
+                            {acpSession.currentModeId && (
+                                <AcpModeIndicator modeId={acpSession.currentModeId} />
+                            )}
+                            {acpSession.usage && (
+                                <AcpUsageWidget
+                                    used={acpSession.usage.used}
+                                    size={acpSession.usage.size}
+                                    cost={acpSession.usage.cost}
+                                />
+                            )}
+                        </View>
+                    )}
                 </View>
             )}
 
@@ -863,6 +967,111 @@ function SessionViewLoaded({ sessionId, session }: { sessionId: string, session:
                         color="#000"
                     />
                 </Pressable>
+            )}
+
+            {/* HAP-1049: ACP Permission Request Modal */}
+            {acpPendingPermission && (
+                <View style={acpStyles.permissionOverlay}>
+                    <View style={acpStyles.permissionBackdrop} />
+                    <View style={acpStyles.permissionContent}>
+                        <AcpPermissionRequest
+                            request={acpPendingPermission}
+                            queueCount={acpPendingPermissionCount}
+                            onSelectOption={handlePermissionSelect}
+                        />
+                    </View>
+                </View>
+            )}
+
+            {/* HAP-1049: ACP Command Palette Sheet */}
+            {showCommandPalette && acpSession && (
+                <View style={acpStyles.sheetOverlay}>
+                    <Pressable style={acpStyles.sheetBackdrop} onPress={() => setShowCommandPalette(false)} />
+                    <View style={acpStyles.sheetContent}>
+                        <AcpCommandPalette
+                            commands={acpSession.availableCommands}
+                            onInvokeCommand={handleInvokeCommand}
+                        />
+                    </View>
+                </View>
+            )}
+
+            {/* HAP-1049: ACP Config Panel Sheet */}
+            {showConfigPanel && acpSession && (
+                <View style={acpStyles.sheetOverlay}>
+                    <Pressable style={acpStyles.sheetBackdrop} onPress={() => setShowConfigPanel(false)} />
+                    <View style={acpStyles.sheetContent}>
+                        <AcpConfigPanel
+                            configOptions={acpSession.configOptions}
+                            onConfigChange={handleConfigChange}
+                        />
+                    </View>
+                </View>
+            )}
+
+            {/* HAP-1049: ACP Agent Picker Sheet */}
+            {showAgentPicker && (
+                <View style={acpStyles.sheetOverlay}>
+                    <Pressable style={acpStyles.sheetBackdrop} onPress={() => setShowAgentPicker(false)} />
+                    <View style={acpStyles.sheetContent}>
+                        <AcpAgentPicker
+                            sessionId={sessionId}
+                            onSwitchAgent={handleSwitchAgent}
+                        />
+                    </View>
+                </View>
+            )}
+
+            {/* HAP-1049: ACP Session Browser Sheet */}
+            {showSessionBrowser && sessionBrowserCapabilities && (
+                <View style={acpStyles.sheetOverlay}>
+                    <Pressable style={acpStyles.sheetBackdrop} onPress={() => setShowSessionBrowser(false)} />
+                    <View style={acpStyles.sheetContent}>
+                        <AcpSessionBrowser
+                            sessions={[]}
+                            capabilities={sessionBrowserCapabilities}
+                            activeSessionId={sessionId}
+                            onRefresh={() => {}}
+                            onLoad={() => {}}
+                            onResume={() => {}}
+                            onFork={() => {}}
+                            refreshing={false}
+                        />
+                    </View>
+                </View>
+            )}
+
+            {/* HAP-1049: ACP toolbar buttons (visible when ACP session is active) */}
+            {acpSession && !(isLandscape && deviceType === 'phone') && (
+                <View style={acpStyles.toolbarContainer}>
+                    {acpSession.availableCommands.length > 0 && (
+                        <Pressable
+                            onPress={() => setShowCommandPalette(true)}
+                            style={acpStyles.toolbarButton}
+                            hitSlop={8}
+                        >
+                            <Ionicons name="terminal-outline" size={18} color="#666" />
+                        </Pressable>
+                    )}
+                    {acpSession.configOptions.length > 0 && (
+                        <Pressable
+                            onPress={() => setShowConfigPanel(true)}
+                            style={acpStyles.toolbarButton}
+                            hitSlop={8}
+                        >
+                            <Ionicons name="settings-outline" size={18} color="#666" />
+                        </Pressable>
+                    )}
+                    {sessionBrowserCapabilities && (
+                        <Pressable
+                            onPress={() => setShowSessionBrowser(true)}
+                            style={acpStyles.toolbarButton}
+                            hitSlop={8}
+                        >
+                            <Ionicons name="list-outline" size={18} color="#666" />
+                        </Pressable>
+                    )}
+                </View>
             )}
         </>
     )
@@ -1051,6 +1260,95 @@ const stylesheet = StyleSheet.create((theme) => ({
         }),
     },
 }));
+
+// HAP-1049: ACP integration styles
+const acpStyles = {
+    // Header badges row (agent badge + mode indicator + usage)
+    headerBadges: {
+        flexDirection: 'row' as const,
+        alignItems: 'center' as const,
+        justifyContent: 'center' as const,
+        gap: 8,
+        paddingVertical: 6,
+        paddingHorizontal: 16,
+    },
+    // Content stream container for ACP real-time output
+    contentStream: {
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        gap: 8,
+    },
+    // Permission request modal overlay
+    permissionOverlay: {
+        position: 'absolute' as const,
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 2000,
+        justifyContent: 'center' as const,
+        alignItems: 'center' as const,
+    },
+    permissionBackdrop: {
+        position: 'absolute' as const,
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    permissionContent: {
+        width: '90%' as const,
+        maxWidth: 400,
+        maxHeight: '80%' as const,
+    },
+    // Bottom sheet overlay for panels
+    sheetOverlay: {
+        position: 'absolute' as const,
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 1500,
+        justifyContent: 'flex-end' as const,
+    },
+    sheetBackdrop: {
+        position: 'absolute' as const,
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    },
+    sheetContent: {
+        maxHeight: '70%' as const,
+        borderTopLeftRadius: 16,
+        borderTopRightRadius: 16,
+        overflow: 'hidden' as const,
+    },
+    // ACP toolbar buttons
+    toolbarContainer: {
+        position: 'absolute' as const,
+        bottom: 80,
+        right: 16,
+        flexDirection: 'column' as const,
+        gap: 8,
+        zIndex: 999,
+    },
+    toolbarButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: 'rgba(200, 200, 200, 0.9)',
+        alignItems: 'center' as const,
+        justifyContent: 'center' as const,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.15,
+        shadowRadius: 3,
+        elevation: 3,
+    },
+} as const;
 
 // Static styles that don't need theme access - defined once, never recreated
 const staticStyles = {
