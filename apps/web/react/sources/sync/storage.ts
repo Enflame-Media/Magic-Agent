@@ -7,7 +7,7 @@ import { NormalizedMessage } from "./typesRaw";
 import { applySettings, Settings } from "./settings";
 import { LocalSettings, applyLocalSettings } from "./localSettings";
 import { Purchases, customerInfoToPurchases } from "./purchases";
-import { AcpSessionState, createAcpSessionState, applyAcpSessionUpdate, AcpAgentRegistryState, createAcpAgentRegistryState, AcpRegisteredAgent, AcpPermissionRequestState, addPermissionRequest, resolvePermissionRequest, getNextPendingPermission } from "./acpTypes";
+import { AcpSessionState, createAcpSessionState, applyAcpSessionUpdate, AcpAgentRegistryState, createAcpAgentRegistryState, AcpRegisteredAgent, AcpPermissionRequestState, addPermissionRequest, resolvePermissionRequest, getNextPendingPermission, AcpSessionListState, AcpBrowserSession, createAcpSessionListState } from "./acpTypes";
 // HAP-851: Zen is experimental - type-only import for TodoState (no runtime impact)
 import type { TodoState } from "../trash/experimental/-zen/model/ops";
 import { Profile } from "./profile";
@@ -103,6 +103,8 @@ interface StorageState {
     acpSessions: Record<string, AcpSessionState>;
     /** HAP-1045: Per-session agent registry state from CLI relay */
     acpAgentRegistries: Record<string, AcpAgentRegistryState>;
+    /** HAP-1064: Per-session ACP session list from session browser requests */
+    acpSessionLists: Record<string, AcpSessionListState>;
     applySessions: (sessions: (Omit<Session, 'presence'> & { presence?: "online" | number })[]) => void;
     applyMachines: (machines: Machine[], replace?: boolean) => void;
     applyLoaded: () => void;
@@ -166,6 +168,9 @@ interface StorageState {
     // HAP-1045: Agent registry state methods
     updateAgentRegistry: (sessionId: string, agents: AcpRegisteredAgent[], activeAgentId: string | null) => void;
     setAgentSwitching: (sessionId: string, switching: boolean, error?: string | null) => void;
+    // HAP-1064: Session list state methods
+    setAcpSessionListLoading: (sessionId: string, loading: boolean) => void;
+    setAcpSessionList: (sessionId: string, sessions: AcpBrowserSession[], error?: string | null) => void;
 }
 
 // Cache for date boundary calculations - invalidates when day changes
@@ -427,6 +432,7 @@ export const storage = create<StorageState>()((set, get) => {
         todosLoaded: false,  // Initialize todos loaded state
         acpSessions: {},  // HAP-1036: ACP session state
         acpAgentRegistries: {},  // HAP-1045: Agent registry state
+        acpSessionLists: {},  // HAP-1064: Session browser lists
         sessionsData: null,  // Legacy - to be removed
         sessionListViewData: null,
         sessionMessages: {},
@@ -1445,6 +1451,34 @@ export const storage = create<StorageState>()((set, get) => {
                 },
             };
         }),
+
+        // HAP-1064: Session list state methods
+        setAcpSessionListLoading: (sessionId: string, loading: boolean) => set((state) => {
+            const existing = state.acpSessionLists[sessionId] ?? createAcpSessionListState();
+            return {
+                ...state,
+                acpSessionLists: {
+                    ...state.acpSessionLists,
+                    [sessionId]: {
+                        ...existing,
+                        loading,
+                        error: loading ? null : existing.error,
+                    },
+                },
+            };
+        }),
+        setAcpSessionList: (sessionId: string, sessions: AcpBrowserSession[], error?: string | null) => set((state) => ({
+            ...state,
+            acpSessionLists: {
+                ...state.acpSessionLists,
+                [sessionId]: {
+                    sessions,
+                    loading: false,
+                    lastFetchedAt: error ? (state.acpSessionLists[sessionId]?.lastFetchedAt ?? null) : Date.now(),
+                    error: error ?? null,
+                },
+            },
+        })),
     }
 });
 
@@ -1470,6 +1504,14 @@ export function useAcpSession(sessionId: string): AcpSessionState | null {
  */
 export function useAcpAgentRegistry(sessionId: string): AcpAgentRegistryState | null {
     return storage(useShallow((state) => state.acpAgentRegistries[sessionId] ?? null));
+}
+
+/**
+ * HAP-1064: Hook for consuming ACP session list state.
+ * Returns the session list state for a session, or null if no list request has been made.
+ */
+export function useAcpSessionList(sessionId: string): AcpSessionListState | null {
+    return storage(useShallow((state) => state.acpSessionLists[sessionId] ?? null));
 }
 
 /**

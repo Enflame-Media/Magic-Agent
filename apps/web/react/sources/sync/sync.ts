@@ -57,8 +57,9 @@ import {
     getLastKnownSeq as getLastKnownSeqUtil,
 } from './deltaSyncUtils';
 import { orchestrateDeltaSync } from './deltaSyncOrchestrator';
-import { getSessionId, AcpSessionUpdateSchema, AcpRequestPermissionRequestSchema } from '@magic-agent/protocol';
+import { getSessionId, AcpSessionUpdateSchema, AcpRequestPermissionRequestSchema, AcpListSessionsResponseSchema } from '@magic-agent/protocol';
 import type { AcpPermissionRequestState } from './acpTypes';
+import { toBrowserSessions } from './acpTypes';
 
 /**
  * HAP-441: Delta sync response type from server.
@@ -2817,6 +2818,12 @@ class Sync {
         if ((updateData as { type: string }).type === 'acp-permission-request') {
             this.handleAcpPermissionRequest(updateData as any);
         }
+
+        // HAP-1064: Handle ACP session list response ephemeral events
+        // Cast needed until @magic-agent/protocol is rebuilt with the new ephemeral type
+        if ((updateData as { type: string }).type === 'acp-session-list-response') {
+            this.handleAcpSessionListResponse(updateData as any);
+        }
     }
 
     //
@@ -2978,6 +2985,150 @@ class Sync {
             storage.getState().resolveAcpPermissionRequest(sessionId, requestId, 'selected', optionId);
         } catch (error) {
             logger.debug(`Error sending ACP permission response for ${sessionId}:`, error);
+        }
+    }
+
+    // ─── HAP-1064: ACP Session Management ────────────────────────────────────
+
+    /** HAP-1064: Timeout for session list requests (15 seconds) */
+    private static readonly SESSION_LIST_TIMEOUT_MS = 15_000;
+
+    /**
+     * HAP-1064: Request the session list from the CLI agent via ACP relay.
+     * Sets loading state and sends an encrypted list command. The response
+     * arrives via handleAcpSessionListResponse when the CLI sends it back.
+     */
+    requestAcpSessionList = async (sessionId: string) => {
+        const state = storage.getState();
+
+        // Guard against duplicate requests
+        const existing = state.acpSessionLists[sessionId];
+        if (existing?.loading) {
+            logger.debug(`Session list request already in-flight for ${sessionId}`);
+            return;
+        }
+
+        state.setAcpSessionListLoading(sessionId, true);
+
+        const sessionEncryption = this.encryption.getSessionEncryption(sessionId);
+        if (!sessionEncryption) {
+            logger.debug(`Cannot request session list: no encryption for session ${sessionId}`);
+            storage.getState().setAcpSessionList(sessionId, [], 'No encryption available');
+            return;
+        }
+
+        try {
+            const command = {
+                _meta: {},
+                method: 'session/list' as const,
+                params: { _meta: {} },
+            };
+
+            const encrypted = await sessionEncryption.encryptRaw(command);
+            if (!encrypted) {
+                logger.debug(`Failed to encrypt session list request for session ${sessionId}`);
+                storage.getState().setAcpSessionList(sessionId, [], 'Encryption failed');
+                return;
+            }
+
+            apiSocket.send('acp-session-command', {
+                sid: sessionId,
+                command: 'list',
+                payload: encrypted,
+            });
+
+            // Timeout: clear loading state if no response arrives
+            setTimeout(() => {
+                const current = storage.getState().acpSessionLists[sessionId];
+                if (current?.loading) {
+                    storage.getState().setAcpSessionList(
+                        sessionId,
+                        current.sessions,
+                        'Request timed out'
+                    );
+                }
+            }, Sync.SESSION_LIST_TIMEOUT_MS);
+        } catch (error) {
+            logger.debug(`Error requesting ACP session list for ${sessionId}:`, error);
+            storage.getState().setAcpSessionList(sessionId, [], 'Request failed');
+        }
+    }
+
+    /**
+     * HAP-1064: Send an ACP session management command (load, resume, fork)
+     * to the CLI agent via the ACP relay.
+     */
+    sendAcpSessionCommand = async (
+        sessionId: string,
+        command: 'load' | 'resume' | 'fork',
+        targetSessionId: string
+    ) => {
+        const sessionEncryption = this.encryption.getSessionEncryption(sessionId);
+        if (!sessionEncryption) {
+            logger.debug(`Cannot send session command: no encryption for session ${sessionId}`);
+            return;
+        }
+
+        try {
+            const commandPayload = {
+                _meta: {},
+                method: `session/${command}` as const,
+                params: {
+                    _meta: {},
+                    sessionId: targetSessionId,
+                    cwd: '.',
+                },
+            };
+
+            const encrypted = await sessionEncryption.encryptRaw(commandPayload);
+            if (!encrypted) {
+                logger.debug(`Failed to encrypt session ${command} for ${sessionId}`);
+                return;
+            }
+
+            apiSocket.send('acp-session-command', {
+                sid: sessionId,
+                command,
+                payload: encrypted,
+            });
+        } catch (error) {
+            logger.debug(`Error sending ACP session command ${command} for ${sessionId}:`, error);
+        }
+    }
+
+    /**
+     * HAP-1064: Process an encrypted ACP session list response received via the server relay.
+     * Decrypts the payload, parses session list data, and updates the Zustand store.
+     */
+    private handleAcpSessionListResponse = async (update: { sid: string; payload: string }) => {
+        const { sid: sessionId, payload: encryptedPayload } = update;
+
+        const sessionEncryption = this.encryption.getSessionEncryption(sessionId);
+        if (!sessionEncryption) {
+            logger.debug(`Session list response for unknown session ${sessionId}, ignoring`);
+            return;
+        }
+
+        try {
+            const decrypted = await sessionEncryption.decryptRaw(encryptedPayload);
+            if (!decrypted) {
+                logger.debug(`Failed to decrypt session list response for ${sessionId}`);
+                storage.getState().setAcpSessionList(sessionId, [], 'Decryption failed');
+                return;
+            }
+
+            const parsed = AcpListSessionsResponseSchema.safeParse(decrypted);
+            if (!parsed.success) {
+                logger.debug(`Invalid session list response for ${sessionId}:`, parsed.error);
+                storage.getState().setAcpSessionList(sessionId, [], 'Invalid response');
+                return;
+            }
+
+            const browserSessions = toBrowserSessions(parsed.data.sessions, sessionId);
+            storage.getState().setAcpSessionList(sessionId, browserSessions);
+        } catch (error) {
+            logger.debug(`Error processing session list response for ${sessionId}:`, error);
+            storage.getState().setAcpSessionList(sessionId, [], 'Processing failed');
         }
     }
 

@@ -278,6 +278,35 @@ export function toBrowserSessions(
     }));
 }
 
+// ─── Session List State (HAP-1064) ──────────────────────────────────────────
+
+/**
+ * HAP-1064: Per-session ACP session list state.
+ * Stores the result of a session/list request from the ACP agent.
+ */
+export interface AcpSessionListState {
+    /** Session items from the ACP agent */
+    sessions: AcpBrowserSession[];
+    /** Whether a list request is currently in-flight */
+    loading: boolean;
+    /** Timestamp of the last successful fetch */
+    lastFetchedAt: number | null;
+    /** Error message from the last failed fetch, or null */
+    error: string | null;
+}
+
+/**
+ * HAP-1064: Create a fresh session list state.
+ */
+export function createAcpSessionListState(): AcpSessionListState {
+    return {
+        sessions: [],
+        loading: false,
+        lastFetchedAt: null,
+        error: null,
+    };
+}
+
 /** Maximum number of permission decisions to keep in history */
 const PERMISSION_HISTORY_MAX = 50;
 

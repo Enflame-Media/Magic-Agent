@@ -30,7 +30,7 @@ import { voiceHooks } from '@/realtime/hooks/voiceHooks';
 import { startRealtimeSession, stopRealtimeSession } from '@/realtime/RealtimeSession';
 import { gitStatusSync } from '@/sync/gitStatusSync';
 import { sessionAbort, machineSpawnNewSession, isTemporaryPidSessionId, pollForRealSession } from '@/sync/ops';
-import { storage, useIsDataReady, useLocalSetting, useRealtimeStatus, useSessionMessages, useSessionUsage, useSetting, useAllSessions, useMachine, useAcpSession, useAcpPendingPermission, useAcpPendingPermissionCount, useAcpAgentRegistry } from '@/sync/storage';
+import { storage, useIsDataReady, useLocalSetting, useRealtimeStatus, useSessionMessages, useSessionUsage, useSetting, useAllSessions, useMachine, useAcpSession, useAcpPendingPermission, useAcpPendingPermissionCount, useAcpAgentRegistry, useAcpSessionList } from '@/sync/storage';
 import { useSession } from '@/sync/storage';
 import { getSessionBrowserCapabilities } from '@/sync/acpTypes';
 import { isMachineOnline } from '@/utils/machineUtils';
@@ -523,6 +523,9 @@ function SessionViewLoaded({ sessionId, session }: { sessionId: string, session:
         return getSessionBrowserCapabilities(activeAgent.capabilities);
     }, [acpAgentRegistry]);
 
+    // HAP-1064: ACP session list hook
+    const acpSessionList = useAcpSessionList(sessionId);
+
     // HAP-1049: ACP permission response handler
     const handlePermissionSelect = useCallback((requestId: string, optionId: string) => {
         sync.sendAcpPermissionResponse(sessionId, requestId, optionId);
@@ -543,6 +546,32 @@ function SessionViewLoaded({ sessionId, session }: { sessionId: string, session:
     const handleConfigChange = useCallback((configId: string, value: string) => {
         sync.sendMessage(sessionId, `/config ${configId} ${value}`);
     }, [sessionId]);
+
+    // HAP-1064: ACP session browser handlers
+    const handleSessionRefresh = useCallback(() => {
+        sync.requestAcpSessionList(sessionId);
+    }, [sessionId]);
+
+    const handleSessionLoad = useCallback((targetSessionId: string) => {
+        setShowSessionBrowser(false);
+        sync.sendAcpSessionCommand(sessionId, 'load', targetSessionId);
+    }, [sessionId]);
+
+    const handleSessionResume = useCallback((targetSessionId: string) => {
+        setShowSessionBrowser(false);
+        sync.sendAcpSessionCommand(sessionId, 'resume', targetSessionId);
+    }, [sessionId]);
+
+    const handleSessionFork = useCallback((targetSessionId: string) => {
+        sync.sendAcpSessionCommand(sessionId, 'fork', targetSessionId);
+    }, [sessionId]);
+
+    // HAP-1064: Auto-fetch session list when session browser is opened
+    useEffect(() => {
+        if (showSessionBrowser && sessionBrowserCapabilities?.canListSessions) {
+            sync.requestAcpSessionList(sessionId);
+        }
+    }, [showSessionBrowser, sessionBrowserCapabilities?.canListSessions, sessionId]);
 
     // HAP-752: Auto-dismiss revival banner when session becomes active
     useEffect(() => {
@@ -1022,20 +1051,20 @@ function SessionViewLoaded({ sessionId, session }: { sessionId: string, session:
                 </View>
             )}
 
-            {/* HAP-1049: ACP Session Browser Sheet */}
+            {/* HAP-1064: ACP Session Browser Sheet (wired to sync system) */}
             {showSessionBrowser && sessionBrowserCapabilities && (
                 <View style={acpStyles.sheetOverlay}>
                     <Pressable style={acpStyles.sheetBackdrop} onPress={() => setShowSessionBrowser(false)} />
                     <View style={acpStyles.sheetContent}>
                         <AcpSessionBrowser
-                            sessions={[]}
+                            sessions={acpSessionList?.sessions ?? []}
                             capabilities={sessionBrowserCapabilities}
                             activeSessionId={sessionId}
-                            onRefresh={() => {}}
-                            onLoad={() => {}}
-                            onResume={() => {}}
-                            onFork={() => {}}
-                            refreshing={false}
+                            onRefresh={handleSessionRefresh}
+                            onLoad={handleSessionLoad}
+                            onResume={handleSessionResume}
+                            onFork={handleSessionFork}
+                            refreshing={acpSessionList?.loading ?? false}
                         />
                     </View>
                 </View>
