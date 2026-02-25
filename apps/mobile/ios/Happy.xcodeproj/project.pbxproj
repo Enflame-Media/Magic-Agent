@@ -107,6 +107,36 @@
 		Z91A2C3D4E5F0006 /* SharedSessionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = Z91A2C3D4E5F0015 /* SharedSessionsView.swift */; };
 		Z91A2C3D4E5F0007 /* SessionShareSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = Z91A2C3D4E5F0016 /* SessionShareSheet.swift */; };
 		LK1A2C3D4E5F0001 /* LiveKit in Frameworks */ = {isa = PBXBuildFile; productRef = LK1A2C3D4E5F0010 /* LiveKit */; };
+		AC1000010000000000000002 /* AcpContentBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC1000010000000000000001 /* AcpContentBlock.swift */; };
+		AC1000020000000000000002 /* AcpToolCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC1000020000000000000001 /* AcpToolCall.swift */; };
+		AC1000030000000000000002 /* AcpPlanEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC1000030000000000000001 /* AcpPlanEntry.swift */; };
+		AC1000040000000000000002 /* AcpCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC1000040000000000000001 /* AcpCommand.swift */; };
+		AC1000050000000000000002 /* AcpPermissionRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC1000050000000000000001 /* AcpPermissionRequest.swift */; };
+		AC1000060000000000000002 /* AcpAgentRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC1000060000000000000001 /* AcpAgentRegistry.swift */; };
+		AC1000070000000000000002 /* AcpSessionUpdate.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC1000070000000000000001 /* AcpSessionUpdate.swift */; };
+		AC1000080000000000000002 /* AcpSessionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC1000080000000000000001 /* AcpSessionState.swift */; };
+		AC1000090000000000000002 /* AcpSessionViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC1000090000000000000001 /* AcpSessionViewModel.swift */; };
+		AC10000A0000000000000002 /* AcpSessionUpdateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC10000A0000000000000001 /* AcpSessionUpdateTests.swift */; };
+		AC10000B0000000000000002 /* AcpJsonDecodingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC10000B0000000000000001 /* AcpJsonDecodingTests.swift */; };
+		AC2000010000000000000002 /* AcpStreamingTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC2000010000000000000001 /* AcpStreamingTextView.swift */; };
+		AC2000020000000000000002 /* AcpThoughtView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC2000020000000000000001 /* AcpThoughtView.swift */; };
+		AC2000030000000000000002 /* AcpPlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC2000030000000000000001 /* AcpPlanView.swift */; };
+		AC2000040000000000000002 /* AcpToolCallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC2000040000000000000001 /* AcpToolCallView.swift */; };
+		AC2000050000000000000002 /* AcpModeIndicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC2000050000000000000001 /* AcpModeIndicator.swift */; };
+		AC2000060000000000000002 /* AcpUsageWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC2000060000000000000001 /* AcpUsageWidget.swift */; };
+		AC2000070000000000000002 /* AcpCommandPaletteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC2000070000000000000001 /* AcpCommandPaletteView.swift */; };
+		AC2000080000000000000002 /* AcpConfigPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC2000080000000000000001 /* AcpConfigPanelView.swift */; };
+		AC2000090000000000000002 /* AcpContentBlockRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC2000090000000000000001 /* AcpContentBlockRenderer.swift */; };
+		AC20000A0000000000000002 /* AcpImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC20000A0000000000000001 /* AcpImageView.swift */; };
+		AC20000B0000000000000002 /* AcpDiffView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC20000B0000000000000001 /* AcpDiffView.swift */; };
+		AC20000C0000000000000002 /* AcpTerminalOutputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC20000C0000000000000001 /* AcpTerminalOutputView.swift */; };
+		AC20000D0000000000000002 /* AcpResourceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC20000D0000000000000001 /* AcpResourceView.swift */; };
+		AC20000E0000000000000002 /* AcpSessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC20000E0000000000000001 /* AcpSessionView.swift */; };
+		AC3000010000000000000002 /* AcpPermissionRequestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC3000010000000000000001 /* AcpPermissionRequestView.swift */; };
+		AC3000020000000000000002 /* AcpPermissionHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC3000020000000000000001 /* AcpPermissionHistoryView.swift */; };
+		AC3000030000000000000002 /* AcpSessionBrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC3000030000000000000001 /* AcpSessionBrowserView.swift */; };
+		AC3000040000000000000002 /* AcpAgentPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC3000040000000000000001 /* AcpAgentPickerView.swift */; };
+		AC3000050000000000000002 /* AcpAgentBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC3000050000000000000001 /* AcpAgentBadge.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -250,6 +280,36 @@
 		Z91A2C3D4E5F0014 /* PrivacySettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacySettingsView.swift; sourceTree = "<group>"; };
 		Z91A2C3D4E5F0015 /* SharedSessionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedSessionsView.swift; sourceTree = "<group>"; };
 		Z91A2C3D4E5F0016 /* SessionShareSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionShareSheet.swift; sourceTree = "<group>"; };
+		AC1000010000000000000001 /* AcpContentBlock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcpContentBlock.swift; sourceTree = "<group>"; };
+		AC1000020000000000000001 /* AcpToolCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcpToolCall.swift; sourceTree = "<group>"; };
+		AC1000030000000000000001 /* AcpPlanEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcpPlanEntry.swift; sourceTree = "<group>"; };
+		AC1000040000000000000001 /* AcpCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcpCommand.swift; sourceTree = "<group>"; };
+		AC1000050000000000000001 /* AcpPermissionRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcpPermissionRequest.swift; sourceTree = "<group>"; };
+		AC1000060000000000000001 /* AcpAgentRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcpAgentRegistry.swift; sourceTree = "<group>"; };
+		AC1000070000000000000001 /* AcpSessionUpdate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcpSessionUpdate.swift; sourceTree = "<group>"; };
+		AC1000080000000000000001 /* AcpSessionState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcpSessionState.swift; sourceTree = "<group>"; };
+		AC1000090000000000000001 /* AcpSessionViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcpSessionViewModel.swift; sourceTree = "<group>"; };
+		AC10000A0000000000000001 /* AcpSessionUpdateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcpSessionUpdateTests.swift; sourceTree = "<group>"; };
+		AC10000B0000000000000001 /* AcpJsonDecodingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcpJsonDecodingTests.swift; sourceTree = "<group>"; };
+		AC2000010000000000000001 /* AcpStreamingTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcpStreamingTextView.swift; sourceTree = "<group>"; };
+		AC2000020000000000000001 /* AcpThoughtView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcpThoughtView.swift; sourceTree = "<group>"; };
+		AC2000030000000000000001 /* AcpPlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcpPlanView.swift; sourceTree = "<group>"; };
+		AC2000040000000000000001 /* AcpToolCallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcpToolCallView.swift; sourceTree = "<group>"; };
+		AC2000050000000000000001 /* AcpModeIndicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcpModeIndicator.swift; sourceTree = "<group>"; };
+		AC2000060000000000000001 /* AcpUsageWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcpUsageWidget.swift; sourceTree = "<group>"; };
+		AC2000070000000000000001 /* AcpCommandPaletteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcpCommandPaletteView.swift; sourceTree = "<group>"; };
+		AC2000080000000000000001 /* AcpConfigPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcpConfigPanelView.swift; sourceTree = "<group>"; };
+		AC2000090000000000000001 /* AcpContentBlockRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcpContentBlockRenderer.swift; sourceTree = "<group>"; };
+		AC20000A0000000000000001 /* AcpImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcpImageView.swift; sourceTree = "<group>"; };
+		AC20000B0000000000000001 /* AcpDiffView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcpDiffView.swift; sourceTree = "<group>"; };
+		AC20000C0000000000000001 /* AcpTerminalOutputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcpTerminalOutputView.swift; sourceTree = "<group>"; };
+		AC20000D0000000000000001 /* AcpResourceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcpResourceView.swift; sourceTree = "<group>"; };
+		AC20000E0000000000000001 /* AcpSessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcpSessionView.swift; sourceTree = "<group>"; };
+		AC3000010000000000000001 /* AcpPermissionRequestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcpPermissionRequestView.swift; sourceTree = "<group>"; };
+		AC3000020000000000000001 /* AcpPermissionHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcpPermissionHistoryView.swift; sourceTree = "<group>"; };
+		AC3000030000000000000001 /* AcpSessionBrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcpSessionBrowserView.swift; sourceTree = "<group>"; };
+		AC3000040000000000000001 /* AcpAgentPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcpAgentPickerView.swift; sourceTree = "<group>"; };
+		AC3000050000000000000001 /* AcpAgentBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcpAgentBadge.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -331,6 +391,8 @@
 				T91A2C3D4E5F0014 /* UsageLimitsTests.swift */,
 				V91A2C3D4E5F0010 /* SyncServiceReconnectionTests.swift */,
 				X91A2C3D4E5F0013 /* RevenueCatPurchaseServiceTests.swift */,
+				AC10000A0000000000000001 /* AcpSessionUpdateTests.swift */,
+				AC10000B0000000000000001 /* AcpJsonDecodingTests.swift */,
 			);
 			path = HappyTests;
 			sourceTree = "<group>";
@@ -357,6 +419,7 @@
 		0A1B2C3D4E5F67B0 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				AC10000D0000000000000001 /* ACP */,
 				B91A2C3D4E5F0010 /* QRCodePayload.swift */,
 				E91A2C3D4E5F0010 /* Session.swift */,
 				E91A2C3D4E5F0011 /* Message.swift */,
@@ -372,9 +435,51 @@
 			path = Models;
 			sourceTree = "<group>";
 		};
+		AC10000D0000000000000001 /* ACP */ = {
+			isa = PBXGroup;
+			children = (
+				AC1000010000000000000001 /* AcpContentBlock.swift */,
+				AC1000020000000000000001 /* AcpToolCall.swift */,
+				AC1000030000000000000001 /* AcpPlanEntry.swift */,
+				AC1000040000000000000001 /* AcpCommand.swift */,
+				AC1000050000000000000001 /* AcpPermissionRequest.swift */,
+				AC1000060000000000000001 /* AcpAgentRegistry.swift */,
+				AC1000070000000000000001 /* AcpSessionUpdate.swift */,
+				AC1000080000000000000001 /* AcpSessionState.swift */,
+			);
+			path = ACP;
+			sourceTree = "<group>";
+		};
+		AC20000F0000000000000001 /* ACP */ = {
+			isa = PBXGroup;
+			children = (
+				AC2000010000000000000001 /* AcpStreamingTextView.swift */,
+				AC2000020000000000000001 /* AcpThoughtView.swift */,
+				AC2000030000000000000001 /* AcpPlanView.swift */,
+				AC2000040000000000000001 /* AcpToolCallView.swift */,
+				AC2000050000000000000001 /* AcpModeIndicator.swift */,
+				AC2000060000000000000001 /* AcpUsageWidget.swift */,
+				AC2000070000000000000001 /* AcpCommandPaletteView.swift */,
+				AC2000080000000000000001 /* AcpConfigPanelView.swift */,
+				AC2000090000000000000001 /* AcpContentBlockRenderer.swift */,
+				AC20000A0000000000000001 /* AcpImageView.swift */,
+				AC20000B0000000000000001 /* AcpDiffView.swift */,
+				AC20000C0000000000000001 /* AcpTerminalOutputView.swift */,
+				AC20000D0000000000000001 /* AcpResourceView.swift */,
+				AC20000E0000000000000001 /* AcpSessionView.swift */,
+				AC3000010000000000000001 /* AcpPermissionRequestView.swift */,
+				AC3000020000000000000001 /* AcpPermissionHistoryView.swift */,
+				AC3000030000000000000001 /* AcpSessionBrowserView.swift */,
+				AC3000040000000000000001 /* AcpAgentPickerView.swift */,
+				AC3000050000000000000001 /* AcpAgentBadge.swift */,
+			);
+			path = ACP;
+			sourceTree = "<group>";
+		};
 		0A1B2C3D4E5F67B1 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				AC20000F0000000000000001 /* ACP */,
 				B91A2C3D4E5F0013 /* CameraPreviewView.swift */,
 				B91A2C3D4E5F0014 /* CameraPermissionDeniedView.swift */,
 				B91A2C3D4E5F0015 /* PairingConfirmationView.swift */,
@@ -425,6 +530,7 @@
 				P91A2C3D4E5F0012 /* PurchaseViewModel.swift */,
 				T91A2C3D4E5F0011 /* UsageLimitsViewModel.swift */,
 				W91A2C3D4E5F0011 /* VoiceChatViewModel.swift */,
+				AC1000090000000000000001 /* AcpSessionViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -741,6 +847,34 @@
 				Z91A2C3D4E5F0005 /* PrivacySettingsView.swift in Sources */,
 				Z91A2C3D4E5F0006 /* SharedSessionsView.swift in Sources */,
 				Z91A2C3D4E5F0007 /* SessionShareSheet.swift in Sources */,
+				AC1000010000000000000002 /* AcpContentBlock.swift in Sources */,
+				AC1000020000000000000002 /* AcpToolCall.swift in Sources */,
+				AC1000030000000000000002 /* AcpPlanEntry.swift in Sources */,
+				AC1000040000000000000002 /* AcpCommand.swift in Sources */,
+				AC1000050000000000000002 /* AcpPermissionRequest.swift in Sources */,
+				AC1000060000000000000002 /* AcpAgentRegistry.swift in Sources */,
+				AC1000070000000000000002 /* AcpSessionUpdate.swift in Sources */,
+				AC1000080000000000000002 /* AcpSessionState.swift in Sources */,
+				AC1000090000000000000002 /* AcpSessionViewModel.swift in Sources */,
+				AC2000010000000000000002 /* AcpStreamingTextView.swift in Sources */,
+				AC2000020000000000000002 /* AcpThoughtView.swift in Sources */,
+				AC2000030000000000000002 /* AcpPlanView.swift in Sources */,
+				AC2000040000000000000002 /* AcpToolCallView.swift in Sources */,
+				AC2000050000000000000002 /* AcpModeIndicator.swift in Sources */,
+				AC2000060000000000000002 /* AcpUsageWidget.swift in Sources */,
+				AC2000070000000000000002 /* AcpCommandPaletteView.swift in Sources */,
+				AC2000080000000000000002 /* AcpConfigPanelView.swift in Sources */,
+				AC2000090000000000000002 /* AcpContentBlockRenderer.swift in Sources */,
+				AC20000A0000000000000002 /* AcpImageView.swift in Sources */,
+				AC20000B0000000000000002 /* AcpDiffView.swift in Sources */,
+				AC20000C0000000000000002 /* AcpTerminalOutputView.swift in Sources */,
+				AC20000D0000000000000002 /* AcpResourceView.swift in Sources */,
+				AC20000E0000000000000002 /* AcpSessionView.swift in Sources */,
+				AC3000010000000000000002 /* AcpPermissionRequestView.swift in Sources */,
+				AC3000020000000000000002 /* AcpPermissionHistoryView.swift in Sources */,
+				AC3000030000000000000002 /* AcpSessionBrowserView.swift in Sources */,
+				AC3000040000000000000002 /* AcpAgentPickerView.swift in Sources */,
+				AC3000050000000000000002 /* AcpAgentBadge.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -769,6 +903,8 @@
 				T91A2C3D4E5F0005 /* UsageLimitsTests.swift in Sources */,
 				V91A2C3D4E5F0001 /* SyncServiceReconnectionTests.swift in Sources */,
 				X91A2C3D4E5F0004 /* RevenueCatPurchaseServiceTests.swift in Sources */,
+				AC10000A0000000000000002 /* AcpSessionUpdateTests.swift in Sources */,
+				AC10000B0000000000000002 /* AcpJsonDecodingTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

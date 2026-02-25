@@ -95,6 +95,14 @@ actor SyncService {
     /// Emitted when a session has been successfully revived.
     nonisolated let sessionRevived = PassthroughSubject<SessionRevivedEvent, Never>()
 
+    /// Publisher for ACP session updates (HAP-1057).
+    /// Emitted when an ACP session update is received and decrypted.
+    nonisolated let acpSessionUpdates = PassthroughSubject<AcpSessionUpdateEvent, Never>()
+
+    /// Publisher for ACP permission requests (HAP-1057).
+    /// Emitted when an ACP permission request is received and decrypted.
+    nonisolated let acpPermissionRequests = PassthroughSubject<AcpPermissionRequestEvent, Never>()
+
     // MARK: - Reconnection Configuration
 
     /// Configuration for automatic reconnection behavior.
@@ -686,10 +694,117 @@ actor SyncService {
                 sessionRevived.send(event)
             }
 
+        case .acpSessionUpdate:
+            // HAP-1057: Handle ACP session update
+            if let sid = envelope.sid, let updateStr = envelope.update {
+                await handleAcpSessionUpdate(sessionId: sid, updatePayload: updateStr)
+            }
+
+        case .acpPermissionRequest:
+            // HAP-1057: Handle ACP permission request
+            if let sid = envelope.sid,
+               let requestId = envelope.requestId,
+               let payloadStr = envelope.payload {
+                await handleAcpPermissionRequest(
+                    sessionId: sid,
+                    requestId: requestId,
+                    payload: payloadStr,
+                    timeoutMs: envelope.timeoutMs
+                )
+            }
+
         case .subscribe, .unsubscribe, .update:
             // Client-to-server messages; ignore if received from server
             break
         }
+    }
+
+    // MARK: - Private - ACP Handling
+
+    /// Handle an ACP session update payload.
+    ///
+    /// The update payload may be either:
+    /// - A JSON string of the AcpSessionUpdate (if the entire message was E2E encrypted)
+    /// - A base64-encoded encrypted payload (requiring a second decryption)
+    ///
+    /// Both are attempted for maximum compatibility.
+    private func handleAcpSessionUpdate(sessionId: String, updatePayload: String) async {
+        // ACP uses camelCase JSON keys; do not use convertFromSnakeCase
+        let acpDecoder = JSONDecoder()
+
+        // Try 1: Payload is a plain JSON string (outer encryption already handled)
+        if let jsonData = updatePayload.data(using: .utf8),
+           let update = try? acpDecoder.decode(AcpSessionUpdate.self, from: jsonData) {
+            acpSessionUpdates.send(AcpSessionUpdateEvent(sessionId: sessionId, update: update))
+            return
+        }
+
+        // Try 2: Payload is base64-encoded encrypted data (double encryption)
+        if let key = encryptionKey {
+            do {
+                let decryptedString = try EncryptionService.decryptString(updatePayload, with: key)
+                if let jsonData = decryptedString.data(using: .utf8),
+                   let update = try? acpDecoder.decode(AcpSessionUpdate.self, from: jsonData) {
+                    acpSessionUpdates.send(AcpSessionUpdateEvent(sessionId: sessionId, update: update))
+                    return
+                }
+            } catch {
+                #if DEBUG
+                print("[SyncService] ACP update decryption failed: \(error)")
+                #endif
+            }
+        }
+
+        #if DEBUG
+        print("[SyncService] Failed to parse ACP session update for session \(sessionId)")
+        #endif
+    }
+
+    /// Handle an ACP permission request payload.
+    private func handleAcpPermissionRequest(
+        sessionId: String,
+        requestId: String,
+        payload: String,
+        timeoutMs: Int?
+    ) async {
+        let acpDecoder = JSONDecoder()
+
+        // Try 1: Plain JSON
+        if let jsonData = payload.data(using: .utf8),
+           let request = try? acpDecoder.decode(AcpWirePermissionRequest.self, from: jsonData) {
+            acpPermissionRequests.send(AcpPermissionRequestEvent(
+                sessionId: sessionId,
+                requestId: requestId,
+                request: request,
+                timeoutMs: timeoutMs
+            ))
+            return
+        }
+
+        // Try 2: Encrypted
+        if let key = encryptionKey {
+            do {
+                let decryptedString = try EncryptionService.decryptString(payload, with: key)
+                if let jsonData = decryptedString.data(using: .utf8),
+                   let request = try? acpDecoder.decode(AcpWirePermissionRequest.self, from: jsonData) {
+                    acpPermissionRequests.send(AcpPermissionRequestEvent(
+                        sessionId: sessionId,
+                        requestId: requestId,
+                        request: request,
+                        timeoutMs: timeoutMs
+                    ))
+                    return
+                }
+            } catch {
+                #if DEBUG
+                print("[SyncService] ACP permission payload decryption failed: \(error)")
+                #endif
+            }
+        }
+
+        #if DEBUG
+        print("[SyncService] Failed to parse ACP permission request \(requestId) for session \(sessionId)")
+        #endif
     }
 
     // MARK: - Private - Ping/Pong Keepalive
@@ -846,6 +961,10 @@ enum SyncMessageType: String, Codable {
     case sessionRevivalPaused = "session-revival-paused"
     /// Session was successfully revived (HAP-733)
     case sessionRevived = "session-revived"
+    /// ACP session update (HAP-1057)
+    case acpSessionUpdate = "acp-session-update"
+    /// ACP permission request (HAP-1057)
+    case acpPermissionRequest = "acp-permission-request"
 }
 
 /// Envelope for typed sync updates from the server.
@@ -868,10 +987,18 @@ struct SyncUpdateEnvelope: Codable {
     let originalSessionId: String?
     let newSessionId: String?
 
+    // ACP event fields (HAP-1057)
+    let sid: String?
+    let update: String?
+    let requestId: String?
+    let payload: String?
+    let timeoutMs: Int?
+
     enum CodingKeys: String, CodingKey {
         case type, session, message, sessionId
         case reason, remainingMs, resumesAt, machineId
         case originalSessionId, newSessionId
+        case sid, update, requestId, payload, timeoutMs
     }
 }
 

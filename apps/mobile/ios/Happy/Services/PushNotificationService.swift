@@ -75,6 +75,9 @@ final class PushNotificationService: NSObject, ObservableObject {
 
         /// A tool usage approval request.
         static let toolApproval = "TOOL_APPROVAL"
+
+        /// An ACP permission request from an agent.
+        static let acpPermission = "ACP_PERMISSION"
     }
 
     /// Identifiers for notification actions.
@@ -96,6 +99,12 @@ final class PushNotificationService: NSObject, ObservableObject {
 
         /// Reject a tool usage request.
         static let rejectTool = "REJECT_TOOL"
+
+        /// Allow an ACP permission request from a notification action.
+        static let allowAcp = "ALLOW_ACP"
+
+        /// Reject an ACP permission request from a notification action.
+        static let rejectAcp = "REJECT_ACP"
 
         /// Dismiss the notification.
         static let dismiss = "DISMISS"
@@ -195,11 +204,32 @@ final class PushNotificationService: NSObject, ObservableObject {
             options: [.customDismissAction]
         )
 
+        // ACP Permission category - Allow and Reject actions
+        let allowAcpAction = UNNotificationAction(
+            identifier: Action.allowAcp,
+            title: "Allow",
+            options: [.foreground]
+        )
+
+        let rejectAcpAction = UNNotificationAction(
+            identifier: Action.rejectAcp,
+            title: "Reject",
+            options: [.destructive]
+        )
+
+        let acpPermissionCategory = UNNotificationCategory(
+            identifier: Category.acpPermission,
+            actions: [allowAcpAction, rejectAcpAction],
+            intentIdentifiers: [],
+            options: [.customDismissAction]
+        )
+
         notificationCenter.setNotificationCategories([
             sessionUpdateCategory,
             messageCategory,
             pairingCategory,
-            toolApprovalCategory
+            toolApprovalCategory,
+            acpPermissionCategory
         ])
     }
 
@@ -389,6 +419,9 @@ final class PushNotificationService: NSObject, ObservableObject {
         case "tool_approval":
             return handleToolApprovalNotification(userInfo)
 
+        case "acp_permission":
+            return handleAcpPermissionNotification(userInfo)
+
         default:
             #if DEBUG
             print("[PushNotificationService] Unknown notification type: \(type)")
@@ -547,6 +580,84 @@ final class PushNotificationService: NSObject, ObservableObject {
         return .newData
     }
 
+    /// Handle an ACP permission notification.
+    ///
+    /// Presents a notification with allow/reject actions when an ACP agent
+    /// requests permission to use a tool.
+    ///
+    /// - Parameter userInfo: The notification payload.
+    /// - Returns: The fetch result.
+    private func handleAcpPermissionNotification(_ userInfo: [AnyHashable: Any]) -> UIBackgroundFetchResult {
+        guard let sessionId = userInfo["sessionId"] as? String,
+              let requestId = userInfo["requestId"] as? String else {
+            return .noData
+        }
+
+        let toolTitle = userInfo["toolTitle"] as? String ?? "Unknown tool"
+        let toolKind = userInfo["toolKind"] as? String
+
+        NotificationCenter.default.post(
+            name: .acpPermissionRequested,
+            object: nil,
+            userInfo: [
+                "sessionId": sessionId,
+                "requestId": requestId,
+                "toolTitle": toolTitle,
+                "toolKind": toolKind as Any
+            ]
+        )
+
+        showLocalNotification(
+            title: "Permission Required",
+            body: toolTitle,
+            category: Category.acpPermission,
+            userInfo: [
+                "sessionId": sessionId,
+                "requestId": requestId,
+                "toolTitle": toolTitle,
+                "type": "acp_permission"
+            ]
+        )
+
+        return .newData
+    }
+
+    // MARK: - ACP Permission Notifications
+
+    /// Send a local notification for an ACP permission request.
+    ///
+    /// Called by AcpSessionViewModel when a permission request is received via WebSocket
+    /// and the app is backgrounded or the user should be alerted.
+    ///
+    /// - Parameters:
+    ///   - requestId: The unique permission request ID.
+    ///   - sessionId: The session the request belongs to.
+    ///   - toolTitle: The display title of the tool requesting permission.
+    ///   - toolKind: The kind of tool (read, edit, execute, etc.).
+    func sendAcpPermissionNotification(
+        requestId: String,
+        sessionId: String,
+        toolTitle: String,
+        toolKind: String?
+    ) {
+        var info: [String: String] = [
+            "sessionId": sessionId,
+            "requestId": requestId,
+            "toolTitle": toolTitle,
+            "type": "acp_permission"
+        ]
+        if let toolKind {
+            info["toolKind"] = toolKind
+        }
+
+        showLocalNotification(
+            title: "Permission Required",
+            body: toolTitle,
+            category: Category.acpPermission,
+            userInfo: info
+        )
+    }
+
     // MARK: - Local Notifications
 
     /// Show a local notification to the user.
@@ -650,6 +761,7 @@ final class PushNotificationService: NSObject, ObservableObject {
         static let messages = "notification_messages"
         static let pairing = "notification_pairing"
         static let toolApproval = "notification_tool_approval"
+        static let acpPermission = "notification_acp_permission"
     }
 
     /// Check whether a notification should be shown based on user preferences.
@@ -686,6 +798,13 @@ final class PushNotificationService: NSObject, ObservableObject {
             // Tool approval defaults to always showing (critical notification)
             if defaults.object(forKey: PreferenceKey.toolApproval) != nil {
                 return defaults.bool(forKey: PreferenceKey.toolApproval)
+            }
+            return true
+
+        case Category.acpPermission:
+            // ACP permission defaults to always showing (critical for remote agent control)
+            if defaults.object(forKey: PreferenceKey.acpPermission) != nil {
+                return defaults.bool(forKey: PreferenceKey.acpPermission)
             }
             return true
 
@@ -822,6 +941,34 @@ extension PushNotificationService: UNUserNotificationCenterDelegate {
                 )
             }
 
+        case Action.allowAcp:
+            let sessionId = userInfo["sessionId"] as? String
+            let requestId = userInfo["requestId"] as? String
+            await MainActor.run {
+                var info: [String: String] = [:]
+                if let sessionId { info["sessionId"] = sessionId }
+                if let requestId { info["requestId"] = requestId }
+                NotificationCenter.default.post(
+                    name: .acpPermissionAllowed,
+                    object: nil,
+                    userInfo: info
+                )
+            }
+
+        case Action.rejectAcp:
+            let sessionId = userInfo["sessionId"] as? String
+            let requestId = userInfo["requestId"] as? String
+            await MainActor.run {
+                var info: [String: String] = [:]
+                if let sessionId { info["sessionId"] = sessionId }
+                if let requestId { info["requestId"] = requestId }
+                NotificationCenter.default.post(
+                    name: .acpPermissionRejected,
+                    object: nil,
+                    userInfo: info
+                )
+            }
+
         case UNNotificationDismissActionIdentifier:
             break // User dismissed the notification
 
@@ -871,6 +1018,18 @@ extension Notification.Name {
 
     /// Posted to reject a tool usage request from a notification action.
     static let rejectToolRequest = Notification.Name("rejectToolRequest")
+
+    /// Posted when an ACP permission request is received.
+    static let acpPermissionRequested = Notification.Name("acpPermissionRequested")
+
+    /// Posted when an ACP permission is allowed from a notification action.
+    static let acpPermissionAllowed = Notification.Name("acpPermissionAllowed")
+
+    /// Posted when an ACP permission is rejected from a notification action.
+    static let acpPermissionRejected = Notification.Name("acpPermissionRejected")
+
+    /// Posted to navigate to the ACP permission view.
+    static let navigateToAcpPermission = Notification.Name("navigateToAcpPermission")
 }
 
 // MARK: - Push Notification Errors
