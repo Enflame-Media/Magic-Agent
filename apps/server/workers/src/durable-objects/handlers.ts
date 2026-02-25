@@ -1609,6 +1609,183 @@ export async function handleRequestUpdatesSince(
 }
 
 // =============================================================================
+// ACP RELAY HANDLERS (HAP-1050)
+// =============================================================================
+
+/**
+ * Handle ACP session update relay.
+ *
+ * Relays encrypted ACP session updates from CLI to user-scoped/session-scoped connections.
+ * Server treats the update payload as an opaque blob (zero-knowledge relay).
+ *
+ * Event: 'acp-session-update'
+ * Data: { sid: string, update: string }
+ *
+ * @see HAP-1050 - ACP relay support
+ */
+export async function handleAcpSessionUpdate(
+    ctx: HandlerContext,
+    data: unknown
+): Promise<HandlerResult> {
+    const payload = data as { sid: string; update: string } | undefined;
+    const sid = payload?.sid;
+    const update = payload?.update;
+
+    // Validate required fields
+    if (!sid || typeof sid !== 'string' || !update || typeof update !== 'string') {
+        return {};
+    }
+
+    // Validate session belongs to user
+    const [session] = await ctx.db
+        .select({ id: sessions.id })
+        .from(sessions)
+        .where(and(eq(sessions.id, sid), eq(sessions.accountId, ctx.userId)));
+
+    if (!session) {
+        return {};
+    }
+
+    return {
+        ephemeral: {
+            message: {
+                event: 'ephemeral',
+                data: {
+                    type: 'acp-session-update',
+                    sid,
+                    update,
+                },
+            },
+            filter: { type: 'all-interested-in-session', sessionId: sid },
+        },
+    };
+}
+
+/**
+ * Handle ACP permission request relay.
+ *
+ * Relays encrypted ACP permission requests from CLI to mobile/web apps.
+ * Server treats the payload as an opaque blob (zero-knowledge relay).
+ *
+ * Event: 'acp-permission-request'
+ * Data: { sid: string, requestId: string, payload: string, timeoutMs?: number }
+ *
+ * @see HAP-1050 - ACP relay support
+ * @see HAP-1043 - Docker server equivalent
+ */
+export async function handleAcpPermissionRequest(
+    ctx: HandlerContext,
+    data: unknown
+): Promise<HandlerResult> {
+    const payload = data as {
+        sid: string;
+        requestId: string;
+        payload: string;
+        timeoutMs?: number;
+    } | undefined;
+    const sid = payload?.sid;
+    const requestId = payload?.requestId;
+    const permPayload = payload?.payload;
+    const timeoutMs = payload?.timeoutMs;
+
+    // Validate required fields
+    if (
+        !sid || typeof sid !== 'string' ||
+        !requestId || typeof requestId !== 'string' ||
+        !permPayload || typeof permPayload !== 'string'
+    ) {
+        return {};
+    }
+
+    // Validate session belongs to user
+    const [session] = await ctx.db
+        .select({ id: sessions.id })
+        .from(sessions)
+        .where(and(eq(sessions.id, sid), eq(sessions.accountId, ctx.userId)));
+
+    if (!session) {
+        return {};
+    }
+
+    return {
+        ephemeral: {
+            message: {
+                event: 'ephemeral',
+                data: {
+                    type: 'acp-permission-request',
+                    sid,
+                    requestId,
+                    payload: permPayload,
+                    ...(timeoutMs != null && { timeoutMs }),
+                },
+            },
+            filter: { type: 'user-scoped-only' },
+        },
+    };
+}
+
+/**
+ * Handle ACP permission response relay.
+ *
+ * Relays encrypted ACP permission responses from mobile/web app back to all
+ * connections except the sender. CLI machines receive this to forward the
+ * permission decision to the agent.
+ *
+ * Event: 'acp-permission-response'
+ * Data: { sid: string, requestId: string, payload: string }
+ *
+ * @see HAP-1050 - ACP relay support
+ */
+export async function handleAcpPermissionResponse(
+    ctx: HandlerContext,
+    data: unknown,
+    senderConnectionId: string
+): Promise<HandlerResult> {
+    const payload = data as {
+        sid: string;
+        requestId: string;
+        payload: string;
+    } | undefined;
+    const sid = payload?.sid;
+    const requestId = payload?.requestId;
+    const permPayload = payload?.payload;
+
+    // Validate required fields
+    if (
+        !sid || typeof sid !== 'string' ||
+        !requestId || typeof requestId !== 'string' ||
+        !permPayload || typeof permPayload !== 'string'
+    ) {
+        return {};
+    }
+
+    // Validate session belongs to user
+    const [session] = await ctx.db
+        .select({ id: sessions.id })
+        .from(sessions)
+        .where(and(eq(sessions.id, sid), eq(sessions.accountId, ctx.userId)));
+
+    if (!session) {
+        return {};
+    }
+
+    return {
+        ephemeral: {
+            message: {
+                event: 'ephemeral',
+                data: {
+                    type: 'acp-permission-response',
+                    sid,
+                    requestId,
+                    payload: permPayload,
+                },
+            },
+            filter: { type: 'exclude', connectionId: senderConnectionId },
+        },
+    };
+}
+
+// =============================================================================
 // HELPER TYPES
 // =============================================================================
 // NOTE: UpdatePayload is now imported from @magic-agent/protocol via ./types
