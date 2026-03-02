@@ -113,7 +113,7 @@ jobs:
           key: stryker-workers-${{ runner.os }}-${{ hashFiles('apps/server/workers/src/**/*.ts') }}-${{ github.sha }}
 
       - name: Upload mutation report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: mutation-report-workers
