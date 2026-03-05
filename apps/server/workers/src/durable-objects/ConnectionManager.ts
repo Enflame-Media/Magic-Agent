@@ -62,6 +62,8 @@ import {
     handleAcpSessionUpdate,
     handleAcpPermissionRequest,
     handleAcpPermissionResponse,
+    handleAcpSessionCommand,
+    handleAcpSessionListResponse,
 } from './handlers';
 
 /**
@@ -1035,6 +1037,29 @@ class ConnectionManagerBase extends DurableObject<ConnectionManagerEnv> {
                         handlerCtx,
                         normalized.payload,
                         metadata.connectionId
+                    );
+                    await this.processHandlerResult(ws, result, normalized.messageId);
+                }
+                break;
+            }
+
+            case 'acp-session-command': {
+                if (handlerCtx && metadata) {
+                    const result = await handleAcpSessionCommand(
+                        handlerCtx,
+                        normalized.payload,
+                        metadata.connectionId
+                    );
+                    await this.processHandlerResult(ws, result, normalized.messageId);
+                }
+                break;
+            }
+
+            case 'acp-session-list-response': {
+                if (handlerCtx && metadata) {
+                    const result = await handleAcpSessionListResponse(
+                        handlerCtx,
+                        normalized.payload
                     );
                     await this.processHandlerResult(ws, result, normalized.messageId);
                 }

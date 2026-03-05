@@ -268,6 +268,59 @@ export const ApiEphemeralAcpPermissionRequestSchema = z.object({
     timeoutMs: z.number().int().min(0).optional(),
 });
 
+/**
+ * ACP session command event (mobile → CLI direction)
+ *
+ * Sent by the mobile app to request session operations (list, load, resume, fork).
+ * Relayed through the server to the CLI machine. The server never reads the payload.
+ *
+ * @see HAP-1069 - ACP session command/response relay
+ */
+export const ApiEphemeralAcpSessionCommandSchema = z.object({
+    type: z.literal('acp-session-command'),
+    /**
+     * Session ID — identifies which session the command targets
+     */
+    sid: z.string().min(1).max(STRING_LIMITS.ID_MAX),
+    /**
+     * Command type (e.g., 'list', 'load', 'resume', 'fork')
+     */
+    command: z.string().min(1).max(STRING_LIMITS.LABEL_MAX),
+    /**
+     * Encrypted command payload.
+     * Contains the serialized ACP command, encrypted with the session's
+     * data encryption key. The server never reads this content.
+     */
+    payload: z.string().min(1).max(STRING_LIMITS.CONTENT_MAX),
+});
+
+export type ApiEphemeralAcpSessionCommand = z.infer<typeof ApiEphemeralAcpSessionCommandSchema>;
+
+/**
+ * ACP session list response event (CLI → mobile direction)
+ *
+ * Sent by the CLI agent in response to a session list request.
+ * Relayed through the server to user-scoped connections (mobile/web).
+ * The server never reads the payload.
+ *
+ * @see HAP-1069 - ACP session command/response relay
+ */
+export const ApiEphemeralAcpSessionListResponseSchema = z.object({
+    type: z.literal('acp-session-list-response'),
+    /**
+     * Session ID — identifies which session the response belongs to
+     */
+    sid: z.string().min(1).max(STRING_LIMITS.ID_MAX),
+    /**
+     * Encrypted session list response payload.
+     * Contains the serialized session list data, encrypted with the session's
+     * data encryption key. The server never reads this content.
+     */
+    payload: z.string().min(1).max(STRING_LIMITS.CONTENT_MAX),
+});
+
+export type ApiEphemeralAcpSessionListResponse = z.infer<typeof ApiEphemeralAcpSessionListResponseSchema>;
+
 export type ApiEphemeralAcpPermissionRequest = z.infer<typeof ApiEphemeralAcpPermissionRequestSchema>;
 
 /**
@@ -282,6 +335,8 @@ export const ApiEphemeralUpdateSchema = z.union([
     ApiEphemeralFriendStatusUpdateSchema,
     ApiEphemeralAcpSessionUpdateSchema,
     ApiEphemeralAcpPermissionRequestSchema,
+    ApiEphemeralAcpSessionCommandSchema,
+    ApiEphemeralAcpSessionListResponseSchema,
 ]);
 
 export type ApiEphemeralUpdate = z.infer<typeof ApiEphemeralUpdateSchema>;

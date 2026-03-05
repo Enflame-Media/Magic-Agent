@@ -127,4 +127,72 @@ export function acpSessionUpdateHandler(userId: string, socket: Socket, connecti
             log({ module: 'websocket', level: 'error' }, `Error in acp-permission-response: ${error}`);
         }
     });
+
+    // HAP-1069: Session command relay (mobile/web app -> CLI machine)
+    socket.on('acp-session-command', async (data: any) => {
+        try {
+            websocketEventsCounter.inc({ event_type: 'acp-session-command' });
+
+            const { sid, command, payload } = data;
+
+            if (!sid || typeof sid !== 'string' ||
+                !command || typeof command !== 'string' ||
+                !payload || typeof payload !== 'string') {
+                return;
+            }
+
+            const isValid = await activityCache.isSessionValid(sid, userId);
+            if (!isValid) {
+                return;
+            }
+
+            // Relay to all connections except sender (reaches CLI machines)
+            eventRouter.emitEphemeral({
+                userId,
+                payload: {
+                    type: 'acp-session-command',
+                    sid,
+                    command,
+                    payload,
+                },
+                recipientFilter: { type: 'all-user-authenticated-connections' },
+                skipSenderConnection: connection
+            });
+        } catch (error) {
+            log({ module: 'websocket', level: 'error' }, `Error in acp-session-command: ${error}`);
+        }
+    });
+
+    // HAP-1069: Session list response relay (CLI machine -> mobile/web apps)
+    socket.on('acp-session-list-response', async (data: any) => {
+        try {
+            websocketEventsCounter.inc({ event_type: 'acp-session-list-response' });
+
+            const { sid, payload } = data;
+
+            if (!sid || typeof sid !== 'string' ||
+                !payload || typeof payload !== 'string') {
+                return;
+            }
+
+            const isValid = await activityCache.isSessionValid(sid, userId);
+            if (!isValid) {
+                return;
+            }
+
+            // Relay to user-scoped connections (mobile/web apps), skip the CLI sender
+            eventRouter.emitEphemeral({
+                userId,
+                payload: {
+                    type: 'acp-session-list-response',
+                    sid,
+                    payload,
+                },
+                recipientFilter: { type: 'user-scoped-only' },
+                skipSenderConnection: connection
+            });
+        } catch (error) {
+            log({ module: 'websocket', level: 'error' }, `Error in acp-session-list-response: ${error}`);
+        }
+    });
 }

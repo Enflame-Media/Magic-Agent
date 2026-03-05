@@ -25,6 +25,8 @@ import {
     handleAcpSessionUpdate,
     handleAcpPermissionRequest,
     handleAcpPermissionResponse,
+    handleAcpSessionCommand,
+    handleAcpSessionListResponse,
 } from './handlers';
 
 // =============================================================================
@@ -541,6 +543,280 @@ describe('ACP Relay Handlers', () => {
                 },
                 senderConnectionId
             );
+
+            expect(result.ephemeral).toBeUndefined();
+            expect(ctx.db.select).not.toHaveBeenCalled();
+        });
+    });
+
+    // =============================================================================
+    // ACP SESSION COMMAND TESTS (HAP-1069)
+    // =============================================================================
+
+    describe('handleAcpSessionCommand', () => {
+        const senderConnectionId = 'conn-mobile-789';
+
+        it('should relay session command to all connections except sender when session is owned', async () => {
+            const ctx = createContextWithOwnedSession();
+
+            const result = await handleAcpSessionCommand(
+                ctx,
+                {
+                    sid: 'session-abc',
+                    command: 'list',
+                    payload: 'encrypted-command-payload',
+                },
+                senderConnectionId
+            );
+
+            expect(result.ephemeral).toBeDefined();
+            expect(result.ephemeral!.message).toEqual({
+                event: 'ephemeral',
+                data: {
+                    type: 'acp-session-command',
+                    sid: 'session-abc',
+                    command: 'list',
+                    payload: 'encrypted-command-payload',
+                },
+            });
+            // Verify sender exclusion filter (reaches CLI machines)
+            expect(result.ephemeral!.filter).toEqual({
+                type: 'exclude',
+                connectionId: senderConnectionId,
+            });
+        });
+
+        it('should relay different command types (load, resume, fork)', async () => {
+            const ctx = createContextWithOwnedSession();
+
+            for (const command of ['load', 'resume', 'fork']) {
+                const result = await handleAcpSessionCommand(
+                    ctx,
+                    {
+                        sid: 'session-abc',
+                        command,
+                        payload: `encrypted-${command}-payload`,
+                    },
+                    senderConnectionId
+                );
+
+                expect(result.ephemeral).toBeDefined();
+                expect(result.ephemeral!.message.data).toEqual(
+                    expect.objectContaining({ command })
+                );
+            }
+        });
+
+        it('should reject relay for non-owned session', async () => {
+            const ctx = createContextWithNoSession();
+
+            const result = await handleAcpSessionCommand(
+                ctx,
+                {
+                    sid: 'session-not-mine',
+                    command: 'list',
+                    payload: 'encrypted-data',
+                },
+                senderConnectionId
+            );
+
+            expect(result.ephemeral).toBeUndefined();
+        });
+
+        it('should reject malformed payload with missing sid', async () => {
+            const ctx = createContextWithOwnedSession();
+
+            const result = await handleAcpSessionCommand(
+                ctx,
+                {
+                    command: 'list',
+                    payload: 'encrypted-data',
+                },
+                senderConnectionId
+            );
+
+            expect(result.ephemeral).toBeUndefined();
+            expect(ctx.db.select).not.toHaveBeenCalled();
+        });
+
+        it('should reject malformed payload with missing command', async () => {
+            const ctx = createContextWithOwnedSession();
+
+            const result = await handleAcpSessionCommand(
+                ctx,
+                {
+                    sid: 'session-abc',
+                    payload: 'encrypted-data',
+                },
+                senderConnectionId
+            );
+
+            expect(result.ephemeral).toBeUndefined();
+            expect(ctx.db.select).not.toHaveBeenCalled();
+        });
+
+        it('should reject malformed payload with missing payload field', async () => {
+            const ctx = createContextWithOwnedSession();
+
+            const result = await handleAcpSessionCommand(
+                ctx,
+                {
+                    sid: 'session-abc',
+                    command: 'list',
+                },
+                senderConnectionId
+            );
+
+            expect(result.ephemeral).toBeUndefined();
+            expect(ctx.db.select).not.toHaveBeenCalled();
+        });
+
+        it('should reject payload with non-string fields', async () => {
+            const ctx = createContextWithOwnedSession();
+
+            const result = await handleAcpSessionCommand(
+                ctx,
+                {
+                    sid: 123,
+                    command: true,
+                    payload: { obj: true },
+                },
+                senderConnectionId
+            );
+
+            expect(result.ephemeral).toBeUndefined();
+            expect(ctx.db.select).not.toHaveBeenCalled();
+        });
+
+        it('should reject undefined payload', async () => {
+            const ctx = createContextWithOwnedSession();
+
+            const result = await handleAcpSessionCommand(
+                ctx,
+                undefined,
+                senderConnectionId
+            );
+
+            expect(result.ephemeral).toBeUndefined();
+            expect(ctx.db.select).not.toHaveBeenCalled();
+        });
+
+        it('should reject empty string fields', async () => {
+            const ctx = createContextWithOwnedSession();
+
+            const result = await handleAcpSessionCommand(
+                ctx,
+                {
+                    sid: '',
+                    command: '',
+                    payload: '',
+                },
+                senderConnectionId
+            );
+
+            expect(result.ephemeral).toBeUndefined();
+            expect(ctx.db.select).not.toHaveBeenCalled();
+        });
+    });
+
+    // =============================================================================
+    // ACP SESSION LIST RESPONSE TESTS (HAP-1069)
+    // =============================================================================
+
+    describe('handleAcpSessionListResponse', () => {
+        it('should relay session list response to user-scoped connections when session is owned', async () => {
+            const ctx = createContextWithOwnedSession();
+
+            const result = await handleAcpSessionListResponse(ctx, {
+                sid: 'session-abc',
+                payload: 'encrypted-session-list-response',
+            });
+
+            expect(result.ephemeral).toBeDefined();
+            expect(result.ephemeral!.message).toEqual({
+                event: 'ephemeral',
+                data: {
+                    type: 'acp-session-list-response',
+                    sid: 'session-abc',
+                    payload: 'encrypted-session-list-response',
+                },
+            });
+            // Verify filter targets only user-scoped (mobile/web apps)
+            expect(result.ephemeral!.filter).toEqual({
+                type: 'user-scoped-only',
+            });
+        });
+
+        it('should reject relay for non-owned session', async () => {
+            const ctx = createContextWithNoSession();
+
+            const result = await handleAcpSessionListResponse(ctx, {
+                sid: 'session-not-mine',
+                payload: 'encrypted-data',
+            });
+
+            expect(result.ephemeral).toBeUndefined();
+        });
+
+        it('should reject malformed payload with missing sid', async () => {
+            const ctx = createContextWithOwnedSession();
+
+            const result = await handleAcpSessionListResponse(ctx, {
+                payload: 'encrypted-data',
+            });
+
+            expect(result.ephemeral).toBeUndefined();
+            expect(ctx.db.select).not.toHaveBeenCalled();
+        });
+
+        it('should reject malformed payload with missing payload field', async () => {
+            const ctx = createContextWithOwnedSession();
+
+            const result = await handleAcpSessionListResponse(ctx, {
+                sid: 'session-abc',
+            });
+
+            expect(result.ephemeral).toBeUndefined();
+            expect(ctx.db.select).not.toHaveBeenCalled();
+        });
+
+        it('should reject payload with non-string fields', async () => {
+            const ctx = createContextWithOwnedSession();
+
+            const result = await handleAcpSessionListResponse(ctx, {
+                sid: 42,
+                payload: { obj: true },
+            });
+
+            expect(result.ephemeral).toBeUndefined();
+            expect(ctx.db.select).not.toHaveBeenCalled();
+        });
+
+        it('should reject undefined payload', async () => {
+            const ctx = createContextWithOwnedSession();
+
+            const result = await handleAcpSessionListResponse(ctx, undefined);
+
+            expect(result.ephemeral).toBeUndefined();
+            expect(ctx.db.select).not.toHaveBeenCalled();
+        });
+
+        it('should reject null payload', async () => {
+            const ctx = createContextWithOwnedSession();
+
+            const result = await handleAcpSessionListResponse(ctx, null);
+
+            expect(result.ephemeral).toBeUndefined();
+            expect(ctx.db.select).not.toHaveBeenCalled();
+        });
+
+        it('should reject empty string fields', async () => {
+            const ctx = createContextWithOwnedSession();
+
+            const result = await handleAcpSessionListResponse(ctx, {
+                sid: '',
+                payload: '',
+            });
 
             expect(result.ephemeral).toBeUndefined();
             expect(ctx.db.select).not.toHaveBeenCalled();

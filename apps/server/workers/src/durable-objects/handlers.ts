@@ -1785,6 +1785,123 @@ export async function handleAcpPermissionResponse(
     };
 }
 
+/**
+ * HAP-1069: Relay ACP session commands from mobile/web apps to CLI machines.
+ *
+ * Receives session operation requests (list, load, resume, fork) from user-scoped
+ * connections and relays them to all other connections (including machine-scoped CLI).
+ * The server never reads the encrypted payload — zero-knowledge relay.
+ *
+ * Event: 'acp-session-command'
+ * Data: { sid: string, command: string, payload: string }
+ *
+ * @see handleAcpPermissionResponse for the same relay pattern (user → machine direction)
+ */
+export async function handleAcpSessionCommand(
+    ctx: HandlerContext,
+    data: unknown,
+    senderConnectionId: string
+): Promise<HandlerResult> {
+    const payload = data as {
+        sid: string;
+        command: string;
+        payload: string;
+    } | undefined;
+    const sid = payload?.sid;
+    const command = payload?.command;
+    const cmdPayload = payload?.payload;
+
+    // Validate required fields
+    if (
+        !sid || typeof sid !== 'string' ||
+        !command || typeof command !== 'string' ||
+        !cmdPayload || typeof cmdPayload !== 'string'
+    ) {
+        return {};
+    }
+
+    // Validate session belongs to user
+    const [session] = await ctx.db
+        .select({ id: sessions.id })
+        .from(sessions)
+        .where(and(eq(sessions.id, sid), eq(sessions.accountId, ctx.userId)));
+
+    if (!session) {
+        return {};
+    }
+
+    return {
+        ephemeral: {
+            message: {
+                event: 'ephemeral',
+                data: {
+                    type: 'acp-session-command',
+                    sid,
+                    command,
+                    payload: cmdPayload,
+                },
+            },
+            filter: { type: 'exclude', connectionId: senderConnectionId },
+        },
+    };
+}
+
+/**
+ * HAP-1069: Relay ACP session list responses from CLI machines to mobile/web apps.
+ *
+ * Receives session list data from machine-scoped connections and relays to
+ * user-scoped connections (mobile/web). The server never reads the encrypted
+ * payload — zero-knowledge relay.
+ *
+ * Event: 'acp-session-list-response'
+ * Data: { sid: string, payload: string }
+ *
+ * @see handleAcpPermissionRequest for the same relay pattern (machine → user direction)
+ */
+export async function handleAcpSessionListResponse(
+    ctx: HandlerContext,
+    data: unknown
+): Promise<HandlerResult> {
+    const payload = data as {
+        sid: string;
+        payload: string;
+    } | undefined;
+    const sid = payload?.sid;
+    const respPayload = payload?.payload;
+
+    // Validate required fields
+    if (
+        !sid || typeof sid !== 'string' ||
+        !respPayload || typeof respPayload !== 'string'
+    ) {
+        return {};
+    }
+
+    // Validate session belongs to user
+    const [session] = await ctx.db
+        .select({ id: sessions.id })
+        .from(sessions)
+        .where(and(eq(sessions.id, sid), eq(sessions.accountId, ctx.userId)));
+
+    if (!session) {
+        return {};
+    }
+
+    return {
+        ephemeral: {
+            message: {
+                event: 'ephemeral',
+                data: {
+                    type: 'acp-session-list-response',
+                    sid,
+                    payload: respPayload,
+                },
+            },
+            filter: { type: 'user-scoped-only' },
+        },
+    };
+}
+
 // =============================================================================
 // HELPER TYPES
 // =============================================================================
