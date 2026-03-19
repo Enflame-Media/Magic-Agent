@@ -34,20 +34,20 @@
   "license": "MIT",
   "private": true,
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20260210.0",
+    "@cloudflare/workers-types": "^4.20260317.1",
     "@happy/lint-rules": "workspace:*",
-    "@types/node": "^25.2.3",
-    "oxlint": "^1.46.0",
+    "@types/node": "^25.5.0",
+    "oxlint": "^1.56.0",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.18",
-    "wrangler": "^4.64.0"
+    "vitest": "^4.1.0",
+    "wrangler": "^4.75.0"
   },
   "dependencies": {
-    "@hono/swagger-ui": "^0.5.3",
-    "@hono/zod-openapi": "^1.2.1",
-    "better-auth": "^1.4.18",
+    "@hono/swagger-ui": "^0.6.1",
+    "@hono/zod-openapi": "^1.2.2",
+    "better-auth": "^1.5.5",
     "drizzle-orm": "^1.0.0-beta.12-18d8bfb",
-    "hono": "^4.12.7",
+    "hono": "^4.12.8",
     "zod": "^4.3.6"
   }
 }
