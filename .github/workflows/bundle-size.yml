@@ -175,7 +175,7 @@ jobs:
 
       # Upload artifact for debugging
       - name: Upload bundle stats
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: bundle-stats
           path: |
