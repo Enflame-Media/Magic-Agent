@@ -24,9 +24,9 @@
   ],
   "sideEffects": false,
   "devDependencies": {
-    "tsdown": "^0.20.3",
+    "tsdown": "^0.21.4",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.18"
+    "vitest": "^4.1.1"
   },
   "scripts": {
     "preinstall": "node -e \"if(!process.env.INIT_CWD?.endsWith('/happy')){console.error('❌ Run yarn install from monorepo root');process.exit(1)}\"",
