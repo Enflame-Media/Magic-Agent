@@ -9,6 +9,7 @@
         /* Emit */
         "noEmit": true,
         "outDir": "./dist",
+        "rootDir": ".",
 
         /* Type Checking - Strict Mode */
         "strict": true,

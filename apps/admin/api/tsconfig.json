@@ -19,7 +19,7 @@
         "paths": {
             "@/*": ["./src/*"]
         },
-        "baseUrl": "."
+        "rootDir": "."
     },
     "include": ["src/**/*.ts"],
     "exclude": ["node_modules", "dist"]
