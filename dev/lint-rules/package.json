@@ -18,8 +18,8 @@
     "lint:fix": "oxlint --fix src/",
     "format": "oxfmt src/",
     "format:check": "oxfmt --check src/",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "test": "vp test run",
+    "test:watch": "vp test"
   },
   "keywords": [
     "eslint",
@@ -31,10 +31,9 @@
   "license": "UNLICENSED",
   "private": true,
   "devDependencies": {
-    "@typescript-eslint/parser": "^8.57.1",
+    "@typescript-eslint/parser": "^8.57.2",
     "eslint": "^10.1.0",
-    "oxlint": "^1.56.0",
-    "vitest": "^4.1.1"
+    "oxlint": "^1.56.0"
   },
   "peerDependencies": {
     "oxlint": ">=1.36.0"

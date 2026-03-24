@@ -8,7 +8,7 @@
  * @see HAP-763 for test implementation
  */
 
-import { describe, it } from 'vitest';
+import { describe, it } from 'vite-plus/test';
 import { RuleTester } from 'eslint';
 import rule from './github-casing.js';
 
