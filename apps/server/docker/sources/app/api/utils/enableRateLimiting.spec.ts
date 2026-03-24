@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi, beforeAll, afterAll } from 'vite-plus/test';
 import { RateLimitTiers, type RateLimitTier } from './enableRateLimiting';
 
 // Mock dependencies before importing the module

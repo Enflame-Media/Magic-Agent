@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vite-plus/test';
 import { createTestApp, authHeader, TEST_USER_ID, randomId } from './__test__/testUtils';
 import { pushRoutes } from './pushRoutes';
 import type { Fastify } from '../types';

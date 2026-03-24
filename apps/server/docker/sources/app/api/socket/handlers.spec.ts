@@ -17,7 +17,7 @@
  * - RPC lifecycle (register → call → response → unregister)
  */
 
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vite-plus/test';
 import { Socket } from 'socket.io';
 import {
     TEST_USER_ID,

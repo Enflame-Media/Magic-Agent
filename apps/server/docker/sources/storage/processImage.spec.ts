@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import { processImage } from './processImage';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 
 describe('processImage', () => {
     it('should resize image and return correct metadata', async () => {
