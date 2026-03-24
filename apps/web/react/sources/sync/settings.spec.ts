@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { settingsParse, applySettings, settingsDefaults, type Settings } from './settings';
 
 describe('settings', () => {

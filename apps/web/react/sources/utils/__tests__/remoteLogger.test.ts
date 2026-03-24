@@ -15,7 +15,7 @@
  *
  * @see HAP-849
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test';
 
 // Store original process.env for restoration
 const originalEnv = { ...process.env };

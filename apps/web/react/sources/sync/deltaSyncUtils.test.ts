@@ -10,7 +10,7 @@
  * @see HAP-441 - Delta sync implementation
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vite-plus/test';
 import {
     getEntityTypeFromUpdate,
     trackSeq,

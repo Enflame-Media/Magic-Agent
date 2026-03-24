@@ -10,7 +10,7 @@
  * @see https://vitest.dev/config/#setupfiles
  */
 
-import { vi } from 'vitest';
+import { vi } from 'vite-plus/test';
 
 // Mock the AuthContext's getCurrentAuth function since it's used by authenticatedFetch
 vi.mock('@/auth/AuthContext', () => ({

@@ -6,7 +6,7 @@
  * a MITM proxy like Charles or Proxyman.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vite-plus/test';
 
 // Mock react-native Platform
 vi.mock('react-native', () => ({

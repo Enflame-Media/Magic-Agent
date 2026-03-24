@@ -19,7 +19,7 @@
  * @see HAP-558 - Delta sync tests (pattern reference)
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vite-plus/test';
 import { createReducer, reducer, type ReducerState, type ReducerResult } from './reducer';
 import type { NormalizedMessage, AgentEvent, UsageData } from '../typesRaw';
 import type { AgentState } from '../storageTypes';

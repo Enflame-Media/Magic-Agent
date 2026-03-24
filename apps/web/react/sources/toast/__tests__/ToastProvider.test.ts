@@ -20,7 +20,7 @@
  * @module toast/__tests__/ToastProvider.test
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test';
 
 // Mock timers for timeout testing
 vi.useFakeTimers();

@@ -10,7 +10,7 @@
  *
  * @see HAP-848 Handle circular objects in remoteLogger serialization
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { safeStringify, safeSerializeValue, safeSerializeArgs } from '../safeSerialize';
 
 describe('safeSerialize', () => {

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { NormalizedMessage } from '../typesRaw';
 import { createReducer, reducer } from './reducer';
 import { AgentState } from '../storageTypes';

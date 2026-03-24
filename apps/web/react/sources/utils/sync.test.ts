@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test';
 import { InvalidateSync, ValueSync } from './sync';
 
 // Mock the backoff function to avoid delays in tests

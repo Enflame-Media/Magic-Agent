@@ -24,7 +24,7 @@
  * @see HAP-558 - Integration tests for delta sync orchestration
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vite-plus/test';
 import {
     orchestrateDeltaSync,
     type DeltaSyncDependencies,

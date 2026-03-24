@@ -6,7 +6,7 @@
  * @module hooks/__tests__/useErrorHandler.test
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test';
 
 // Use vi.hoisted() for mock functions that need to be hoisted with vi.mock
 const { mockModalAlert, mockToastShow, mockSetStringAsync } = vi.hoisted(() => ({

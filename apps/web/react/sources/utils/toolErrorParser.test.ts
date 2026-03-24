@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { parseToolUseError, parseAllToolUseErrors, hasToolUseError, isCancelError } from './toolErrorParser';
 
 describe('toolErrorParser', () => {

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { compareVersions, isVersionSupported, parseVersion } from './versionUtils';
 
 describe('versionUtils', () => {

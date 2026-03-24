@@ -10,7 +10,7 @@
  * @module toast/__tests__/ToastManager.test
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test';
 import { Toast } from '../ToastManager';
 
 describe('ToastManager', () => {

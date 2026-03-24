@@ -1,5 +1,5 @@
 /* oxlint-disable no-console */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { createReducer, reducer } from './reducer';
 import { NormalizedMessage } from '../typesRaw';
 import { AgentState } from '../storageTypes';
