@@ -5,7 +5,7 @@
  * Focus on initializeSentry, captureException, captureMessage, and anonymization.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test'
 import type * as SentryTypes from '@sentry/node'
 
 // Mock Sentry

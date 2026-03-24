@@ -5,7 +5,7 @@
  * Focus on isNewerVersion logic (tested via checkForUpdates) and error handling.
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vite-plus/test'
 import { checkForUpdatesAndNotify } from './checkForUpdates'
 
 // We need to test the internal isNewerVersion function through checkForUpdates

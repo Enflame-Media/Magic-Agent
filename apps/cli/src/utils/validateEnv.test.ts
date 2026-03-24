@@ -5,7 +5,7 @@
  * Focus on validateRemoteLoggingUrl (pure URL validation) and checkEnv (process.env based).
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vite-plus/test'
 import { validateRemoteLoggingUrl, checkEnv, validateEnv } from './validateEnv'
 
 describe('validateEnv', () => {

@@ -2,7 +2,7 @@
  * Tests for SDK to Log converter
  */
 
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vite-plus/test'
 import { SDKToLogConverter, convertSDKToLog } from './sdkToLogConverter'
 import type { SDKMessage, SDKUserMessage, SDKAssistantMessage, SDKSystemMessage, SDKResultMessage } from '@/claude/sdk'
 

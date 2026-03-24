@@ -10,7 +10,7 @@
  * @module mcp/commands/remove.test
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test';
 import { removeCommand, type RemoveCommandOptions } from './remove.js';
 import * as config from '../config.js';
 

@@ -2,7 +2,7 @@
  * Tests for browser utility functions
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test'
 import { openBrowser } from './browser'
 
 // Mock the open package

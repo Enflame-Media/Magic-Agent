@@ -3,7 +3,7 @@
  * @see HAP-642 - Improved RPC error handling for stopped/archived sessions
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vite-plus/test';
 import { RpcHandlerManager, RPC_ERROR_CODES } from './RpcHandlerManager';
 import { decrypt, decodeBase64 } from '@/api/encryption';
 

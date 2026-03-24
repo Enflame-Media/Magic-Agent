@@ -12,7 +12,7 @@
  * from the connect/disconnect handlers (lines 125-156 in apiSession.ts).
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test';
 
 /**
  * Mock logger interface that matches the relevant logger methods

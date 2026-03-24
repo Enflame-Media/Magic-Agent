@@ -9,7 +9,7 @@
  * - Error cause chain preservation
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vite-plus/test';
 import { parseJsonWithContext, JsonParseError } from './types';
 
 /** Helper to capture thrown errors for testing - avoids no-conditional-expect lint warnings */

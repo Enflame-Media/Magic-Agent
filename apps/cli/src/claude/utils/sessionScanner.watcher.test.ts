@@ -9,7 +9,7 @@
  * 2. Previous session's watcher is closed when a new session starts
  * 3. All watchers are closed when the scanner is cleaned up
  */
-import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vite-plus/test'
 import { mkdir, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir, homedir } from 'node:os'

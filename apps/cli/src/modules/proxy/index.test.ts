@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vite-plus/test';
 import { createServer, IncomingMessage, ServerResponse } from 'node:http';
 import { startHTTPDirectProxy, HTTPProxy } from './index';
 

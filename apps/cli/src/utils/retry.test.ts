@@ -2,7 +2,7 @@
  * Tests for retry utility functions
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test'
 import {
   TRANSIENT_FS_ERROR_CODES,
   withRetry,

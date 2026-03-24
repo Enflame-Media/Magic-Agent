@@ -10,7 +10,7 @@
  * @see HAP-467 - Concurrent permission responses may race in MCP server
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test';
 import { PermissionHandler } from './permissionHandler';
 import type { Session } from '../session';
 import type { SDKAssistantMessage } from '../sdk';

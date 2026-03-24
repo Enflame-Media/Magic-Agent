@@ -3,7 +3,7 @@
  * @see HAP-811 - Track stopped sessions in CLI daemon status
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vite-plus/test'
 import { existsSync, rmSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 

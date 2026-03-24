@@ -5,7 +5,7 @@
  * permission request handling, "always" policy creation, and event emission.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vite-plus/test';
 import { PermissionPolicyStore, PermissionHandler } from './permissions';
 import { ToolCallRegistry } from './toolcalls';
 import type {

@@ -14,7 +14,7 @@
  * - Uses cwd-relative path resolution (compatible with Stryker sandbox)
  * - Excludes integration tests (requires daemon/server)
  */
-import { defineConfig } from 'vitest/config'
+import { defineConfig } from 'vite-plus/test/config'
 import { resolve } from 'node:path'
 
 export default defineConfig({

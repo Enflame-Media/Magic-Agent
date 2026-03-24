@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test'
 import { loadTelemetryConfig, isTelemetryDisabledByEnv } from './config'
 import { DEFAULT_TELEMETRY_CONFIG } from './types'
 

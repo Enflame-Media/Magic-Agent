@@ -5,7 +5,7 @@
  * Focus on trackEvent, trackMetric, flush, and anonymization logic.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test'
 
 // Mock dependencies before importing the module
 vi.mock('../../package.json', () => ({

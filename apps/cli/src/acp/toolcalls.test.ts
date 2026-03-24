@@ -5,7 +5,7 @@
  * permission-pending state, event emission, and query methods.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vite-plus/test';
 import { ToolCallRegistry } from './toolcalls';
 import type { AcpToolCall, AcpToolCallUpdate, AcpRequestPermissionRequest } from '@magic-agent/protocol';
 

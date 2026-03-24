@@ -6,7 +6,7 @@
  * @module agent/AgentRegistry.test
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vite-plus/test';
 import { AgentRegistry, type AgentMcpServerConfig, type AgentFactoryOptions } from './AgentRegistry';
 import type { AgentBackend, AgentId } from './AgentBackend';
 

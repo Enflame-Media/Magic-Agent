@@ -2,7 +2,7 @@
  * Tests for path security validation
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { validatePath, createPathValidator, validatePathOrThrow } from './pathSecurity';
 import { join, resolve } from 'node:path';
 

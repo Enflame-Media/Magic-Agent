@@ -4,7 +4,7 @@
  * @see HAP-730 - Implement usage limits fetcher in happy-cli
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vite-plus/test';
 import { PlanLimitsResponseSchema } from '@magic-agent/protocol';
 import {
     fetchClaudeUsageLimits,

@@ -9,7 +9,7 @@
  * terminated even if they ignore SIGTERM.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test'
 import { EventEmitter } from 'node:events'
 
 /**

@@ -2,7 +2,7 @@
  * Tests for trimIdent utility function
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from 'vite-plus/test'
 import { trimIdent } from './trimIdent'
 
 describe('trimIdent', () => {

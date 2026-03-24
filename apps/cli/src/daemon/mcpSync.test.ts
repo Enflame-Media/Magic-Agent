@@ -8,7 +8,7 @@
  * @see HAP-610
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { computeMcpConfigHash } from './run';
 
 // Type alias for the MCP sync state structure

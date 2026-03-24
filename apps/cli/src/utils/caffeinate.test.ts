@@ -9,7 +9,7 @@
  * the public API behavior where possible.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test'
 
 describe('utils/caffeinate', () => {
   const originalPlatform = process.platform

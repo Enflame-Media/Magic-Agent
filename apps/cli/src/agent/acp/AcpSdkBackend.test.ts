@@ -7,7 +7,7 @@
  * @module agent/acp/AcpSdkBackend.test
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test';
 
 // Mock child_process to avoid spawning real processes
 vi.mock('node:child_process', () => ({

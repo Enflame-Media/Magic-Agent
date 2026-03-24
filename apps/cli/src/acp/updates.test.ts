@@ -5,7 +5,7 @@
  * events are emitted to listeners, and internal state is maintained.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vite-plus/test';
 import { UpdateRouter } from './updates';
 import type {
     AcpSessionNotification,

@@ -7,7 +7,7 @@
  * @module mcp/validator.test
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
 import type { HappyMcpServerConfig } from './types';
 
 // Shared mock state that persists across all Client instances

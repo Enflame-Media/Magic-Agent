@@ -5,7 +5,7 @@
  * Focus on getEnvironmentInfo and getLogFiles which are pure functions.
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vite-plus/test'
 import { existsSync, readdirSync, statSync } from 'node:fs'
 
 // Mock modules before importing the module under test

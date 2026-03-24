@@ -7,7 +7,7 @@
  * Note: These tests use real timers with short delays (no mocking per project conventions).
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { delay, exponentialBackoffDelay, createBackoff, backoff, type BackoffFunc } from './time';
 
 /** Helper to capture async errors for testing - avoids no-conditional-expect lint warnings */

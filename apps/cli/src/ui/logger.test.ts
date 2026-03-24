@@ -4,7 +4,7 @@
  * Tests for redactSecretsInString() function (HAP-831)
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vite-plus/test'
 import { mkdirSync, existsSync, rmSync, writeFileSync, chmodSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'

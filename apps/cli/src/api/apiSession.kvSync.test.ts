@@ -8,7 +8,7 @@
  * 4. Deleted keys (null values) reset to defaults
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test';
 
 /**
  * Mock context notification service interface

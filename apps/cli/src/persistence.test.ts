@@ -7,7 +7,7 @@
  * Tests work with the actual configuration paths for integration testing.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vite-plus/test'
 import { mkdirSync, existsSync, rmSync, readFileSync, readdirSync, writeFileSync, renameSync, unlinkSync } from 'node:fs'
 import { writeFile, rename, unlink } from 'node:fs/promises'
 import { join } from 'node:path'

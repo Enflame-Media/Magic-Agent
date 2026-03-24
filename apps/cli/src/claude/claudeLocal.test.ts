@@ -5,7 +5,7 @@
  * we escalate to SIGKILL after 5 seconds to prevent zombie processes.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test'
 import { EventEmitter } from 'node:events'
 
 /**

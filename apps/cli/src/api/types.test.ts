@@ -4,7 +4,7 @@
  * These tests verify the Zod schemas for update event types work correctly
  * and match the expected structure from the mobile app.
  */
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from 'vite-plus/test'
 import type {
     DeleteSessionBody,
     NewArtifactBody,

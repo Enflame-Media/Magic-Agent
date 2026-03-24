@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from 'vite-plus/test'
 import { AxiosError } from 'axios'
 import { AppError, ErrorCodes, getSafeErrorMessage, fromUnknownSafe, type ErrorCode } from './errors'
 

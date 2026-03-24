@@ -4,7 +4,7 @@
  * Covers: extension method constants, types, and error handling.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import {
     EXTENSION_PREFIX,
     EXTENSION_METHODS,

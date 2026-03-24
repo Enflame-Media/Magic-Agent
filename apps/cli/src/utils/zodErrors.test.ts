@@ -2,7 +2,7 @@
  * Tests for Zod error formatting utilities
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from 'vite-plus/test'
 import { z } from 'zod'
 import {
   formatZodError,

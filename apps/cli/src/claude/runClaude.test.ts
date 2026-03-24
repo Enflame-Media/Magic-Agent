@@ -15,7 +15,7 @@
  * which tests sessions via the daemon spawn mechanism.
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from 'vite-plus/test'
 
 describe('runClaude', () => {
   describe('StartOptions validation', () => {

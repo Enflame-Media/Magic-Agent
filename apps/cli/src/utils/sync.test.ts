@@ -5,7 +5,7 @@
  * Verifies proper cleanup when stop() is called.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test';
 import { InvalidateSync } from './sync';
 
 describe('InvalidateSync', () => {

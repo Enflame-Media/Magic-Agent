@@ -14,7 +14,7 @@
  * - HAPPY_SERVER_URL=http://localhost:3005 (local dev server)
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vite-plus/test';
 import { execSync, spawn } from 'child_process';
 import { existsSync, readFileSync, writeFileSync, unlinkSync, copyFileSync } from 'fs';
 import path, { join } from 'path';

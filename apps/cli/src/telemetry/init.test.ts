@@ -5,7 +5,7 @@
  * Focus on initializeTelemetry, shutdownTelemetry, and related utilities.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test'
 
 // Mock config module
 vi.mock('./config', () => ({

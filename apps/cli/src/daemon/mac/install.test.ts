@@ -2,7 +2,7 @@
  * Tests for macOS LaunchDaemon plist generation
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from 'vite-plus/test'
 import plist from 'plist'
 import os from 'os'
 

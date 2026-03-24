@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vite-plus/test'
 import { createSessionScanner } from './sessionScanner'
 import { RawJSONLines } from '../types'
 import { mkdir, writeFile, appendFile, rm, readFile } from 'node:fs/promises'

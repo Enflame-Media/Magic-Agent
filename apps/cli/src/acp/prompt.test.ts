@@ -6,7 +6,7 @@
  * following the project's testing conventions.
  */
 
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach } from 'vite-plus/test';
 import { PROTOCOL_VERSION } from '@agentclientprotocol/sdk';
 import { AcpTransport } from './transport';
 import type { AcpTransportConfig } from './types';

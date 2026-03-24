@@ -12,7 +12,7 @@
  * replicates the critical lock-protected update logic.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { AsyncLock } from '@/utils/lock';
 
 /**

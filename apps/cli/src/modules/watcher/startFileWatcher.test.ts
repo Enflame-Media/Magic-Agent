@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vite-plus/test';
 import { startFileWatcher, FileWatchEvent } from './startFileWatcher';
 import { writeFileSync, unlinkSync, mkdirSync, rmSync, renameSync } from 'node:fs';
 import { join } from 'node:path';

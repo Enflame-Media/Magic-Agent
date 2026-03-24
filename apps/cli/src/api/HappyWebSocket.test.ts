@@ -4,7 +4,7 @@
  * - HAP-353: Bounds enforcement and cleanup
  * - HAP-361: WeakRef-based event handlers
  */
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vite-plus/test';
 import { HappyWebSocket } from './HappyWebSocket';
 
 // Mock the logger to prevent file I/O during tests

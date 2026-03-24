@@ -4,7 +4,7 @@
  * Validates content block accumulation, text extraction, and reset behavior.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vite-plus/test';
 import { MessageAccumulator } from './accumulator';
 import type { AcpContentBlock } from '@magic-agent/protocol';
 

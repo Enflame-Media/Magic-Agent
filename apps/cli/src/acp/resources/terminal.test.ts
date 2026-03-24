@@ -2,7 +2,7 @@
  * Tests for ACP client-side terminal resource handlers
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vite-plus/test';
 import { TerminalRegistry, createTerminalHandlers } from './terminal';
 
 describe('TerminalRegistry', () => {

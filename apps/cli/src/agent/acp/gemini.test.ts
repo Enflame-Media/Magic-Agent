@@ -7,7 +7,7 @@
  * @module agent/acp/gemini.test
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test';
 
 // Mock the MCP config module BEFORE importing the module under test
 vi.mock('@/mcp/config', () => ({

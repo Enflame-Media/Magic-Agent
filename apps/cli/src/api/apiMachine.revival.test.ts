@@ -13,7 +13,7 @@
  * @see HAP-739 - Add unit tests for session revival (this file)
  */
 
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vite-plus/test';
 
 // Mock logger before importing ApiMachineClient
 vi.mock('@/ui/logger', () => ({

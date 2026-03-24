@@ -2,7 +2,7 @@
  * Tests for PushableAsyncIterable
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from 'vite-plus/test'
 import { PushableAsyncIterable } from './PushableAsyncIterable'
 
 /** Helper to capture async errors for testing - avoids no-conditional-expect lint warnings */

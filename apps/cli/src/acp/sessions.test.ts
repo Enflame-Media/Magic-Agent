@@ -6,7 +6,7 @@
  * processes following the project's testing conventions.
  */
 
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach } from 'vite-plus/test';
 import { PROTOCOL_VERSION } from '@agentclientprotocol/sdk';
 import { ACP_ERROR_CODES } from '@magic-agent/protocol';
 import { AcpTransport } from './transport';

@@ -11,7 +11,7 @@
  * @see HAP-782 - Made MAX_REVIVAL_ATTEMPTS_PER_SESSION configurable via env var
  */
 
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vite-plus/test';
 
 // Mock logger
 vi.mock('@/ui/logger', () => ({
