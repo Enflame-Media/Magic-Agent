@@ -8,7 +8,7 @@
  * @see HAP-639 - Admin User Management API & Dashboard UI
  */
 
-import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vite-plus/test';
 import { Hono } from 'hono';
 import type { Env, Variables, AuthUser } from '../../env';
 

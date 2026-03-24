@@ -9,7 +9,7 @@
  * @see https://owasp.org/Top10/A01_2021-Broken_Access_Control/
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
 import { Hono } from 'hono';
 import type { Env, Variables } from '../../env';
 

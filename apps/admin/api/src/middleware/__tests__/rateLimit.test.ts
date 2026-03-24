@@ -8,7 +8,7 @@
  * @see https://owasp.org/www-community/controls/Blocking_Brute_Force_Attacks
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vite-plus/test';
 import { Hono } from 'hono';
 import {
     rateLimitMiddleware,

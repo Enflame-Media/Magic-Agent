@@ -15,10 +15,10 @@
     "lint:fix": "oxlint src --config oxlint.json --fix",
     "format": "oxfmt src/",
     "format:check": "oxfmt --check src/",
-    "test": "vitest run",
+    "test": "vp test run",
     "clean": "rm -rf .wrangler/state/v3/cache",
-    "test:watch": "vitest",
-    "test:security": "vitest run -t 'SQL Injection'",
+    "test:watch": "vp test",
+    "test:security": "vp test run -t 'SQL Injection'",
     "db:generate": "npx @better-auth/cli generate",
     "db:migrate": "wrangler d1 migrations apply DB --env dev --remote",
     "db:migrate:prod": "wrangler d1 migrations apply DB --env prod --remote"
@@ -38,8 +38,7 @@
     "@happy/lint-rules": "workspace:*",
     "@types/node": "^25.5.0",
     "oxlint": "^1.56.0",
-    "typescript": "^5.9.3",
-    "vitest": "^4.1.1",
+    "typescript": "^6.0.2",
     "wrangler": "^4.76.0"
   },
   "dependencies": {

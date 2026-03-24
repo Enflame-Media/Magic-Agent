@@ -9,7 +9,7 @@
  * @see https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vite-plus/test';
 import { Hono } from 'hono';
 import { csrfMiddleware } from '../csrf';
 import type { Env, Variables } from '../../env';
