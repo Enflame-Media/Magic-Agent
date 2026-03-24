@@ -9,7 +9,7 @@
  * @see HAP-686 - Phase 4: Implement Comprehensive Testing Suite
  * @see HAP-564 - Add Cloudflare Analytics Engine integration for bundle size metrics
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
 import { ref } from 'vue';
 import { useBundleSize, useBundleSizeCharts } from './useBundleSize';
 import type { BundleSizePoint } from '../lib/api';

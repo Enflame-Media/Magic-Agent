@@ -5,7 +5,7 @@
  *
  * @see HAP-686 - Phase 4: Implement Comprehensive Testing Suite
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
 import { ref } from 'vue';
 import { useValidation, useValidationCharts } from './useValidation';
 

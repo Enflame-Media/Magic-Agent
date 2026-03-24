@@ -11,7 +11,7 @@
  * @see HAP-686 - Phase 4: Implement Comprehensive Testing Suite
  * @see HAP-639 - Admin User Management API & Dashboard UI
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
 import { useAdminUsers, type AdminUser } from './useAdminUsers';
 
 // Mock fetch globally

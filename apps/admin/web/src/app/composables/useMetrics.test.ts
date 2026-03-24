@@ -10,7 +10,7 @@
  *
  * @see HAP-686 - Phase 4: Implement Comprehensive Testing Suite
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { ref } from 'vue';
 import { useMetrics } from './useMetrics';
 import type { TimeseriesPoint, MetricsSummary, ModeDistribution } from '../lib/api';

@@ -5,7 +5,7 @@
  * These tests ensure malicious URLs are blocked while valid internal paths are allowed.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test';
 import { isValidRedirect, getSafeRedirect } from './security';
 
 describe('isValidRedirect', () => {

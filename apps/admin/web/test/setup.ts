@@ -9,7 +9,7 @@
  *
  * @see HAP-686 - Phase 4: Implement Comprehensive Testing Suite
  */
-import { vi } from 'vitest';
+import { vi } from 'vite-plus/test';
 import { config } from '@vue/test-utils';
 
 // Mock browser APIs that aren't available in happy-dom

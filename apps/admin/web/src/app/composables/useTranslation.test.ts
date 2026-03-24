@@ -8,7 +8,7 @@
  *
  * @see HAP-686 - Phase 4: Implement Comprehensive Testing Suite
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
 
 // Constants for mocking (must be defined before vi.mock calls are hoisted)
 const MOCK_SUPPORTED_LOCALES = ['en', 'es', 'fr', 'de'] as const;

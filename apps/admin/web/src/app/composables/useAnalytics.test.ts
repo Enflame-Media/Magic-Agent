@@ -9,7 +9,7 @@
  *
  * @see HAP-686 - Phase 4: Implement Comprehensive Testing Suite
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test';
 import { useAnalytics } from './useAnalytics';
 
 // Mock the API module
