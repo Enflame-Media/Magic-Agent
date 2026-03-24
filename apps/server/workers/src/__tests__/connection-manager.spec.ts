@@ -13,7 +13,7 @@
  * @module __tests__/connection-manager.spec
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test';
 import type { ConnectionMetadata } from '@/durable-objects/types';
 
 // =============================================================================

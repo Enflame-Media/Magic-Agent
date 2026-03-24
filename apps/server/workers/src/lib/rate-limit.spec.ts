@@ -5,7 +5,7 @@
  * @see HAP-620 - SECURITY: Rate Limiting Silently Bypassed When KV Missing
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test';
 import {
     checkRateLimit,
     getRateLimitStatus,

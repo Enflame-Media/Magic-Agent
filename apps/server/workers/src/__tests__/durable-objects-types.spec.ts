@@ -10,7 +10,7 @@
  * @module __tests__/durable-objects-types.spec
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vite-plus/test';
 
 // Mock cloudflare:workers module
 vi.mock('cloudflare:workers', () => ({

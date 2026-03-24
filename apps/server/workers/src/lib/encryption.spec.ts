@@ -4,7 +4,7 @@
  * @see HAP-286 for AI token encryption implementation
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vite-plus/test';
 import {
     initEncryption,
     resetEncryption,

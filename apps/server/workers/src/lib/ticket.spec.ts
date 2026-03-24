@@ -4,7 +4,7 @@
  * @see HAP-375 for ticket-based WebSocket authentication implementation
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { createTicket, verifyTicket, isTicketExpired } from './ticket';
 
 describe('ticket', () => {

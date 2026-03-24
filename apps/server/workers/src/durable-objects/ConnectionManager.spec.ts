@@ -11,7 +11,7 @@
  * @module durable-objects/ConnectionManager.spec
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vite-plus/test';
 
 // Mock @sentry/cloudflare module to avoid Cloudflare runtime requirements
 vi.mock('@sentry/cloudflare', () => ({

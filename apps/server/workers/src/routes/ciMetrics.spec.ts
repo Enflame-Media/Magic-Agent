@@ -10,7 +10,7 @@
  * @module routes/ciMetrics.spec
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test';
 import { OpenAPIHono } from '@hono/zod-openapi';
 
 // Import after any potential mocks

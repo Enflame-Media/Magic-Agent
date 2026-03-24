@@ -16,7 +16,7 @@
  * @module __tests__/user-feed.spec
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test';
 import {
     expectOk,
     createMockDrizzle,

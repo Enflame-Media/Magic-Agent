@@ -7,7 +7,7 @@
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vite-plus/test';
 
 // Mock drizzle-orm before importing the client
 vi.mock('drizzle-orm/d1', () => ({

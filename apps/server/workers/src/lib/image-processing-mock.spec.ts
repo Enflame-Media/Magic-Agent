@@ -2,7 +2,7 @@
  * Additional tests for image-processing module using mocks
  * These tests cover defensive code paths that are otherwise unreachable
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test';
 
 // Mock UPNG before importing the module
 vi.mock('upng-js', () => ({

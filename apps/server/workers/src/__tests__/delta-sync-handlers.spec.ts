@@ -8,7 +8,7 @@
  * @see HAP-441 - Delta sync implementation
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vite-plus/test';
 import { handleRequestUpdatesSince } from '../durable-objects/handlers';
 import type { HandlerResult } from '../durable-objects/handlers';
 import {

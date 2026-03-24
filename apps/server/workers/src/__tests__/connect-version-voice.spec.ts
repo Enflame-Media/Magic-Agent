@@ -20,7 +20,7 @@
  * @module __tests__/connect-version-voice.spec
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
 
 // Mock cloudflare:workers module
 vi.mock('cloudflare:workers', () => ({

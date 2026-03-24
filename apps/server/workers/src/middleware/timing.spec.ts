@@ -16,7 +16,7 @@
  * @see HAP-913 - Improve middleware test quality
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test';
 import { Hono } from 'hono';
 import { timing, addServerTiming } from './timing';
 

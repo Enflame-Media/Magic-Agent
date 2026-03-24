@@ -7,7 +7,7 @@
  * @module middleware/cors.spec
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test';
 import { Hono } from 'hono';
 
 // Import the cors middleware

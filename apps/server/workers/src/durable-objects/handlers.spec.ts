@@ -7,7 +7,7 @@
  * @module durable-objects/handlers.spec
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vite-plus/test';
 import type { HandlerContext } from './handlers';
 import {
     handleSessionMetadataUpdate,

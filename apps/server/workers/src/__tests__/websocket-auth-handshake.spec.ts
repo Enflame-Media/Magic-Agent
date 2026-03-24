@@ -15,7 +15,7 @@
  * @module __tests__/websocket-auth-handshake.spec
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
 
 // Mock @sentry/cloudflare module to avoid Cloudflare runtime requirements
 vi.mock('@sentry/cloudflare', () => ({

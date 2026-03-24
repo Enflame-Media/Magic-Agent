@@ -15,7 +15,7 @@
  * @module __tests__/error.spec
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test';
 import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import { AppError, ErrorCodes } from '@magic-agent/errors';

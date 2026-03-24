@@ -12,7 +12,7 @@
  * @module __tests__/uploads.spec
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
 
 // Mock cloudflare:workers module
 vi.mock('cloudflare:workers', () => ({

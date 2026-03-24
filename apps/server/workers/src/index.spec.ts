@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
 
 // Mock cloudflare:workers module (required for Durable Object imports)
 vi.mock('cloudflare:workers', () => ({

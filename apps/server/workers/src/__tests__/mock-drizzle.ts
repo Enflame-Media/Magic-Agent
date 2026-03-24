@@ -8,7 +8,7 @@
  * @module __tests__/mock-drizzle
  */
 
-import { vi } from 'vitest';
+import { vi } from 'vite-plus/test';
 import type { DbClient } from '@/db/client';
 
 /**

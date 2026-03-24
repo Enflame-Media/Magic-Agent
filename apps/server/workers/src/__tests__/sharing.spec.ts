@@ -23,7 +23,7 @@
  * @module __tests__/sharing.spec
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test';
 import {
     expectOk,
     createMockDrizzle,

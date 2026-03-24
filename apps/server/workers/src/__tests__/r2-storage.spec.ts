@@ -14,7 +14,7 @@
  * @module __tests__/r2-storage.spec
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
 import {
     R2Storage,
     createR2Storage,

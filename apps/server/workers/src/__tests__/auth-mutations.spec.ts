@@ -20,7 +20,7 @@
  * @see HAP-914 for mutation testing improvement requirement
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test';
 import {
     expectOk,
     createMockDrizzle,

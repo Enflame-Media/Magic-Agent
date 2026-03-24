@@ -8,7 +8,7 @@
  * @module __tests__/middleware-auth.spec
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
 import { Hono } from 'hono';
 
 // Mock cloudflare:workers module

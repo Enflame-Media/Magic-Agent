@@ -23,7 +23,7 @@
  * @see HAP-511 for test implementation
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
 
 // Test token constants for different scenarios
 const VALID_TOKEN = 'valid-token';

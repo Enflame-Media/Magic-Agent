@@ -10,7 +10,7 @@
  * @module lib/email.spec
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test';
 import { sendInvitationEmail, type EmailEnv, type InvitationEmailConfig } from './email';
 
 // Helper to extract body from fetch mock call

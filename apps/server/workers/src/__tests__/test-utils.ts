@@ -7,7 +7,7 @@
  * @module __tests__/test-utils
  */
 
-import { vi } from 'vitest';
+import { vi } from 'vite-plus/test';
 
 // Re-export mock-drizzle utilities for easy access
 export { createMockDrizzle, type MockDrizzleInstance } from './mock-drizzle';

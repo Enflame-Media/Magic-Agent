@@ -19,7 +19,7 @@
  * @see HAP-1063 - Integration tests for ACP relay
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vite-plus/test';
 import type { HandlerContext } from './handlers';
 import {
     handleAcpSessionUpdate,

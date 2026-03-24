@@ -32,7 +32,7 @@
  * @module __tests__/github-oauth-callback.spec
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test';
 import {
     createMockDrizzle,
     createMockR2,
