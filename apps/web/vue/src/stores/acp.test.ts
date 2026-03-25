@@ -12,7 +12,7 @@
  * @see HAP-1046 - Build Vue ACP foundation
  */
 
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vite-plus/test';
 import { setActivePinia, createPinia } from 'pinia';
 import type { AcpSessionUpdate } from '@magic-agent/protocol';
 import { useAcpStore } from './acp';

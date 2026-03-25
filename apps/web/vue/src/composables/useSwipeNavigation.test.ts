@@ -14,7 +14,7 @@
  * @see HAP-919 - Mobile Web Enhancements
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test';
 import { ref, type Ref } from 'vue';
 import type { UseSwipeDirection } from '@vueuse/core';
 import type { RouteLocationNormalized } from 'vue-router';

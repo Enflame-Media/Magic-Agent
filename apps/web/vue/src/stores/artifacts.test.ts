@@ -12,7 +12,7 @@
  * @see HAP-683 - Phase 4: Implement Artifacts Management System
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vite-plus/test';
 import { setActivePinia, createPinia } from 'pinia';
 import {
   useArtifactsStore,

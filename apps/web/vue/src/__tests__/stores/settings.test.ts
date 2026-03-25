@@ -10,7 +10,7 @@
  * @see HAP-877 - Increase test coverage to 80%
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vite-plus/test';
 import { setActivePinia, createPinia } from 'pinia';
 import { useSettingsStore } from '@/stores/settings';
 

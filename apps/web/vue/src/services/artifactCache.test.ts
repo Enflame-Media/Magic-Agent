@@ -6,7 +6,7 @@
  * @see HAP-874 - Offline Artifact Caching
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vite-plus/test';
 import type { DecryptedArtifact, ArtifactFileType } from '@/stores/artifacts';
 
 // Mock Dexie for testing (IndexedDB not available in Node.js)

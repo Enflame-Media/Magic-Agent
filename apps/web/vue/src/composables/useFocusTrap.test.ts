@@ -15,7 +15,7 @@
  * @see WCAG 2.4.3 - Focus Order
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vite-plus/test';
 import { ref, nextTick } from 'vue';
 import { useFocusTrap, getTabbableElements, getTabbableEdges } from './useFocusTrap';
 

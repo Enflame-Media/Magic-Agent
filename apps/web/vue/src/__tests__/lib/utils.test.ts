@@ -9,7 +9,7 @@
  * @see HAP-720 - NativeScript Mobile Testing Suite
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { cn } from '@/lib/utils';
 
 describe('cn utility function', () => {

@@ -15,7 +15,7 @@
  * @see HAP-962 - Responsive Mobile-First Design System
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { twMerge } from 'tailwind-merge';
 import { clsx } from 'clsx';
 

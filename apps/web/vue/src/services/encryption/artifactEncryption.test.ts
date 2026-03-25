@@ -7,7 +7,7 @@
  * @see HAP-863 - Add unit tests for artifact sync encryption
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vite-plus/test';
 import { ArtifactEncryption, type ArtifactHeader, type ArtifactBody } from './artifactEncryption';
 
 describe('ArtifactEncryption', () => {

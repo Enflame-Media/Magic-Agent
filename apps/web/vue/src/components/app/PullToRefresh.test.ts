@@ -22,7 +22,7 @@
  * This requires resolving the duplicate Vue packages in node_modules.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test';
 import { mount, type VueWrapper } from '@vue/test-utils';
 import { ref, nextTick, defineComponent, h } from 'vue';
 

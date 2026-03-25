@@ -10,7 +10,7 @@
  * @see HAP-720 - NativeScript Mobile Testing Suite
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vite-plus/test';
 import { mount } from '@vue/test-utils';
 import { setActivePinia, createPinia } from 'pinia';
 import ConnectionStatus from '../app/ConnectionStatus.vue';

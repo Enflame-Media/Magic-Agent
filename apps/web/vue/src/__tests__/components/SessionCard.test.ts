@@ -10,7 +10,7 @@
  * @see HAP-720 - NativeScript Mobile Testing Suite
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
 import { mount, VueWrapper } from '@vue/test-utils';
 import { createRouter, createWebHistory } from 'vue-router';
 import SessionCard from '@/components/app/SessionCard.vue';

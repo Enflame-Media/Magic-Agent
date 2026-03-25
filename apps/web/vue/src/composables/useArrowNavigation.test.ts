@@ -11,7 +11,7 @@
  * @see HAP-963 - Keyboard Shortcuts and Accessibility
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
 import { ref } from 'vue';
 import { useArrowNavigation } from './useArrowNavigation';
 

@@ -11,7 +11,7 @@
  * @see HAP-962 - Responsive Mobile-First Design System
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
 import { ref } from 'vue';
 
 // Mock useBreakpoints before importing the composable

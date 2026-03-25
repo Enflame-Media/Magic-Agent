@@ -12,7 +12,7 @@
  * @see HAP-967 - Implement focus trapping in modals/dialogs
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vite-plus/test';
 import { ref, nextTick } from 'vue';
 import { useFocusTrap, getTabbableElements } from '@/composables/useFocusTrap';
 

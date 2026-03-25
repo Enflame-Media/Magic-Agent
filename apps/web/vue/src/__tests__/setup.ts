@@ -6,10 +6,10 @@
  * @see HAP-972 - Screen reader and axe-core accessibility testing
  */
 
-import { vi, beforeEach } from 'vitest';
+import { vi, beforeEach } from 'vite-plus/test';
 import 'vitest-axe/extend-expect';
 import * as matchers from 'vitest-axe/matchers';
-import { expect } from 'vitest';
+import { expect } from 'vite-plus/test';
 
 // Register axe-core accessibility matchers (HAP-972)
 // Enables expect(results).toHaveNoViolations() in all tests

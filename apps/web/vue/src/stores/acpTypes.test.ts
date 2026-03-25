@@ -9,7 +9,7 @@
  * @see HAP-1046 - Build Vue ACP foundation
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test';
 import type { AcpSessionUpdate } from '@magic-agent/protocol';
 import {
   createAcpSessionState,

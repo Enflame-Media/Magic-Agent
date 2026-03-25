@@ -11,7 +11,7 @@
  * @see HAP-726 - Add i18n test coverage for translation keys
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import {
   SUPPORTED_LANGUAGE_CODES,
   SUPPORTED_LANGUAGES,

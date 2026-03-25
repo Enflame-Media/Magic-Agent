@@ -11,7 +11,7 @@
  * @see HAP-963 - Keyboard Shortcuts and Accessibility
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vite-plus/test';
 import { mount } from '@vue/test-utils';
 import SiteHeader from '@/components/SiteHeader.vue';
 import { checkComponentA11y } from '../helpers/a11y';

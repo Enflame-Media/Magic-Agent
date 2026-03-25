@@ -13,7 +13,7 @@
  * @see HAP-720 - NativeScript Mobile Testing Suite
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vite-plus/test';
 import {
   generateBoxKeyPair,
   decryptBox,

@@ -29,14 +29,13 @@
     "paths": {
       "@/*": ["./src/*"]
     },
-    "types": ["vite/client", "vitest/globals"]
+    "types": ["vite-plus/client", "vite-plus/test/globals"]
   },
   "include": [
     "src/**/*.ts",
     "src/**/*.tsx",
     "src/**/*.vue",
-    "vite.config.ts",
-    "vitest.config.ts"
+    "vite.config.ts"
   ],
   "exclude": ["node_modules", "dist"]
 }

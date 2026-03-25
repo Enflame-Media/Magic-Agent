@@ -12,7 +12,7 @@
  * @see HAP-705 - Shiki syntax highlighting integration
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test';
 
 // Store mock references at module level
 let mockCodeToHtml: ReturnType<typeof vi.fn>;

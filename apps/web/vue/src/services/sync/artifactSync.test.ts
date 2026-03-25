@@ -6,7 +6,7 @@
  * @see HAP-863 - Add unit tests for artifact sync encryption
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vite-plus/test';
 import {
   storeArtifactKey,
   getArtifactKey,
