@@ -25,8 +25,7 @@
   "sideEffects": false,
   "devDependencies": {
     "tsdown": "^0.21.4",
-    "typescript": "^5.9.3",
-    "vitest": "^4.1.1"
+    "typescript": "^6.0.2"
   },
   "scripts": {
     "preinstall": "node -e \"if(!process.env.INIT_CWD?.endsWith('/happy')){console.error('❌ Run yarn install from monorepo root');process.exit(1)}\"",
@@ -36,8 +35,8 @@
     "lint:fix": "oxlint --config ../../oxlint.json --fix src/",
     "format": "oxfmt src/",
     "format:check": "oxfmt --check src/",
-    "test": "vitest run",
-    "test:watch": "vitest",
+    "test": "vp test run",
+    "test:watch": "vp test",
     "clean": "rm -rf dist"
   },
   "keywords": [

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { AppError, ErrorCodes, type ErrorCode } from './index';
 
 describe('ErrorCodes', () => {

@@ -4,7 +4,7 @@
  * @see HAP-653 - Type-safe session/machine ID accessor helpers
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import {
     // Session ID helpers
     hasSessionId,

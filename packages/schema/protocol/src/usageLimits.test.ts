@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { UsageLimitSchema, PlanLimitsResponseSchema } from './usageLimits';
 import { STRING_LIMITS } from './constraints';
 
