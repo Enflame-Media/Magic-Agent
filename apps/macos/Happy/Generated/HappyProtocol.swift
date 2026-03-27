@@ -3,11 +3,11 @@
 // Happy
 //
 // AUTO-GENERATED FILE - DO NOT EDIT
-// Generated: 2026-01-04T17:25:32.951Z
-// Source: @magic-agent/protocol Zod schemas
+// Generated: 2026-03-27T02:43:25.560Z
+// Source: @happy/protocol Zod schemas
 //
 // Regenerate with:
-//   yarn workspace @magic-agent/protocol generate:swift
+//   yarn workspace @happy/protocol generate:swift
 //
 // @see HAP-687 - Set up Zod to Swift type generation for happy-macos
 //
@@ -44,6 +44,12 @@ import Foundation
 //   let aPIEphemeralUsageUpdate = try APIEphemeralUsageUpdate(json)
 //   let aPIEphemeralMachineActivityUpdate = try APIEphemeralMachineActivityUpdate(json)
 //   let aPIEphemeralMachineStatusUpdate = try APIEphemeralMachineStatusUpdate(json)
+//   let aPIEphemeralMachineDisconnectedUpdate = try APIEphemeralMachineDisconnectedUpdate(json)
+//   let aPIEphemeralFriendStatusUpdate = try APIEphemeralFriendStatusUpdate(json)
+//   let aPIEphemeralAcpSessionUpdate = try APIEphemeralAcpSessionUpdate(json)
+//   let aPIEphemeralAcpPermissionRequest = try APIEphemeralAcpPermissionRequest(json)
+//   let aPIEphemeralAcpSessionCommand = try APIEphemeralAcpSessionCommand(json)
+//   let aPIEphemeralAcpSessionListResponse = try APIEphemeralAcpSessionListResponse(json)
 //   let aPIEphemeralUpdate = try APIEphemeralUpdate(json)
 //   let aPIUpdateContainer = try APIUpdateContainer(json)
 //   let ephemeralPayload = try EphemeralPayload(json)
@@ -3885,6 +3891,7 @@ public extension APIUpdateSettings {
 public enum APIUpdateT: String, Codable, Hashable, Sendable {
     case archiveSession = "archive-session"
     case deleteArtifact = "delete-artifact"
+    case deleteMachine = "delete-machine"
     case deleteSession = "delete-session"
     case kvBatchUpdate = "kv-batch-update"
     case newArtifact = "new-artifact"
@@ -4325,6 +4332,401 @@ public enum APIEphemeralMachineStatusUpdateType: String, Codable, Hashable, Send
 // for types that require the use of JSONAny, nor will the implementation of Hashable be
 // synthesized for types that have collections (such as arrays or dictionaries).
 
+// MARK: - APIEphemeralMachineDisconnectedUpdate
+public struct APIEphemeralMachineDisconnectedUpdate: Codable, Hashable, Sendable {
+    public let machineId: String
+    public let reason: Reason
+    public let timestamp: Double
+    public let type: APIEphemeralMachineDisconnectedUpdateType
+
+    public init(machineId: String, reason: Reason, timestamp: Double, type: APIEphemeralMachineDisconnectedUpdateType) {
+        self.machineId = machineId
+        self.reason = reason
+        self.timestamp = timestamp
+        self.type = type
+    }
+}
+
+// MARK: APIEphemeralMachineDisconnectedUpdate convenience initializers and mutators
+
+public extension APIEphemeralMachineDisconnectedUpdate {
+    init(data: Data) throws {
+        self = try newJSONDecoder().decode(APIEphemeralMachineDisconnectedUpdate.self, from: data)
+    }
+
+    init(_ json: String, using encoding: String.Encoding = .utf8) throws {
+        guard let data = json.data(using: encoding) else {
+            throw NSError(domain: "JSONDecoding", code: 0, userInfo: nil)
+        }
+        try self.init(data: data)
+    }
+
+    init(fromURL url: URL) throws {
+        try self.init(data: try Data(contentsOf: url))
+    }
+
+    func with(
+        machineId: String? = nil,
+        reason: Reason? = nil,
+        timestamp: Double? = nil,
+        type: APIEphemeralMachineDisconnectedUpdateType? = nil
+    ) -> APIEphemeralMachineDisconnectedUpdate {
+        return APIEphemeralMachineDisconnectedUpdate(
+            machineId: machineId ?? self.machineId,
+            reason: reason ?? self.reason,
+            timestamp: timestamp ?? self.timestamp,
+            type: type ?? self.type
+        )
+    }
+
+    func jsonData() throws -> Data {
+        return try newJSONEncoder().encode(self)
+    }
+
+    func jsonString(encoding: String.Encoding = .utf8) throws -> String? {
+        return String(data: try self.jsonData(), encoding: encoding)
+    }
+}
+
+public enum Reason: String, Codable, Hashable, Sendable {
+    case disconnectedByUser = "disconnected_by_user"
+}
+
+public enum APIEphemeralMachineDisconnectedUpdateType: String, Codable, Hashable, Sendable {
+    case machineDisconnected = "machine-disconnected"
+}
+
+//
+// Hashable or Equatable:
+// The compiler will not be able to synthesize the implementation of Hashable or Equatable
+// for types that require the use of JSONAny, nor will the implementation of Hashable be
+// synthesized for types that have collections (such as arrays or dictionaries).
+
+// MARK: - APIEphemeralFriendStatusUpdate
+public struct APIEphemeralFriendStatusUpdate: Codable, Hashable, Sendable {
+    public let isOnline: Bool
+    public let lastSeen: Date?
+    public let type: APIEphemeralFriendStatusUpdateType
+    public let userId: String
+
+    public init(isOnline: Bool, lastSeen: Date?, type: APIEphemeralFriendStatusUpdateType, userId: String) {
+        self.isOnline = isOnline
+        self.lastSeen = lastSeen
+        self.type = type
+        self.userId = userId
+    }
+}
+
+// MARK: APIEphemeralFriendStatusUpdate convenience initializers and mutators
+
+public extension APIEphemeralFriendStatusUpdate {
+    init(data: Data) throws {
+        self = try newJSONDecoder().decode(APIEphemeralFriendStatusUpdate.self, from: data)
+    }
+
+    init(_ json: String, using encoding: String.Encoding = .utf8) throws {
+        guard let data = json.data(using: encoding) else {
+            throw NSError(domain: "JSONDecoding", code: 0, userInfo: nil)
+        }
+        try self.init(data: data)
+    }
+
+    init(fromURL url: URL) throws {
+        try self.init(data: try Data(contentsOf: url))
+    }
+
+    func with(
+        isOnline: Bool? = nil,
+        lastSeen: Date?? = nil,
+        type: APIEphemeralFriendStatusUpdateType? = nil,
+        userId: String? = nil
+    ) -> APIEphemeralFriendStatusUpdate {
+        return APIEphemeralFriendStatusUpdate(
+            isOnline: isOnline ?? self.isOnline,
+            lastSeen: lastSeen ?? self.lastSeen,
+            type: type ?? self.type,
+            userId: userId ?? self.userId
+        )
+    }
+
+    func jsonData() throws -> Data {
+        return try newJSONEncoder().encode(self)
+    }
+
+    func jsonString(encoding: String.Encoding = .utf8) throws -> String? {
+        return String(data: try self.jsonData(), encoding: encoding)
+    }
+}
+
+public enum APIEphemeralFriendStatusUpdateType: String, Codable, Hashable, Sendable {
+    case friendStatus = "friend-status"
+}
+
+//
+// Hashable or Equatable:
+// The compiler will not be able to synthesize the implementation of Hashable or Equatable
+// for types that require the use of JSONAny, nor will the implementation of Hashable be
+// synthesized for types that have collections (such as arrays or dictionaries).
+
+// MARK: - APIEphemeralAcpSessionUpdate
+public struct APIEphemeralAcpSessionUpdate: Codable, Hashable, Sendable {
+    public let sid: String
+    public let type: APIEphemeralAcpSessionUpdateType
+    public let update: String
+
+    public init(sid: String, type: APIEphemeralAcpSessionUpdateType, update: String) {
+        self.sid = sid
+        self.type = type
+        self.update = update
+    }
+}
+
+// MARK: APIEphemeralAcpSessionUpdate convenience initializers and mutators
+
+public extension APIEphemeralAcpSessionUpdate {
+    init(data: Data) throws {
+        self = try newJSONDecoder().decode(APIEphemeralAcpSessionUpdate.self, from: data)
+    }
+
+    init(_ json: String, using encoding: String.Encoding = .utf8) throws {
+        guard let data = json.data(using: encoding) else {
+            throw NSError(domain: "JSONDecoding", code: 0, userInfo: nil)
+        }
+        try self.init(data: data)
+    }
+
+    init(fromURL url: URL) throws {
+        try self.init(data: try Data(contentsOf: url))
+    }
+
+    func with(
+        sid: String? = nil,
+        type: APIEphemeralAcpSessionUpdateType? = nil,
+        update: String? = nil
+    ) -> APIEphemeralAcpSessionUpdate {
+        return APIEphemeralAcpSessionUpdate(
+            sid: sid ?? self.sid,
+            type: type ?? self.type,
+            update: update ?? self.update
+        )
+    }
+
+    func jsonData() throws -> Data {
+        return try newJSONEncoder().encode(self)
+    }
+
+    func jsonString(encoding: String.Encoding = .utf8) throws -> String? {
+        return String(data: try self.jsonData(), encoding: encoding)
+    }
+}
+
+public enum APIEphemeralAcpSessionUpdateType: String, Codable, Hashable, Sendable {
+    case acpSessionUpdate = "acp-session-update"
+}
+
+//
+// Hashable or Equatable:
+// The compiler will not be able to synthesize the implementation of Hashable or Equatable
+// for types that require the use of JSONAny, nor will the implementation of Hashable be
+// synthesized for types that have collections (such as arrays or dictionaries).
+
+// MARK: - APIEphemeralAcpPermissionRequest
+public struct APIEphemeralAcpPermissionRequest: Codable, Hashable, Sendable {
+    public let payload: String
+    public let requestId, sid: String
+    public let timeoutMs: Int?
+    public let type: APIEphemeralAcpPermissionRequestType
+
+    public init(payload: String, requestId: String, sid: String, timeoutMs: Int?, type: APIEphemeralAcpPermissionRequestType) {
+        self.payload = payload
+        self.requestId = requestId
+        self.sid = sid
+        self.timeoutMs = timeoutMs
+        self.type = type
+    }
+}
+
+// MARK: APIEphemeralAcpPermissionRequest convenience initializers and mutators
+
+public extension APIEphemeralAcpPermissionRequest {
+    init(data: Data) throws {
+        self = try newJSONDecoder().decode(APIEphemeralAcpPermissionRequest.self, from: data)
+    }
+
+    init(_ json: String, using encoding: String.Encoding = .utf8) throws {
+        guard let data = json.data(using: encoding) else {
+            throw NSError(domain: "JSONDecoding", code: 0, userInfo: nil)
+        }
+        try self.init(data: data)
+    }
+
+    init(fromURL url: URL) throws {
+        try self.init(data: try Data(contentsOf: url))
+    }
+
+    func with(
+        payload: String? = nil,
+        requestId: String? = nil,
+        sid: String? = nil,
+        timeoutMs: Int?? = nil,
+        type: APIEphemeralAcpPermissionRequestType? = nil
+    ) -> APIEphemeralAcpPermissionRequest {
+        return APIEphemeralAcpPermissionRequest(
+            payload: payload ?? self.payload,
+            requestId: requestId ?? self.requestId,
+            sid: sid ?? self.sid,
+            timeoutMs: timeoutMs ?? self.timeoutMs,
+            type: type ?? self.type
+        )
+    }
+
+    func jsonData() throws -> Data {
+        return try newJSONEncoder().encode(self)
+    }
+
+    func jsonString(encoding: String.Encoding = .utf8) throws -> String? {
+        return String(data: try self.jsonData(), encoding: encoding)
+    }
+}
+
+public enum APIEphemeralAcpPermissionRequestType: String, Codable, Hashable, Sendable {
+    case acpPermissionRequest = "acp-permission-request"
+}
+
+//
+// Hashable or Equatable:
+// The compiler will not be able to synthesize the implementation of Hashable or Equatable
+// for types that require the use of JSONAny, nor will the implementation of Hashable be
+// synthesized for types that have collections (such as arrays or dictionaries).
+
+// MARK: - APIEphemeralAcpSessionCommand
+public struct APIEphemeralAcpSessionCommand: Codable, Hashable, Sendable {
+    public let command: String
+    public let payload: String
+    public let sid: String
+    public let type: APIEphemeralAcpSessionCommandType
+
+    public init(command: String, payload: String, sid: String, type: APIEphemeralAcpSessionCommandType) {
+        self.command = command
+        self.payload = payload
+        self.sid = sid
+        self.type = type
+    }
+}
+
+// MARK: APIEphemeralAcpSessionCommand convenience initializers and mutators
+
+public extension APIEphemeralAcpSessionCommand {
+    init(data: Data) throws {
+        self = try newJSONDecoder().decode(APIEphemeralAcpSessionCommand.self, from: data)
+    }
+
+    init(_ json: String, using encoding: String.Encoding = .utf8) throws {
+        guard let data = json.data(using: encoding) else {
+            throw NSError(domain: "JSONDecoding", code: 0, userInfo: nil)
+        }
+        try self.init(data: data)
+    }
+
+    init(fromURL url: URL) throws {
+        try self.init(data: try Data(contentsOf: url))
+    }
+
+    func with(
+        command: String? = nil,
+        payload: String? = nil,
+        sid: String? = nil,
+        type: APIEphemeralAcpSessionCommandType? = nil
+    ) -> APIEphemeralAcpSessionCommand {
+        return APIEphemeralAcpSessionCommand(
+            command: command ?? self.command,
+            payload: payload ?? self.payload,
+            sid: sid ?? self.sid,
+            type: type ?? self.type
+        )
+    }
+
+    func jsonData() throws -> Data {
+        return try newJSONEncoder().encode(self)
+    }
+
+    func jsonString(encoding: String.Encoding = .utf8) throws -> String? {
+        return String(data: try self.jsonData(), encoding: encoding)
+    }
+}
+
+public enum APIEphemeralAcpSessionCommandType: String, Codable, Hashable, Sendable {
+    case acpSessionCommand = "acp-session-command"
+}
+
+//
+// Hashable or Equatable:
+// The compiler will not be able to synthesize the implementation of Hashable or Equatable
+// for types that require the use of JSONAny, nor will the implementation of Hashable be
+// synthesized for types that have collections (such as arrays or dictionaries).
+
+// MARK: - APIEphemeralAcpSessionListResponse
+public struct APIEphemeralAcpSessionListResponse: Codable, Hashable, Sendable {
+    public let payload: String
+    public let sid: String
+    public let type: APIEphemeralAcpSessionListResponseType
+
+    public init(payload: String, sid: String, type: APIEphemeralAcpSessionListResponseType) {
+        self.payload = payload
+        self.sid = sid
+        self.type = type
+    }
+}
+
+// MARK: APIEphemeralAcpSessionListResponse convenience initializers and mutators
+
+public extension APIEphemeralAcpSessionListResponse {
+    init(data: Data) throws {
+        self = try newJSONDecoder().decode(APIEphemeralAcpSessionListResponse.self, from: data)
+    }
+
+    init(_ json: String, using encoding: String.Encoding = .utf8) throws {
+        guard let data = json.data(using: encoding) else {
+            throw NSError(domain: "JSONDecoding", code: 0, userInfo: nil)
+        }
+        try self.init(data: data)
+    }
+
+    init(fromURL url: URL) throws {
+        try self.init(data: try Data(contentsOf: url))
+    }
+
+    func with(
+        payload: String? = nil,
+        sid: String? = nil,
+        type: APIEphemeralAcpSessionListResponseType? = nil
+    ) -> APIEphemeralAcpSessionListResponse {
+        return APIEphemeralAcpSessionListResponse(
+            payload: payload ?? self.payload,
+            sid: sid ?? self.sid,
+            type: type ?? self.type
+        )
+    }
+
+    func jsonData() throws -> Data {
+        return try newJSONEncoder().encode(self)
+    }
+
+    func jsonString(encoding: String.Encoding = .utf8) throws -> String? {
+        return String(data: try self.jsonData(), encoding: encoding)
+    }
+}
+
+public enum APIEphemeralAcpSessionListResponseType: String, Codable, Hashable, Sendable {
+    case acpSessionListResponse = "acp-session-list-response"
+}
+
+//
+// Hashable or Equatable:
+// The compiler will not be able to synthesize the implementation of Hashable or Equatable
+// for types that require the use of JSONAny, nor will the implementation of Hashable be
+// synthesized for types that have collections (such as arrays or dictionaries).
+
 // MARK: - APIEphemeralUpdate
 public struct APIEphemeralUpdate: Codable, Hashable, Sendable {
     public let active: Bool?
@@ -4337,11 +4739,17 @@ public struct APIEphemeralUpdate: Codable, Hashable, Sendable {
     public let timestamp: Double?
     public let tokens: [String: Double]?
     public let machineId: String?
-    public let online, isOnline: Bool?
+    public let online: Bool?
+    public let reason: Reason?
+    public let isOnline: Bool?
     public let lastSeen: Date?
     public let userId: String?
+    public let update, payload: String?
+    public let requestId: String?
+    public let timeoutMs: Int?
+    public let command: String?
 
-    public init(active: Bool?, activeAt: Double?, sid: String?, thinking: Bool?, type: APIEphemeralUpdateType, cost: [String: Double]?, key: String?, timestamp: Double?, tokens: [String: Double]?, machineId: String?, online: Bool?, isOnline: Bool?, lastSeen: Date?, userId: String?) {
+    public init(active: Bool?, activeAt: Double?, sid: String?, thinking: Bool?, type: APIEphemeralUpdateType, cost: [String: Double]?, key: String?, timestamp: Double?, tokens: [String: Double]?, machineId: String?, online: Bool?, reason: Reason?, isOnline: Bool?, lastSeen: Date?, userId: String?, update: String?, payload: String?, requestId: String?, timeoutMs: Int?, command: String?) {
         self.active = active
         self.activeAt = activeAt
         self.sid = sid
@@ -4353,9 +4761,15 @@ public struct APIEphemeralUpdate: Codable, Hashable, Sendable {
         self.tokens = tokens
         self.machineId = machineId
         self.online = online
+        self.reason = reason
         self.isOnline = isOnline
         self.lastSeen = lastSeen
         self.userId = userId
+        self.update = update
+        self.payload = payload
+        self.requestId = requestId
+        self.timeoutMs = timeoutMs
+        self.command = command
     }
 }
 
@@ -4389,9 +4803,15 @@ public extension APIEphemeralUpdate {
         tokens: [String: Double]?? = nil,
         machineId: String?? = nil,
         online: Bool?? = nil,
+        reason: Reason?? = nil,
         isOnline: Bool?? = nil,
         lastSeen: Date?? = nil,
-        userId: String?? = nil
+        userId: String?? = nil,
+        update: String?? = nil,
+        payload: String?? = nil,
+        requestId: String?? = nil,
+        timeoutMs: Int?? = nil,
+        command: String?? = nil
     ) -> APIEphemeralUpdate {
         return APIEphemeralUpdate(
             active: active ?? self.active,
@@ -4405,9 +4825,15 @@ public extension APIEphemeralUpdate {
             tokens: tokens ?? self.tokens,
             machineId: machineId ?? self.machineId,
             online: online ?? self.online,
+            reason: reason ?? self.reason,
             isOnline: isOnline ?? self.isOnline,
             lastSeen: lastSeen ?? self.lastSeen,
-            userId: userId ?? self.userId
+            userId: userId ?? self.userId,
+            update: update ?? self.update,
+            payload: payload ?? self.payload,
+            requestId: requestId ?? self.requestId,
+            timeoutMs: timeoutMs ?? self.timeoutMs,
+            command: command ?? self.command
         )
     }
 
@@ -4421,9 +4847,14 @@ public extension APIEphemeralUpdate {
 }
 
 public enum APIEphemeralUpdateType: String, Codable, Hashable, Sendable {
+    case acpPermissionRequest = "acp-permission-request"
+    case acpSessionCommand = "acp-session-command"
+    case acpSessionListResponse = "acp-session-list-response"
+    case acpSessionUpdate = "acp-session-update"
     case activity = "activity"
     case friendStatus = "friend-status"
     case machineActivity = "machine-activity"
+    case machineDisconnected = "machine-disconnected"
     case machineStatus = "machine-status"
     case usage = "usage"
 }
@@ -5814,11 +6245,17 @@ public struct EphemeralPayload: Codable, Hashable, Sendable {
     public let timestamp: Double?
     public let tokens: [String: Double]?
     public let machineId: String?
-    public let online, isOnline: Bool?
+    public let online: Bool?
+    public let reason: Reason?
+    public let isOnline: Bool?
     public let lastSeen: Date?
     public let userId: String?
+    public let update, payload: String?
+    public let requestId: String?
+    public let timeoutMs: Int?
+    public let command: String?
 
-    public init(active: Bool?, activeAt: Double?, sid: String?, thinking: Bool?, type: APIEphemeralUpdateType, cost: [String: Double]?, key: String?, timestamp: Double?, tokens: [String: Double]?, machineId: String?, online: Bool?, isOnline: Bool?, lastSeen: Date?, userId: String?) {
+    public init(active: Bool?, activeAt: Double?, sid: String?, thinking: Bool?, type: APIEphemeralUpdateType, cost: [String: Double]?, key: String?, timestamp: Double?, tokens: [String: Double]?, machineId: String?, online: Bool?, reason: Reason?, isOnline: Bool?, lastSeen: Date?, userId: String?, update: String?, payload: String?, requestId: String?, timeoutMs: Int?, command: String?) {
         self.active = active
         self.activeAt = activeAt
         self.sid = sid
@@ -5830,9 +6267,15 @@ public struct EphemeralPayload: Codable, Hashable, Sendable {
         self.tokens = tokens
         self.machineId = machineId
         self.online = online
+        self.reason = reason
         self.isOnline = isOnline
         self.lastSeen = lastSeen
         self.userId = userId
+        self.update = update
+        self.payload = payload
+        self.requestId = requestId
+        self.timeoutMs = timeoutMs
+        self.command = command
     }
 }
 
@@ -5866,9 +6309,15 @@ public extension EphemeralPayload {
         tokens: [String: Double]?? = nil,
         machineId: String?? = nil,
         online: Bool?? = nil,
+        reason: Reason?? = nil,
         isOnline: Bool?? = nil,
         lastSeen: Date?? = nil,
-        userId: String?? = nil
+        userId: String?? = nil,
+        update: String?? = nil,
+        payload: String?? = nil,
+        requestId: String?? = nil,
+        timeoutMs: Int?? = nil,
+        command: String?? = nil
     ) -> EphemeralPayload {
         return EphemeralPayload(
             active: active ?? self.active,
@@ -5882,9 +6331,15 @@ public extension EphemeralPayload {
             tokens: tokens ?? self.tokens,
             machineId: machineId ?? self.machineId,
             online: online ?? self.online,
+            reason: reason ?? self.reason,
             isOnline: isOnline ?? self.isOnline,
             lastSeen: lastSeen ?? self.lastSeen,
-            userId: userId ?? self.userId
+            userId: userId ?? self.userId,
+            update: update ?? self.update,
+            payload: payload ?? self.payload,
+            requestId: requestId ?? self.requestId,
+            timeoutMs: timeoutMs ?? self.timeoutMs,
+            command: command ?? self.command
         )
     }
 

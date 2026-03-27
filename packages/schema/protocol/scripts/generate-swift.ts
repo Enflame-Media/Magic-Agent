@@ -61,6 +61,12 @@ import {
     ApiEphemeralUsageUpdateSchema,
     ApiEphemeralMachineActivityUpdateSchema,
     ApiEphemeralMachineStatusUpdateSchema,
+    ApiEphemeralMachineDisconnectedUpdateSchema,
+    ApiEphemeralFriendStatusUpdateSchema,
+    ApiEphemeralAcpSessionUpdateSchema,
+    ApiEphemeralAcpPermissionRequestSchema,
+    ApiEphemeralAcpSessionCommandSchema,
+    ApiEphemeralAcpSessionListResponseSchema,
     // Payload schemas
     ApiUpdateContainerSchema,
     UpdatePayloadSchema,
@@ -135,6 +141,12 @@ const schemasToGenerate = {
     ApiEphemeralUsageUpdate: ApiEphemeralUsageUpdateSchema,
     ApiEphemeralMachineActivityUpdate: ApiEphemeralMachineActivityUpdateSchema,
     ApiEphemeralMachineStatusUpdate: ApiEphemeralMachineStatusUpdateSchema,
+    ApiEphemeralMachineDisconnectedUpdate: ApiEphemeralMachineDisconnectedUpdateSchema,
+    ApiEphemeralFriendStatusUpdate: ApiEphemeralFriendStatusUpdateSchema,
+    ApiEphemeralAcpSessionUpdate: ApiEphemeralAcpSessionUpdateSchema,
+    ApiEphemeralAcpPermissionRequest: ApiEphemeralAcpPermissionRequestSchema,
+    ApiEphemeralAcpSessionCommand: ApiEphemeralAcpSessionCommandSchema,
+    ApiEphemeralAcpSessionListResponse: ApiEphemeralAcpSessionListResponseSchema,
     ApiEphemeralUpdate: ApiEphemeralUpdateSchema,
 
     // Payload wrappers
