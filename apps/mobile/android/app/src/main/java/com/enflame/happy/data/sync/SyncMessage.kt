@@ -56,6 +56,53 @@ sealed class SyncMessage {
         val newSessionId: String,
         val machineId: String
     ) : SyncMessage()
+
+    /**
+     * ACP session update received from the server (HAP-1060).
+     *
+     * Contains the session ID and the encrypted ACP payload. The payload
+     * must be decrypted and parsed by [com.enflame.happy.data.acp.AcpSyncHandler].
+     */
+    data class AcpSessionUpdate(
+        val sessionId: String,
+        val encryptedPayload: ByteArray
+    ) : SyncMessage() {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other !is AcpSessionUpdate) return false
+            return sessionId == other.sessionId &&
+                encryptedPayload.contentEquals(other.encryptedPayload)
+        }
+
+        override fun hashCode(): Int {
+            var result = sessionId.hashCode()
+            result = 31 * result + encryptedPayload.contentHashCode()
+            return result
+        }
+    }
+
+    /**
+     * ACP permission request received from the server (HAP-1060).
+     *
+     * Contains the session ID and the encrypted permission request payload.
+     */
+    data class AcpPermissionRequest(
+        val sessionId: String,
+        val encryptedPayload: ByteArray
+    ) : SyncMessage() {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other !is AcpPermissionRequest) return false
+            return sessionId == other.sessionId &&
+                encryptedPayload.contentEquals(other.encryptedPayload)
+        }
+
+        override fun hashCode(): Int {
+            var result = sessionId.hashCode()
+            result = 31 * result + encryptedPayload.contentHashCode()
+            return result
+        }
+    }
 }
 
 /**
@@ -75,7 +122,9 @@ internal data class SyncUpdateEnvelope(
     val resumesAt: Long? = null,
     val machineId: String? = null,
     val originalSessionId: String? = null,
-    val newSessionId: String? = null
+    val newSessionId: String? = null,
+    /** Encrypted ACP payload (base64 or raw bytes, HAP-1060). */
+    val encryptedPayload: String? = null
 )
 
 /**
@@ -110,7 +159,13 @@ internal enum class SyncMessageType {
     SESSION_REVIVAL_PAUSED,
 
     @SerialName("session-revived")
-    SESSION_REVIVED
+    SESSION_REVIVED,
+
+    @SerialName("acp-session-update")
+    ACP_SESSION_UPDATE,
+
+    @SerialName("acp-permission-request")
+    ACP_PERMISSION_REQUEST
 }
 
 /**

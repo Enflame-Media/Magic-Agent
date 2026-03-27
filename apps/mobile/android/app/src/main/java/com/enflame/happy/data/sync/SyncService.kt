@@ -481,6 +481,28 @@ class SyncService @Inject constructor(
                 )
             }
 
+            SyncMessageType.ACP_SESSION_UPDATE -> {
+                val sessionId = envelope.sessionId ?: return
+                val payload = envelope.encryptedPayload ?: return
+                _incomingMessages.tryEmit(
+                    SyncMessage.AcpSessionUpdate(
+                        sessionId = sessionId,
+                        encryptedPayload = payload.toByteArray(Charsets.UTF_8)
+                    )
+                )
+            }
+
+            SyncMessageType.ACP_PERMISSION_REQUEST -> {
+                val sessionId = envelope.sessionId ?: return
+                val payload = envelope.encryptedPayload ?: return
+                _incomingMessages.tryEmit(
+                    SyncMessage.AcpPermissionRequest(
+                        sessionId = sessionId,
+                        encryptedPayload = payload.toByteArray(Charsets.UTF_8)
+                    )
+                )
+            }
+
             // Client-to-server types; ignore if received from server
             SyncMessageType.SUBSCRIBE,
             SyncMessageType.UNSUBSCRIBE,
