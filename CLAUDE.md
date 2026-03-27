@@ -75,7 +75,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 │   │       ├── packages/   # Vue workspace packages
 │   │       └── CLAUDE.md   # Vue-specific guidelines ★
 │   ├── server/
-│   │   ├── docker/         # Fastify server (CommonJS)
+│   │   ├── docker/         # Fastify server (ESM)
 │   │   │   ├── sources/    # TypeScript sources (note: not 'src')
 │   │   │   ├── prisma/     # Database schema
 │   │   │   └── CLAUDE.md   # Server-specific guidelines ★
@@ -340,7 +340,7 @@ yarn start:local-server
   - Admin: `src/`
 - **Module systems**:
   - CLI: ESM
-  - Server (Docker): CommonJS
+  - Server (Docker): ESM
   - Server (Workers): ESM
   - React Native: ESM (via Expo)
   - Vue.js: ESM

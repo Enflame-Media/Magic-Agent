@@ -1,5 +1,5 @@
 import { Socket } from "socket.io";
-import { buildAcpSessionUpdateEphemeral, buildAcpPermissionRequestEphemeral, ClientConnection, eventRouter } from "@/app/events/eventRouter";
+import { buildAcpSessionUpdateEphemeral, buildAcpPermissionRequestEphemeral, ClientConnection, eventRouter, type EphemeralPayload } from "@/app/events/eventRouter";
 import { activityCache } from "@/app/presence/sessionCache";
 import { log } from "@/utils/log";
 import { websocketEventsCounter } from "@/app/monitoring/metrics2";
@@ -112,6 +112,8 @@ export function acpSessionUpdateHandler(userId: string, socket: Socket, connecti
 
             // Relay to all machine-scoped connections for this user
             // The CLI machine that registered the permission request will receive it
+            // Cast needed: 'acp-permission-response' is a relay-only event type
+            // not yet added to @magic-agent/protocol's EphemeralPayload union
             eventRouter.emitEphemeral({
                 userId,
                 payload: {
@@ -119,7 +121,7 @@ export function acpSessionUpdateHandler(userId: string, socket: Socket, connecti
                     sid,
                     requestId,
                     payload,
-                },
+                } as unknown as EphemeralPayload,
                 recipientFilter: { type: 'all-user-authenticated-connections' },
                 skipSenderConnection: connection
             });
