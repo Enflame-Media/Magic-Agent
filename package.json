@@ -8,6 +8,7 @@
     "packages/schema/protocol",
     "dev/lint-rules",
     "apps/cli",
+    "apps/server/docker",
     "apps/server/workers",
     "apps/web/vue",
     "apps/admin/api",
