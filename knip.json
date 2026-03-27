@@ -185,7 +185,6 @@
         "tweetnacl",
         "typescript",
         "uuid",
-        "vite-tsconfig-paths",
         "vitest",
         "yaml",
         "zod",
