@@ -3057,6 +3057,9 @@ class Sync {
     /**
      * HAP-1064: Send an ACP session management command (load, resume, fork)
      * to the CLI agent via the ACP relay.
+     *
+     * HAP-1071: Includes mcpServers field (required by AcpLoadSessionRequestSchema)
+     * and uses session.metadata.path for cwd instead of hardcoded '.'.
      */
     sendAcpSessionCommand = async (
         sessionId: string,
@@ -3069,6 +3072,10 @@ class Sync {
             return;
         }
 
+        // HAP-1071: Resolve actual cwd from session metadata instead of hardcoding '.'
+        const session = storage.getState().sessions[sessionId];
+        const cwd = session?.metadata?.path ?? '.';
+
         try {
             const commandPayload = {
                 _meta: {},
@@ -3076,7 +3083,8 @@ class Sync {
                 params: {
                     _meta: {},
                     sessionId: targetSessionId,
-                    cwd: '.',
+                    cwd,
+                    mcpServers: [],
                 },
             };
 

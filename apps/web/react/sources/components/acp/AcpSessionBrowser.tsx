@@ -23,6 +23,8 @@ interface AcpSessionBrowserProps {
     onResume: (sessionId: string) => void;
     onFork: (sessionId: string) => void;
     refreshing: boolean;
+    /** HAP-1071: Error message from a failed session list operation */
+    error?: string | null;
 }
 
 function formatSessionDate(dateStr: string | null): string {
@@ -155,6 +157,17 @@ const SessionItem = React.memo<SessionItemProps>(({
 
 const keyExtractor = (item: AcpBrowserSession) => item.sessionId;
 
+/** HAP-1071: Error banner displayed when session list operations fail */
+const ErrorBanner = React.memo<{ message: string; onRetry: () => void }>(({ message, onRetry }) => {
+    return (
+        <Pressable style={styles.errorBanner} onPress={onRetry}>
+            <Ionicons name="alert-circle" size={16} style={styles.errorIcon} />
+            <Text style={styles.errorText} numberOfLines={2}>{message}</Text>
+            <Ionicons name="refresh" size={16} style={styles.errorRetryIcon} />
+        </Pressable>
+    );
+});
+
 export const AcpSessionBrowser = React.memo<AcpSessionBrowserProps>(({
     sessions,
     capabilities,
@@ -164,6 +177,7 @@ export const AcpSessionBrowser = React.memo<AcpSessionBrowserProps>(({
     onResume,
     onFork,
     refreshing,
+    error,
 }) => {
     const { theme } = useUnistyles();
 
@@ -181,6 +195,10 @@ export const AcpSessionBrowser = React.memo<AcpSessionBrowserProps>(({
     return (
         <View style={styles.container}>
             <Text style={styles.headerTitle}>{t('acp.sessionBrowser.title')}</Text>
+            {/* HAP-1071: Display error banner when session list operations fail */}
+            {error && !refreshing && (
+                <ErrorBanner message={error} onRetry={onRefresh} />
+            )}
             <FlatList
                 data={sessions}
                 keyExtractor={keyExtractor}
@@ -322,5 +340,28 @@ const styles = StyleSheet.create((theme) => ({
         fontSize: 13,
         fontWeight: '500',
         color: theme.colors.primary,
+    },
+    // HAP-1071: Error banner styles
+    errorBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: theme.colors.error ? `${String(theme.colors.error)}15` : '#FF3B3015',
+        marginHorizontal: 16,
+        marginBottom: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        borderRadius: 10,
+        gap: 8,
+    },
+    errorIcon: {
+        color: theme.colors.error ?? '#FF3B30',
+    },
+    errorText: {
+        flex: 1,
+        fontSize: 13,
+        color: theme.colors.error ?? '#FF3B30',
+    },
+    errorRetryIcon: {
+        color: theme.colors.textSecondary,
     },
 }));

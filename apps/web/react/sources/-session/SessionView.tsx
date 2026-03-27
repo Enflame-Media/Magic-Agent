@@ -1065,6 +1065,7 @@ function SessionViewLoaded({ sessionId, session }: { sessionId: string, session:
                             onResume={handleSessionResume}
                             onFork={handleSessionFork}
                             refreshing={acpSessionList?.loading ?? false}
+                            error={acpSessionList?.error}
                         />
                     </View>
                 </View>
