@@ -156,3 +156,66 @@
 "status.connecting" = "Connectant...";
 "status.online" = "En línia";
 "status.offline" = "Fora de línia";
+
+// MARK: - ACP (Agent Control Protocol)
+
+// Modes
+"acp.mode.code" = "Codi";
+"acp.mode.ask" = "Preguntar";
+"acp.mode.architect" = "Arquitecte";
+"acp.mode.plan" = "Pla";
+
+// Session
+"acp.session.untitled" = "Sessió sense títol";
+"acp.session.empty.title" = "Sense missatges";
+"acp.session.empty.subtitle" = "Els missatges de l'agent apareixeran aquí";
+"acp.session.messages" = "missatges";
+"acp.streaming" = "Transmetent";
+
+// Roles
+"acp.role.user" = "Tu";
+"acp.role.assistant" = "Claude";
+"acp.role.system" = "Sistema";
+
+// Thoughts
+"acp.thought.label" = "Pensant";
+
+// Tool calls
+"acp.toolcall.input" = "Entrada";
+"acp.toolcall.output" = "Sortida";
+"acp.toolcalls.label" = "Eines utilitzades";
+
+// Usage widget
+"acp.usage.title" = "Finestra de context";
+"acp.usage.tokens" = "%@ / %@ tokens";
+
+// Commands
+"acp.commands.title" = "Paleta de comandes";
+"acp.commands.search" = "Cercar comandes...";
+"acp.commands.empty" = "Cap comanda coincident";
+
+// Config
+"acp.config.title" = "Configuració";
+
+// Diff
+"acp.diff.copy" = "Copiar diff";
+"acp.diff.collapse" = "Contraure";
+"acp.diff.expand" = "Expandir";
+"acp.diff.largeCollapsed" = "%d línies (contret)";
+
+// Terminal
+"acp.terminal.copy" = "Copiar sortida";
+"acp.terminal.collapse" = "Contraure";
+"acp.terminal.showMore" = "Mostrar les %d línies";
+"acp.terminal.exitCode" = "codi de sortida %d";
+
+// Image
+"acp.image.save" = "Desar imatge...";
+"acp.image.copyUrl" = "Copiar URL";
+"acp.image.resetZoom" = "Restablir zoom";
+"acp.image.loading" = "Carregant imatge...";
+"acp.image.error" = "Error en carregar la imatge";
+
+// Auto-scroll
+"acp.autoScroll.enabled" = "Desplaçament automàtic activat";
+"acp.autoScroll.disabled" = "Desplaçament automàtic desactivat";

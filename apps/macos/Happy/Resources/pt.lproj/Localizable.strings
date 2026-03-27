@@ -156,3 +156,66 @@
 "status.connecting" = "Conectando...";
 "status.online" = "Online";
 "status.offline" = "Offline";
+
+// MARK: - ACP (Agent Control Protocol)
+
+// Modes
+"acp.mode.code" = "Código";
+"acp.mode.ask" = "Perguntar";
+"acp.mode.architect" = "Arquiteto";
+"acp.mode.plan" = "Plano";
+
+// Session
+"acp.session.untitled" = "Sessão sem título";
+"acp.session.empty.title" = "Sem mensagens";
+"acp.session.empty.subtitle" = "As mensagens do agente aparecerão aqui";
+"acp.session.messages" = "mensagens";
+"acp.streaming" = "Transmitindo";
+
+// Roles
+"acp.role.user" = "Você";
+"acp.role.assistant" = "Claude";
+"acp.role.system" = "Sistema";
+
+// Thoughts
+"acp.thought.label" = "Pensando";
+
+// Tool calls
+"acp.toolcall.input" = "Entrada";
+"acp.toolcall.output" = "Saída";
+"acp.toolcalls.label" = "Ferramentas usadas";
+
+// Usage widget
+"acp.usage.title" = "Janela de contexto";
+"acp.usage.tokens" = "%@ / %@ tokens";
+
+// Commands
+"acp.commands.title" = "Paleta de comandos";
+"acp.commands.search" = "Pesquisar comandos...";
+"acp.commands.empty" = "Nenhum comando encontrado";
+
+// Config
+"acp.config.title" = "Configuração";
+
+// Diff
+"acp.diff.copy" = "Copiar diff";
+"acp.diff.collapse" = "Recolher";
+"acp.diff.expand" = "Expandir";
+"acp.diff.largeCollapsed" = "%d linhas (recolhido)";
+
+// Terminal
+"acp.terminal.copy" = "Copiar saída";
+"acp.terminal.collapse" = "Recolher";
+"acp.terminal.showMore" = "Mostrar todas as %d linhas";
+"acp.terminal.exitCode" = "código de saída %d";
+
+// Image
+"acp.image.save" = "Salvar imagem...";
+"acp.image.copyUrl" = "Copiar URL";
+"acp.image.resetZoom" = "Redefinir zoom";
+"acp.image.loading" = "Carregando imagem...";
+"acp.image.error" = "Erro ao carregar imagem";
+
+// Auto-scroll
+"acp.autoScroll.enabled" = "Rolagem automática ativada";
+"acp.autoScroll.disabled" = "Rolagem automática desativada";

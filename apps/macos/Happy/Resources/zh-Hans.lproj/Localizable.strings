@@ -156,3 +156,66 @@
 "status.connecting" = "连接中...";
 "status.online" = "在线";
 "status.offline" = "离线";
+
+// MARK: - ACP (Agent Control Protocol)
+
+// Modes
+"acp.mode.code" = "代码";
+"acp.mode.ask" = "提问";
+"acp.mode.architect" = "架构";
+"acp.mode.plan" = "计划";
+
+// Session
+"acp.session.untitled" = "未命名会话";
+"acp.session.empty.title" = "暂无消息";
+"acp.session.empty.subtitle" = "代理消息将显示在这里";
+"acp.session.messages" = "条消息";
+"acp.streaming" = "传输中";
+
+// Roles
+"acp.role.user" = "你";
+"acp.role.assistant" = "Claude";
+"acp.role.system" = "系统";
+
+// Thoughts
+"acp.thought.label" = "思考中";
+
+// Tool calls
+"acp.toolcall.input" = "输入";
+"acp.toolcall.output" = "输出";
+"acp.toolcalls.label" = "使用的工具";
+
+// Usage widget
+"acp.usage.title" = "上下文窗口";
+"acp.usage.tokens" = "%@ / %@ 令牌";
+
+// Commands
+"acp.commands.title" = "命令面板";
+"acp.commands.search" = "搜索命令...";
+"acp.commands.empty" = "没有匹配的命令";
+
+// Config
+"acp.config.title" = "配置";
+
+// Diff
+"acp.diff.copy" = "复制差异";
+"acp.diff.collapse" = "折叠";
+"acp.diff.expand" = "展开";
+"acp.diff.largeCollapsed" = "%d 行（已折叠）";
+
+// Terminal
+"acp.terminal.copy" = "复制输出";
+"acp.terminal.collapse" = "折叠";
+"acp.terminal.showMore" = "显示全部 %d 行";
+"acp.terminal.exitCode" = "退出码 %d";
+
+// Image
+"acp.image.save" = "保存图片...";
+"acp.image.copyUrl" = "复制 URL";
+"acp.image.resetZoom" = "重置缩放";
+"acp.image.loading" = "加载图片中...";
+"acp.image.error" = "图片加载失败";
+
+// Auto-scroll
+"acp.autoScroll.enabled" = "自动滚动已启用";
+"acp.autoScroll.disabled" = "自动滚动已禁用";

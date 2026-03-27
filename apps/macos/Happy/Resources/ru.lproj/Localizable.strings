@@ -156,3 +156,66 @@
 "status.connecting" = "Подключение...";
 "status.online" = "В сети";
 "status.offline" = "Не в сети";
+
+// MARK: - ACP (Agent Control Protocol)
+
+// Modes
+"acp.mode.code" = "Код";
+"acp.mode.ask" = "Вопрос";
+"acp.mode.architect" = "Архитектор";
+"acp.mode.plan" = "План";
+
+// Session
+"acp.session.untitled" = "Без названия";
+"acp.session.empty.title" = "Нет сообщений";
+"acp.session.empty.subtitle" = "Сообщения агента появятся здесь";
+"acp.session.messages" = "сообщений";
+"acp.streaming" = "Передача";
+
+// Roles
+"acp.role.user" = "Вы";
+"acp.role.assistant" = "Claude";
+"acp.role.system" = "Система";
+
+// Thoughts
+"acp.thought.label" = "Размышление";
+
+// Tool calls
+"acp.toolcall.input" = "Вход";
+"acp.toolcall.output" = "Выход";
+"acp.toolcalls.label" = "Использованные инструменты";
+
+// Usage widget
+"acp.usage.title" = "Окно контекста";
+"acp.usage.tokens" = "%@ / %@ токенов";
+
+// Commands
+"acp.commands.title" = "Палитра команд";
+"acp.commands.search" = "Поиск команд...";
+"acp.commands.empty" = "Команды не найдены";
+
+// Config
+"acp.config.title" = "Настройки";
+
+// Diff
+"acp.diff.copy" = "Копировать diff";
+"acp.diff.collapse" = "Свернуть";
+"acp.diff.expand" = "Развернуть";
+"acp.diff.largeCollapsed" = "%d строк (свёрнуто)";
+
+// Terminal
+"acp.terminal.copy" = "Копировать вывод";
+"acp.terminal.collapse" = "Свернуть";
+"acp.terminal.showMore" = "Показать все %d строк";
+"acp.terminal.exitCode" = "код выхода %d";
+
+// Image
+"acp.image.save" = "Сохранить изображение...";
+"acp.image.copyUrl" = "Копировать URL";
+"acp.image.resetZoom" = "Сбросить масштаб";
+"acp.image.loading" = "Загрузка изображения...";
+"acp.image.error" = "Ошибка загрузки изображения";
+
+// Auto-scroll
+"acp.autoScroll.enabled" = "Автопрокрутка включена";
+"acp.autoScroll.disabled" = "Автопрокрутка отключена";
