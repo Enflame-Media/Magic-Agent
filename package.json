@@ -26,7 +26,7 @@
     "lint:fix": "turbo run lint:fix",
     "format": "turbo run format",
     "format:check": "turbo run format:check",
-    "format:root": "oxfmt .",
+    "format:root": "vp fmt .",
     "test": "turbo run test",
     "test:watch": "turbo run test:watch",
     "dev": "turbo run dev",
@@ -38,8 +38,6 @@
     "deploy:stack:dev": "turbo run deploy:dev --filter=happy-server-workers --filter=happy"
   },
   "devDependencies": {
-    "oxfmt": "^0.41.0",
-    "oxlint": "^1.56.0",
     "tsx": "^4.21.0",
     "turbo": "^2.8.20",
     "vite-plus": "^0.1.13",
