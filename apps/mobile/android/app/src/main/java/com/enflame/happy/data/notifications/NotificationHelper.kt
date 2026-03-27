@@ -103,8 +103,25 @@ class NotificationHelper @Inject constructor(
             setSound(null, null)
         }
 
+        val acpPermissionChannel = NotificationChannel(
+            NotificationChannels.CHANNEL_ACP_PERMISSION,
+            NotificationChannels.CHANNEL_ACP_PERMISSION_NAME,
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            description = NotificationChannels.CHANNEL_ACP_PERMISSION_DESCRIPTION
+            enableVibration(true)
+            vibrationPattern = longArrayOf(0, 300, 200, 300)
+            lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
+        }
+
         notificationManager.createNotificationChannels(
-            listOf(sessionChannel, messageChannel, pairingChannel, mediaPlaybackChannel)
+            listOf(
+                sessionChannel,
+                messageChannel,
+                pairingChannel,
+                mediaPlaybackChannel,
+                acpPermissionChannel
+            )
         )
 
         Log.d(TAG, "Notification channels created")
@@ -317,6 +334,107 @@ class NotificationHelper @Inject constructor(
     }
 
     /**
+     * Show an ACP tool permission request notification with Allow/Reject quick actions.
+     *
+     * Permission notifications bypass the user's in-app preference check since
+     * they are critical for agent operation. Only the OS permission is checked.
+     *
+     * The notification uses IMPORTANCE_HIGH for heads-up display and includes
+     * a full-screen intent for lock screen presentation.
+     *
+     * @param permissionId The permission request ID.
+     * @param toolName The name of the tool requesting permission.
+     * @param description A human-readable description of the tool action.
+     * @param sessionId The session the permission belongs to.
+     */
+    fun showAcpPermissionNotification(
+        permissionId: String,
+        toolName: String,
+        description: String?,
+        sessionId: String
+    ) {
+        // Permission notifications bypass user preference, like pairing
+        if (!hasNotificationPermission()) return
+
+        val contentIntent = createAcpPermissionPendingIntent(permissionId)
+
+        // Full-screen intent for lock screen display
+        val fullScreenIntent = PendingIntent.getActivity(
+            context,
+            permissionId.hashCode() + 100,
+            Intent(context, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                putExtra(EXTRA_ACP_PERMISSION_ID, permissionId)
+                putExtra(EXTRA_NOTIFICATION_TYPE, NotificationChannels.TYPE_ACP_PERMISSION)
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val allowIntent = createAcpActionPendingIntent(
+            NotificationChannels.ACTION_ALLOW_PERMISSION,
+            permissionId,
+            sessionId
+        )
+        val allowAction = NotificationCompat.Action.Builder(
+            R.drawable.ic_notification,
+            "Allow",
+            allowIntent
+        ).build()
+
+        val rejectIntent = createAcpActionPendingIntent(
+            NotificationChannels.ACTION_REJECT_PERMISSION,
+            permissionId,
+            sessionId
+        )
+        val rejectAction = NotificationCompat.Action.Builder(
+            R.drawable.ic_notification,
+            "Reject",
+            rejectIntent
+        ).build()
+
+        val notificationId = NotificationChannels.NOTIFICATION_ID_ACP_PERMISSION_BASE +
+            permissionId.hashCode().and(0xFFF)
+
+        val title = "Permission: $toolName"
+        val body = description ?: "Agent needs permission to use $toolName"
+
+        val builder = NotificationCompat.Builder(
+            context,
+            NotificationChannels.CHANNEL_ACP_PERMISSION
+        )
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setAutoCancel(true)
+            .setContentIntent(contentIntent)
+            .setFullScreenIntent(fullScreenIntent, true)
+            .addAction(allowAction)
+            .addAction(rejectAction)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_CALL)
+            .setVibrate(longArrayOf(0, 300, 200, 300))
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+
+        try {
+            notificationManager.notify(notificationId, builder.build())
+        } catch (e: SecurityException) {
+            Log.w(TAG, "Missing POST_NOTIFICATIONS permission", e)
+        }
+    }
+
+    /**
+     * Cancel an ACP permission notification after the user responds.
+     *
+     * @param permissionId The permission request ID.
+     */
+    fun cancelAcpPermissionNotification(permissionId: String) {
+        val notificationId = NotificationChannels.NOTIFICATION_ID_ACP_PERMISSION_BASE +
+            permissionId.hashCode().and(0xFFF)
+        notificationManager.cancel(notificationId)
+    }
+
+    /**
      * Cancel all notifications for a specific session.
      *
      * @param sessionId The session to cancel notifications for.
@@ -466,6 +584,51 @@ class NotificationHelper @Inject constructor(
         )
     }
 
+    /**
+     * Create a PendingIntent that navigates to the ACP permission screen.
+     */
+    private fun createAcpPermissionPendingIntent(permissionId: String): PendingIntent {
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(EXTRA_ACP_PERMISSION_ID, permissionId)
+            putExtra(EXTRA_NOTIFICATION_TYPE, NotificationChannels.TYPE_ACP_PERMISSION)
+        }
+
+        return PendingIntent.getActivity(
+            context,
+            permissionId.hashCode(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
+    /**
+     * Create a PendingIntent for an ACP permission quick action (Allow/Reject).
+     */
+    private fun createAcpActionPendingIntent(
+        action: String,
+        permissionId: String,
+        sessionId: String
+    ): PendingIntent {
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(EXTRA_ACTION, action)
+            putExtra(EXTRA_ACP_PERMISSION_ID, permissionId)
+            putExtra(EXTRA_SESSION_ID, sessionId)
+            putExtra(EXTRA_NOTIFICATION_TYPE, NotificationChannels.TYPE_ACP_PERMISSION)
+        }
+
+        val requestCode = (action.hashCode() + permissionId.hashCode())
+            .and(0x7FFFFFFF) // Ensure positive
+
+        return PendingIntent.getActivity(
+            context,
+            requestCode,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
     companion object {
         private const val TAG = "NotificationHelper"
 
@@ -480,5 +643,8 @@ class NotificationHelper @Inject constructor(
 
         /** Intent extra key for machine ID. */
         const val EXTRA_MACHINE_ID = "extra_machine_id"
+
+        /** Intent extra key for ACP permission ID. */
+        const val EXTRA_ACP_PERMISSION_ID = "extra_acp_permission_id"
     }
 }

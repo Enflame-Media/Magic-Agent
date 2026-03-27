@@ -10,6 +10,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import android.content.Intent
 import androidx.compose.ui.platform.LocalContext
+import com.enflame.happy.ui.screens.acp.AcpAgentPickerSheet
+import com.enflame.happy.ui.screens.acp.AcpPermissionScreen
+import com.enflame.happy.ui.screens.acp.AcpSessionBrowserScreen
 import com.enflame.happy.ui.screens.artifacts.ArtifactDetailScreen
 import com.enflame.happy.ui.screens.artifacts.ArtifactListScreen
 import com.enflame.happy.ui.screens.friends.AddFriendScreen
@@ -20,13 +23,11 @@ import com.enflame.happy.ui.screens.pairing.PairingConfirmationScreen
 import com.enflame.happy.ui.screens.purchases.PaywallScreen
 import com.enflame.happy.ui.screens.purchases.SubscriptionStatusView
 import com.enflame.happy.ui.screens.qrscanner.QrScannerScreen
-import com.enflame.happy.ui.screens.acp.AcpSessionScreen
 import com.enflame.happy.ui.screens.sessions.SessionDetailScreen
 import com.enflame.happy.ui.screens.sessions.SessionListScreen
 import com.enflame.happy.ui.screens.settings.PrivacySettingsScreen
 import com.enflame.happy.ui.screens.settings.SettingsScreen
 import com.enflame.happy.ui.screens.settings.VoiceSettingsScreen
-import com.enflame.happy.ui.viewmodel.AcpSessionViewModel
 import com.enflame.happy.ui.viewmodel.ArtifactViewModel
 import com.enflame.happy.ui.viewmodel.FriendsViewModel
 import com.enflame.happy.ui.viewmodel.PairingViewModel
@@ -36,6 +37,9 @@ import com.enflame.happy.ui.viewmodel.SessionDetailViewModel
 import com.enflame.happy.ui.viewmodel.SessionListViewModel
 import com.enflame.happy.ui.viewmodel.SettingsViewModel
 import com.enflame.happy.ui.viewmodel.VoiceViewModel
+import com.enflame.happy.ui.viewmodel.acp.AcpAgentPickerViewModel
+import com.enflame.happy.ui.viewmodel.acp.AcpPermissionViewModel
+import com.enflame.happy.ui.viewmodel.acp.AcpSessionBrowserViewModel
 import java.net.URLDecoder
 import java.net.URLEncoder
 
@@ -65,9 +69,8 @@ sealed class Screen(val route: String) {
     }
     data object PrivacySettings : Screen("privacy_settings")
     data object QrScanner : Screen("qr_scanner")
-    data object AcpSession : Screen("acp_session/{sessionId}") {
-        fun createRoute(sessionId: String) = "acp_session/$sessionId"
-    }
+    data object AcpPermissions : Screen("acp_permissions")
+    data object AcpSessionBrowser : Screen("acp_session_browser")
     data object PairingConfirmation : Screen(
         "pairing_confirmation/{publicKey}?deviceName={deviceName}&platform={platform}"
     ) {
@@ -242,22 +245,6 @@ fun HappyNavHost(
         }
 
         composable(
-            route = Screen.AcpSession.route,
-            arguments = listOf(
-                navArgument("sessionId") { type = NavType.StringType }
-            )
-        ) {
-            val acpSessionViewModel: AcpSessionViewModel = hiltViewModel()
-
-            AcpSessionScreen(
-                viewModel = acpSessionViewModel,
-                onNavigateBack = {
-                    navController.popBackStack()
-                }
-            )
-        }
-
-        composable(
             route = Screen.Artifacts.route,
             arguments = listOf(
                 navArgument("sessionId") { type = NavType.StringType }
@@ -376,6 +363,32 @@ fun HappyNavHost(
                 },
                 onNavigateToPaywall = {
                     navController.navigate(Screen.Paywall.route)
+                }
+            )
+        }
+
+        // ============================================================
+        // ACP Screens (HAP-1062)
+        // ============================================================
+
+        composable(Screen.AcpPermissions.route) {
+            val acpPermissionViewModel: AcpPermissionViewModel = hiltViewModel()
+
+            AcpPermissionScreen(
+                viewModel = acpPermissionViewModel,
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(Screen.AcpSessionBrowser.route) {
+            val acpSessionBrowserViewModel: AcpSessionBrowserViewModel = hiltViewModel()
+
+            AcpSessionBrowserScreen(
+                viewModel = acpSessionBrowserViewModel,
+                onNavigateBack = {
+                    navController.popBackStack()
                 }
             )
         }

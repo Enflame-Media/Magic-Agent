@@ -131,6 +131,7 @@ class HappyFirebaseMessagingService : FirebaseMessagingService() {
             NotificationChannels.TYPE_SESSION_UPDATE -> handleSessionUpdate(data)
             NotificationChannels.TYPE_MESSAGE -> handleMessage(data)
             NotificationChannels.TYPE_PAIRING -> handlePairing(data)
+            NotificationChannels.TYPE_ACP_PERMISSION -> handleAcpPermission(data)
             else -> {
                 Log.w(TAG, "Unknown notification type: $type")
             }
@@ -198,6 +199,31 @@ class HappyFirebaseMessagingService : FirebaseMessagingService() {
             machineId = machineId,
             title = title,
             body = body
+        )
+    }
+
+    /**
+     * Handle an ACP tool permission push notification.
+     *
+     * Extracts permission details from the data payload and shows an
+     * urgent notification with Allow/Reject quick actions. This fires
+     * even when the app is killed, enabling remote permission approval.
+     */
+    private fun handleAcpPermission(data: Map<String, String>) {
+        val permissionId = data["permissionId"] ?: run {
+            Log.w(TAG, "ACP permission notification missing permissionId")
+            return
+        }
+
+        val toolName = data["toolName"] ?: "Unknown Tool"
+        val description = data["description"]
+        val sessionId = data["sessionId"] ?: ""
+
+        notificationHelper.showAcpPermissionNotification(
+            permissionId = permissionId,
+            toolName = toolName,
+            description = description,
+            sessionId = sessionId
         )
     }
 

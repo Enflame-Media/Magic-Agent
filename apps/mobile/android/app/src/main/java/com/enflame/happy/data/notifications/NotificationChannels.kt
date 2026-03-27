@@ -34,6 +34,9 @@ object NotificationChannels {
     /** Channel for media playback foreground service notifications. */
     const val CHANNEL_MEDIA_PLAYBACK = "media_playback"
 
+    /** Channel for ACP tool permission request notifications. */
+    const val CHANNEL_ACP_PERMISSION = "acp_permission"
+
     // --- Channel Display Names ---
 
     const val CHANNEL_SESSION_UPDATES_NAME = "Session Updates"
@@ -52,6 +55,10 @@ object NotificationChannels {
     const val CHANNEL_MEDIA_PLAYBACK_DESCRIPTION =
         "Controls for audio playback when playing in the background"
 
+    const val CHANNEL_ACP_PERMISSION_NAME = "Agent Permissions"
+    const val CHANNEL_ACP_PERMISSION_DESCRIPTION =
+        "Urgent notifications when your AI agent needs permission to use a tool"
+
     // --- Notification Types (from server payload) ---
 
     /** Notification type for session state changes. */
@@ -62,6 +69,9 @@ object NotificationChannels {
 
     /** Notification type for pairing requests. */
     const val TYPE_PAIRING = "pairing"
+
+    /** Notification type for ACP tool permission requests. */
+    const val TYPE_ACP_PERMISSION = "acp_permission"
 
     // --- Action IDs ---
 
@@ -76,6 +86,12 @@ object NotificationChannels {
 
     /** Action to reject a pairing request. */
     const val ACTION_REJECT_PAIRING = "REJECT_PAIRING"
+
+    /** Action to allow an ACP tool permission. */
+    const val ACTION_ALLOW_PERMISSION = "ALLOW_PERMISSION"
+
+    /** Action to reject an ACP tool permission. */
+    const val ACTION_REJECT_PERMISSION = "REJECT_PERMISSION"
 
     // --- Deep Link Scheme ---
 
@@ -95,6 +111,19 @@ object NotificationChannels {
         return "$DEEP_LINK_SCHEME://$DEEP_LINK_HOST/$sessionId"
     }
 
+    /** Deep link host for ACP permission navigation. */
+    const val DEEP_LINK_HOST_ACP_PERMISSION = "acp-permission"
+
+    /**
+     * Build a deep link URI for navigating to the ACP permission screen.
+     *
+     * @param permissionId The permission request to navigate to.
+     * @return The deep link URI string: "happy://acp-permission/{permissionId}"
+     */
+    fun buildAcpPermissionDeepLink(permissionId: String): String {
+        return "$DEEP_LINK_SCHEME://$DEEP_LINK_HOST_ACP_PERMISSION/$permissionId"
+    }
+
     // --- Notification IDs ---
 
     /** Base notification ID for session update notifications. */
@@ -105,6 +134,9 @@ object NotificationChannels {
 
     /** Base notification ID for pairing notifications. */
     const val NOTIFICATION_ID_PAIRING_BASE = 3000
+
+    /** Base notification ID for ACP permission notifications. */
+    const val NOTIFICATION_ID_ACP_PERMISSION_BASE = 4000
 
     /** Request code for notification pending intents. */
     const val PENDING_INTENT_REQUEST_CODE = 0

@@ -481,25 +481,32 @@ class SyncService @Inject constructor(
                 )
             }
 
-            SyncMessageType.ACP_SESSION_UPDATE -> {
-                val sessionId = envelope.sessionId ?: return
-                val payload = envelope.encryptedPayload ?: return
+            // ACP message types (HAP-1062)
+            SyncMessageType.ACP_PERMISSION_REQUEST -> {
+                val permission = envelope.permission ?: return
                 _incomingMessages.tryEmit(
-                    SyncMessage.AcpSessionUpdate(
-                        sessionId = sessionId,
-                        encryptedPayload = payload.toByteArray(Charsets.UTF_8)
-                    )
+                    SyncMessage.AcpPermissionRequest(permission = permission)
                 )
             }
 
-            SyncMessageType.ACP_PERMISSION_REQUEST -> {
-                val sessionId = envelope.sessionId ?: return
-                val payload = envelope.encryptedPayload ?: return
+            SyncMessageType.ACP_SESSION_LIST -> {
+                val sessions = envelope.acpSessions ?: return
                 _incomingMessages.tryEmit(
-                    SyncMessage.AcpPermissionRequest(
-                        sessionId = sessionId,
-                        encryptedPayload = payload.toByteArray(Charsets.UTF_8)
-                    )
+                    SyncMessage.AcpSessionList(sessions = sessions)
+                )
+            }
+
+            SyncMessageType.ACP_AGENT_LIST -> {
+                val agents = envelope.agents ?: return
+                _incomingMessages.tryEmit(
+                    SyncMessage.AcpAgentList(agents = agents)
+                )
+            }
+
+            SyncMessageType.ACP_AGENT_SWITCH_RESPONSE -> {
+                val response = envelope.agentSwitchResponse ?: return
+                _incomingMessages.tryEmit(
+                    SyncMessage.AcpAgentSwitchResult(response = response)
                 )
             }
 
@@ -540,6 +547,30 @@ class SyncService @Inject constructor(
      */
     private fun sendPong() {
         sendOutgoing(SyncOutgoingMessage(type = SyncMessageType.PONG))
+    }
+
+    /**
+     * Send pre-encrypted bytes directly over the WebSocket.
+     *
+     * Used by [com.enflame.happy.data.acp.AcpRepository] to send E2E encrypted
+     * ACP responses (permission decisions, agent switches, session actions)
+     * back through the relay.
+     *
+     * @param data The encrypted byte array to send.
+     * @return true if the data was sent successfully.
+     */
+    fun sendEncryptedBytes(data: ByteArray): Boolean {
+        val ws = webSocket ?: run {
+            Log.w(TAG, "Cannot send encrypted bytes: not connected")
+            return false
+        }
+
+        return try {
+            ws.send(okio.ByteString.of(*data))
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to send encrypted bytes", e)
+            false
+        }
     }
 
     // ========================================================================

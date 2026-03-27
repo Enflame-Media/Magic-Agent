@@ -2,6 +2,10 @@ package com.enflame.happy.data.sync
 
 import com.enflame.happy.domain.model.Message
 import com.enflame.happy.domain.model.Session
+import com.enflame.happy.domain.model.acp.AcpAgent
+import com.enflame.happy.domain.model.acp.AcpAgentSwitchResponse
+import com.enflame.happy.domain.model.acp.AcpPermission
+import com.enflame.happy.domain.model.acp.AcpSession
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -57,52 +61,31 @@ sealed class SyncMessage {
         val machineId: String
     ) : SyncMessage()
 
-    /**
-     * ACP session update received from the server (HAP-1060).
-     *
-     * Contains the session ID and the encrypted ACP payload. The payload
-     * must be decrypted and parsed by [com.enflame.happy.data.acp.AcpSyncHandler].
-     */
-    data class AcpSessionUpdate(
-        val sessionId: String,
-        val encryptedPayload: ByteArray
-    ) : SyncMessage() {
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (other !is AcpSessionUpdate) return false
-            return sessionId == other.sessionId &&
-                encryptedPayload.contentEquals(other.encryptedPayload)
-        }
-
-        override fun hashCode(): Int {
-            var result = sessionId.hashCode()
-            result = 31 * result + encryptedPayload.contentHashCode()
-            return result
-        }
-    }
+    // ========================================================================
+    // ACP Messages (HAP-1062)
+    // ========================================================================
 
     /**
-     * ACP permission request received from the server (HAP-1060).
+     * An ACP tool permission request from the agent.
      *
-     * Contains the session ID and the encrypted permission request payload.
+     * The user must approve or reject this within the timeout.
      */
-    data class AcpPermissionRequest(
-        val sessionId: String,
-        val encryptedPayload: ByteArray
-    ) : SyncMessage() {
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (other !is AcpPermissionRequest) return false
-            return sessionId == other.sessionId &&
-                encryptedPayload.contentEquals(other.encryptedPayload)
-        }
+    data class AcpPermissionRequest(val permission: AcpPermission) : SyncMessage()
 
-        override fun hashCode(): Int {
-            var result = sessionId.hashCode()
-            result = 31 * result + encryptedPayload.contentHashCode()
-            return result
-        }
-    }
+    /**
+     * Updated list of available ACP sessions.
+     */
+    data class AcpSessionList(val sessions: List<AcpSession>) : SyncMessage()
+
+    /**
+     * Updated list of available ACP agents.
+     */
+    data class AcpAgentList(val agents: List<AcpAgent>) : SyncMessage()
+
+    /**
+     * Response to an agent switch request.
+     */
+    data class AcpAgentSwitchResult(val response: AcpAgentSwitchResponse) : SyncMessage()
 }
 
 /**
@@ -123,8 +106,11 @@ internal data class SyncUpdateEnvelope(
     val machineId: String? = null,
     val originalSessionId: String? = null,
     val newSessionId: String? = null,
-    /** Encrypted ACP payload (base64 or raw bytes, HAP-1060). */
-    val encryptedPayload: String? = null
+    // ACP fields (HAP-1062)
+    val permission: AcpPermission? = null,
+    val acpSessions: List<AcpSession>? = null,
+    val agents: List<AcpAgent>? = null,
+    val agentSwitchResponse: AcpAgentSwitchResponse? = null
 )
 
 /**
@@ -161,11 +147,17 @@ internal enum class SyncMessageType {
     @SerialName("session-revived")
     SESSION_REVIVED,
 
-    @SerialName("acp-session-update")
-    ACP_SESSION_UPDATE,
-
     @SerialName("acp-permission-request")
-    ACP_PERMISSION_REQUEST
+    ACP_PERMISSION_REQUEST,
+
+    @SerialName("acp-session-list")
+    ACP_SESSION_LIST,
+
+    @SerialName("acp-agent-list")
+    ACP_AGENT_LIST,
+
+    @SerialName("acp-agent-switch-response")
+    ACP_AGENT_SWITCH_RESPONSE
 }
 
 /**

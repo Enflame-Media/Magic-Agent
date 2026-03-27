@@ -1,75 +1,134 @@
 package com.enflame.happy.domain.model.acp
 
-/**
- * An option presented to the user when requesting permission for a tool call.
- */
-data class AcpPermissionOption(
-    val optionId: String,
-    val name: String,
-    val kind: AcpPermissionOptionKind,
-)
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 /**
- * A permission request received from the CLI agent.
+ * Represents an ACP tool permission request from the agent.
  *
- * Contains the tool details and available options for user approval/denial.
- * Relayed from CLI through the server as an ACP session update.
+ * When an agent needs to use a tool (e.g., file write, shell command),
+ * it sends a permission request through the relay. The user can approve
+ * or reject the request from the Android app.
+ *
+ * ## Wire Format
+ * Permission requests arrive as encrypted sync messages with type
+ * `acp-permission-request`. The response is sent back through the
+ * same encrypted WebSocket channel.
  */
-data class AcpPermissionRequestState(
-    /** Unique request ID for correlating response. */
-    val requestId: String,
-    /** Session ID this request belongs to. */
+@Serializable
+data class AcpPermission(
+    /** Unique identifier for this permission request. */
+    val id: String,
+    /** The session this permission belongs to. */
     val sessionId: String,
-    /** Tool call that needs permission. */
-    val toolCall: AcpPermissionToolInfo,
-    /** Available permission options. */
-    val options: List<AcpPermissionOption>,
-    /** When the request was received (epoch millis). */
-    val receivedAt: Long,
-    /** Timeout deadline (epoch millis), if specified by the agent. */
-    val timeoutAt: Long?,
-    /** Current status. */
-    val status: AcpPermissionRequestStatus,
-    /** Selected option ID, if responded. */
-    val selectedOptionId: String?,
+    /** Machine ID of the CLI that sent the request. */
+    val machineId: String,
+    /** Name of the tool requesting permission (e.g., "write_file", "bash"). */
+    val toolName: String,
+    /** Category of the tool for icon selection. */
+    val toolKind: AcpToolKind = AcpToolKind.OTHER,
+    /** Human-readable description of what the tool will do. */
+    val description: String? = null,
+    /** File paths or locations affected by this tool use. */
+    val filePaths: List<String> = emptyList(),
+    /** Raw input that will be sent to the tool (e.g., command text, file content). */
+    val rawInput: String? = null,
+    /** Timestamp when the request was created (epoch millis). */
+    val createdAt: Long = System.currentTimeMillis(),
+    /** Timeout in milliseconds before the request expires. */
+    val timeoutMs: Long = DEFAULT_TIMEOUT_MS,
+    /** Current status of the permission request. */
+    val status: AcpPermissionStatus = AcpPermissionStatus.PENDING
+) {
+    /** Whether this permission request has expired. */
+    val isExpired: Boolean
+        get() = System.currentTimeMillis() > createdAt + timeoutMs
+
+    /** Remaining time in milliseconds before expiry. */
+    val remainingMs: Long
+        get() = (createdAt + timeoutMs - System.currentTimeMillis()).coerceAtLeast(0)
+
+    companion object {
+        /** Default timeout for permission requests: 60 seconds. */
+        const val DEFAULT_TIMEOUT_MS = 60_000L
+    }
+}
+
+/**
+ * Categories of ACP tools for icon and display grouping.
+ */
+@Serializable
+enum class AcpToolKind {
+    @SerialName("file_read")
+    FILE_READ,
+
+    @SerialName("file_write")
+    FILE_WRITE,
+
+    @SerialName("shell")
+    SHELL,
+
+    @SerialName("browser")
+    BROWSER,
+
+    @SerialName("network")
+    NETWORK,
+
+    @SerialName("other")
+    OTHER
+}
+
+/**
+ * Status of a permission request.
+ */
+@Serializable
+enum class AcpPermissionStatus {
+    @SerialName("pending")
+    PENDING,
+
+    @SerialName("allowed_once")
+    ALLOWED_ONCE,
+
+    @SerialName("allowed_always")
+    ALLOWED_ALWAYS,
+
+    @SerialName("rejected_once")
+    REJECTED_ONCE,
+
+    @SerialName("rejected_always")
+    REJECTED_ALWAYS,
+
+    @SerialName("expired")
+    EXPIRED
+}
+
+/**
+ * Response sent back to the agent for a permission request.
+ */
+@Serializable
+data class AcpPermissionResponse(
+    /** The permission request ID being responded to. */
+    val permissionId: String,
+    /** The session this permission belongs to. */
+    val sessionId: String,
+    /** The decision made by the user. */
+    val decision: AcpPermissionDecision
 )
 
 /**
- * Minimal tool call info included in a permission request.
+ * User's decision on a permission request.
  */
-data class AcpPermissionToolInfo(
-    val toolCallId: String,
-    val title: String,
-    val kind: AcpToolKind?,
-    val locations: List<AcpToolCallLocation>?,
-)
+@Serializable
+enum class AcpPermissionDecision {
+    @SerialName("allow_once")
+    ALLOW_ONCE,
 
-/**
- * A resolved permission decision for the history log.
- */
-data class AcpPermissionDecision(
-    val requestId: String,
-    val toolTitle: String,
-    val toolKind: AcpToolKind?,
-    val selectedOption: SelectedOptionInfo?,
-    val outcome: AcpPermissionOutcome,
-    val decidedAt: Long,
-)
+    @SerialName("allow_always")
+    ALLOW_ALWAYS,
 
-/**
- * Info about the selected permission option in a decision.
- */
-data class SelectedOptionInfo(
-    val optionId: String,
-    val name: String,
-    val kind: AcpPermissionOptionKind,
-)
+    @SerialName("reject_once")
+    REJECT_ONCE,
 
-/**
- * Outcome of a permission request.
- */
-enum class AcpPermissionOutcome {
-    SELECTED,
-    EXPIRED,
-    CANCELLED,
+    @SerialName("reject_always")
+    REJECT_ALWAYS
 }
