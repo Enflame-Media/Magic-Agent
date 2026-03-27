@@ -16,9 +16,15 @@ struct SessionListView: View {
 
     @StateObject private var viewModel: SessionListViewModel
     @ObservedObject private var authViewModel: AuthenticationViewModel
+    @ObservedObject private var acpViewModel: AcpSessionViewModel
 
-    init(authViewModel: AuthenticationViewModel, viewModel: SessionListViewModel? = nil) {
+    init(
+        authViewModel: AuthenticationViewModel,
+        acpViewModel: AcpSessionViewModel? = nil,
+        viewModel: SessionListViewModel? = nil
+    ) {
         self.authViewModel = authViewModel
+        self.acpViewModel = acpViewModel ?? AcpSessionViewModel()
         _viewModel = StateObject(wrappedValue: viewModel ?? SessionListViewModel())
     }
 
@@ -137,7 +143,7 @@ struct SessionListView: View {
             }
             .listStyle(.plain)
             .navigationDestination(for: Session.self) { session in
-                SessionDetailView(session: session)
+                SessionDetailView(session: session, acpViewModel: acpViewModel)
             }
         }
     }
@@ -170,6 +176,16 @@ struct SessionListView: View {
 
     private var settingsMenu: some View {
         Menu {
+            NavigationLink(destination: AcpSessionBrowserView(viewModel: acpViewModel)) {
+                Label("acp.sessionBrowser".localized, systemImage: "cpu")
+            }
+
+            NavigationLink(destination: AcpPermissionHistoryView(viewModel: acpViewModel)) {
+                Label("acp.permissionHistory".localized, systemImage: "shield")
+            }
+
+            Divider()
+
             NavigationLink(destination: FriendsListView()) {
                 Label("friends.title".localized, systemImage: "person.2")
             }
@@ -199,6 +215,9 @@ struct SessionListView: View {
 
 #Preview {
     NavigationStack {
-        SessionListView(authViewModel: AuthenticationViewModel())
+        SessionListView(
+            authViewModel: AuthenticationViewModel(),
+            acpViewModel: AcpSessionViewModel()
+        )
     }
 }

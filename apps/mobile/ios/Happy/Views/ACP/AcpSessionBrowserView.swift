@@ -2,186 +2,179 @@
 //  AcpSessionBrowserView.swift
 //  Happy
 //
-//  Session browser for listing, loading, resuming, and forking ACP sessions.
+//  Copyright (c) 2024-2026 Enflame Media. All rights reserved.
 //
 
 import SwiftUI
 
-/// NavigationStack-based list for browsing and managing ACP sessions.
+/// Browse and manage ACP sessions.
+///
+/// Displays a list of all ACP sessions with filtering, search, and
+/// session management actions (load, resume, fork).
 struct AcpSessionBrowserView: View {
 
-    let sessions: [AcpBrowserSession]
-    let capabilities: AcpSessionBrowserCapabilities?
-    let activeSessionId: String?
-    let onLoad: (String) -> Void
-    let onResume: (String) -> Void
-    let onFork: (String) -> Void
+    @ObservedObject var viewModel: AcpSessionViewModel
+    @State private var searchText = ""
 
-    @State private var confirmAction: ConfirmAction?
-
-    private enum ConfirmAction: Identifiable {
-        case load(String)
-        case resume(String)
-        case fork(String)
-
-        var id: String {
-            switch self {
-            case .load(let id): return "load-\(id)"
-            case .resume(let id): return "resume-\(id)"
-            case .fork(let id): return "fork-\(id)"
-            }
+    var filteredSessions: [AcpSession] {
+        if searchText.isEmpty {
+            return viewModel.sessions
+        }
+        return viewModel.sessions.filter {
+            $0.title.localizedCaseInsensitiveContains(searchText)
         }
     }
 
-    // MARK: - Body
-
     var body: some View {
         Group {
-            if sessions.isEmpty {
-                emptyState
+            if viewModel.sessions.isEmpty {
+                emptyStateView
             } else {
                 sessionList
             }
         }
-        .navigationTitle("acp.browser.title".localized)
-        .confirmationDialog(
-            "acp.browser.confirm".localized,
-            isPresented: .init(
-                get: { confirmAction != nil },
-                set: { if !$0 { confirmAction = nil } }
-            ),
-            titleVisibility: .visible
-        ) {
-            if let action = confirmAction {
-                confirmButtons(for: action)
-            }
+        .navigationTitle("acp.sessionBrowser".localized)
+        .navigationBarTitleDisplayMode(.inline)
+        .searchable(text: $searchText, prompt: "acp.searchSessions".localized)
+        .refreshable {
+            await viewModel.refresh()
         }
+        .task {
+            await viewModel.loadSessions()
+        }
+    }
+
+    // MARK: - Empty State
+
+    private var emptyStateView: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "tray")
+                .font(.system(size: 48))
+                .foregroundStyle(.secondary)
+
+            Text("acp.noSessions".localized)
+                .font(.title2)
+                .fontWeight(.semibold)
+
+            Text("acp.noSessionsDescription".localized)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 40)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     // MARK: - Session List
 
     private var sessionList: some View {
         List {
-            ForEach(Array(sessions.enumerated()), id: \.offset) { _, session in
-                sessionRow(session)
-                    .swipeActions(edge: .trailing) {
-                        swipeActions(for: session)
-                    }
+            ForEach(filteredSessions) { session in
+                NavigationLink {
+                    AcpSessionView(sessionId: session.id, viewModel: viewModel)
+                } label: {
+                    AcpSessionRowView(session: session)
+                }
             }
         }
-        .refreshable {
-            // Refresh handled by parent
-        }
+        .listStyle(.plain)
     }
+}
 
-    // MARK: - Session Row
+/// A row in the ACP session browser list.
+struct AcpSessionRowView: View {
+    let session: AcpSession
 
-    private func sessionRow(_ session: AcpBrowserSession) -> some View {
-        HStack(spacing: 10) {
+    var body: some View {
+        HStack(spacing: 12) {
+            // Status indicator
+            ZStack {
+                Circle()
+                    .fill(statusColor.opacity(0.15))
+                    .frame(width: 36, height: 36)
+
+                Image(systemName: statusIcon)
+                    .font(.system(size: 14))
+                    .foregroundStyle(statusColor)
+            }
+
+            // Session info
             VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 6) {
-                    Text(session.title)
-                        .font(.callout)
-                        .fontWeight(.medium)
-                        .lineLimit(1)
-
-                    if session.sessionId == activeSessionId {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(.accentColor)
-                            .font(.caption)
-                    }
-                }
+                Text(session.title.isEmpty ? "acp.untitledSession".localized : session.title)
+                    .font(.body)
+                    .fontWeight(.medium)
+                    .lineLimit(1)
 
                 HStack(spacing: 8) {
-                    Text(session.cwd)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .lineLimit(1)
-
-                    if let date = session.updatedAt {
-                        Text(date)
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
+                    if let agentName = session.agentName {
+                        Label(agentName, systemImage: "cpu")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
+
+                    Spacer()
+
+                    Text(session.updatedAt, style: .relative)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
             }
 
-            Spacer()
-
-            if session.isActive {
-                Text("acp.browser.active".localized)
-                    .font(.caption2)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(Color(.systemGray5))
-                    .cornerRadius(4)
+            // Pending permissions badge
+            if session.hasPendingPermissions {
+                ZStack {
+                    Circle()
+                        .fill(.orange)
+                        .frame(width: 20, height: 20)
+                    Text("\(session.pendingPermissions.count)")
+                        .font(.caption2)
+                        .fontWeight(.bold)
+                        .foregroundStyle(.white)
+                }
             }
         }
-        .padding(.vertical, 2)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            confirmAction = .load(session.sessionId)
+        .padding(.vertical, 4)
+    }
+
+    private var statusColor: Color {
+        switch session.status {
+        case .running:
+            return .green
+        case .waiting:
+            return .orange
+        case .completed:
+            return .blue
+        case .error:
+            return .red
+        case .paused:
+            return .yellow
+        case .idle:
+            return .gray
         }
     }
 
-    // MARK: - Swipe Actions
-
-    @ViewBuilder
-    private func swipeActions(for session: AcpBrowserSession) -> some View {
-        if capabilities?.canLoadSession == true {
-            Button {
-                confirmAction = .load(session.sessionId)
-            } label: {
-                Label("acp.browser.load".localized, systemImage: "arrow.down.circle")
-            }
-            .tint(.blue)
-        }
-
-        if capabilities?.canResumeSession == true {
-            Button {
-                confirmAction = .resume(session.sessionId)
-            } label: {
-                Label("acp.browser.resume".localized, systemImage: "play.circle")
-            }
-            .tint(.green)
-        }
-
-        if capabilities?.canForkSession == true {
-            Button {
-                confirmAction = .fork(session.sessionId)
-            } label: {
-                Label("acp.browser.fork".localized, systemImage: "arrow.triangle.branch")
-            }
-            .tint(.orange)
+    private var statusIcon: String {
+        switch session.status {
+        case .running:
+            return "play.circle.fill"
+        case .waiting:
+            return "hourglass"
+        case .completed:
+            return "checkmark.circle.fill"
+        case .error:
+            return "exclamationmark.circle.fill"
+        case .paused:
+            return "pause.circle.fill"
+        case .idle:
+            return "circle"
         }
     }
+}
 
-    // MARK: - Confirm Buttons
+// MARK: - Preview
 
-    @ViewBuilder
-    private func confirmButtons(for action: ConfirmAction) -> some View {
-        switch action {
-        case .load(let id):
-            Button("acp.browser.loadConfirm".localized) { onLoad(id) }
-        case .resume(let id):
-            Button("acp.browser.resumeConfirm".localized) { onResume(id) }
-        case .fork(let id):
-            Button("acp.browser.forkConfirm".localized) { onFork(id) }
-        }
-        Button("common.cancel".localized, role: .cancel) {}
-    }
-
-    // MARK: - Empty State
-
-    private var emptyState: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "tray")
-                .font(.largeTitle)
-                .foregroundColor(.secondary)
-            Text("acp.browser.empty".localized)
-                .font(.callout)
-                .foregroundColor(.secondary)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+#Preview {
+    NavigationStack {
+        AcpSessionBrowserView(viewModel: AcpSessionViewModel())
     }
 }

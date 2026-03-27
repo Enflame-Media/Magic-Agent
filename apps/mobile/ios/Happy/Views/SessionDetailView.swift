@@ -15,10 +15,13 @@ struct SessionDetailView: View {
 
     @StateObject private var viewModel: SessionDetailViewModel
     @StateObject private var voiceViewModel = VoiceViewModel()
+    @ObservedObject private var acpViewModel: AcpSessionViewModel
     @State private var showVoiceSettings = false
+    @State private var showAgentPicker = false
 
-    init(session: Session) {
+    init(session: Session, acpViewModel: AcpSessionViewModel? = nil) {
         _viewModel = StateObject(wrappedValue: SessionDetailViewModel(session: session))
+        self.acpViewModel = acpViewModel ?? AcpSessionViewModel()
     }
 
     var body: some View {
@@ -34,8 +37,20 @@ struct SessionDetailView: View {
         .navigationTitle(viewModel.session.title.isEmpty ? "sessionDetail.session".localized : viewModel.session.title)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                AcpAgentBadge(agent: acpViewModel.activeAgent) {
+                    showAgentPicker = true
+                }
+            }
             ToolbarItem(placement: .navigationBarTrailing) {
                 HStack(spacing: 12) {
+                    NavigationLink {
+                        AcpSessionView(sessionId: viewModel.session.id, viewModel: acpViewModel)
+                    } label: {
+                        Image(systemName: "cpu")
+                    }
+                    .accessibilityLabel("acp.session".localized)
+
                     NavigationLink {
                         ArtifactListView(sessionId: viewModel.session.id)
                     } label: {
@@ -71,6 +86,9 @@ struct SessionDetailView: View {
         }
         .sheet(isPresented: $showVoiceSettings) {
             VoiceSettingsView(viewModel: voiceViewModel)
+        }
+        .sheet(isPresented: $showAgentPicker) {
+            AcpAgentPickerView(viewModel: acpViewModel)
         }
         .task {
             await viewModel.loadMessages()
@@ -145,6 +163,9 @@ struct SessionDetailView: View {
                 // Session info header
                 sessionInfoSection
 
+                // ACP section
+                acpNavigationSection
+
                 // Messages
                 ForEach(viewModel.messages) { message in
                     MessageBubbleView(message: message, voiceViewModel: voiceViewModel)
@@ -165,6 +186,68 @@ struct SessionDetailView: View {
                 if let lastMessage = viewModel.messages.last {
                     withAnimation(.easeOut(duration: 0.3)) {
                         proxy.scrollTo(lastMessage.id, anchor: .bottom)
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - ACP Navigation Section
+
+    private var acpNavigationSection: some View {
+        Section {
+            NavigationLink {
+                AcpSessionView(sessionId: viewModel.session.id, viewModel: acpViewModel)
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "cpu")
+                        .font(.body)
+                        .foregroundStyle(.blue)
+                        .frame(width: 28)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("acp.agentActivity".localized)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+
+                        Text("acp.viewAgentSession".localized)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    if acpViewModel.pendingPermissionCount > 0 {
+                        ZStack {
+                            Circle()
+                                .fill(.orange)
+                                .frame(width: 22, height: 22)
+                            Text("\(acpViewModel.pendingPermissionCount)")
+                                .font(.caption2)
+                                .fontWeight(.bold)
+                                .foregroundStyle(.white)
+                        }
+                    }
+                }
+            }
+
+            NavigationLink {
+                AcpPermissionHistoryView(viewModel: acpViewModel)
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "shield")
+                        .font(.body)
+                        .foregroundStyle(.orange)
+                        .frame(width: 28)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("acp.permissionHistory".localized)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+
+                        Text("acp.viewPermissions".localized)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
                 }
             }
@@ -429,6 +512,6 @@ struct ToolUseView: View {
 
 #Preview {
     NavigationStack {
-        SessionDetailView(session: .sample)
+        SessionDetailView(session: .sample, acpViewModel: AcpSessionViewModel())
     }
 }

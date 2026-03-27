@@ -2,96 +2,104 @@
 //  AcpConfigPanelView.swift
 //  Happy
 //
-//  Form for ACP session config options (model selection, etc.).
+//  Copyright (c) 2024-2026 Enflame Media. All rights reserved.
 //
 
 import SwiftUI
 
-/// Form displaying ACP session config options with type-aware controls.
+/// Configuration panel for ACP session settings.
+///
+/// Allows users to configure agent mode, auto-approve rules,
+/// max turns, and other session parameters.
 struct AcpConfigPanelView: View {
 
-    let configOptions: [AcpSessionConfigOption]
-    let onUpdate: (String, String) -> Void
-
+    @ObservedObject var viewModel: AcpSessionViewModel
     @Environment(\.dismiss) private var dismiss
 
-    // MARK: - Body
-
     var body: some View {
-        NavigationView {
-            Form {
-                ForEach(Array(configOptions.enumerated()), id: \.offset) { _, option in
-                    configSection(for: option)
+        Form {
+            // Mode selection
+            Section {
+                Picker("acp.mode".localized, selection: $viewModel.config.mode) {
+                    ForEach([AcpMode.autonomous, .supervised, .manual, .planReview], id: \.self) { mode in
+                        Label(mode.displayName, systemImage: mode.icon)
+                            .tag(mode)
+                    }
+                }
+            } header: {
+                Text("acp.modeSection".localized)
+            } footer: {
+                Text(modeDescription)
+                    .font(.caption)
+            }
+
+            // Auto-approve rules
+            Section("acp.autoApprove".localized) {
+                ForEach(viewModel.config.autoApprove, id: \.self) { rule in
+                    HStack {
+                        Image(systemName: "checkmark.shield")
+                            .foregroundStyle(.green)
+                        Text(rule)
+                    }
+                }
+
+                if viewModel.config.autoApprove.isEmpty {
+                    Text("acp.noAutoApproveRules".localized)
+                        .foregroundStyle(.secondary)
+                        .font(.subheadline)
                 }
             }
-            .navigationTitle("acp.config.title".localized)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("common.done".localized) {
-                        dismiss()
+
+            // Advanced settings
+            Section("acp.advanced".localized) {
+                if let model = viewModel.config.model {
+                    HStack {
+                        Text("acp.model".localized)
+                        Spacer()
+                        Text(model)
+                            .foregroundStyle(.secondary)
                     }
+                }
+
+                if let maxTurns = viewModel.config.maxTurns {
+                    HStack {
+                        Text("acp.maxTurns".localized)
+                        Spacer()
+                        Text("\(maxTurns)")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
+        .navigationTitle("acp.configuration".localized)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button("common.done".localized) {
+                    dismiss()
                 }
             }
         }
     }
 
-    // MARK: - Config Section
-
-    @ViewBuilder
-    private func configSection(for option: AcpSessionConfigOption) -> some View {
-        Section(header: Text(option.name)) {
-            switch option.options {
-            case .flat(let options):
-                flatPicker(option: option, choices: options)
-
-            case .grouped(let groups):
-                groupedPicker(option: option, groups: groups)
-            }
+    private var modeDescription: String {
+        switch viewModel.config.mode {
+        case .autonomous:
+            return NSLocalizedString("acp.mode.autonomousDescription", comment: "")
+        case .supervised:
+            return NSLocalizedString("acp.mode.supervisedDescription", comment: "")
+        case .manual:
+            return NSLocalizedString("acp.mode.manualDescription", comment: "")
+        case .planReview:
+            return NSLocalizedString("acp.mode.planReviewDescription", comment: "")
         }
     }
+}
 
-    // MARK: - Flat Picker
+// MARK: - Preview
 
-    private func flatPicker(option: AcpSessionConfigOption, choices: [AcpConfigSelectOption]) -> some View {
-        ForEach(Array(choices.enumerated()), id: \.offset) { _, choice in
-            Button {
-                onUpdate(option.id, choice.value)
-            } label: {
-                HStack {
-                    Text(choice.name)
-                        .foregroundColor(.primary)
-                    Spacer()
-                    if option.currentValue == choice.value {
-                        Image(systemName: "checkmark")
-                            .foregroundColor(.accentColor)
-                    }
-                }
-            }
-        }
-    }
-
-    // MARK: - Grouped Picker
-
-    private func groupedPicker(option: AcpSessionConfigOption, groups: [AcpConfigSelectGroup]) -> some View {
-        ForEach(Array(groups.enumerated()), id: \.offset) { _, group in
-            Section(header: Text(group.name)) {
-                ForEach(Array(group.options.enumerated()), id: \.offset) { _, choice in
-                    Button {
-                        onUpdate(option.id, choice.value)
-                    } label: {
-                        HStack {
-                            Text(choice.name)
-                                .foregroundColor(.primary)
-                            Spacer()
-                            if option.currentValue == choice.value {
-                                Image(systemName: "checkmark")
-                                    .foregroundColor(.accentColor)
-                            }
-                        }
-                    }
-                }
-            }
-        }
+#Preview {
+    NavigationStack {
+        AcpConfigPanelView(viewModel: AcpSessionViewModel())
     }
 }

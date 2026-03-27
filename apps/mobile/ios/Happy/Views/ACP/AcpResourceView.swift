@@ -2,85 +2,97 @@
 //  AcpResourceView.swift
 //  Happy
 //
-//  Resource link display with icon, name, and tap-to-open.
+//  Copyright (c) 2024-2026 Enflame Media. All rights reserved.
 //
 
 import SwiftUI
 
-/// Displays a resource link or embedded resource with appropriate icon and tap action.
+/// Displays a resource content block (file reference, URL, etc.).
+///
+/// Shows a compact card with resource type icon, path, and
+/// a preview of the resource content if available.
 struct AcpResourceView: View {
 
-    let name: String
-    let title: String?
-    let uri: String
-
-    // MARK: - Body
+    let block: AcpContentBlock
 
     var body: some View {
-        HStack(spacing: 10) {
-            Image(systemName: resourceIcon)
-                .font(.title3)
-                .foregroundColor(.accentColor)
-                .frame(width: 28, height: 28)
-                .accessibilityHidden(true)
+        VStack(alignment: .leading, spacing: 8) {
+            // Header
+            HStack(spacing: 8) {
+                Image(systemName: resourceIcon)
+                    .font(.subheadline)
+                    .foregroundStyle(.cyan)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title ?? name)
-                    .font(.callout)
-                    .fontWeight(.medium)
-                    .lineLimit(1)
+                VStack(alignment: .leading, spacing: 2) {
+                    if let filePath = block.metadata?.filePath {
+                        Text(filePath)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .lineLimit(1)
+                    }
 
-                Text(name)
+                    if let language = block.metadata?.language {
+                        Text(language)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Spacer()
+
+                Image(systemName: "arrow.right.circle")
                     .font(.caption)
-                    .foregroundColor(.secondary)
-                    .lineLimit(1)
+                    .foregroundStyle(.secondary)
             }
 
-            Spacer()
-
-            if isWebURL {
-                Image(systemName: "arrow.up.right.square")
-                    .font(.callout)
-                    .foregroundColor(.secondary)
+            // Content preview
+            if !block.content.isEmpty {
+                Text(block.content)
+                    .font(.system(.caption, design: .monospaced))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(5)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(8)
+                    .background(Color(.systemGray6))
+                    .cornerRadius(6)
             }
         }
-        .padding(10)
-        .background(Color(.systemGray6))
-        .cornerRadius(8)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            openResource()
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(title ?? name), \(name)")
-        .accessibilityHint(isWebURL ? "acp.resource.tapToOpen".localized : "")
+        .padding(12)
+        .background(Color.cyan.opacity(0.08))
+        .cornerRadius(12)
     }
-
-    // MARK: - Icon
 
     private var resourceIcon: String {
-        if uri.hasSuffix(".swift") || uri.hasSuffix(".ts") || uri.hasSuffix(".js") {
-            return "doc.text"
-        } else if uri.hasSuffix(".json") || uri.hasSuffix(".yaml") || uri.hasSuffix(".yml") {
-            return "doc.badge.gearshape"
-        } else if uri.hasSuffix(".md") || uri.hasSuffix(".txt") {
-            return "doc.plaintext"
-        } else if uri.hasPrefix("http") {
-            return "globe"
-        } else if uri.hasPrefix("file://") {
-            return "folder"
+        guard let mimeType = block.metadata?.mimeType else {
+            return "doc.fill"
         }
-        return "doc"
+        if mimeType.hasPrefix("image/") {
+            return "photo.fill"
+        } else if mimeType.hasPrefix("text/") {
+            return "doc.text.fill"
+        } else {
+            return "doc.fill"
+        }
     }
+}
 
-    // MARK: - Actions
+// MARK: - Preview
 
-    private var isWebURL: Bool {
-        uri.hasPrefix("http://") || uri.hasPrefix("https://")
-    }
-
-    private func openResource() {
-        guard isWebURL, let url = URL(string: uri) else { return }
-        UIApplication.shared.open(url)
-    }
+#Preview {
+    AcpResourceView(block: AcpContentBlock(
+        id: "resource-1",
+        type: .resource,
+        content: "export function validateToken(token: string): boolean {\n  return token.length > 0;\n}",
+        status: .completed,
+        createdAt: Date(),
+        metadata: AcpContentBlockMetadata(
+            toolName: nil,
+            filePath: "src/auth/service.ts",
+            language: "TypeScript",
+            exitCode: nil,
+            mimeType: "text/typescript",
+            planSteps: nil
+        )
+    ))
+    .padding()
 }

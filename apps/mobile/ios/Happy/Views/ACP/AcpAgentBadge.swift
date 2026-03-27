@@ -2,48 +2,68 @@
 //  AcpAgentBadge.swift
 //  Happy
 //
-//  Compact inline badge showing the active ACP agent.
+//  Copyright (c) 2024-2026 Enflame Media. All rights reserved.
 //
 
 import SwiftUI
 
-/// Compact capsule badge for displaying the active agent in navigation bars.
+/// A compact badge showing the active ACP agent.
+///
+/// Displays the agent name and status indicator. Designed to be placed
+/// in navigation bar toolbars. Fires `onTap` when tapped.
 struct AcpAgentBadge: View {
 
-    let agent: AcpRegisteredAgent?
-    let onTap: () -> Void
-
-    // MARK: - Body
+    let agent: AcpAgent?
+    var onTap: (() -> Void)?
 
     var body: some View {
-        Button(action: onTap) {
-            HStack(spacing: 4) {
+        Button {
+            onTap?()
+        } label: {
+            HStack(spacing: 6) {
+                // Status dot
                 Circle()
                     .fill(statusColor)
-                    .frame(width: 6, height: 6)
+                    .frame(width: 8, height: 8)
 
-                Text(agent?.name ?? "acp.agent.none".localized)
+                // Agent name
+                Text(agent?.name ?? "acp.noAgent".localized)
                     .font(.caption)
                     .fontWeight(.medium)
                     .lineLimit(1)
+
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 8, weight: .bold))
             }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(Capsule().fill(Color(.systemGray5)))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(
+                Capsule()
+                    .fill(Color(.systemGray6))
+            )
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(String.localized("acp.agent.badge", arguments: agent?.name ?? "none"))
     }
-
-    // MARK: - Status Color
 
     private var statusColor: Color {
-        guard let status = agent?.status else { return .gray }
-        switch status {
-        case .connected: return .green
-        case .available: return .blue
-        case .unavailable: return .red
-        case .error: return .red
+        guard let agent = agent else { return .gray }
+        switch agent.status {
+        case .available:
+            return .green
+        case .busy:
+            return .orange
+        case .offline:
+            return .gray
         }
     }
+}
+
+// MARK: - Preview
+
+#Preview {
+    HStack(spacing: 16) {
+        AcpAgentBadge(agent: .sample)
+        AcpAgentBadge(agent: nil)
+    }
+    .padding()
 }

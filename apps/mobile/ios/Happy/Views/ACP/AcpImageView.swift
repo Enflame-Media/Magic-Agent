@@ -2,100 +2,73 @@
 //  AcpImageView.swift
 //  Happy
 //
-//  Image display with pinch-to-zoom and share sheet.
+//  Copyright (c) 2024-2026 Enflame Media. All rights reserved.
 //
 
 import SwiftUI
-import UIKit
 
-/// Displays an ACP image with pinch-to-zoom and share functionality.
+/// Displays an image content block from an ACP session.
+///
+/// Handles base64-encoded image data with support for various
+/// MIME types. Shows a placeholder if the image cannot be decoded.
 struct AcpImageView: View {
 
-    let imageContent: AcpImageContent
-
-    @State private var scale: CGFloat = 1.0
-    @State private var showShareSheet = false
-
-    // MARK: - Body
+    let content: String
+    let mimeType: String?
 
     var body: some View {
-        VStack(spacing: 8) {
-            if let uiImage = decodedImage {
+        VStack(alignment: .leading, spacing: 8) {
+            // Header
+            HStack(spacing: 6) {
+                Image(systemName: "photo")
+                    .font(.caption)
+                    .foregroundStyle(.purple)
+
+                Text("acp.image".localized)
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundStyle(.secondary)
+
+                if let mimeType = mimeType {
+                    Text(mimeType)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+            }
+
+            // Image content
+            if let data = Data(base64Encoded: content),
+               let uiImage = UIImage(data: data) {
                 Image(uiImage: uiImage)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .scaleEffect(scale)
-                    .gesture(
-                        MagnificationGesture()
-                            .onChanged { value in
-                                scale = max(1.0, min(value, 4.0))
-                            }
-                            .onEnded { _ in
-                                withAnimation(.spring()) {
-                                    scale = max(1.0, scale)
-                                }
-                            }
-                    )
-                    .onTapGesture(count: 2) {
-                        withAnimation(.spring()) {
-                            scale = scale > 1.0 ? 1.0 : 2.0
-                        }
-                    }
                     .cornerRadius(8)
-                    .accessibilityLabel("acp.image.label".localized)
-
-                HStack {
-                    Text(imageContent.mimeType)
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-
-                    Spacer()
-
-                    Button {
-                        showShareSheet = true
-                    } label: {
-                        Image(systemName: "square.and.arrow.up")
-                            .font(.callout)
-                    }
-                    .accessibilityLabel("acp.image.share".localized)
-                }
-                .sheet(isPresented: $showShareSheet) {
-                    ShareSheet(items: [uiImage])
-                }
+                    .frame(maxHeight: 300)
             } else {
+                // Placeholder for non-decodable images
                 VStack(spacing: 8) {
-                    Image(systemName: "photo")
-                        .font(.title)
-                        .foregroundColor(.secondary)
-                    Text("acp.image.loadError".localized)
+                    Image(systemName: "photo.badge.exclamationmark")
+                        .font(.title2)
+                        .foregroundStyle(.secondary)
+
+                    Text("acp.imageNotAvailable".localized)
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
-                .frame(height: 120)
-                .frame(maxWidth: .infinity)
+                .frame(maxWidth: .infinity, minHeight: 100)
                 .background(Color(.systemGray6))
                 .cornerRadius(8)
             }
         }
-    }
-
-    // MARK: - Decode
-
-    private var decodedImage: UIImage? {
-        guard let data = Data(base64Encoded: imageContent.data) else { return nil }
-        return UIImage(data: data)
+        .padding(12)
+        .background(Color.purple.opacity(0.06))
+        .cornerRadius(12)
     }
 }
 
-// MARK: - Share Sheet
+// MARK: - Preview
 
-/// UIKit share sheet wrapper for SwiftUI.
-private struct ShareSheet: UIViewControllerRepresentable {
-    let items: [Any]
-
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: items, applicationActivities: nil)
-    }
-
-    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+#Preview {
+    AcpImageView(content: "", mimeType: "image/png")
+        .padding()
 }

@@ -2,47 +2,64 @@
 //  AcpCommandPaletteView.swift
 //  Happy
 //
-//  Searchable sheet for available slash commands.
+//  Copyright (c) 2024-2026 Enflame Media. All rights reserved.
 //
 
 import SwiftUI
 
-/// Sheet modal displaying available ACP slash commands with search filtering.
+/// Command palette for quick ACP actions.
+///
+/// Provides a searchable list of commands for controlling the agent,
+/// such as pausing, resuming, changing mode, or sending instructions.
 struct AcpCommandPaletteView: View {
 
-    let commands: [AcpAvailableCommand]
-    let onSelect: (AcpAvailableCommand) -> Void
-
+    @ObservedObject var viewModel: AcpSessionViewModel
     @Environment(\.dismiss) private var dismiss
     @State private var searchText = ""
 
-    // MARK: - Body
+    private var commands: [AcpCommand] {
+        let all: [AcpCommand] = [
+            AcpCommand(id: "pause", name: "acp.command.pause".localized, icon: "pause.fill", category: .session),
+            AcpCommand(id: "resume", name: "acp.command.resume".localized, icon: "play.fill", category: .session),
+            AcpCommand(id: "stop", name: "acp.command.stop".localized, icon: "stop.fill", category: .session),
+            AcpCommand(id: "mode-auto", name: "acp.command.modeAutonomous".localized, icon: "bolt.fill", category: .mode),
+            AcpCommand(id: "mode-supervised", name: "acp.command.modeSupervised".localized, icon: "eye.fill", category: .mode),
+            AcpCommand(id: "mode-manual", name: "acp.command.modeManual".localized, icon: "hand.raised.fill", category: .mode),
+            AcpCommand(id: "approve-all", name: "acp.command.approveAll".localized, icon: "checkmark.circle.fill", category: .permissions),
+            AcpCommand(id: "deny-all", name: "acp.command.denyAll".localized, icon: "xmark.circle.fill", category: .permissions),
+        ]
+
+        if searchText.isEmpty {
+            return all
+        }
+        return all.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
+    }
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             List {
-                if filteredCommands.isEmpty {
-                    Text("acp.commands.empty".localized)
-                        .foregroundColor(.secondary)
-                        .font(.callout)
-                } else {
-                    ForEach(Array(filteredCommands.enumerated()), id: \.offset) { _, cmd in
-                        Button {
-                            onSelect(cmd)
-                            dismiss()
-                        } label: {
-                            commandRow(cmd)
+                ForEach(AcpCommandCategory.allCases, id: \.self) { category in
+                    let categoryCommands = commands.filter { $0.category == category }
+                    if !categoryCommands.isEmpty {
+                        Section(category.displayName) {
+                            ForEach(categoryCommands) { command in
+                                Button {
+                                    executeCommand(command)
+                                } label: {
+                                    Label(command.name, systemImage: command.icon)
+                                }
+                            }
                         }
-                        .buttonStyle(.plain)
                     }
                 }
             }
-            .searchable(text: $searchText, prompt: "acp.commands.search".localized)
-            .navigationTitle("acp.commands.title".localized)
+            .listStyle(.insetGrouped)
+            .navigationTitle("acp.commands".localized)
             .navigationBarTitleDisplayMode(.inline)
+            .searchable(text: $searchText, prompt: "acp.searchCommands".localized)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("common.cancel".localized) {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("common.done".localized) {
                         dismiss()
                     }
                 }
@@ -50,32 +67,46 @@ struct AcpCommandPaletteView: View {
         }
     }
 
-    // MARK: - Command Row
-
-    private func commandRow(_ cmd: AcpAvailableCommand) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(cmd.name)
-                .font(.system(.callout, design: .monospaced))
-                .foregroundColor(.primary)
-
-            if !cmd.description.isEmpty {
-                Text(cmd.description)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .lineLimit(2)
-            }
+    private func executeCommand(_ command: AcpCommand) {
+        switch command.id {
+        case "mode-auto":
+            viewModel.updateMode(.autonomous)
+        case "mode-supervised":
+            viewModel.updateMode(.supervised)
+        case "mode-manual":
+            viewModel.updateMode(.manual)
+        default:
+            break
         }
-        .padding(.vertical, 4)
+        dismiss()
     }
+}
 
-    // MARK: - Filtering
+// MARK: - Command Model
 
-    private var filteredCommands: [AcpAvailableCommand] {
-        guard !searchText.isEmpty else { return commands }
-        let query = searchText.lowercased()
-        return commands.filter { cmd in
-            cmd.name.lowercased().contains(query)
-            || cmd.description.lowercased().contains(query)
+struct AcpCommand: Identifiable {
+    let id: String
+    let name: String
+    let icon: String
+    let category: AcpCommandCategory
+}
+
+enum AcpCommandCategory: CaseIterable {
+    case session
+    case mode
+    case permissions
+
+    var displayName: String {
+        switch self {
+        case .session: return NSLocalizedString("acp.category.session", comment: "")
+        case .mode: return NSLocalizedString("acp.category.mode", comment: "")
+        case .permissions: return NSLocalizedString("acp.category.permissions", comment: "")
         }
     }
+}
+
+// MARK: - Preview
+
+#Preview {
+    AcpCommandPaletteView(viewModel: AcpSessionViewModel())
 }

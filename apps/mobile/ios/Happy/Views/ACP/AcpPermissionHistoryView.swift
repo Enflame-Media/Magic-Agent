@@ -2,115 +2,163 @@
 //  AcpPermissionHistoryView.swift
 //  Happy
 //
-//  List of resolved ACP permission decisions.
+//  Copyright (c) 2024-2026 Enflame Media. All rights reserved.
 //
 
 import SwiftUI
 
-/// Displays a list of resolved ACP permission decisions with outcome indicators.
+/// View displaying the history of resolved ACP permission requests.
+///
+/// Shows approved, denied, and expired permissions with timestamps
+/// and details. Accessible from the session detail or settings.
 struct AcpPermissionHistoryView: View {
 
-    let history: [AcpPermissionDecision]
-
-    // MARK: - Body
+    @ObservedObject var viewModel: AcpSessionViewModel
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        if history.isEmpty {
-            VStack(spacing: 12) {
-                Image(systemName: "shield")
-                    .font(.largeTitle)
-                    .foregroundColor(.secondary)
-                Text("acp.permissionHistory.empty".localized)
-                    .font(.callout)
-                    .foregroundColor(.secondary)
+        Group {
+            if viewModel.permissionHistory.isEmpty && viewModel.pendingPermissions.isEmpty {
+                emptyStateView
+            } else {
+                historyList
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding()
-        } else {
-            List {
-                ForEach(Array(history.enumerated()), id: \.offset) { _, decision in
-                    decisionRow(decision)
+        }
+        .navigationTitle("acp.permissionHistory".localized)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button("common.done".localized) {
+                    dismiss()
                 }
             }
-            .navigationTitle("acp.permissionHistory.title".localized)
         }
     }
 
-    // MARK: - Decision Row
+    // MARK: - Empty State
 
-    private func decisionRow(_ decision: AcpPermissionDecision) -> some View {
-        HStack(spacing: 10) {
-            outcomeIcon(decision.outcome)
-                .frame(width: 24, height: 24)
+    private var emptyStateView: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "shield")
+                .font(.system(size: 48))
+                .foregroundStyle(.secondary)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(decision.toolTitle)
-                    .font(.callout)
-                    .fontWeight(.medium)
-                    .lineLimit(1)
+            Text("acp.noPermissions".localized)
+                .font(.title2)
+                .fontWeight(.semibold)
 
-                HStack(spacing: 4) {
-                    if let option = decision.selectedOption {
-                        Text(option.name)
-                            .font(.caption)
-                            .foregroundColor(outcomeColor(decision.outcome))
-                    } else {
-                        Text(decision.outcome.rawValue.capitalized)
-                            .font(.caption)
-                            .foregroundColor(outcomeColor(decision.outcome))
+            Text("acp.noPermissionsDescription".localized)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 40)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    // MARK: - History List
+
+    private var historyList: some View {
+        List {
+            // Pending section
+            if !viewModel.pendingPermissions.isEmpty {
+                Section("acp.pending".localized) {
+                    ForEach(viewModel.pendingPermissions) { permission in
+                        permissionRow(permission)
                     }
+                }
+            }
 
-                    Text(relativeTime(decision.decidedAt))
+            // Resolved section
+            if !viewModel.permissionHistory.isEmpty {
+                Section("acp.resolved".localized) {
+                    ForEach(viewModel.permissionHistory) { permission in
+                        permissionRow(permission)
+                    }
+                }
+            }
+        }
+        .listStyle(.insetGrouped)
+    }
+
+    // MARK: - Permission Row
+
+    private func permissionRow(_ permission: AcpPermissionRequest) -> some View {
+        HStack(spacing: 12) {
+            // Status icon
+            statusIcon(for: permission.status)
+
+            // Details
+            VStack(alignment: .leading, spacing: 4) {
+                Text(permission.toolName)
+                    .font(.body)
+                    .fontWeight(.medium)
+
+                Text(permission.description)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+
+                if let filePath = permission.filePath {
+                    Text(filePath)
                         .font(.caption2)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(1)
                 }
             }
 
             Spacer()
 
-            if let kind = decision.toolKind {
-                Text(kind)
+            // Timestamp
+            VStack(alignment: .trailing, spacing: 2) {
+                Text(permission.status.rawValue.capitalized)
                     .font(.caption2)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(Color(.systemGray5))
-                    .cornerRadius(4)
+                    .fontWeight(.medium)
+                    .foregroundStyle(statusColor(for: permission.status))
+
+                Text(permission.createdAt, style: .relative)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
             }
         }
         .padding(.vertical, 4)
     }
 
-    // MARK: - Outcome Icon
+    private func statusIcon(for status: AcpPermissionStatus) -> some View {
+        ZStack {
+            Circle()
+                .fill(statusColor(for: status).opacity(0.15))
+                .frame(width: 32, height: 32)
 
-    @ViewBuilder
-    private func outcomeIcon(_ outcome: AcpPermissionOutcome) -> some View {
-        switch outcome {
-        case .selected:
-            Image(systemName: "checkmark.circle.fill")
-                .foregroundColor(.green)
-        case .expired:
-            Image(systemName: "clock.badge.exclamationmark")
-                .foregroundColor(.orange)
-        case .cancelled:
-            Image(systemName: "xmark.circle.fill")
-                .foregroundColor(.red)
+            Image(systemName: statusImageName(for: status))
+                .font(.system(size: 14))
+                .foregroundStyle(statusColor(for: status))
         }
     }
 
-    private func outcomeColor(_ outcome: AcpPermissionOutcome) -> Color {
-        switch outcome {
-        case .selected: return .green
-        case .expired: return .orange
-        case .cancelled: return .red
+    private func statusColor(for status: AcpPermissionStatus) -> Color {
+        switch status {
+        case .pending: return .orange
+        case .approved: return .green
+        case .denied: return .red
+        case .expired: return .gray
         }
     }
 
-    // MARK: - Relative Time
+    private func statusImageName(for status: AcpPermissionStatus) -> String {
+        switch status {
+        case .pending: return "hourglass"
+        case .approved: return "checkmark"
+        case .denied: return "xmark"
+        case .expired: return "clock"
+        }
+    }
+}
 
-    private func relativeTime(_ timestamp: TimeInterval) -> String {
-        let date = Date(timeIntervalSince1970: timestamp / 1000)
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .abbreviated
-        return formatter.localizedString(for: date, relativeTo: Date())
+// MARK: - Preview
+
+#Preview {
+    NavigationStack {
+        AcpPermissionHistoryView(viewModel: AcpSessionViewModel())
     }
 }

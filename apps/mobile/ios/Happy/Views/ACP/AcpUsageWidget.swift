@@ -2,72 +2,100 @@
 //  AcpUsageWidget.swift
 //  Happy
 //
-//  Shows ACP context window usage with progress bar, token count, and cost.
+//  Copyright (c) 2024-2026 Enflame Media. All rights reserved.
 //
 
 import SwiftUI
 
-/// Displays context window usage as a progress bar with token count and optional cost.
+/// Compact widget displaying ACP session usage statistics.
+///
+/// Shows token counts, cost, and cache usage in a compact
+/// horizontal layout suitable for embedding in session views.
 struct AcpUsageWidget: View {
 
     let usage: AcpUsage
 
-    // MARK: - Body
-
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            // Progress bar
-            ProgressView(value: progress)
-                .tint(progressColor)
-                .accessibilityLabel(String.localized("acp.usage.progress", arguments: Int(progress * 100)))
+        HStack(spacing: 16) {
+            // Cost
+            usageStat(
+                label: "acp.cost".localized,
+                value: usage.formattedCost,
+                icon: "dollarsign.circle"
+            )
 
-            // Token count and cost
-            HStack {
-                Text(tokenText)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+            Divider()
+                .frame(height: 24)
 
-                Spacer()
+            // Input tokens
+            usageStat(
+                label: "acp.input".localized,
+                value: formatTokens(usage.inputTokens),
+                icon: "arrow.down.circle"
+            )
 
-                if let cost = usage.cost {
-                    Text(costText(cost))
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
+            Divider()
+                .frame(height: 24)
+
+            // Output tokens
+            usageStat(
+                label: "acp.output".localized,
+                value: formatTokens(usage.outputTokens),
+                icon: "arrow.up.circle"
+            )
+
+            if let cacheRead = usage.cacheReadTokens, cacheRead > 0 {
+                Divider()
+                    .frame(height: 24)
+
+                usageStat(
+                    label: "acp.cached".localized,
+                    value: formatTokens(cacheRead),
+                    icon: "memorychip"
+                )
             }
         }
-        .padding(10)
+        .padding(.vertical, 8)
+        .padding(.horizontal, 12)
         .background(Color(.systemGray6))
-        .cornerRadius(8)
+        .cornerRadius(10)
     }
 
-    // MARK: - Computed
+    private func usageStat(label: String, value: String, icon: String) -> some View {
+        VStack(spacing: 4) {
+            Image(systemName: icon)
+                .font(.caption)
+                .foregroundStyle(.secondary)
 
-    private var progress: Double {
-        guard usage.size > 0 else { return 0 }
-        return min(Double(usage.used) / Double(usage.size), 1.0)
-    }
+            Text(value)
+                .font(.caption)
+                .fontWeight(.semibold)
 
-    private var progressColor: Color {
-        if progress > 0.9 { return .red }
-        if progress > 0.7 { return .orange }
-        return .blue
-    }
-
-    private var tokenText: String {
-        "\(formatTokens(usage.used)) / \(formatTokens(usage.size)) tokens"
-    }
-
-    private func costText(_ cost: AcpCost) -> String {
-        String(format: "$%.2f %@", cost.amount, cost.currency)
+            Text(label)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
     }
 
     private func formatTokens(_ count: Int) -> String {
         if count >= 1_000_000 {
             return String(format: "%.1fM", Double(count) / 1_000_000)
         } else if count >= 1_000 {
-            return String(format: "%.0fK", Double(count) / 1_000)
+            return String(format: "%.1fK", Double(count) / 1_000)
         }
         return "\(count)"
     }
+}
+
+// MARK: - Preview
+
+#Preview {
+    AcpUsageWidget(usage: AcpUsage(
+        inputTokens: 15000,
+        outputTokens: 8500,
+        totalCostUSD: 0.0425,
+        cacheReadTokens: 3000,
+        cacheWriteTokens: 1500
+    ))
+    .padding()
 }

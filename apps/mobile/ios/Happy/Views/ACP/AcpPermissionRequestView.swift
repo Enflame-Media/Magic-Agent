@@ -2,228 +2,182 @@
 //  AcpPermissionRequestView.swift
 //  Happy
 //
-//  Full permission approval UI for ACP tool permission requests.
+//  Copyright (c) 2024-2026 Enflame Media. All rights reserved.
 //
 
 import SwiftUI
-import UIKit
 
-/// Displays an ACP permission request with tool details and 4 action buttons.
+/// View for reviewing and acting on an ACP permission request.
+///
+/// Presented as a sheet or full-screen cover when an agent requests
+/// permission for a tool use (file edit, command execution, etc.).
+/// The user can approve or deny the request.
 struct AcpPermissionRequestView: View {
 
-    let request: AcpPermissionRequestState
-    let pendingCount: Int
-    let onResolve: (AcpPermissionOutcome, String?) -> Void
-
-    @State private var timeRemaining: TimeInterval = 0
-    @State private var isExpired = false
-
-    private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
-
-    // MARK: - Body
+    let permission: AcpPermissionRequest
+    @ObservedObject var viewModel: AcpSessionViewModel
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        VStack(spacing: 16) {
-            // Queue indicator
-            if pendingCount > 1 {
-                Text(String.localized("acp.permission.queue", arguments: 1, pendingCount))
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
+        NavigationStack {
+            VStack(spacing: 0) {
+                // Header
+                permissionHeader
+                    .padding()
 
-            // Tool info header
-            toolInfoHeader
+                Divider()
 
-            // Locations
-            if let locations = request.toolCall.locations, !locations.isEmpty {
-                locationsSection(locations)
-            }
+                // Details
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        // Tool info
+                        detailSection(
+                            title: "acp.tool".localized,
+                            icon: "wrench.fill",
+                            content: permission.toolName
+                        )
 
-            // Timeout countdown
-            if let timeoutAt = request.timeoutAt {
-                timeoutIndicator(timeoutAt: timeoutAt)
-            }
+                        // Description
+                        detailSection(
+                            title: "acp.description".localized,
+                            icon: "text.alignleft",
+                            content: permission.description
+                        )
 
-            // Action buttons (2x2 grid)
-            actionButtons
-
-            Spacer()
-        }
-        .padding()
-        .onAppear {
-            let generator = UINotificationFeedbackGenerator()
-            generator.notificationOccurred(.warning)
-        }
-        .onReceive(timer) { _ in
-            updateTimeout()
-        }
-    }
-
-    // MARK: - Tool Info Header
-
-    private var toolInfoHeader: some View {
-        VStack(spacing: 8) {
-            Image(systemName: toolKindIcon)
-                .font(.system(size: 40))
-                .foregroundColor(.orange)
-                .accessibilityHidden(true)
-
-            Text("acp.permission.title".localized)
-                .font(.title2)
-                .fontWeight(.bold)
-
-            Text(request.toolCall.title)
-                .font(.body)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-
-            if let kind = request.toolCall.kind {
-                Text(kind)
-                    .font(.caption)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
-                    .background(Color(.systemGray5))
-                    .cornerRadius(4)
-            }
-        }
-    }
-
-    // MARK: - Locations
-
-    private func locationsSection(_ locations: [AcpToolCallLocation]) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("acp.permission.locations".localized)
-                .font(.caption)
-                .fontWeight(.medium)
-                .foregroundColor(.secondary)
-
-            ScrollView {
-                VStack(alignment: .leading, spacing: 2) {
-                    ForEach(Array(locations.enumerated()), id: \.offset) { _, loc in
-                        HStack(spacing: 4) {
-                            Image(systemName: "mappin.circle")
-                                .font(.caption2)
-                            Text(loc.path + (loc.line.map { ":\($0)" } ?? ""))
-                                .font(.system(.caption, design: .monospaced))
+                        // File path
+                        if let filePath = permission.filePath {
+                            detailSection(
+                                title: "acp.filePath".localized,
+                                icon: "doc.fill",
+                                content: filePath
+                            )
                         }
-                        .foregroundColor(.secondary)
+
+                        // Command
+                        if let command = permission.command {
+                            detailSection(
+                                title: "acp.command".localized,
+                                icon: "terminal.fill",
+                                content: command
+                            )
+                        }
+
+                        // Timestamp
+                        HStack {
+                            Image(systemName: "clock")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Text(permission.createdAt, style: .relative)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Text("acp.ago".localized)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.horizontal)
+                    }
+                    .padding(.vertical)
+                }
+
+                Divider()
+
+                // Action buttons
+                actionButtons
+                    .padding()
+            }
+            .navigationTitle("acp.permissionRequest".localized)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.secondary)
                     }
                 }
             }
-            .frame(maxHeight: 120)
         }
-        .padding(10)
-        .background(Color(.systemGray6))
-        .cornerRadius(8)
     }
 
-    // MARK: - Timeout
+    // MARK: - Header
 
-    private func timeoutIndicator(timeoutAt: TimeInterval) -> some View {
-        let now = Date().timeIntervalSince1970 * 1000
-        let remaining = max(0, (timeoutAt - now) / 1000)
+    private var permissionHeader: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "exclamationmark.shield.fill")
+                .font(.system(size: 44))
+                .foregroundStyle(.orange)
 
-        return HStack(spacing: 8) {
-            ProgressView(value: min(remaining / 60, 1.0))
-                .tint(remaining < 10 ? .red : .orange)
-                .frame(width: 40, height: 40)
-                .progressViewStyle(.circular)
+            Text("acp.permissionRequired".localized)
+                .font(.title2)
+                .fontWeight(.bold)
 
-            Text(String(format: "%.0fs", remaining))
-                .font(.caption)
-                .fontWeight(.medium)
-                .foregroundColor(remaining < 10 ? .red : .secondary)
+            Text(String(format: NSLocalizedString("acp.agentWantsTo", comment: ""),
+                        viewModel.activeAgent?.name ?? "Agent",
+                        permission.toolName))
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
         }
+    }
+
+    // MARK: - Detail Section
+
+    private func detailSection(title: String, icon: String, content: String) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label(title, systemImage: icon)
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .foregroundStyle(.secondary)
+
+            Text(content)
+                .font(.body)
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color(.systemGray6))
+                .cornerRadius(8)
+        }
+        .padding(.horizontal)
     }
 
     // MARK: - Action Buttons
 
     private var actionButtons: some View {
-        VStack(spacing: 10) {
-            HStack(spacing: 10) {
-                permissionButton(
-                    title: "acp.permission.allowOnce".localized,
-                    icon: "shield.checkmark",
-                    color: .blue,
-                    kind: .allowOnce
-                )
-                permissionButton(
-                    title: "acp.permission.allowAlways".localized,
-                    icon: "shield.lefthalf.filled",
-                    color: .green,
-                    kind: .allowAlways
-                )
+        HStack(spacing: 16) {
+            // Deny button
+            Button(role: .destructive) {
+                Task {
+                    await viewModel.denyPermission(permission)
+                    dismiss()
+                }
+            } label: {
+                Label("acp.deny".localized, systemImage: "xmark")
+                    .frame(maxWidth: .infinity)
             }
-            HStack(spacing: 10) {
-                permissionButton(
-                    title: "acp.permission.rejectOnce".localized,
-                    icon: "xmark.shield",
-                    color: .orange,
-                    kind: .rejectOnce
-                )
-                permissionButton(
-                    title: "acp.permission.rejectAlways".localized,
-                    icon: "shield.slash",
-                    color: .red,
-                    kind: .rejectAlways
-                )
+            .buttonStyle(.bordered)
+            .controlSize(.large)
+
+            // Approve button
+            Button {
+                Task {
+                    await viewModel.approvePermission(permission)
+                    dismiss()
+                }
+            } label: {
+                Label("acp.approve".localized, systemImage: "checkmark")
+                    .frame(maxWidth: .infinity)
             }
-        }
-        .disabled(isExpired)
-        .opacity(isExpired ? 0.5 : 1.0)
-    }
-
-    private func permissionButton(
-        title: String,
-        icon: String,
-        color: Color,
-        kind: AcpPermissionOptionKind
-    ) -> some View {
-        Button {
-            let generator = UIImpactFeedbackGenerator(style: .heavy)
-            generator.impactOccurred()
-
-            let optionId = request.options.first { $0.kind == kind }?.optionId
-            onResolve(.selected, optionId)
-        } label: {
-            VStack(spacing: 4) {
-                Image(systemName: icon)
-                    .font(.title3)
-                Text(title)
-                    .font(.caption)
-                    .fontWeight(.medium)
-            }
-            .frame(maxWidth: .infinity)
-            .frame(minHeight: 60)
-            .foregroundColor(.white)
-            .background(color)
-            .cornerRadius(12)
-        }
-        .accessibilityLabel(title)
-    }
-
-    // MARK: - Tool Kind Icon
-
-    private var toolKindIcon: String {
-        guard let kind = request.toolCall.kind else { return "shield.lefthalf.filled" }
-        switch kind {
-        case "read": return "doc.text.magnifyingglass"
-        case "edit": return "pencil.and.outline"
-        case "delete": return "trash"
-        case "execute": return "terminal"
-        case "search": return "magnifyingglass"
-        default: return "shield.lefthalf.filled"
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
         }
     }
+}
 
-    // MARK: - Timeout Update
+// MARK: - Preview
 
-    private func updateTimeout() {
-        guard let timeoutAt = request.timeoutAt else { return }
-        let now = Date().timeIntervalSince1970 * 1000
-        if now >= timeoutAt && !isExpired {
-            isExpired = true
-            onResolve(.expired, nil)
-        }
-    }
+#Preview {
+    AcpPermissionRequestView(
+        permission: .sample,
+        viewModel: AcpSessionViewModel()
+    )
 }

@@ -2,38 +2,54 @@
 //  AcpModeIndicator.swift
 //  Happy
 //
-//  Compact capsule badge showing the current ACP session mode.
+//  Copyright (c) 2024-2026 Enflame Media. All rights reserved.
 //
 
 import SwiftUI
 
-/// Small capsule badge displaying the current session mode (code, ask, architect, etc.).
+/// Compact indicator showing the current ACP operating mode.
+///
+/// Displays the mode icon and name in a capsule badge,
+/// suitable for toolbar or header placement.
 struct AcpModeIndicator: View {
 
-    let modeId: String
-
-    // MARK: - Body
+    let mode: AcpMode
 
     var body: some View {
-        Text(modeId)
-            .font(.caption)
-            .fontWeight(.medium)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(Capsule().fill(modeColor.opacity(0.15)))
-            .foregroundColor(modeColor)
-            .accessibilityLabel(String.localized("acp.mode.label", arguments: modeId))
+        HStack(spacing: 4) {
+            Image(systemName: mode.icon)
+                .font(.caption2)
+            Text(mode.displayName)
+                .font(.caption2)
+                .fontWeight(.medium)
+        }
+        .foregroundStyle(modeColor)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(
+            Capsule()
+                .fill(modeColor.opacity(0.12))
+        )
     }
-
-    // MARK: - Mode Color
 
     private var modeColor: Color {
-        switch modeId.lowercased() {
-        case "code": return .blue
-        case "ask": return .green
-        case "architect": return .purple
-        case "plan": return .orange
-        default: return .gray
+        switch mode {
+        case .autonomous: return .red
+        case .supervised: return .blue
+        case .manual: return .green
+        case .planReview: return .purple
         }
     }
+}
+
+// MARK: - Preview
+
+#Preview {
+    VStack(spacing: 12) {
+        AcpModeIndicator(mode: .autonomous)
+        AcpModeIndicator(mode: .supervised)
+        AcpModeIndicator(mode: .manual)
+        AcpModeIndicator(mode: .planReview)
+    }
+    .padding()
 }

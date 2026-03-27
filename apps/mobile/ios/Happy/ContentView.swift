@@ -17,12 +17,25 @@ import SwiftUI
 struct ContentView: View {
 
     @StateObject private var authViewModel = AuthenticationViewModel()
+    @StateObject private var acpViewModel = AcpSessionViewModel()
 
     var body: some View {
         Group {
             if authViewModel.isAuthenticated {
                 NavigationStack {
-                    SessionListView(authViewModel: authViewModel)
+                    SessionListView(authViewModel: authViewModel, acpViewModel: acpViewModel)
+                }
+                .environmentObject(acpViewModel)
+                .sheet(isPresented: $acpViewModel.showPermissionRequest) {
+                    if let permission = acpViewModel.activePermissionRequest {
+                        AcpPermissionRequestView(
+                            permission: permission,
+                            viewModel: acpViewModel
+                        )
+                    }
+                }
+                .onReceive(NotificationCenter.default.publisher(for: .navigateToAcpPermission)) { _ in
+                    acpViewModel.presentNextPermission()
                 }
             } else {
                 NavigationStack {
@@ -34,6 +47,14 @@ struct ContentView: View {
             await authViewModel.checkExistingAuth()
         }
     }
+}
+
+// MARK: - ACP Notification Names
+
+extension Notification.Name {
+    /// Posted when the user taps a push notification for an ACP permission request,
+    /// or when a foreground permission request arrives that should be presented.
+    static let navigateToAcpPermission = Notification.Name("navigateToAcpPermission")
 }
 
 /// The welcome view shown when the app first launches or after logout.

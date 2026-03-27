@@ -2,91 +2,103 @@
 //  AcpPlanView.swift
 //  Happy
 //
-//  Displays the agent execution plan with status indicators.
+//  Copyright (c) 2024-2026 Enflame Media. All rights reserved.
 //
 
 import SwiftUI
 
-/// Vertical list of plan entries with status and priority indicators.
+/// Displays an agent's plan with step-by-step progress.
+///
+/// Shows a list of plan steps with status indicators (pending,
+/// in progress, completed, skipped, failed).
 struct AcpPlanView: View {
 
-    let entries: [AcpPlanEntry]
+    let block: AcpContentBlock
 
-    // MARK: - Body
+    private var steps: [AcpPlanStep] {
+        block.metadata?.planSteps ?? []
+    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Label("acp.plan.title".localized, systemImage: "list.bullet.clipboard")
-                .font(.subheadline)
-                .fontWeight(.medium)
-                .padding(.bottom, 2)
+        VStack(alignment: .leading, spacing: 10) {
+            // Header
+            HStack(spacing: 8) {
+                Image(systemName: "list.clipboard.fill")
+                    .font(.subheadline)
+                    .foregroundStyle(.teal)
 
-            ForEach(Array(entries.enumerated()), id: \.offset) { _, entry in
-                planEntryRow(entry)
+                Text(block.content.isEmpty ? "acp.plan".localized : block.content)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundStyle(.teal)
+
+                Spacer()
+
+                if !steps.isEmpty {
+                    let completed = steps.filter { $0.status == .completed }.count
+                    Text("\(completed)/\(steps.count)")
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            // Steps
+            if !steps.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(steps) { step in
+                        stepRow(step)
+                    }
+                }
             }
         }
         .padding(12)
-        .background(Color(.systemGray6))
-        .cornerRadius(8)
+        .background(Color.teal.opacity(0.08))
+        .cornerRadius(12)
     }
 
-    // MARK: - Entry Row
+    private func stepRow(_ step: AcpPlanStep) -> some View {
+        HStack(spacing: 10) {
+            // Status icon
+            Image(systemName: stepIcon(for: step.status))
+                .font(.system(size: 14))
+                .foregroundStyle(stepColor(for: step.status))
+                .frame(width: 20)
 
-    private func planEntryRow(_ entry: AcpPlanEntry) -> some View {
-        HStack(alignment: .top, spacing: 8) {
-            statusIcon(for: entry.status)
-                .frame(width: 20, height: 20)
-
-            Text(entry.content)
-                .font(.callout)
-                .strikethrough(entry.status == .completed, color: .secondary)
-                .foregroundColor(entry.status == .completed ? .secondary : .primary)
+            // Step title
+            Text(step.title)
+                .font(.subheadline)
+                .foregroundStyle(step.status == .completed ? .secondary : .primary)
+                .strikethrough(step.status == .skipped)
 
             Spacer()
-
-            priorityBadge(entry.priority)
         }
-        .padding(.vertical, 2)
     }
 
-    // MARK: - Status Icon
-
-    @ViewBuilder
-    private func statusIcon(for status: AcpPlanEntryStatus) -> some View {
+    private func stepIcon(for status: AcpPlanStepStatus) -> String {
         switch status {
-        case .completed:
-            Image(systemName: "checkmark.circle.fill")
-                .foregroundColor(.green)
-                .accessibilityLabel("acp.plan.completed".localized)
-        case .inProgress:
-            Image(systemName: "circle.dotted")
-                .foregroundColor(.orange)
-                .accessibilityLabel("acp.plan.inProgress".localized)
-        case .pending:
-            Image(systemName: "circle")
-                .foregroundColor(.gray)
-                .accessibilityLabel("acp.plan.pending".localized)
+        case .pending: return "circle"
+        case .inProgress: return "circle.dashed"
+        case .completed: return "checkmark.circle.fill"
+        case .skipped: return "arrow.right.circle"
+        case .failed: return "xmark.circle.fill"
         }
     }
 
-    // MARK: - Priority Badge
-
-    private func priorityBadge(_ priority: AcpPlanEntryPriority) -> some View {
-        Text(priority.rawValue)
-            .font(.caption2)
-            .fontWeight(.medium)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .background(priorityColor(priority).opacity(0.15))
-            .foregroundColor(priorityColor(priority))
-            .cornerRadius(4)
-    }
-
-    private func priorityColor(_ priority: AcpPlanEntryPriority) -> Color {
-        switch priority {
-        case .high: return .red
-        case .medium: return .orange
-        case .low: return .blue
+    private func stepColor(for status: AcpPlanStepStatus) -> Color {
+        switch status {
+        case .pending: return .gray
+        case .inProgress: return .blue
+        case .completed: return .green
+        case .skipped: return .orange
+        case .failed: return .red
         }
     }
+}
+
+// MARK: - Preview
+
+#Preview {
+    AcpPlanView(block: AcpContentBlock.samples[3])
+        .padding()
 }

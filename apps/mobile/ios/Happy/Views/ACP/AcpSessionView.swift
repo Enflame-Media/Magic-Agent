@@ -2,142 +2,226 @@
 //  AcpSessionView.swift
 //  Happy
 //
-//  Main ACP session container composing all display components.
+//  Copyright (c) 2024-2026 Enflame Media. All rights reserved.
 //
 
 import SwiftUI
 
-/// Main ACP session view that composes all display components into a session detail.
+/// Main ACP session view displaying agent activity, content blocks, and controls.
+///
+/// This is the primary view for monitoring and interacting with an ACP session.
+/// It shows streaming content blocks (thoughts, tool calls, plans, text),
+/// session status, and provides access to permissions and configuration.
 struct AcpSessionView: View {
 
     let sessionId: String
     @ObservedObject var viewModel: AcpSessionViewModel
-
+    @State private var showConfig = false
+    @State private var showPermissionHistory = false
     @State private var showCommandPalette = false
-    @State private var showConfigPanel = false
-
-    // MARK: - Body
 
     var body: some View {
-        let state = viewModel.state(for: sessionId)
+        Group {
+            if viewModel.isLoading && !viewModel.hasLoaded {
+                loadingView
+            } else if viewModel.currentContentBlocks.isEmpty && viewModel.hasLoaded {
+                emptyStateView
+            } else {
+                contentView
+            }
+        }
+        .navigationTitle(viewModel.currentSession?.title.isEmpty == false
+            ? viewModel.currentSession!.title
+            : "acp.session".localized)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                HStack(spacing: 12) {
+                    // Mode indicator
+                    AcpModeIndicator(mode: viewModel.config.mode)
 
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 12) {
-                // Top bar: mode + usage
-                topBar(state: state)
-
-                // Agent message
-                if !state.agentMessage.isEmpty {
-                    Section {
-                        AcpStreamingTextView(text: state.agentMessage)
-                    } header: {
-                        sectionHeader("acp.session.agentMessage".localized, icon: "bubble.left.fill")
-                    }
-                }
-
-                // Thought
-                if !state.agentThought.isEmpty {
-                    AcpThoughtView(thought: state.agentThought)
-                }
-
-                // Plan
-                if !state.plan.isEmpty {
-                    AcpPlanView(entries: state.plan)
-                }
-
-                // Tool calls
-                if !state.toolCalls.isEmpty {
-                    Section {
-                        ForEach(sortedToolCalls(state.toolCalls), id: \.toolCallId) { tc in
-                            AcpToolCallView(toolCall: tc)
-                        }
-                    } header: {
-                        sectionHeader("acp.session.toolCalls".localized, icon: "wrench.and.screwdriver")
-                    }
-                }
-
-                // User message
-                if !state.userMessage.isEmpty {
-                    Section {
-                        AcpStreamingTextView(text: state.userMessage)
-                            .foregroundColor(.secondary)
-                    } header: {
-                        sectionHeader("acp.session.userMessage".localized, icon: "person.fill")
+                    // Config button
+                    Button {
+                        showConfig = true
+                    } label: {
+                        Image(systemName: "gear")
                     }
                 }
             }
-            .padding()
         }
-        .toolbar {
-            ToolbarItemGroup(placement: .bottomBar) {
-                Button {
-                    showCommandPalette = true
-                } label: {
-                    Image(systemName: "slash.circle")
-                        .accessibilityLabel("acp.session.commands".localized)
+        .sheet(isPresented: $showConfig) {
+            NavigationStack {
+                AcpConfigPanelView(viewModel: viewModel)
+            }
+        }
+        .sheet(isPresented: $showPermissionHistory) {
+            NavigationStack {
+                AcpPermissionHistoryView(viewModel: viewModel)
+            }
+        }
+        .sheet(isPresented: $showCommandPalette) {
+            AcpCommandPaletteView(viewModel: viewModel)
+        }
+        .sheet(isPresented: $viewModel.showPermissionRequest) {
+            if let permission = viewModel.activePermissionRequest {
+                AcpPermissionRequestView(
+                    permission: permission,
+                    viewModel: viewModel
+                )
+            }
+        }
+        .task {
+            await viewModel.loadSession(for: sessionId)
+        }
+    }
+
+    // MARK: - Loading View
+
+    private var loadingView: some View {
+        VStack(spacing: 16) {
+            ProgressView()
+                .scaleEffect(1.2)
+            Text("acp.loading".localized)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    // MARK: - Empty State
+
+    private var emptyStateView: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "cpu")
+                .font(.system(size: 48))
+                .foregroundStyle(.secondary)
+
+            Text("acp.noActivity".localized)
+                .font(.title2)
+                .fontWeight(.semibold)
+
+            Text("acp.noActivityDescription".localized)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 40)
+
+            if viewModel.currentSession?.isActive == true {
+                HStack(spacing: 8) {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                    Text("acp.waitingForAgent".localized)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    // MARK: - Content View
+
+    private var contentView: some View {
+        ScrollViewReader { proxy in
+            List {
+                // Usage widget
+                if let usage = viewModel.currentUsage {
+                    Section {
+                        AcpUsageWidget(usage: usage)
+                    }
+                }
+
+                // Permission alert banner
+                if viewModel.pendingPermissionCount > 0 {
+                    Section {
+                        permissionBanner
+                    }
+                }
+
+                // Content blocks
+                Section {
+                    ForEach(viewModel.currentContentBlocks) { block in
+                        AcpContentBlockRenderer(block: block)
+                            .id(block.id)
+                            .listRowSeparator(.hidden)
+                            .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+                    }
+                }
+
+                // Bottom actions
+                Section {
+                    HStack(spacing: 16) {
+                        Button {
+                            showPermissionHistory = true
+                        } label: {
+                            Label("acp.permissionHistory".localized, systemImage: "clock.arrow.circlepath")
+                                .font(.subheadline)
+                        }
+
+                        Spacer()
+
+                        Button {
+                            showCommandPalette = true
+                        } label: {
+                            Label("acp.commands".localized, systemImage: "command")
+                                .font(.subheadline)
+                        }
+                    }
+                    .listRowSeparator(.hidden)
+                }
+            }
+            .listStyle(.plain)
+            .onChange(of: viewModel.currentContentBlocks.count) { _ in
+                if let lastBlock = viewModel.currentContentBlocks.last {
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        proxy.scrollTo(lastBlock.id, anchor: .bottom)
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Permission Banner
+
+    private var permissionBanner: some View {
+        Button {
+            viewModel.presentNextPermission()
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "exclamationmark.shield.fill")
+                    .foregroundStyle(.orange)
+                    .font(.title3)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("acp.permissionRequired".localized)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.primary)
+
+                    Text(String(format: NSLocalizedString("acp.pendingPermissions", comment: ""),
+                                viewModel.pendingPermissionCount))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
 
                 Spacer()
 
-                Button {
-                    showConfigPanel = true
-                } label: {
-                    Image(systemName: "gearshape")
-                        .accessibilityLabel("acp.session.config".localized)
-                }
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
-        }
-        .sheet(isPresented: $showCommandPalette) {
-            AcpCommandPaletteView(
-                commands: state.availableCommands,
-                onSelect: { _ in /* Command execution handled by sync service */ }
-            )
-        }
-        .sheet(isPresented: $showConfigPanel) {
-            AcpConfigPanelView(
-                configOptions: state.configOptions,
-                onUpdate: { _, _ in /* Config update handled by sync service */ }
-            )
-        }
-        .navigationTitle(state.sessionTitle ?? "acp.session.untitled".localized)
-        .navigationBarTitleDisplayMode(.inline)
-    }
-
-    // MARK: - Top Bar
-
-    private func topBar(state: AcpSessionState) -> some View {
-        HStack(spacing: 8) {
-            if let modeId = state.currentModeId {
-                AcpModeIndicator(modeId: modeId)
-            }
-
-            Spacer()
-
-            if let usage = state.usage {
-                AcpUsageWidget(usage: usage)
-                    .frame(maxWidth: 200)
-            }
+            .padding(.vertical, 4)
         }
     }
+}
 
-    // MARK: - Section Header
+// MARK: - Preview
 
-    private func sectionHeader(_ title: String, icon: String) -> some View {
-        Label(title, systemImage: icon)
-            .font(.caption)
-            .fontWeight(.medium)
-            .foregroundColor(.secondary)
-            .padding(.top, 4)
-    }
-
-    // MARK: - Tool Call Sorting
-
-    private func sortedToolCalls(_ toolCalls: [String: AcpToolCall]) -> [AcpToolCall] {
-        toolCalls.values.sorted { a, b in
-            let aActive = a.status == .inProgress || a.status == .pending
-            let bActive = b.status == .inProgress || b.status == .pending
-            if aActive != bActive { return aActive }
-            return a.toolCallId < b.toolCallId
-        }
+#Preview {
+    NavigationStack {
+        AcpSessionView(
+            sessionId: "sample-123",
+            viewModel: AcpSessionViewModel()
+        )
     }
 }
