@@ -95,14 +95,6 @@ actor SyncService {
     /// Emitted when a session has been successfully revived.
     nonisolated let sessionRevived = PassthroughSubject<SessionRevivedEvent, Never>()
 
-    /// Publisher for ACP session updates (HAP-1057).
-    /// Emitted when an ACP session update is received and decrypted.
-    nonisolated let acpSessionUpdates = PassthroughSubject<AcpSessionUpdateEvent, Never>()
-
-    /// Publisher for ACP permission requests (HAP-1057).
-    /// Emitted when an ACP permission request is received and decrypted.
-    nonisolated let acpPermissionRequests = PassthroughSubject<AcpPermissionRequestEvent, Never>()
-
     // MARK: - Reconnection Configuration
 
     /// Configuration for automatic reconnection behavior.
@@ -553,6 +545,79 @@ actor SyncService {
         }
     }
 
+    // MARK: - ACP Permission Response (HAP-1066)
+
+    /// Send an ACP permission response back to the CLI agent through the server relay.
+    ///
+    /// Encrypts the response payload with the session's shared symmetric key and sends
+    /// it as an `acp-permission-response` WebSocket message. The server relays this
+    /// to the CLI machine connection that originated the permission request.
+    ///
+    /// The encrypted payload format matches the React/Vue implementations:
+    /// ```json
+    /// { "_meta": {}, "outcome": { "outcome": "selected", "_meta": {}, "optionId": "..." } }
+    /// ```
+    ///
+    /// - Parameters:
+    ///   - sessionId: The session ID the permission request belongs to.
+    ///   - requestId: The unique permission request ID for correlation.
+    ///   - selectedOptionId: The option ID the user selected (nil if expired/cancelled).
+    ///   - outcome: The outcome of the permission decision.
+    /// - Throws: `SyncError.sendFailed` if the WebSocket is not connected.
+    /// - Throws: `SyncError.encryptionKeyMissing` if the encryption key is unavailable.
+    func sendAcpPermissionResponse(
+        sessionId: String,
+        requestId: String,
+        selectedOptionId: String?,
+        outcome: AcpPermissionOutcome
+    ) async throws {
+        guard let webSocketTask = webSocketTask, webSocketTask.state == .running else {
+            throw SyncError.sendFailed("Not connected — cannot send permission response")
+        }
+
+        guard let key = encryptionKey else {
+            throw SyncError.encryptionKeyMissing
+        }
+
+        // Build the response payload matching the ACP protocol format
+        let responsePayload = AcpPermissionResponsePayload(
+            selectedOptionId: selectedOptionId ?? "",
+            outcome: outcome
+        )
+
+        do {
+            // Serialize to JSON
+            let encoder = JSONEncoder()
+            let payloadData = try encoder.encode(responsePayload)
+
+            // Encrypt the payload with the session's shared key
+            let encryptedData = try EncryptionService.encrypt(payloadData, with: key)
+            let encryptedBase64 = encryptedData.base64EncodedString()
+
+            // Build the WebSocket message envelope matching server expectations:
+            // { type: "acp-permission-response", sid: string, requestId: string, payload: string }
+            let message = AcpPermissionResponseMessage(
+                type: .acpPermissionResponse,
+                sid: sessionId,
+                requestId: requestId,
+                payload: encryptedBase64
+            )
+
+            let messageData = try encoder.encode(message)
+            try await webSocketTask.send(.data(messageData))
+
+            #if DEBUG
+            print("[SyncService] Sent ACP permission response: requestId=\(requestId), sessionId=\(sessionId), outcome=\(outcome.rawValue)")
+            #endif
+        } catch let error as SyncError {
+            throw error
+        } catch let error as EncryptionError {
+            throw SyncError.sendFailed("Encryption failed: \(error.localizedDescription)")
+        } catch {
+            throw SyncError.sendFailed("Failed to send permission response: \(error.localizedDescription)")
+        }
+    }
+
     /// Send a pong response to the server.
     private func sendPong() async {
         do {
@@ -694,117 +759,10 @@ actor SyncService {
                 sessionRevived.send(event)
             }
 
-        case .acpSessionUpdate:
-            // HAP-1057: Handle ACP session update
-            if let sid = envelope.sid, let updateStr = envelope.update {
-                await handleAcpSessionUpdate(sessionId: sid, updatePayload: updateStr)
-            }
-
-        case .acpPermissionRequest:
-            // HAP-1057: Handle ACP permission request
-            if let sid = envelope.sid,
-               let requestId = envelope.requestId,
-               let payloadStr = envelope.payload {
-                await handleAcpPermissionRequest(
-                    sessionId: sid,
-                    requestId: requestId,
-                    payload: payloadStr,
-                    timeoutMs: envelope.timeoutMs
-                )
-            }
-
-        case .subscribe, .unsubscribe, .update:
+        case .subscribe, .unsubscribe, .update, .acpPermissionResponse:
             // Client-to-server messages; ignore if received from server
             break
         }
-    }
-
-    // MARK: - Private - ACP Handling
-
-    /// Handle an ACP session update payload.
-    ///
-    /// The update payload may be either:
-    /// - A JSON string of the AcpSessionUpdate (if the entire message was E2E encrypted)
-    /// - A base64-encoded encrypted payload (requiring a second decryption)
-    ///
-    /// Both are attempted for maximum compatibility.
-    private func handleAcpSessionUpdate(sessionId: String, updatePayload: String) async {
-        // ACP uses camelCase JSON keys; do not use convertFromSnakeCase
-        let acpDecoder = JSONDecoder()
-
-        // Try 1: Payload is a plain JSON string (outer encryption already handled)
-        if let jsonData = updatePayload.data(using: .utf8),
-           let update = try? acpDecoder.decode(AcpSessionUpdate.self, from: jsonData) {
-            acpSessionUpdates.send(AcpSessionUpdateEvent(sessionId: sessionId, update: update))
-            return
-        }
-
-        // Try 2: Payload is base64-encoded encrypted data (double encryption)
-        if let key = encryptionKey {
-            do {
-                let decryptedString = try EncryptionService.decryptString(updatePayload, with: key)
-                if let jsonData = decryptedString.data(using: .utf8),
-                   let update = try? acpDecoder.decode(AcpSessionUpdate.self, from: jsonData) {
-                    acpSessionUpdates.send(AcpSessionUpdateEvent(sessionId: sessionId, update: update))
-                    return
-                }
-            } catch {
-                #if DEBUG
-                print("[SyncService] ACP update decryption failed: \(error)")
-                #endif
-            }
-        }
-
-        #if DEBUG
-        print("[SyncService] Failed to parse ACP session update for session \(sessionId)")
-        #endif
-    }
-
-    /// Handle an ACP permission request payload.
-    private func handleAcpPermissionRequest(
-        sessionId: String,
-        requestId: String,
-        payload: String,
-        timeoutMs: Int?
-    ) async {
-        let acpDecoder = JSONDecoder()
-
-        // Try 1: Plain JSON
-        if let jsonData = payload.data(using: .utf8),
-           let request = try? acpDecoder.decode(AcpWirePermissionRequest.self, from: jsonData) {
-            acpPermissionRequests.send(AcpPermissionRequestEvent(
-                sessionId: sessionId,
-                requestId: requestId,
-                request: request,
-                timeoutMs: timeoutMs
-            ))
-            return
-        }
-
-        // Try 2: Encrypted
-        if let key = encryptionKey {
-            do {
-                let decryptedString = try EncryptionService.decryptString(payload, with: key)
-                if let jsonData = decryptedString.data(using: .utf8),
-                   let request = try? acpDecoder.decode(AcpWirePermissionRequest.self, from: jsonData) {
-                    acpPermissionRequests.send(AcpPermissionRequestEvent(
-                        sessionId: sessionId,
-                        requestId: requestId,
-                        request: request,
-                        timeoutMs: timeoutMs
-                    ))
-                    return
-                }
-            } catch {
-                #if DEBUG
-                print("[SyncService] ACP permission payload decryption failed: \(error)")
-                #endif
-            }
-        }
-
-        #if DEBUG
-        print("[SyncService] Failed to parse ACP permission request \(requestId) for session \(sessionId)")
-        #endif
     }
 
     // MARK: - Private - Ping/Pong Keepalive
@@ -948,6 +906,19 @@ struct SyncMessage: Codable {
     }
 }
 
+/// HAP-1066: Message format for ACP permission responses sent to the server relay.
+///
+/// The server relay expects: `{ type, sid, requestId, payload }` where
+/// `payload` is the E2E encrypted permission response as a base64 string.
+/// This is separate from `SyncMessage` because it carries encrypted payload
+/// data specific to ACP permission responses.
+struct AcpPermissionResponseMessage: Codable {
+    let type: SyncMessageType
+    let sid: String
+    let requestId: String
+    let payload: String
+}
+
 /// Types of sync messages in the protocol.
 enum SyncMessageType: String, Codable {
     case subscribe
@@ -961,10 +932,8 @@ enum SyncMessageType: String, Codable {
     case sessionRevivalPaused = "session-revival-paused"
     /// Session was successfully revived (HAP-733)
     case sessionRevived = "session-revived"
-    /// ACP session update (HAP-1057)
-    case acpSessionUpdate = "acp-session-update"
-    /// ACP permission request (HAP-1057)
-    case acpPermissionRequest = "acp-permission-request"
+    /// HAP-1066: ACP permission response sent from mobile to CLI via server relay
+    case acpPermissionResponse = "acp-permission-response"
 }
 
 /// Envelope for typed sync updates from the server.
@@ -987,18 +956,10 @@ struct SyncUpdateEnvelope: Codable {
     let originalSessionId: String?
     let newSessionId: String?
 
-    // ACP event fields (HAP-1057)
-    let sid: String?
-    let update: String?
-    let requestId: String?
-    let payload: String?
-    let timeoutMs: Int?
-
     enum CodingKeys: String, CodingKey {
         case type, session, message, sessionId
         case reason, remainingMs, resumesAt, machineId
         case originalSessionId, newSessionId
-        case sid, update, requestId, payload, timeoutMs
     }
 }
 
