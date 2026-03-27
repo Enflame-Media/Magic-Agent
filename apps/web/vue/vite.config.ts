@@ -39,13 +39,33 @@ import path from 'node:path';
 // Root monorepo node_modules for Vue deduplication
 const rootNodeModules = path.resolve(__dirname, '../../../node_modules');
 
-// Detect test mode: cloudflare() and VitePWA() set resolve.external / workbox config
-// that are incompatible with the vitest runner environment.
+/**
+ * WORKAROUND: Cloudflare plugin conditional exclusion (HAP-1082, HAP-1089)
+ *
+ * The cloudflare() and VitePWA() plugins set `resolve.external` and workbox
+ * configuration that conflicts with vite-plus's integrated vitest runner.
+ * When these plugins are active during test mode, the vitest environment
+ * cannot resolve modules correctly because the Cloudflare plugin assumes
+ * a Workers runtime context.
+ *
+ * Fix: Detect test mode via the VITEST env var (set automatically by vitest)
+ * or NODE_ENV=test, and exclude these build-only plugins during test runs.
+ *
+ * This is a TEMPORARY workaround. Monitor vite-plus releases for native
+ * Cloudflare plugin compatibility. When vite-plus reaches stable and
+ * @cloudflare/vite-plugin supports the unified config natively, this
+ * conditional can be removed.
+ *
+ * @see HAP-1082 - Vite+ migration
+ * @see HAP-1089 - Workaround documentation
+ * @see https://github.com/nicolo-ribaudo/vite-plus (track stable release)
+ */
 const isTest = process.env['VITEST'] === 'true' || process.env['NODE_ENV'] === 'test';
 
 /**
  * Build-only plugins: cloudflare() and VitePWA()
  * Excluded during test runs to avoid resolve.external conflicts.
+ * See WORKAROUND note above for details.
  */
 const buildPlugins = isTest
   ? []
@@ -183,6 +203,24 @@ export default defineConfig({
     // Optimize chunk splitting
     rollupOptions: {
       output: {
+        /**
+         * WORKAROUND: Rolldown manualChunks function format (HAP-1082, HAP-1089)
+         *
+         * Rolldown (the bundler used internally by vite-plus) requires
+         * manualChunks to be a function, not an object. The previous Vite/Rollup
+         * object format:
+         *
+         *   manualChunks: {
+         *     'vue-vendor': ['vue', 'vue-router', 'pinia'],
+         *   }
+         *
+         * does not work with Rolldown and produces a build error. The function
+         * form works with BOTH Rolldown and Rollup, so this is a permanent
+         * change that is forward-compatible regardless of which bundler is used.
+         *
+         * @see HAP-1082 - Vite+ migration
+         * @see HAP-1089 - Workaround documentation
+         */
         manualChunks(id: string) {
           // Separate vendor chunks for better caching
           if (id.includes('node_modules/vue/') || id.includes('node_modules/vue-router/') || id.includes('node_modules/pinia/')) {

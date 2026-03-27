@@ -30,7 +30,7 @@ apps/web/vue/
 ├── e2e/                # Playwright E2E tests
 ├── scripts/            # Build and deployment scripts
 ├── wrangler.toml       # Cloudflare Workers config
-├── vite.config.ts      # Vite configuration
+├── vite.config.ts      # Vite+ unified build + test configuration
 ├── tsconfig.json       # TypeScript configuration
 └── package.json        # Dependencies and scripts
 ```
@@ -42,7 +42,7 @@ apps/web/vue/
 - **Pinia** - State management
 - **Vue Router** - Client-side routing
 - **TailwindCSS 4** - Styling with ShadCN-Vue components
-- **Vite 7** - Build tool
+- **Vite+ (vite-plus)** - Unified build + test toolchain (wraps Vite 7 + Vitest)
 - **Zod** - Schema validation
 
 ## Development Guidelines
@@ -89,6 +89,34 @@ import { ApiUpdateSchema, type ApiUpdate } from '@magic-agent/protocol';
 - Semicolons required
 - Vue Composition API (not Options API)
 - `<script setup>` syntax preferred
+
+## Vite+ Migration Workarounds
+
+This project uses **vite-plus** as a unified build and test toolchain, replacing separate `vite` and `vitest` configs with a single `vite.config.ts`. Two compatibility workarounds are in place:
+
+### Cloudflare Plugin Test Exclusion (temporary)
+
+The `cloudflare()` and `VitePWA()` plugins are **conditionally excluded during test runs** via an `isTest` check (`process.env['VITEST'] === 'true'`). These plugins set `resolve.external` which conflicts with vite-plus's integrated vitest runner. Without this exclusion, tests fail with module resolution errors.
+
+**When modifying `vite.config.ts`**: Any new plugin that sets `resolve.external` or assumes a Workers runtime must also be added to the `buildPlugins` conditional to avoid breaking tests.
+
+**Monitor**: This workaround should be removed when vite-plus reaches stable and `@cloudflare/vite-plugin` supports the unified config natively. Track the [vite-plus repository](https://github.com/nicolo-ribaudo/vite-plus) for updates.
+
+### Rolldown manualChunks Function Format (permanent)
+
+The `manualChunks` config uses a **function**, not an object. Rolldown (vite-plus's internal bundler) does not support the object form that standard Rollup accepts. The function form is compatible with both Rolldown and Rollup, so this is a permanent change.
+
+```typescript
+// Correct (works with both Rolldown and Rollup)
+manualChunks(id: string) {
+  if (id.includes('node_modules/vue/')) return 'vue-vendor';
+}
+
+// Incorrect (fails with Rolldown)
+manualChunks: { 'vue-vendor': ['vue'] }
+```
+
+See `vite.config.ts` for full inline documentation of both workarounds (HAP-1082, HAP-1089).
 
 ## Common Commands
 
