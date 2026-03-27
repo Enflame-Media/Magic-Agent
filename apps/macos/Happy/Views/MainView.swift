@@ -18,6 +18,7 @@ import Combine
 struct MainView: View {
     @State private var selectedSection: SidebarSection = .sessions
     @State private var cancellables = Set<AnyCancellable>()
+    @State private var acpViewModel = AcpSessionViewModel.shared
 
     var body: some View {
         NavigationSplitView {
@@ -29,6 +30,9 @@ struct MainView: View {
         .onAppear {
             setupNotificationHandlers()
             requestNotificationPermission()
+        }
+        .sheet(isPresented: $acpViewModel.showPermissionSheet) {
+            AcpPermissionSheet()
         }
     }
 
@@ -64,6 +68,35 @@ struct MainView: View {
                 }
                 .tag(SidebarSection.friends)
             }
+
+            // ACP Section (HAP-1056)
+            Section("Agent Control") {
+                Label {
+                    HStack {
+                        Text("Permissions")
+                        Spacer()
+                        if acpViewModel.pendingPermissionCount > 0 {
+                            Text("\(acpViewModel.pendingPermissionCount)")
+                                .font(.caption2)
+                                .fontWeight(.medium)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(.red)
+                                .foregroundStyle(.white)
+                                .clipShape(Capsule())
+                        }
+                    }
+                } icon: {
+                    Image(systemName: "shield.checkered")
+                }
+                .tag(SidebarSection.permissions)
+
+                Label("Agent Sessions", systemImage: "list.bullet.rectangle")
+                    .tag(SidebarSection.agentSessions)
+
+                Label("Agents", systemImage: "cpu")
+                    .tag(SidebarSection.agents)
+            }
         }
         .listStyle(.sidebar)
         .navigationTitle("Happy")
@@ -81,6 +114,12 @@ struct MainView: View {
             ArtifactBrowser()
         case .friends:
             FriendsView()
+        case .permissions:
+            AcpPermissionSheet()
+        case .agentSessions:
+            AcpSessionBrowserView()
+        case .agents:
+            AcpAgentPickerView()
         }
     }
 
@@ -102,6 +141,30 @@ struct MainView: View {
                 selectedSection = .artifacts
             }
             .store(in: &cancellables)
+
+        // Handle show permissions notification (HAP-1056)
+        NotificationCenter.default.publisher(for: .showPermissions)
+            .receive(on: DispatchQueue.main)
+            .sink { _ in
+                selectedSection = .permissions
+            }
+            .store(in: &cancellables)
+
+        // Handle show agent sessions notification (HAP-1056)
+        NotificationCenter.default.publisher(for: .showAgentSessions)
+            .receive(on: DispatchQueue.main)
+            .sink { _ in
+                selectedSection = .agentSessions
+            }
+            .store(in: &cancellables)
+
+        // Handle show agents notification (HAP-1056)
+        NotificationCenter.default.publisher(for: .showAgents)
+            .receive(on: DispatchQueue.main)
+            .sink { _ in
+                selectedSection = .agents
+            }
+            .store(in: &cancellables)
     }
 
     // MARK: - Permissions
@@ -120,6 +183,10 @@ enum SidebarSection: String, Hashable, CaseIterable {
     case sessions
     case artifacts
     case friends
+    // ACP sections (HAP-1056)
+    case permissions
+    case agentSessions
+    case agents
 }
 
 // MARK: - Preview

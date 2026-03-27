@@ -139,6 +139,24 @@ struct HappyApp: App {
                 }
             }
 
+            // Agent Control menu (HAP-1056)
+            CommandMenu("Agent Control") {
+                Button("Permissions") {
+                    NotificationCenter.default.post(name: .showPermissions, object: nil)
+                }
+                .keyboardShortcut("p", modifiers: [.command, .shift])
+
+                Button("Agent Sessions") {
+                    NotificationCenter.default.post(name: .showAgentSessions, object: nil)
+                }
+                .keyboardShortcut("b", modifiers: [.command, .shift])
+
+                Button("Switch Agent...") {
+                    NotificationCenter.default.post(name: .showAgents, object: nil)
+                }
+                .keyboardShortcut("g", modifiers: [.command, .shift])
+            }
+
             // Voice menu (HAP-901)
             CommandMenu("Voice") {
                 Button("Toggle Voice") {
@@ -298,4 +316,9 @@ extension Notification.Name {
 
     // Subscription notifications
     static let showPaywall = Notification.Name("showPaywall")
+
+    // ACP notifications (HAP-1056)
+    static let showPermissions = Notification.Name("showPermissions")
+    static let showAgentSessions = Notification.Name("showAgentSessions")
+    static let showAgents = Notification.Name("showAgents")
 }

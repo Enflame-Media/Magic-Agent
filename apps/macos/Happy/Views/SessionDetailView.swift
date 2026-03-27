@@ -47,6 +47,8 @@ struct SessionDetailView: View {
         .navigationTitle(session.title.isEmpty ? "Session" : session.title)
         .toolbar {
             ToolbarItemGroup {
+                AcpPermissionBadgeView()
+                AcpAgentBadgeView()
                 voiceButton
                 shareButton
                 autoScrollToggle

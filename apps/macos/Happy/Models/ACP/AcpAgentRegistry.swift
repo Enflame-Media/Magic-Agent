@@ -8,75 +8,172 @@
 
 import Foundation
 
-// MARK: - Agent Status
-
-/// Connection status for a registered ACP agent.
+/// Represents a registered agent that can be connected to.
 ///
-/// Mirrors the TypeScript `AcpAgentStatus` from `acpTypes.ts`.
-enum AcpAgentStatus: String, Codable, Hashable {
-    case connected
-    case available
-    case unavailable
-    case error
-}
-
-// MARK: - Registered Agent
-
-/// A registered ACP agent in the agent registry.
-///
-/// Relayed from CLI's AgentRegistry to the macOS app.
-///
-/// Mirrors the TypeScript `AcpRegisteredAgent` from `acpTypes.ts`.
-struct AcpRegisteredAgent: Codable, Hashable, Identifiable {
-    /// Unique agent identifier (e.g., "claude-code", "gemini-cli").
+/// Agents are CLI instances that have been paired with the macOS app.
+/// Each agent has capabilities that determine which session actions
+/// are available (load, resume, fork).
+struct AcpAgent: Identifiable, Codable, Hashable {
+    /// Unique identifier for this agent.
     let id: String
 
-    /// Human-readable agent name.
+    /// Display name for the agent.
     let name: String
 
-    /// Optional description of the agent.
-    let description: String?
+    /// Version string of the agent.
+    let version: String
 
-    /// Agent connection status.
+    /// Optional display title for the agent.
+    let title: String?
+
+    /// Current connection status.
     var status: AcpAgentStatus
 
-    /// Agent version string.
-    let version: String?
+    /// Capabilities supported by this agent.
+    let capabilities: AcpAgentCapabilities
+
+    /// Display title, falling back to name.
+    var displayTitle: String {
+        title ?? name
+    }
+
+    /// SF Symbol name for the agent's status.
+    var statusSymbolName: String {
+        status.sfSymbolName
+    }
 }
 
-// MARK: - Agent Registry State
+// MARK: - Agent Status
 
-/// Agent registry state relayed from CLI.
+/// Connection status of an agent.
+enum AcpAgentStatus: String, Codable, Hashable {
+    case online
+    case offline
+    case busy
+    case error
+
+    /// SF Symbol name for this status.
+    var sfSymbolName: String {
+        switch self {
+        case .online: return "circle.fill"
+        case .offline: return "circle"
+        case .busy: return "circle.dotted"
+        case .error: return "exclamationmark.circle.fill"
+        }
+    }
+
+    /// Color name for this status (maps to SwiftUI Color).
+    var colorName: String {
+        switch self {
+        case .online: return "green"
+        case .offline: return "gray"
+        case .busy: return "orange"
+        case .error: return "red"
+        }
+    }
+
+    /// Human-readable status text.
+    var displayText: String {
+        switch self {
+        case .online: return "Online"
+        case .offline: return "Offline"
+        case .busy: return "Busy"
+        case .error: return "Error"
+        }
+    }
+}
+
+// MARK: - Agent Capabilities
+
+/// Capabilities advertised by an agent during initialization.
 ///
-/// Contains all registered agents and which one is currently active.
-///
-/// Mirrors the TypeScript `AcpAgentRegistryState` from `acpTypes.ts`.
-struct AcpAgentRegistryState: Codable, Hashable {
-    /// All registered agents, keyed by agent ID.
-    var agents: [String: AcpRegisteredAgent]
+/// These determine which session management features are available
+/// in the UI. Actions for unsupported capabilities are hidden.
+struct AcpAgentCapabilities: Codable, Hashable {
+    /// Whether the agent supports loading existing sessions.
+    let loadSession: Bool
 
-    /// ID of the currently active agent, or nil if none.
-    var activeAgentId: String?
+    /// Whether the agent supports resuming sessions.
+    let resumeSession: Bool
 
-    /// Whether an agent switch is currently in progress.
-    var switching: Bool
+    /// Whether the agent supports forking sessions.
+    let forkSession: Bool
 
-    /// Error message from last failed switch attempt.
-    var switchError: String?
+    /// Whether the agent supports listing sessions.
+    let listSessions: Bool
 
-    /// Create a fresh agent registry state with defaults.
-    static func initial() -> AcpAgentRegistryState {
-        AcpAgentRegistryState(
-            agents: [:],
-            activeAgentId: nil,
-            switching: false,
-            switchError: nil
+    /// Default capabilities (all features disabled).
+    static let none = AcpAgentCapabilities(
+        loadSession: false,
+        resumeSession: false,
+        forkSession: false,
+        listSessions: false
+    )
+
+    /// Full capabilities (all features enabled).
+    static let full = AcpAgentCapabilities(
+        loadSession: true,
+        resumeSession: true,
+        forkSession: true,
+        listSessions: true
+    )
+}
+
+// MARK: - Agent Switch Request
+
+/// Request to switch the active agent.
+struct AcpAgentSwitchRequest: Codable {
+    /// The type of request message.
+    let type: String
+
+    /// The agent ID to switch to.
+    let agentId: String
+
+    init(agentId: String) {
+        self.type = "acp-agent-switch"
+        self.agentId = agentId
+    }
+}
+
+// MARK: - Agent Switch Response
+
+/// Response from an agent switch attempt.
+struct AcpAgentSwitchResponse: Codable {
+    /// Whether the switch was successful.
+    let success: Bool
+
+    /// Error message if the switch failed.
+    let error: String?
+
+    /// The previous agent ID for rollback reference.
+    let previousAgentId: String?
+}
+
+// MARK: - Sample Data
+
+extension AcpAgent {
+    /// Sample agent for previews.
+    static let sample = AcpAgent(
+        id: "agent-claude-code",
+        name: "claude-code",
+        version: "1.0.42",
+        title: "Claude Code",
+        status: .online,
+        capabilities: .full
+    )
+
+    /// Sample offline agent for previews.
+    static let sampleOffline = AcpAgent(
+        id: "agent-codex",
+        name: "codex",
+        version: "2.1.0",
+        title: "Codex",
+        status: .offline,
+        capabilities: AcpAgentCapabilities(
+            loadSession: true,
+            resumeSession: false,
+            forkSession: false,
+            listSessions: true
         )
-    }
-
-    /// The currently active agent, if any.
-    var activeAgent: AcpRegisteredAgent? {
-        guard let id = activeAgentId else { return nil }
-        return agents[id]
-    }
+    )
 }

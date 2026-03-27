@@ -9,7 +9,6 @@
 import Foundation
 import Combine
 import CryptoKit
-import os.log
 
 /// Service for real-time WebSocket synchronization with the Happy server.
 ///
@@ -20,13 +19,6 @@ actor SyncService {
 
     /// Shared instance for convenience.
     static let shared = SyncService()
-
-    // MARK: - Logger
-
-    private static let logger = Logger(
-        subsystem: "com.enflame.Happy",
-        category: "SyncService"
-    )
 
     // MARK: - Publishers
 
@@ -50,13 +42,22 @@ actor SyncService {
     /// Emitted when a session has been successfully revived.
     nonisolated let sessionRevived = PassthroughSubject<SessionRevivedEvent, Never>()
 
-    /// Publisher for ACP session update events (HAP-1054).
-    /// Emitted when an ACP session update is received and decrypted.
-    nonisolated let acpSessionUpdates = PassthroughSubject<AcpSessionUpdate, Never>()
+    // MARK: - ACP Publishers (HAP-1056)
 
-    /// Publisher for ACP permission request events (HAP-1054).
-    /// Emitted when a permission request is received from the CLI agent.
-    nonisolated let acpPermissionRequests = PassthroughSubject<AcpPermissionRequestState, Never>()
+    /// Publisher for ACP permission requests from agents.
+    nonisolated let acpPermissionRequests = PassthroughSubject<AcpPermissionRequest, Never>()
+
+    /// Publisher for ACP agent registry updates.
+    nonisolated let acpAgentUpdates = PassthroughSubject<[AcpAgent], Never>()
+
+    /// Publisher for ACP session list responses.
+    nonisolated let acpSessionListResponse = PassthroughSubject<[AcpSessionInfo], Never>()
+
+    /// Publisher for ACP agent switch responses.
+    nonisolated let acpAgentSwitchResponse = PassthroughSubject<AcpAgentSwitchResponse, Never>()
+
+    /// Publisher for ACP session action responses.
+    nonisolated let acpSessionActionResponse = PassthroughSubject<AcpSessionActionResponse, Never>()
 
     // MARK: - Private Properties
 
@@ -172,6 +173,12 @@ actor SyncService {
             if let update = try? decoder.decode(SyncUpdateEnvelope.self, from: decryptedData) {
                 await processSyncUpdate(update)
             }
+            // Try ACP messages (HAP-1056)
+            else if let json = try? JSONSerialization.jsonObject(with: decryptedData) as? [String: Any],
+                    let type = json["type"] as? String,
+                    type.hasPrefix("acp-") {
+                processAcpMessage(decryptedData)
+            }
             // If that fails, try to decode as raw session
             else if let session = try? decoder.decode(Session.self, from: decryptedData) {
                 sessionUpdates.send(session)
@@ -230,83 +237,9 @@ actor SyncService {
                 )
                 sessionRevived.send(event)
             }
-        case .acpSessionUpdate:
-            // HAP-1054: Handle ACP session update event
-            processAcpSessionUpdate(update)
-        case .acpPermissionRequest:
-            // HAP-1054: Handle ACP permission request event
-            processAcpPermissionRequest(update)
         case .subscribe, .unsubscribe, .update:
             // These are client-to-server messages, ignore if received
             break
-        }
-    }
-
-    // MARK: - ACP Event Processing (HAP-1054)
-
-    /// Process an ACP session update from the sync envelope.
-    ///
-    /// The `acpData` field contains the JSON-encoded ACP session update
-    /// as defined by the ACP protocol `sessionUpdate` discriminated union.
-    private func processAcpSessionUpdate(_ envelope: SyncUpdateEnvelope) {
-        guard let acpData = envelope.acpData else {
-            Self.logger.warning("ACP session update missing acpData payload")
-            return
-        }
-
-        let decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .convertFromSnakeCase
-
-        do {
-            let acpUpdate = try decoder.decode(AcpSessionUpdate.self, from: acpData)
-
-            // Log unknown update types for forward-compatibility diagnostics
-            if case .unknown(let type) = acpUpdate {
-                Self.logger.info("Received unknown ACP session update type: \(type, privacy: .public)")
-            }
-
-            acpSessionUpdates.send(acpUpdate)
-        } catch {
-            Self.logger.error("Failed to decode ACP session update: \(error.localizedDescription, privacy: .public)")
-        }
-    }
-
-    /// Process an ACP permission request from the sync envelope.
-    ///
-    /// Converts the wire format into an `AcpPermissionRequestState` and
-    /// emits on the `acpPermissionRequests` publisher.
-    private func processAcpPermissionRequest(_ envelope: SyncUpdateEnvelope) {
-        guard let acpData = envelope.acpData else {
-            Self.logger.warning("ACP permission request missing acpData payload")
-            return
-        }
-
-        let decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .convertFromSnakeCase
-
-        do {
-            let permRequest = try decoder.decode(AcpPermissionRequestEnvelope.self, from: acpData)
-
-            // Convert wire format to local state model
-            let requestState = AcpPermissionRequestState(
-                requestId: UUID().uuidString,
-                sessionId: permRequest.sessionId,
-                toolCall: AcpPermissionRequestToolCall(
-                    toolCallId: permRequest.toolCall.toolCallId,
-                    title: permRequest.toolCall.title ?? "Unknown Tool",
-                    kind: permRequest.toolCall.kind,
-                    locations: permRequest.toolCall.locations
-                ),
-                options: permRequest.options,
-                receivedAt: Date().timeIntervalSince1970 * 1000,
-                timeoutAt: nil,
-                status: .pending,
-                selectedOptionId: nil
-            )
-
-            acpPermissionRequests.send(requestState)
-        } catch {
-            Self.logger.error("Failed to decode ACP permission request: \(error.localizedDescription, privacy: .public)")
         }
     }
 
@@ -315,6 +248,73 @@ actor SyncService {
         let message = SyncMessage(type: .pong)
         let data = try JSONEncoder().encode(message)
         try await webSocketTask?.send(.data(data))
+    }
+
+    // MARK: - ACP Methods (HAP-1056)
+
+    /// Send an ACP message through the encrypted relay.
+    ///
+    /// This encrypts the message with the shared encryption key and sends it
+    /// through the WebSocket connection for relay to the CLI agent.
+    ///
+    /// - Parameter message: An Encodable ACP message to send.
+    func sendAcpMessage<T: Encodable>(_ message: T) async throws {
+        guard let key = encryptionKey else {
+            throw SyncError.encryptionKeyMissing
+        }
+
+        let encoder = JSONEncoder()
+        encoder.keyEncodingStrategy = .convertToSnakeCase
+        let jsonData = try encoder.encode(message)
+        let encryptedData = try EncryptionService.encrypt(jsonData, with: key)
+
+        guard let webSocketTask = webSocketTask else {
+            throw SyncError.sendFailed("Not connected")
+        }
+
+        try await webSocketTask.send(.data(encryptedData))
+    }
+
+    /// Process ACP-specific messages from the sync update.
+    private func processAcpMessage(_ data: Data) {
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+
+        // Try to determine the ACP message type
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let type = json["type"] as? String else {
+            return
+        }
+
+        switch type {
+        case "acp-permission-request":
+            if let request = try? decoder.decode(AcpPermissionRequest.self, from: data) {
+                acpPermissionRequests.send(request)
+            }
+
+        case "acp-agent-update":
+            if let wrapper = try? decoder.decode(AcpAgentUpdateWrapper.self, from: data) {
+                acpAgentUpdates.send(wrapper.agents)
+            }
+
+        case "acp-session-list-response":
+            if let wrapper = try? decoder.decode(AcpSessionListResponseWrapper.self, from: data) {
+                acpSessionListResponse.send(wrapper.sessions)
+            }
+
+        case "acp-agent-switch-response":
+            if let response = try? decoder.decode(AcpAgentSwitchResponseWrapper.self, from: data) {
+                acpAgentSwitchResponse.send(response.result)
+            }
+
+        case "acp-session-action-response":
+            if let response = try? decoder.decode(AcpSessionActionResponseWrapper.self, from: data) {
+                acpSessionActionResponse.send(response.result)
+            }
+
+        default:
+            break
+        }
     }
 }
 
@@ -351,10 +351,6 @@ enum SyncMessageType: String, Codable {
     case sessionRevivalPaused = "session-revival-paused"
     /// Session was successfully revived (HAP-733)
     case sessionRevived = "session-revived"
-    /// ACP session update relayed from the CLI agent (HAP-1054)
-    case acpSessionUpdate = "acp-session-update"
-    /// ACP permission request relayed from the CLI agent (HAP-1054)
-    case acpPermissionRequest = "acp-permission-request"
 }
 
 /// Envelope for typed sync updates from the server.
@@ -374,16 +370,10 @@ struct SyncUpdateEnvelope: Codable {
     let originalSessionId: String?
     let newSessionId: String?
 
-    // ACP event payload (HAP-1054)
-    // The raw JSON data for the ACP update or permission request.
-    // Decoded separately by the ACP handler to support discriminated unions.
-    let acpData: Data?
-
     enum CodingKeys: String, CodingKey {
         case type, session, message, sessionId
         case reason, remainingMs, resumesAt, machineId
         case originalSessionId, newSessionId
-        case acpData
     }
 }
 
@@ -428,4 +418,30 @@ enum SyncError: LocalizedError {
             return "Session \(sessionId) could not be restored: \(reason)"
         }
     }
+}
+
+// MARK: - ACP Message Wrappers (HAP-1056)
+
+/// Wrapper for agent update messages.
+struct AcpAgentUpdateWrapper: Codable {
+    let type: String
+    let agents: [AcpAgent]
+}
+
+/// Wrapper for session list response messages.
+struct AcpSessionListResponseWrapper: Codable {
+    let type: String
+    let sessions: [AcpSessionInfo]
+}
+
+/// Wrapper for agent switch response messages.
+struct AcpAgentSwitchResponseWrapper: Codable {
+    let type: String
+    let result: AcpAgentSwitchResponse
+}
+
+/// Wrapper for session action response messages.
+struct AcpSessionActionResponseWrapper: Codable {
+    let type: String
+    let result: AcpSessionActionResponse
 }
