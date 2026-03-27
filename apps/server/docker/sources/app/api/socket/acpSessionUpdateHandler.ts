@@ -28,6 +28,16 @@ import { websocketEventsCounter } from "@/app/monitoring/metrics2";
  * Event: 'acp-permission-response' (mobile -> CLI)
  * Data: { sid: string, requestId: string, payload: string }
  *   - Relayed directly to the machine-scoped connection that sent the request
+ *
+ * HAP-1072: Also handles ACP session command/response relay.
+ *
+ * Event: 'acp-session-command' (mobile -> CLI)
+ * Data: { sid: string, command: string, payload: string, requestId: string }
+ *   - Relayed as ephemeral to session-scoped and machine-scoped connections
+ *
+ * Event: 'acp-session-command-response' (CLI -> mobile)
+ * Data: { sid: string, command: string, payload: string, requestId: string, success: boolean }
+ *   - Relayed as ephemeral to user-scoped connections (mobile/web)
  */
 export function acpSessionUpdateHandler(userId: string, socket: Socket, connection: ClientConnection) {
     socket.on('acp-session-update', async (data: any) => {
@@ -112,8 +122,6 @@ export function acpSessionUpdateHandler(userId: string, socket: Socket, connecti
 
             // Relay to all machine-scoped connections for this user
             // The CLI machine that registered the permission request will receive it
-            // Cast needed: 'acp-permission-response' is a relay-only event type
-            // not yet added to @magic-agent/protocol's EphemeralPayload union
             eventRouter.emitEphemeral({
                 userId,
                 payload: {
@@ -130,16 +138,17 @@ export function acpSessionUpdateHandler(userId: string, socket: Socket, connecti
         }
     });
 
-    // HAP-1069: Session command relay (mobile/web app -> CLI machine)
+    // HAP-1072: Session command relay (mobile/web app -> CLI session)
     socket.on('acp-session-command', async (data: any) => {
         try {
             websocketEventsCounter.inc({ event_type: 'acp-session-command' });
 
-            const { sid, command, payload } = data;
+            const { sid, command, payload, requestId } = data;
 
             if (!sid || typeof sid !== 'string' ||
                 !command || typeof command !== 'string' ||
-                !payload || typeof payload !== 'string') {
+                !requestId || typeof requestId !== 'string' ||
+                typeof payload !== 'string') {
                 return;
             }
 
@@ -148,7 +157,8 @@ export function acpSessionUpdateHandler(userId: string, socket: Socket, connecti
                 return;
             }
 
-            // Relay to all connections except sender (reaches CLI machines)
+            // Relay to session-scoped and machine-scoped connections (CLI)
+            // The mobile sender is skipped
             eventRouter.emitEphemeral({
                 userId,
                 payload: {
@@ -156,8 +166,9 @@ export function acpSessionUpdateHandler(userId: string, socket: Socket, connecti
                     sid,
                     command,
                     payload,
+                    requestId,
                 },
-                recipientFilter: { type: 'all-user-authenticated-connections' },
+                recipientFilter: { type: 'all-interested-in-session', sessionId: sid },
                 skipSenderConnection: connection
             });
         } catch (error) {
@@ -165,15 +176,18 @@ export function acpSessionUpdateHandler(userId: string, socket: Socket, connecti
         }
     });
 
-    // HAP-1069: Session list response relay (CLI machine -> mobile/web apps)
-    socket.on('acp-session-list-response', async (data: any) => {
+    // HAP-1072: Session command response relay (CLI -> mobile/web app)
+    socket.on('acp-session-command-response', async (data: any) => {
         try {
-            websocketEventsCounter.inc({ event_type: 'acp-session-list-response' });
+            websocketEventsCounter.inc({ event_type: 'acp-session-command-response' });
 
-            const { sid, payload } = data;
+            const { sid, command, payload, requestId, success } = data;
 
             if (!sid || typeof sid !== 'string' ||
-                !payload || typeof payload !== 'string') {
+                !command || typeof command !== 'string' ||
+                !requestId || typeof requestId !== 'string' ||
+                !payload || typeof payload !== 'string' ||
+                typeof success !== 'boolean') {
                 return;
             }
 
@@ -186,15 +200,18 @@ export function acpSessionUpdateHandler(userId: string, socket: Socket, connecti
             eventRouter.emitEphemeral({
                 userId,
                 payload: {
-                    type: 'acp-session-list-response',
+                    type: 'acp-session-command-response',
                     sid,
+                    command,
                     payload,
+                    requestId,
+                    success,
                 },
                 recipientFilter: { type: 'user-scoped-only' },
                 skipSenderConnection: connection
             });
         } catch (error) {
-            log({ module: 'websocket', level: 'error' }, `Error in acp-session-list-response: ${error}`);
+            log({ module: 'websocket', level: 'error' }, `Error in acp-session-command-response: ${error}`);
         }
     });
 }

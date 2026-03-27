@@ -20,6 +20,8 @@ import type {
   ApiEphemeralActivityUpdate,
   ApiEphemeralUsageUpdate,
   ApiEphemeralMachineActivityUpdate,
+  ApiEphemeralAcpSessionCommand,
+  ApiEphemeralAcpSessionCommandResponse,
   ApiEphemeralUpdate,
 } from '@magic-agent/protocol'
 
@@ -64,6 +66,12 @@ export type EphemeralUsageUpdate = ApiEphemeralUsageUpdate
 
 /** Alias for ApiEphemeralMachineActivityUpdate */
 export type EphemeralMachineActivityUpdate = ApiEphemeralMachineActivityUpdate
+
+/** Alias for ApiEphemeralAcpSessionCommand */
+export type EphemeralAcpSessionCommand = ApiEphemeralAcpSessionCommand
+
+/** Alias for ApiEphemeralAcpSessionCommandResponse */
+export type EphemeralAcpSessionCommandResponse = ApiEphemeralAcpSessionCommandResponse
 
 /** Alias for ApiEphemeralUpdate */
 export type EphemeralUpdate = ApiEphemeralUpdate
@@ -196,6 +204,24 @@ export interface ClientToServerEvents {
     message: string
     /** Machine ID this event originated from */
     machineId: string
+  }) => void
+  /**
+   * ACP session command response - emitted when the CLI has processed a session
+   * command from the mobile app and sends the result back.
+   *
+   * @see HAP-1072 - Implement ACP session command/response handlers in CLI
+   */
+  'acp-session-command-response': (data: {
+    /** Session ID this response belongs to */
+    sid: string
+    /** The command this is responding to */
+    command: string
+    /** Encrypted response payload */
+    payload: string
+    /** Request ID from the original command, for correlation */
+    requestId: string
+    /** Whether the command succeeded */
+    success: boolean
   }) => void
   /**
    * Usage limits update event - emitted periodically with usage limit data from Anthropic API.

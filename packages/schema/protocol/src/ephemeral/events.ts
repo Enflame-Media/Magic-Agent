@@ -268,113 +268,88 @@ export const ApiEphemeralAcpPermissionRequestSchema = z.object({
     timeoutMs: z.number().int().min(0).optional(),
 });
 
-/**
- * ACP session command event (mobile → CLI direction)
- *
- * Sent by the mobile app to request session operations (list, load, resume, fork).
- * Relayed through the server to the CLI machine. The server never reads the payload.
- *
- * @see HAP-1069 - ACP session command/response relay
- */
-export const ApiEphemeralAcpSessionCommandSchema = z.object({
-    type: z.literal('acp-session-command'),
-    /**
-     * Session ID — identifies which session the command targets
-     */
-    sid: z.string().min(1).max(STRING_LIMITS.ID_MAX),
-    /**
-     * Command type (e.g., 'list', 'load', 'resume', 'fork')
-     */
-    command: z.string().min(1).max(STRING_LIMITS.LABEL_MAX),
-    /**
-     * Encrypted command payload.
-     * Contains the serialized ACP command, encrypted with the session's
-     * data encryption key. The server never reads this content.
-     */
-    payload: z.string().min(1).max(STRING_LIMITS.CONTENT_MAX),
-});
-
-export type ApiEphemeralAcpSessionCommand = z.infer<typeof ApiEphemeralAcpSessionCommandSchema>;
-
-/**
- * ACP session list response event (CLI → mobile direction)
- *
- * Sent by the CLI agent in response to a session list request.
- * Relayed through the server to user-scoped connections (mobile/web).
- * The server never reads the payload.
- *
- * @see HAP-1069 - ACP session command/response relay
- */
-export const ApiEphemeralAcpSessionListResponseSchema = z.object({
-    type: z.literal('acp-session-list-response'),
-    /**
-     * Session ID — identifies which session the response belongs to
-     */
-    sid: z.string().min(1).max(STRING_LIMITS.ID_MAX),
-    /**
-     * Encrypted session list response payload.
-     * Contains the serialized session list data, encrypted with the session's
-     * data encryption key. The server never reads this content.
-     */
-    payload: z.string().min(1).max(STRING_LIMITS.CONTENT_MAX),
-});
-
-export type ApiEphemeralAcpSessionListResponse = z.infer<typeof ApiEphemeralAcpSessionListResponseSchema>;
-
 export type ApiEphemeralAcpPermissionRequest = z.infer<typeof ApiEphemeralAcpPermissionRequestSchema>;
 
 /**
- * ACP session command event (mobile -> CLI direction)
+ * ACP session command relay
  *
- * Sent by the mobile app to request session operations (list, load, resume, fork).
- * Relayed through the server to the CLI machine. The server never reads the payload.
+ * Carries an encrypted session command from the mobile app to the CLI.
+ * Commands include: list, load, resume, fork. The server treats the
+ * payload as an opaque blob -- zero-knowledge relay.
  *
- * @see HAP-1069 - ACP session command/response relay
+ * Flow: mobile -> server -> CLI (session-scoped connection)
+ *
+ * @see HAP-1072 - Implement ACP session command/response handlers in CLI
  */
 export const ApiEphemeralAcpSessionCommandSchema = z.object({
     type: z.literal('acp-session-command'),
     /**
-     * Session ID - identifies which session the command targets
+     * Session ID -- identifies which session connection receives the command.
+     *
+     * @remarks
+     * Uses `sid` for consistency with other session-related ephemeral events.
+     *
+     * @see HAP-654 - Standardization of session ID field names
      */
     sid: z.string().min(1).max(STRING_LIMITS.ID_MAX),
     /**
-     * Command type (e.g., 'list', 'load', 'resume', 'fork')
+     * Session command type.
+     * Determines how the CLI processes this command.
      */
-    command: z.string().min(1).max(STRING_LIMITS.LABEL_MAX),
+    command: z.enum(['list', 'load', 'resume', 'fork']),
     /**
      * Encrypted command payload.
-     * Contains the serialized ACP command, encrypted with the session's
+     * Contains the serialized command parameters, encrypted with the session's
      * data encryption key. The server never reads this content.
+     * For 'list' commands this may be empty/minimal.
      */
-    payload: z.string().min(1).max(STRING_LIMITS.CONTENT_MAX),
+    payload: z.string().max(STRING_LIMITS.CONTENT_MAX),
+    /**
+     * Unique request ID for correlating the response back to the mobile app.
+     */
+    requestId: z.string().min(1).max(STRING_LIMITS.ID_MAX),
 });
 
 export type ApiEphemeralAcpSessionCommand = z.infer<typeof ApiEphemeralAcpSessionCommandSchema>;
 
 /**
- * ACP session list response event (CLI -> mobile direction)
+ * ACP session command response relay
  *
- * Sent by the CLI agent in response to a session list request.
- * Relayed through the server to user-scoped connections (mobile/web).
- * The server never reads the payload.
+ * Carries an encrypted response to an ACP session command from CLI back to mobile.
+ * The server treats the payload as an opaque blob -- zero-knowledge relay.
  *
- * @see HAP-1069 - ACP session command/response relay
+ * Flow: CLI -> server -> mobile (user-scoped connections)
+ *
+ * @see HAP-1072 - Implement ACP session command/response handlers in CLI
  */
-export const ApiEphemeralAcpSessionListResponseSchema = z.object({
-    type: z.literal('acp-session-list-response'),
+export const ApiEphemeralAcpSessionCommandResponseSchema = z.object({
+    type: z.literal('acp-session-command-response'),
     /**
-     * Session ID - identifies which session the response belongs to
+     * Session ID -- identifies which session the response belongs to.
      */
     sid: z.string().min(1).max(STRING_LIMITS.ID_MAX),
     /**
-     * Encrypted session list response payload.
-     * Contains the serialized session list data, encrypted with the session's
+     * The command this is a response to (mirrors the original command).
+     */
+    command: z.enum(['list', 'load', 'resume', 'fork']),
+    /**
+     * Encrypted response payload.
+     * Contains the serialized response data, encrypted with the session's
      * data encryption key. The server never reads this content.
      */
     payload: z.string().min(1).max(STRING_LIMITS.CONTENT_MAX),
+    /**
+     * Request ID from the original command, for correlation.
+     */
+    requestId: z.string().min(1).max(STRING_LIMITS.ID_MAX),
+    /**
+     * Whether the command succeeded.
+     * When false, the payload contains an error description.
+     */
+    success: z.boolean(),
 });
 
-export type ApiEphemeralAcpSessionListResponse = z.infer<typeof ApiEphemeralAcpSessionListResponseSchema>;
+export type ApiEphemeralAcpSessionCommandResponse = z.infer<typeof ApiEphemeralAcpSessionCommandResponseSchema>;
 
 /**
  * Union of all ephemeral update types
@@ -389,7 +364,7 @@ export const ApiEphemeralUpdateSchema = z.union([
     ApiEphemeralAcpSessionUpdateSchema,
     ApiEphemeralAcpPermissionRequestSchema,
     ApiEphemeralAcpSessionCommandSchema,
-    ApiEphemeralAcpSessionListResponseSchema,
+    ApiEphemeralAcpSessionCommandResponseSchema,
 ]);
 
 export type ApiEphemeralUpdate = z.infer<typeof ApiEphemeralUpdateSchema>;

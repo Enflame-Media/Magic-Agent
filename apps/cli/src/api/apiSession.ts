@@ -3,7 +3,7 @@ import { AppError, ErrorCodes } from '@/utils/errors'
 import { getSessionId, getSessionIdFromEphemeral, getMachineIdFromEphemeral, hasSessionId, tryGetSessionId, tryGetSessionIdFromEphemeral, type SessionIdUpdate, type SessionIdEphemeral, type MachineIdEphemeral } from '@magic-agent/protocol'
 import { EventEmitter } from 'node:events'
 import { HappyWebSocket } from './HappyWebSocket'
-import { AgentState, EphemeralUpdate, MessageContent, Metadata, Session, Update, UserMessage, UserMessageSchema, Usage } from './types'
+import { AgentState, EphemeralUpdate, EphemeralAcpSessionCommand, MessageContent, Metadata, Session, Update, UserMessage, UserMessageSchema, Usage } from './types'
 import { calculateCost } from './pricing'
 import { decodeBase64, decrypt, encodeBase64, encrypt, JsonSerializable } from './encryption';
 import { backoff } from '@/utils/time';
@@ -18,6 +18,21 @@ import { extractErrorType, SyncMetrics, SyncMetricsCollector, SyncOutcome } from
 import type { MetadataUpdateResponse, StateUpdateResponse } from './socketUtils';
 import { ContextNotificationService, type UsageData } from './contextNotifications';
 import { fetchClaudeUsageLimits, USAGE_LIMITS_POLL_INTERVAL_MS } from '@/claude/usageLimits';
+
+/**
+ * ACP session command handler callback type.
+ *
+ * When the mobile app sends an ACP session command (list, load, resume, fork),
+ * this callback is invoked to process it. The handler receives the decrypted
+ * command payload and returns the response payload to send back.
+ *
+ * @see HAP-1072 - Implement ACP session command/response handlers in CLI
+ */
+export type AcpSessionCommandHandler = (
+    command: string,
+    payload: Record<string, unknown>,
+    requestId: string,
+) => Promise<{ success: boolean; data: Record<string, unknown> }>;
 
 /**
  * Event types emitted by ApiSessionClient
@@ -44,6 +59,11 @@ export interface ApiSessionClientEvents {
      * @see Fix #2 - User notification for decryption failures
      */
     decryptionFailed: (details: { context: string, sessionId: string }) => void;
+    /**
+     * Emitted when a socket reconnects after a disconnection.
+     * @see HAP-944
+     */
+    socketReconnect: () => void;
 }
 
 /**
@@ -79,6 +99,8 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
     private readonly syncMetricsCollector = new SyncMetricsCollector();
     /** Optional context notification service for push notifications on high context usage @see HAP-343 */
     private contextNotificationService: ContextNotificationService | null = null;
+    /** Optional handler for ACP session commands from mobile app @see HAP-1072 */
+    private acpSessionCommandHandler: AcpSessionCommandHandler | null = null;
     /** Usage limits polling interval handle @see HAP-730 */
     private usageLimitsPollingInterval: ReturnType<typeof setInterval> | null = null;
     /** Whether usage limits polling is enabled @see HAP-730 */
@@ -360,6 +382,20 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
                     logger.debug(`[EPHEMERAL] Machine activity: ${machineId} active=${data.active}`);
                     break;
                 }
+                case 'acp-session-command': {
+                    // ACP session command from mobile app (HAP-1072)
+                    // Process the command and send a response back through the server relay
+                    this.handleAcpSessionCommand(data as EphemeralAcpSessionCommand);
+                    break;
+                }
+                case 'acp-session-update':
+                case 'acp-permission-request':
+                case 'acp-session-command-response': {
+                    // These are relayed TO the mobile app, not TO the CLI.
+                    // If we receive them here, it means the server broadcast to all connections
+                    // including the sender. Silently ignore.
+                    break;
+                }
                 default:
                     // Unknown ephemeral type - log but don't crash (forward compatibility)
                     logger.debug(`[EPHEMERAL] Unknown type: ${(data as { type: string }).type}`);
@@ -385,6 +421,117 @@ export class ApiSessionClient extends EventEmitter implements TypedEventEmitter 
         while (this.pendingMessages.length > 0) {
             callback(this.pendingMessages.shift()!);
         }
+    }
+
+    /**
+     * Register a handler for ACP session commands from the mobile app.
+     *
+     * When the mobile app sends commands like "list sessions", "load session",
+     * "resume session", or "fork session", this handler processes them and
+     * returns the result. The handler is responsible for interacting with the
+     * ACP SessionManager.
+     *
+     * @param handler - Async function that processes commands and returns results
+     * @see HAP-1072 - Implement ACP session command/response handlers in CLI
+     */
+    setAcpSessionCommandHandler(handler: AcpSessionCommandHandler | null): void {
+        this.acpSessionCommandHandler = handler;
+        if (handler) {
+            logger.debug('[API] ACP session command handler registered');
+        }
+    }
+
+    /**
+     * Handle an incoming ACP session command from the mobile app.
+     *
+     * Decrypts the command payload, delegates to the registered handler,
+     * encrypts the response, and sends it back through the server relay.
+     *
+     * @param data - The ephemeral event data containing the encrypted command
+     * @see HAP-1072 - Implement ACP session command/response handlers in CLI
+     */
+    private handleAcpSessionCommand(data: EphemeralAcpSessionCommand): void {
+        const { command, payload, requestId, sid } = data;
+
+        logger.debug(`[EPHEMERAL] ACP session command: ${command} (requestId=${requestId})`);
+
+        if (!this.acpSessionCommandHandler) {
+            logger.debug('[EPHEMERAL] No ACP session command handler registered - sending error response');
+            this.sendAcpSessionCommandResponse(sid, command, requestId, false, {
+                error: 'ACP session commands not available',
+                code: 'NO_HANDLER',
+            });
+            return;
+        }
+
+        // Decrypt the command payload
+        let decryptedPayload: Record<string, unknown>;
+        if (payload) {
+            const decoded = decrypt<Record<string, unknown>>(this.encryptionKey, this.encryptionVariant, decodeBase64(payload));
+            if (decoded === null) {
+                logger.debug('[EPHEMERAL] Failed to decrypt ACP session command payload');
+                this.sendAcpSessionCommandResponse(sid, command, requestId, false, {
+                    error: 'Failed to decrypt command payload',
+                    code: 'DECRYPT_ERROR',
+                });
+                return;
+            }
+            decryptedPayload = decoded;
+        } else {
+            decryptedPayload = {};
+        }
+
+        // Process the command asynchronously
+        const handler = this.acpSessionCommandHandler;
+        handler(command, decryptedPayload, requestId)
+            .then((result) => {
+                this.sendAcpSessionCommandResponse(sid, command, requestId, result.success, result.data);
+            })
+            .catch((error) => {
+                logger.debug(`[EPHEMERAL] ACP session command '${command}' failed:`, error);
+                this.sendAcpSessionCommandResponse(sid, command, requestId, false, {
+                    error: error instanceof Error ? error.message : 'Unknown error',
+                    code: 'HANDLER_ERROR',
+                });
+            });
+    }
+
+    /**
+     * Send an ACP session command response back through the server relay.
+     *
+     * Encrypts the response payload and emits it as a socket event for the
+     * server to relay to user-scoped connections (mobile/web apps).
+     *
+     * @param sid - Session ID
+     * @param command - The command being responded to
+     * @param requestId - Request ID for correlation
+     * @param success - Whether the command succeeded
+     * @param responseData - The response data to encrypt and send
+     * @see HAP-1072 - Implement ACP session command/response handlers in CLI
+     */
+    private sendAcpSessionCommandResponse(
+        sid: string,
+        command: string,
+        requestId: string,
+        success: boolean,
+        responseData: Record<string, unknown>,
+    ): void {
+        if (!this.socket.connected) {
+            logger.debug('[EPHEMERAL] Cannot send ACP session command response - not connected');
+            return;
+        }
+
+        const encryptedPayload = encodeBase64(encrypt(this.encryptionKey, this.encryptionVariant, responseData));
+
+        this.socket.emitClient('acp-session-command-response', {
+            sid,
+            command,
+            payload: encryptedPayload,
+            requestId,
+            success,
+        });
+
+        logger.debug(`[EPHEMERAL] Sent ACP session command response: ${command} success=${success} (requestId=${requestId})`);
     }
 
     /**
