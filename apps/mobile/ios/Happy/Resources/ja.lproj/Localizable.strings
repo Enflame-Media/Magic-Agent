@@ -417,3 +417,112 @@
 "language.override" = "アプリの言語";
 "language.overrideFooter" = "Happyアプリの言語を選択します。システムの言語設定を上書きします。";
 "language.restartRequired" = "言語の変更はアプリを再起動すると反映されます。";
+
+// MARK: - ACP Session
+
+"acp.session.agentMessage" = "エージェントメッセージ";
+"acp.session.commands" = "コマンド";
+"acp.session.config" = "設定";
+"acp.session.toolCalls" = "ツール呼び出し";
+"acp.session.untitled" = "無題のセッション";
+"acp.session.userMessage" = "ユーザーメッセージ";
+
+// MARK: - ACP Session Browser
+
+"acp.browser.active" = "アクティブ";
+"acp.browser.confirm" = "セッション操作";
+"acp.browser.empty" = "利用可能なセッションがありません";
+"acp.browser.fork" = "セッションをフォーク";
+"acp.browser.forkConfirm" = "フォーク";
+"acp.browser.load" = "セッションを読み込む";
+"acp.browser.loadConfirm" = "読み込む";
+"acp.browser.resume" = "セッションを再開";
+"acp.browser.resumeConfirm" = "再開";
+"acp.browser.title" = "セッション";
+
+// MARK: - ACP Tool Call
+
+"acp.toolCall.hideContent" = "コンテンツを非表示";
+"acp.toolCall.showContent" = "コンテンツを表示";
+
+// MARK: - ACP Agents
+
+"acp.agents.switchAction" = "切り替え";
+"acp.agents.switchConfirm" = "エージェントを切り替えますか？";
+"acp.agents.switching" = "エージェントを切り替え中...";
+"acp.agents.title" = "エージェント";
+
+// MARK: - ACP Agent Badge
+
+"acp.agent.badge" = "エージェント: %@";
+"acp.agent.none" = "エージェントなし";
+
+// MARK: - ACP Diff
+
+"acp.diff.noChanges" = "変更なし";
+
+// MARK: - ACP Permission History
+
+"acp.permissionHistory.empty" = "許可履歴がありません";
+"acp.permissionHistory.title" = "許可履歴";
+
+// MARK: - ACP Permission Request
+
+"acp.permission.allowAlways" = "常に許可";
+"acp.permission.allowOnce" = "一度だけ許可";
+"acp.permission.locations" = "場所";
+"acp.permission.queue" = "リクエスト %1$d / %2$d";
+"acp.permission.rejectAlways" = "常に拒否";
+"acp.permission.rejectOnce" = "一度だけ拒否";
+"acp.permission.title" = "許可リクエスト";
+
+// MARK: - ACP Commands
+
+"acp.commands.empty" = "利用可能なコマンドがありません";
+"acp.commands.search" = "コマンドを検索...";
+"acp.commands.title" = "コマンド";
+
+// MARK: - ACP Resource
+
+"acp.resource.tapToOpen" = "タップして開く";
+
+// MARK: - ACP Content
+
+"acp.content.audioPlaceholder" = "オーディオコンテンツ";
+"acp.content.resource" = "リソース";
+
+// MARK: - ACP Config
+
+"acp.config.title" = "設定";
+
+// MARK: - ACP Image
+
+"acp.image.label" = "画像";
+"acp.image.loadError" = "画像の読み込みに失敗しました";
+"acp.image.share" = "画像を共有";
+
+// MARK: - ACP Terminal
+
+"acp.terminal.copied" = "コピーしました！";
+"acp.terminal.copy" = "クリップボードにコピー";
+"acp.terminal.output" = "ターミナル出力";
+
+// MARK: - ACP Plan
+
+"acp.plan.completed" = "完了";
+"acp.plan.inProgress" = "進行中";
+"acp.plan.pending" = "保留中";
+"acp.plan.title" = "プラン";
+
+// MARK: - ACP Mode
+
+"acp.mode.label" = "モード: %@";
+
+// MARK: - ACP Thought
+
+"acp.thought.icon" = "思考インジケーター";
+"acp.thought.title" = "思考中";
+
+// MARK: - ACP Usage
+
+"acp.usage.progress" = "使用量: %d%%";

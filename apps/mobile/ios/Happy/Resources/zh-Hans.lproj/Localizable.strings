@@ -417,3 +417,112 @@
 "language.override" = "应用语言";
 "language.overrideFooter" = "为Happy应用选择语言。这将覆盖系统语言设置。";
 "language.restartRequired" = "语言更改将在重启应用后生效。";
+
+// MARK: - ACP Session
+
+"acp.session.agentMessage" = "代理消息";
+"acp.session.commands" = "命令";
+"acp.session.config" = "配置";
+"acp.session.toolCalls" = "工具调用";
+"acp.session.untitled" = "未命名会话";
+"acp.session.userMessage" = "用户消息";
+
+// MARK: - ACP Session Browser
+
+"acp.browser.active" = "活跃";
+"acp.browser.confirm" = "会话操作";
+"acp.browser.empty" = "没有可用的会话";
+"acp.browser.fork" = "派生会话";
+"acp.browser.forkConfirm" = "派生";
+"acp.browser.load" = "加载会话";
+"acp.browser.loadConfirm" = "加载";
+"acp.browser.resume" = "恢复会话";
+"acp.browser.resumeConfirm" = "恢复";
+"acp.browser.title" = "会话";
+
+// MARK: - ACP Tool Call
+
+"acp.toolCall.hideContent" = "隐藏内容";
+"acp.toolCall.showContent" = "显示内容";
+
+// MARK: - ACP Agents
+
+"acp.agents.switchAction" = "切换";
+"acp.agents.switchConfirm" = "切换代理？";
+"acp.agents.switching" = "正在切换代理...";
+"acp.agents.title" = "代理";
+
+// MARK: - ACP Agent Badge
+
+"acp.agent.badge" = "代理: %@";
+"acp.agent.none" = "无代理";
+
+// MARK: - ACP Diff
+
+"acp.diff.noChanges" = "无更改";
+
+// MARK: - ACP Permission History
+
+"acp.permissionHistory.empty" = "没有权限历史记录";
+"acp.permissionHistory.title" = "权限历史";
+
+// MARK: - ACP Permission Request
+
+"acp.permission.allowAlways" = "始终允许";
+"acp.permission.allowOnce" = "允许一次";
+"acp.permission.locations" = "位置";
+"acp.permission.queue" = "请求 %1$d / %2$d";
+"acp.permission.rejectAlways" = "始终拒绝";
+"acp.permission.rejectOnce" = "拒绝一次";
+"acp.permission.title" = "权限请求";
+
+// MARK: - ACP Commands
+
+"acp.commands.empty" = "没有可用的命令";
+"acp.commands.search" = "搜索命令...";
+"acp.commands.title" = "命令";
+
+// MARK: - ACP Resource
+
+"acp.resource.tapToOpen" = "点击打开";
+
+// MARK: - ACP Content
+
+"acp.content.audioPlaceholder" = "音频内容";
+"acp.content.resource" = "资源";
+
+// MARK: - ACP Config
+
+"acp.config.title" = "配置";
+
+// MARK: - ACP Image
+
+"acp.image.label" = "图片";
+"acp.image.loadError" = "图片加载失败";
+"acp.image.share" = "分享图片";
+
+// MARK: - ACP Terminal
+
+"acp.terminal.copied" = "已复制！";
+"acp.terminal.copy" = "复制到剪贴板";
+"acp.terminal.output" = "终端输出";
+
+// MARK: - ACP Plan
+
+"acp.plan.completed" = "已完成";
+"acp.plan.inProgress" = "进行中";
+"acp.plan.pending" = "待处理";
+"acp.plan.title" = "计划";
+
+// MARK: - ACP Mode
+
+"acp.mode.label" = "模式: %@";
+
+// MARK: - ACP Thought
+
+"acp.thought.icon" = "思考指示器";
+"acp.thought.title" = "思考中";
+
+// MARK: - ACP Usage
+
+"acp.usage.progress" = "使用量: %d%%";

@@ -417,3 +417,112 @@
 "language.override" = "App-Sprache";
 "language.overrideFooter" = "Waehlen Sie eine Sprache fuer die Happy-App. Dies ueberschreibt die Systemsprache.";
 "language.restartRequired" = "Die Sprachaenderung wird nach einem Neustart der App wirksam.";
+
+// MARK: - ACP Session
+
+"acp.session.agentMessage" = "Agenten-Nachricht";
+"acp.session.commands" = "Befehle";
+"acp.session.config" = "Konfiguration";
+"acp.session.toolCalls" = "Werkzeugaufrufe";
+"acp.session.untitled" = "Unbenannte Sitzung";
+"acp.session.userMessage" = "Benutzernachricht";
+
+// MARK: - ACP Session Browser
+
+"acp.browser.active" = "Aktiv";
+"acp.browser.confirm" = "Sitzungsaktion";
+"acp.browser.empty" = "Keine Sitzungen verfuegbar";
+"acp.browser.fork" = "Sitzung verzweigen";
+"acp.browser.forkConfirm" = "Verzweigen";
+"acp.browser.load" = "Sitzung laden";
+"acp.browser.loadConfirm" = "Laden";
+"acp.browser.resume" = "Sitzung fortsetzen";
+"acp.browser.resumeConfirm" = "Fortsetzen";
+"acp.browser.title" = "Sitzungen";
+
+// MARK: - ACP Tool Call
+
+"acp.toolCall.hideContent" = "Inhalt ausblenden";
+"acp.toolCall.showContent" = "Inhalt anzeigen";
+
+// MARK: - ACP Agents
+
+"acp.agents.switchAction" = "Wechseln";
+"acp.agents.switchConfirm" = "Agent wechseln?";
+"acp.agents.switching" = "Agent wird gewechselt...";
+"acp.agents.title" = "Agenten";
+
+// MARK: - ACP Agent Badge
+
+"acp.agent.badge" = "Agent: %@";
+"acp.agent.none" = "Kein Agent";
+
+// MARK: - ACP Diff
+
+"acp.diff.noChanges" = "Keine Aenderungen";
+
+// MARK: - ACP Permission History
+
+"acp.permissionHistory.empty" = "Kein Berechtigungsverlauf";
+"acp.permissionHistory.title" = "Berechtigungsverlauf";
+
+// MARK: - ACP Permission Request
+
+"acp.permission.allowAlways" = "Immer erlauben";
+"acp.permission.allowOnce" = "Einmal erlauben";
+"acp.permission.locations" = "Standorte";
+"acp.permission.queue" = "Anfrage %1$d von %2$d";
+"acp.permission.rejectAlways" = "Immer ablehnen";
+"acp.permission.rejectOnce" = "Einmal ablehnen";
+"acp.permission.title" = "Berechtigungsanfrage";
+
+// MARK: - ACP Commands
+
+"acp.commands.empty" = "Keine Befehle verfuegbar";
+"acp.commands.search" = "Befehle suchen...";
+"acp.commands.title" = "Befehle";
+
+// MARK: - ACP Resource
+
+"acp.resource.tapToOpen" = "Tippen zum Oeffnen";
+
+// MARK: - ACP Content
+
+"acp.content.audioPlaceholder" = "Audioinhalt";
+"acp.content.resource" = "Ressource";
+
+// MARK: - ACP Config
+
+"acp.config.title" = "Konfiguration";
+
+// MARK: - ACP Image
+
+"acp.image.label" = "Bild";
+"acp.image.loadError" = "Bild konnte nicht geladen werden";
+"acp.image.share" = "Bild teilen";
+
+// MARK: - ACP Terminal
+
+"acp.terminal.copied" = "Kopiert!";
+"acp.terminal.copy" = "In die Zwischenablage kopieren";
+"acp.terminal.output" = "Terminalausgabe";
+
+// MARK: - ACP Plan
+
+"acp.plan.completed" = "Abgeschlossen";
+"acp.plan.inProgress" = "In Bearbeitung";
+"acp.plan.pending" = "Ausstehend";
+"acp.plan.title" = "Plan";
+
+// MARK: - ACP Mode
+
+"acp.mode.label" = "Modus: %@";
+
+// MARK: - ACP Thought
+
+"acp.thought.icon" = "Denkindikator";
+"acp.thought.title" = "Denkt nach";
+
+// MARK: - ACP Usage
+
+"acp.usage.progress" = "Nutzung: %d%%";

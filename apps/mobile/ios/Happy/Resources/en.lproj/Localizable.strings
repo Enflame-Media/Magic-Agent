@@ -456,3 +456,112 @@
 "privacy.showEmail" = "Show Email to Friends";
 "privacy.profileHeader" = "Profile";
 "privacy.profileFooter" = "Control whether your profile appears in search results and if friends can see your email.";
+
+// MARK: - ACP Session
+
+"acp.session.agentMessage" = "Agent Message";
+"acp.session.commands" = "Commands";
+"acp.session.config" = "Configuration";
+"acp.session.toolCalls" = "Tool Calls";
+"acp.session.untitled" = "Untitled Session";
+"acp.session.userMessage" = "User Message";
+
+// MARK: - ACP Session Browser
+
+"acp.browser.active" = "Active";
+"acp.browser.confirm" = "Session Action";
+"acp.browser.empty" = "No sessions available";
+"acp.browser.fork" = "Fork Session";
+"acp.browser.forkConfirm" = "Fork";
+"acp.browser.load" = "Load Session";
+"acp.browser.loadConfirm" = "Load";
+"acp.browser.resume" = "Resume Session";
+"acp.browser.resumeConfirm" = "Resume";
+"acp.browser.title" = "Sessions";
+
+// MARK: - ACP Tool Call
+
+"acp.toolCall.hideContent" = "Hide Content";
+"acp.toolCall.showContent" = "Show Content";
+
+// MARK: - ACP Agents
+
+"acp.agents.switchAction" = "Switch";
+"acp.agents.switchConfirm" = "Switch Agent?";
+"acp.agents.switching" = "Switching agent...";
+"acp.agents.title" = "Agents";
+
+// MARK: - ACP Agent Badge
+
+"acp.agent.badge" = "Agent: %@";
+"acp.agent.none" = "No Agent";
+
+// MARK: - ACP Diff
+
+"acp.diff.noChanges" = "No changes";
+
+// MARK: - ACP Permission History
+
+"acp.permissionHistory.empty" = "No permission history";
+"acp.permissionHistory.title" = "Permission History";
+
+// MARK: - ACP Permission Request
+
+"acp.permission.allowAlways" = "Always Allow";
+"acp.permission.allowOnce" = "Allow Once";
+"acp.permission.locations" = "Locations";
+"acp.permission.queue" = "Request %1$d of %2$d";
+"acp.permission.rejectAlways" = "Always Reject";
+"acp.permission.rejectOnce" = "Reject Once";
+"acp.permission.title" = "Permission Request";
+
+// MARK: - ACP Commands
+
+"acp.commands.empty" = "No commands available";
+"acp.commands.search" = "Search commands...";
+"acp.commands.title" = "Commands";
+
+// MARK: - ACP Resource
+
+"acp.resource.tapToOpen" = "Tap to open";
+
+// MARK: - ACP Content
+
+"acp.content.audioPlaceholder" = "Audio content";
+"acp.content.resource" = "Resource";
+
+// MARK: - ACP Config
+
+"acp.config.title" = "Configuration";
+
+// MARK: - ACP Image
+
+"acp.image.label" = "Image";
+"acp.image.loadError" = "Failed to load image";
+"acp.image.share" = "Share Image";
+
+// MARK: - ACP Terminal
+
+"acp.terminal.copied" = "Copied!";
+"acp.terminal.copy" = "Copy to clipboard";
+"acp.terminal.output" = "Terminal Output";
+
+// MARK: - ACP Plan
+
+"acp.plan.completed" = "Completed";
+"acp.plan.inProgress" = "In Progress";
+"acp.plan.pending" = "Pending";
+"acp.plan.title" = "Plan";
+
+// MARK: - ACP Mode
+
+"acp.mode.label" = "Mode: %@";
+
+// MARK: - ACP Thought
+
+"acp.thought.icon" = "Thought indicator";
+"acp.thought.title" = "Thinking";
+
+// MARK: - ACP Usage
+
+"acp.usage.progress" = "Usage: %d%%";
