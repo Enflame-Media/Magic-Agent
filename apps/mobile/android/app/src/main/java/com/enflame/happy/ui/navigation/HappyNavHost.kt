@@ -20,11 +20,13 @@ import com.enflame.happy.ui.screens.pairing.PairingConfirmationScreen
 import com.enflame.happy.ui.screens.purchases.PaywallScreen
 import com.enflame.happy.ui.screens.purchases.SubscriptionStatusView
 import com.enflame.happy.ui.screens.qrscanner.QrScannerScreen
+import com.enflame.happy.ui.screens.acp.AcpSessionScreen
 import com.enflame.happy.ui.screens.sessions.SessionDetailScreen
 import com.enflame.happy.ui.screens.sessions.SessionListScreen
 import com.enflame.happy.ui.screens.settings.PrivacySettingsScreen
 import com.enflame.happy.ui.screens.settings.SettingsScreen
 import com.enflame.happy.ui.screens.settings.VoiceSettingsScreen
+import com.enflame.happy.ui.viewmodel.AcpSessionViewModel
 import com.enflame.happy.ui.viewmodel.ArtifactViewModel
 import com.enflame.happy.ui.viewmodel.FriendsViewModel
 import com.enflame.happy.ui.viewmodel.PairingViewModel
@@ -63,6 +65,9 @@ sealed class Screen(val route: String) {
     }
     data object PrivacySettings : Screen("privacy_settings")
     data object QrScanner : Screen("qr_scanner")
+    data object AcpSession : Screen("acp_session/{sessionId}") {
+        fun createRoute(sessionId: String) = "acp_session/$sessionId"
+    }
     data object PairingConfirmation : Screen(
         "pairing_confirmation/{publicKey}?deviceName={deviceName}&platform={platform}"
     ) {
@@ -230,6 +235,22 @@ fun HappyNavHost(
 
             SessionDetailScreen(
                 viewModel = sessionDetailViewModel,
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(
+            route = Screen.AcpSession.route,
+            arguments = listOf(
+                navArgument("sessionId") { type = NavType.StringType }
+            )
+        ) {
+            val acpSessionViewModel: AcpSessionViewModel = hiltViewModel()
+
+            AcpSessionScreen(
+                viewModel = acpSessionViewModel,
                 onNavigateBack = {
                     navController.popBackStack()
                 }
