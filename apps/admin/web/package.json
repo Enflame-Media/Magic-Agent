@@ -51,7 +51,7 @@
     "@vitejs/plugin-vue": "^6.0.5",
     "@vue/test-utils": "^2.4.6",
     "autoprefixer": "^10.4.27",
-    "happy-dom": "^20.8.7",
+    "happy-dom": "^20.8.8",
     "oxlint": "^1.56.0",
     "oxlint-tsgolint": "^0.17.2",
     "postcss": "^8.5.8",
