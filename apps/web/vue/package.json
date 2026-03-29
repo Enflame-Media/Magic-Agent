@@ -100,7 +100,7 @@
     "@wdio/mocha-framework": "^9.27.0",
     "@wdio/spec-reporter": "^9.27.0",
     "@wdio/types": "^9.27.0",
-    "happy-dom": "^20.8.7",
+    "happy-dom": "^20.8.9",
     "shadcn-vue": "^2.4.3",
     "ts-node": "^10.9.2",
     "turbo": "^2.8.20",
