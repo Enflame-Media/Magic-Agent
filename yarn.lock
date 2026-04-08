@@ -4044,7 +4044,7 @@ __metadata:
     "@types/upng-js": "npm:^2.1.5"
     cloudflare: "npm:^5.2.0"
     drizzle-kit: "npm:^0.31.10"
-    drizzle-orm: "npm:^0.45.1"
+    drizzle-orm: "npm:^0.45.2"
     hono: "npm:^4.12.12"
     jose: "npm:^6.2.2"
     jpeg-js: "npm:^0.4.4"
@@ -13865,9 +13865,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"drizzle-orm@npm:^0.45.1":
-  version: 0.45.1
-  resolution: "drizzle-orm@npm:0.45.1"
+"drizzle-orm@npm:^0.45.2":
+  version: 0.45.2
+  resolution: "drizzle-orm@npm:0.45.2"
   peerDependencies:
     "@aws-sdk/client-rds-data": ">=3"
     "@cloudflare/workers-types": ">=4"
@@ -13956,116 +13956,7 @@ __metadata:
       optional: true
     sqlite3:
       optional: true
-  checksum: 10c0/64c28bdcebd075c6fe9759075168872a34c2cb8f04d7e4f94fc24bb29499b021f6da8096ecd4d5619ab97890577bc9df5a3dac1666aafacc4818c9dee39fb27e
-  languageName: node
-  linkType: hard
-
-"drizzle-orm@npm:^1.0.0-beta.12-18d8bfb":
-  version: 1.0.0-beta.9-e89174b
-  resolution: "drizzle-orm@npm:1.0.0-beta.9-e89174b"
-  peerDependencies:
-    "@aws-sdk/client-rds-data": ">=3"
-    "@cloudflare/workers-types": ">=4"
-    "@effect/sql": ^0.48.5
-    "@effect/sql-pg": ^0.49.7
-    "@electric-sql/pglite": ">=0.2.0"
-    "@libsql/client": ">=0.10.0"
-    "@libsql/client-wasm": ">=0.10.0"
-    "@neondatabase/serverless": ">=0.10.0"
-    "@op-engineering/op-sqlite": ">=2"
-    "@opentelemetry/api": ^1.4.1
-    "@planetscale/database": ">=1.13"
-    "@prisma/client": "*"
-    "@sqlitecloud/drivers": ">=1.0.653"
-    "@tidbcloud/serverless": "*"
-    "@tursodatabase/database": ">=0.2.1"
-    "@tursodatabase/database-common": ">=0.2.1"
-    "@tursodatabase/database-wasm": ">=0.2.1"
-    "@types/better-sqlite3": "*"
-    "@types/mssql": ^9.1.4
-    "@types/pg": "*"
-    "@types/sql.js": "*"
-    "@upstash/redis": ">=1.34.7"
-    "@vercel/postgres": ">=0.8.0"
-    "@xata.io/client": "*"
-    better-sqlite3: ">=9.3.0"
-    bun-types: "*"
-    expo-sqlite: ">=14.0.0"
-    gel: ">=2"
-    mssql: ^11.0.1
-    mysql2: ">=2"
-    pg: ">=8"
-    postgres: ">=3"
-    sql.js: ">=1"
-    sqlite3: ">=5"
-  peerDependenciesMeta:
-    "@aws-sdk/client-rds-data":
-      optional: true
-    "@cloudflare/workers-types":
-      optional: true
-    "@effect/sql":
-      optional: true
-    "@effect/sql-pg":
-      optional: true
-    "@electric-sql/pglite":
-      optional: true
-    "@libsql/client":
-      optional: true
-    "@libsql/client-wasm":
-      optional: true
-    "@neondatabase/serverless":
-      optional: true
-    "@op-engineering/op-sqlite":
-      optional: true
-    "@opentelemetry/api":
-      optional: true
-    "@planetscale/database":
-      optional: true
-    "@prisma/client":
-      optional: true
-    "@sqlitecloud/drivers":
-      optional: true
-    "@tidbcloud/serverless":
-      optional: true
-    "@tursodatabase/database":
-      optional: true
-    "@tursodatabase/database-common":
-      optional: true
-    "@tursodatabase/database-wasm":
-      optional: true
-    "@types/better-sqlite3":
-      optional: true
-    "@types/pg":
-      optional: true
-    "@types/sql.js":
-      optional: true
-    "@upstash/redis":
-      optional: true
-    "@vercel/postgres":
-      optional: true
-    "@xata.io/client":
-      optional: true
-    better-sqlite3:
-      optional: true
-    bun-types:
-      optional: true
-    expo-sqlite:
-      optional: true
-    gel:
-      optional: true
-    mysql2:
-      optional: true
-    pg:
-      optional: true
-    postgres:
-      optional: true
-    prisma:
-      optional: true
-    sql.js:
-      optional: true
-    sqlite3:
-      optional: true
-  checksum: 10c0/59e9b46d16ea37b8fefb0d2cbfc4151bdede826d3b18bbc271f783a10052e5ffe85e758e09d97b76981cddc1e8676b72a928631a59401659550d9f97aebf12dc
+  checksum: 10c0/deb4a0230a79b1ff8c61365808bdb06a78e9e32171625f1c61d791dec445fad5cd9bc4ce2e6175b0ff1be7fb913310b2fd07b94a2cbe8027581b7d99469b8060
   languageName: node
   linkType: hard
 
