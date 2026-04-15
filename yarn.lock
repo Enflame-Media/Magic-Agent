@@ -15572,9 +15572,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fastify@npm:^5.8.4":
-  version: 5.8.4
-  resolution: "fastify@npm:5.8.4"
+"fastify@npm:^5.8.5":
+  version: 5.8.5
+  resolution: "fastify@npm:5.8.5"
   dependencies:
     "@fastify/ajv-compiler": "npm:^4.0.5"
     "@fastify/error": "npm:^4.0.0"
@@ -15591,7 +15591,7 @@ __metadata:
     secure-json-parse: "npm:^4.0.0"
     semver: "npm:^7.6.0"
     toad-cache: "npm:^3.7.0"
-  checksum: 10c0/560ef35d59f96d9900c6e96946736215873ed8aa7a493f61f9489c1bdbddf8f714c735886c00e21077fe9a0ea96539b8b5d6755e8877c464b0b04b6afde9c5ab
+  checksum: 10c0/c12fb6cec8e9083d148edc49c99f75e518e28c1664b121085fc1392dc67cd2e132d21dd79e1ef37e1c77c5991b4854ac8850b8d5997691060ea4c13fb7421a0e
   languageName: node
   linkType: hard
 
@@ -16576,7 +16576,7 @@ __metadata:
     cross-spawn: "npm:^7.0.6"
     dotenv: "npm:^17.3.1"
     expo-server-sdk: "npm:^6.1.0"
-    fastify: "npm:^5.8.4"
+    fastify: "npm:^5.8.5"
     fastify-type-provider-zod: "npm:^6.1.0"
     glob: "npm:^13.0.6"
     http-proxy: "npm:^1.18.1"
@@ -16644,7 +16644,7 @@ __metadata:
     dotenv: "npm:^17.3.1"
     dotenv-cli: "npm:^11.0.0"
     elevenlabs: "npm:^1.59.0"
-    fastify: "npm:^5.8.4"
+    fastify: "npm:^5.8.5"
     fastify-type-provider-zod: "npm:^6.1.0"
     ioredis: "npm:^5.10.1"
     jsonwebtoken: "npm:^9.0.3"
