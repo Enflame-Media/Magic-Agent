@@ -15,11 +15,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@cloudflare/puppeteer": "^1.0.6"
+    "@cloudflare/puppeteer": "^1.1.0"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20260210.0",
-    "typescript": "^5.9.3",
-    "wrangler": "^4.64.0"
+    "@cloudflare/workers-types": "^4.20260415.1",
+    "typescript": "^6.0.2",
+    "wrangler": "^4.82.2"
   }
 }

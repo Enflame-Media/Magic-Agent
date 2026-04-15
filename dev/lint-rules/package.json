@@ -31,9 +31,9 @@
   "license": "UNLICENSED",
   "private": true,
   "devDependencies": {
-    "@typescript-eslint/parser": "^8.57.2",
-    "eslint": "^10.1.0",
-    "oxlint": "^1.56.0"
+    "@typescript-eslint/parser": "^8.58.2",
+    "eslint": "^10.2.0",
+    "oxlint": "^1.60.0"
   },
   "peerDependencies": {
     "oxlint": ">=1.36.0"
