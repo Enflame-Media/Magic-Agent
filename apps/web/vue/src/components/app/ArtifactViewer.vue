@@ -3,11 +3,12 @@
  * ArtifactViewer - Main artifact viewing component
  *
  * Displays artifacts with:
- * - File tree navigation (left sidebar)
- * - Content viewer (code, image, or raw text)
+ * - File tree navigation (left sidebar) via AI Elements FileTree
+ * - Content area via AI Elements Artifact (with header, actions)
+ * - Code rendering via AI Elements CodeBlock (Shiki highlighting)
+ * - Image rendering via native <img>
  * - Loading and error states
- * - Download functionality (single file and ZIP bundle)
- * - Virtual scrolling for large artifact sets (HAP-873)
+ * - Download functionality (single file + ZIP bundle) via ArtifactAction slots
  *
  * @example
  * ```vue
@@ -15,25 +16,28 @@
  * ```
  */
 
+import type { BundledLanguage } from 'shiki';
 import { computed, watch } from 'vue';
+import { DownloadIcon, FileIcon, Loader2Icon } from 'lucide-vue-next';
 import { toast } from 'vue-sonner';
-import { useArtifactsStore, type DecryptedArtifact } from '@/stores/artifacts';
+import { useArtifactsStore, type DecryptedArtifact, type FileTreeNode } from '@/stores/artifacts';
 import { useArtifactDownload } from '@/composables/useArtifactDownload';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
-import FileTree from './FileTree.vue';
-import VirtualFileTree from './VirtualFileTree.vue';
+import {
+  Artifact,
+  ArtifactActions,
+  ArtifactAction,
+  ArtifactContent,
+  ArtifactDescription,
+  ArtifactHeader,
+  ArtifactTitle,
+} from '@/components/ai-elements/artifact';
+import { FileTree } from '@/components/ai-elements/file-tree';
+import { CodeBlock } from '@/components/ai-elements/code-block';
+import ArtifactTreeNode from './ArtifactTreeNode.vue';
 import ImagePreview from './ImagePreview.vue';
-import CodeBlock from './CodeBlock.vue';
-
-/**
- * Threshold for switching to virtual file tree.
- * Below this count, use the simple recursive component.
- * Above this count, use virtual scrolling for performance.
- */
-const VIRTUAL_TREE_THRESHOLD = 100;
 
 interface Props {
   /** Filter artifacts by session ID (optional) */
@@ -90,19 +94,79 @@ const displayFilename = computed(() => {
 });
 
 /**
- * Use virtual file tree when artifact count exceeds threshold.
- * This improves performance for large artifact collections (HAP-873).
+ * Path-to-artifactId lookup built from the file tree.
+ * FileTree is path-driven; the store is id-driven, so we map between them.
  */
-const useVirtualTree = computed(() => {
-  return artifactsStore.fileTreeNodeCount > VIRTUAL_TREE_THRESHOLD;
+const pathToArtifactId = computed(() => {
+  const map = new Map<string, string>();
+  const walk = (nodes: FileTreeNode[]) => {
+    for (const node of nodes) {
+      if (!node.isDirectory && node.artifactId) {
+        map.set(node.path, node.artifactId);
+      }
+      if (node.children && node.children.length > 0) {
+        walk(node.children);
+      }
+    }
+  };
+  walk(fileTree.value);
+  return map;
+});
+
+/** Reverse lookup: artifactId -> tree path (for syncing selection) */
+const artifactIdToPath = computed(() => {
+  const map = new Map<string, string>();
+  for (const [path, id] of pathToArtifactId.value.entries()) {
+    map.set(id, path);
+  }
+  return map;
+});
+
+/** Currently selected path (derived from selected artifact id) */
+const selectedPath = computed(() => {
+  const id = artifactsStore.selectedArtifactId;
+  if (!id) return undefined;
+  return artifactIdToPath.value.get(id);
+});
+
+/** Default-expanded directory paths so ancestors of the selected file open. */
+const defaultExpanded = computed<Set<string>>(() => {
+  const expanded = new Set<string>();
+  const path = selectedPath.value;
+  if (!path) return expanded;
+  const parts = path.split('/').filter(Boolean);
+  // Build ancestor paths: a, a/b, a/b/c (excluding final leaf)
+  let current = '';
+  for (let i = 0; i < parts.length - 1; i++) {
+    const part = parts[i];
+    if (!part) continue;
+    current = current ? `${current}/${part}` : part;
+    expanded.add(current);
+  }
+  return expanded;
+});
+
+/**
+ * Language for the AI Elements CodeBlock.
+ *
+ * CodeBlock is strictly typed as BundledLanguage; when the artifact has no
+ * language or an unknown one, we cast to `text` which the underlying Shiki
+ * utils handle as a graceful fallback.
+ */
+const codeLanguage = computed<BundledLanguage>(() => {
+  const lang = selectedArtifact.value?.language;
+  return (lang ?? 'text') as BundledLanguage;
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Methods
 // ─────────────────────────────────────────────────────────────────────────────
 
-function handleSelect(artifactId: string) {
-  artifactsStore.setSelectedArtifact(artifactId);
+function handleSelectPath(path: string) {
+  const id = pathToArtifactId.value.get(path);
+  if (id) {
+    artifactsStore.setSelectedArtifact(id);
+  }
 }
 
 /**
@@ -149,181 +213,109 @@ watch(
 </script>
 
 <template>
-  <div class="flex h-full border rounded-lg overflow-hidden bg-background">
+  <div class="flex h-full overflow-hidden rounded-lg border bg-background">
     <!-- Sidebar with file tree -->
-    <div class="w-64 border-r flex flex-col">
+    <div class="flex w-64 flex-col border-r">
       <!-- Sidebar header -->
       <div class="flex flex-col border-b bg-muted/30">
         <div class="flex items-center justify-between px-3 py-2">
           <span class="text-sm font-medium">Files</span>
-          <Button
+          <button
             v-if="artifacts.length > 0"
-            variant="ghost"
-            size="sm"
-            class="h-7 w-7 p-0"
+            type="button"
+            class="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
             :title="isDownloading ? 'Downloading...' : 'Download all as ZIP'"
             :disabled="isDownloading"
             @click="downloadAll"
           >
-            <!-- Loading spinner when downloading -->
-            <svg
-              v-if="isDownloading"
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-4 w-4 animate-spin"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                class="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                stroke-width="4"
-              />
-              <path
-                class="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              />
-            </svg>
-            <!-- Download icon when idle -->
-            <svg
-              v-else
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-              />
-            </svg>
-          </Button>
+            <Loader2Icon v-if="isDownloading" class="h-4 w-4 animate-spin" />
+            <DownloadIcon v-else class="h-4 w-4" />
+            <span class="sr-only">
+              {{ isDownloading ? 'Downloading' : 'Download all as ZIP' }}
+            </span>
+          </button>
         </div>
         <!-- Download progress bar -->
         <div v-if="downloadProgress" class="px-3 pb-2">
           <Progress :model-value="downloadProgress.percent" class="h-1" />
-          <p class="text-xs text-muted-foreground mt-1 truncate">
+          <p class="mt-1 truncate text-xs text-muted-foreground">
             {{ downloadProgress.status }}
           </p>
         </div>
       </div>
 
-      <!-- File tree -->
       <!-- Empty state -->
-      <div v-if="artifacts.length === 0" class="flex-1 p-4 text-center text-muted-foreground">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="h-8 w-8 mx-auto mb-2 opacity-50"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          stroke-width="1.5"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z"
-          />
-        </svg>
-        <p class="text-sm">No artifacts</p>
+      <div
+        v-if="artifacts.length === 0"
+        class="flex-1 p-4 text-center text-muted-foreground"
+      >
+        <FileIcon class="mx-auto mb-2 h-8 w-8 opacity-50" />
+        <p class="text-sm">
+          No artifacts
+        </p>
       </div>
 
-      <!-- Virtual file tree for large artifact sets (HAP-873) -->
-      <VirtualFileTree
-        v-else-if="useVirtualTree"
-        class="flex-1"
-        :tree="fileTree"
-        :selected-id="artifactsStore.selectedArtifactId"
-        @select="handleSelect"
-      />
-
-      <!-- Standard file tree for smaller sets -->
+      <!-- File tree (AI Elements) -->
       <ScrollArea v-else class="flex-1">
         <FileTree
-          :tree="fileTree"
-          :selected-id="artifactsStore.selectedArtifactId"
-          @select="handleSelect"
-        />
+          class="border-0 bg-transparent"
+          :selected-path="selectedPath"
+          :default-expanded="defaultExpanded"
+          @update:selected-path="handleSelectPath"
+        >
+          <ArtifactTreeNode
+            v-for="node in fileTree"
+            :key="node.path"
+            :node="node"
+          />
+        </FileTree>
       </ScrollArea>
     </div>
 
     <!-- Content area -->
-    <div class="flex-1 flex flex-col">
+    <div class="flex flex-1 flex-col">
       <!-- No selection -->
       <div
         v-if="!selectedArtifact"
-        class="flex-1 flex flex-col items-center justify-center text-muted-foreground"
+        class="flex flex-1 flex-col items-center justify-center text-muted-foreground"
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="h-12 w-12 mb-4 opacity-50"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          stroke-width="1.5"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-          />
-        </svg>
-        <p class="text-sm">Select a file to view</p>
+        <FileIcon class="mb-4 h-12 w-12 opacity-50" />
+        <p class="text-sm">
+          Select a file to view
+        </p>
       </div>
 
       <!-- Loading -->
       <div v-else-if="isLoading" class="flex-1 p-4">
-        <Skeleton class="h-4 w-3/4 mb-2" />
-        <Skeleton class="h-4 w-1/2 mb-2" />
-        <Skeleton class="h-4 w-2/3 mb-2" />
+        <Skeleton class="mb-2 h-4 w-3/4" />
+        <Skeleton class="mb-2 h-4 w-1/2" />
+        <Skeleton class="mb-2 h-4 w-2/3" />
         <Skeleton class="h-4 w-1/3" />
       </div>
 
-      <!-- Content -->
-      <template v-else>
-        <!-- Header with filename and actions -->
-        <div class="flex items-center justify-between px-3 py-2 border-b bg-muted/30">
-          <div class="flex items-center gap-2 min-w-0">
-            <span class="text-sm font-medium truncate">{{ displayFilename }}</span>
-            <span
-              v-if="selectedArtifact.language"
-              class="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded"
-            >
+      <!-- Artifact (AI Elements) -->
+      <Artifact v-else class="h-full rounded-none border-0 shadow-none">
+        <ArtifactHeader>
+          <div class="flex min-w-0 flex-1 flex-col">
+            <ArtifactTitle class="truncate">
+              {{ displayFilename }}
+            </ArtifactTitle>
+            <ArtifactDescription v-if="selectedArtifact.language">
               {{ selectedArtifact.language }}
-            </span>
+            </ArtifactDescription>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            class="h-7 px-2"
-            @click="downloadArtifact(selectedArtifact)"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-4 w-4 mr-1"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-              />
-            </svg>
-            Download
-          </Button>
-        </div>
+          <ArtifactActions>
+            <ArtifactAction
+              :icon="DownloadIcon"
+              tooltip="Download"
+              label="Download"
+              :disabled="!selectedArtifact.body"
+              @click="downloadArtifact(selectedArtifact)"
+            />
+          </ArtifactActions>
+        </ArtifactHeader>
 
-        <!-- Content viewer -->
-        <div class="flex-1 overflow-hidden">
+        <ArtifactContent class="p-0">
           <!-- Image viewer -->
           <ImagePreview
             v-if="isImage && selectedArtifact.body"
@@ -337,23 +329,28 @@ watch(
             <div class="p-4">
               <CodeBlock
                 :code="selectedArtifact.body"
-                :language="selectedArtifact.language ?? undefined"
-                :filename="displayFilename"
+                :language="codeLanguage"
+                class="border-0 shadow-none"
               />
             </div>
           </ScrollArea>
 
           <!-- Raw text viewer -->
           <ScrollArea v-else-if="selectedArtifact.body" class="h-full">
-            <pre class="p-4 text-sm font-mono whitespace-pre-wrap">{{ selectedArtifact.body }}</pre>
+            <pre class="whitespace-pre-wrap p-4 font-mono text-sm">{{ selectedArtifact.body }}</pre>
           </ScrollArea>
 
           <!-- No content -->
-          <div v-else class="flex-1 flex items-center justify-center text-muted-foreground">
-            <p class="text-sm">No content available</p>
+          <div
+            v-else
+            class="flex h-full items-center justify-center text-muted-foreground"
+          >
+            <p class="text-sm">
+              No content available
+            </p>
           </div>
-        </div>
-      </template>
+        </ArtifactContent>
+      </Artifact>
     </div>
   </div>
 </template>
