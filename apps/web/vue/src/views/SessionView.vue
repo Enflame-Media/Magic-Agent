@@ -4,13 +4,6 @@
  *
  * Displays a single session's conversation history with Claude.
  * Shows messages in chronological order with real-time updates.
- *
- * Features:
- * - Header with session info (name, project path, status)
- * - Scrollable message list
- * - Loading and error states
- * - Back navigation
- * - Share session functionality
  */
 
 import { computed, ref, onMounted, watch } from 'vue';
@@ -21,10 +14,23 @@ import { useSessionsStore } from '@/stores/sessions';
 import { useMessagesStore } from '@/stores/messages';
 import { useAuthStore } from '@/stores/auth';
 import { useMachinesStore, isMachineOnline } from '@/stores/machines';
-import { AgentInput, ChatList, AppVoiceControls } from '@/components/app';
+import { ChatList, AppVoiceControls } from '@/components/app';
 import { Button } from '@/components/ui/button';
+import { Kbd } from '@/components/ui/kbd';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  PromptInput,
+  PromptInputBody,
+  PromptInputHeader,
+  PromptInputFooter,
+  PromptInputTextarea,
+  PromptInputTools,
+  PromptInputSubmit,
+  PromptInputButton,
+  type PromptInputMessage,
+} from '@/components/ai-elements/prompt-input';
+import { Suggestion, Suggestions } from '@/components/ai-elements/suggestion';
 import { ShareSessionModal } from '@/components/app/sharing';
 import ResponsiveContainer from '@/components/app/ResponsiveContainer.vue';
 import { useResponsiveLayout } from '@/composables/useResponsiveLayout';
@@ -34,6 +40,7 @@ import { normalizeDecryptedMessage } from '@/services/messages/normalize';
 import type { NormalizedMessage } from '@/services/messages/types';
 import { sendSessionMessage } from '@/services/sync/messages';
 import { toast } from 'vue-sonner';
+import { Info, Settings } from 'lucide-vue-next';
 
 interface SessionMetadata {
   name?: string;
@@ -52,8 +59,6 @@ const authStore = useAuthStore();
 const machinesStore = useMachinesStore();
 
 // Responsive layout for session view (HAP-976)
-// useResponsiveLayout provides adaptive panel management for multi-panel views.
-// Currently single-panel; containerClass provides responsive grid/flex styling.
 const { containerClass: responsiveContainerClass, isSinglePanel } = useResponsiveLayout(
   [
     { id: 'main', minBreakpoint: 'sm', defaultWidth: 100, collapsible: false },
@@ -81,10 +86,6 @@ const decryptedContentById = ref<Map<string, string>>(new Map());
 const isSending = ref(false);
 const isShareModalOpen = ref(false);
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Message Form
-// ─────────────────────────────────────────────────────────────────────────────
-
 const messageSchema = z.object({
   message: z.string().min(1, 'Message cannot be empty'),
 });
@@ -101,11 +102,14 @@ const messageForm = useForm({
   },
 });
 
-// Computed accessor for template v-model compatibility
-const messageInput = computed({
-  get: () => messageForm.getFieldValue('message') ?? '',
-  set: (value: string) => messageForm.setFieldValue('message', value),
-});
+const sendStatus = ref<'ready' | 'submitted' | 'streaming' | 'error'>('ready');
+
+const emptyStateSuggestions = [
+  'Explain the project structure',
+  'Run the tests',
+  'Show recent changes',
+  'Summarize the conversation',
+];
 
 async function refreshMetadata(): Promise<void> {
   if (!session.value) {
@@ -159,7 +163,6 @@ async function refreshDecryptedMessages(): Promise<void> {
   decryptedContentById.value = next;
 }
 
-// Parse session metadata
 const sessionName = computed(() => {
   if (!session.value) return 'Session';
   try {
@@ -338,7 +341,7 @@ async function loadArchivedHistory(): Promise<void> {
     const apiMessages = await fetchSessionMessages(sessionId.value, authStore.token);
     const mappedMessages = apiMessages.map((message) => ({
       id: message.id,
-      sessionId: sessionId.value, // Use the session ID from the route param
+      sessionId: sessionId.value,
       seq: message.seq,
       localId: message.localId ?? null,
       content: message.content,
@@ -352,7 +355,6 @@ async function loadArchivedHistory(): Promise<void> {
   }
 }
 
-// Simulate loading completion
 onMounted(async () => {
   await loadArchivedHistory();
   await refreshMetadata();
@@ -360,7 +362,6 @@ onMounted(async () => {
   isLoading.value = false;
 });
 
-// Watch for route changes
 watch(sessionId, async () => {
   isLoading.value = true;
   await loadArchivedHistory();
@@ -393,8 +394,9 @@ function openShareModal() {
   isShareModalOpen.value = true;
 }
 
-async function handleSendMessage(): Promise<void> {
-  // Trigger form validation and submission
+async function handlePromptSubmit(payload: PromptInputMessage): Promise<void> {
+  const text = payload.text ?? '';
+  messageForm.setFieldValue('message', text);
   await messageForm.handleSubmit();
 }
 
@@ -414,56 +416,57 @@ async function doSendMessage(text: string): Promise<void> {
   }
 
   isSending.value = true;
+  sendStatus.value = 'submitted';
   const result = await sendSessionMessage(session.value, trimmedText, permissionMode.value);
   isSending.value = false;
 
   if (!result.ok) {
+    sendStatus.value = 'error';
     toast.error(result.error ?? 'Failed to send message');
     return;
   }
 
+  sendStatus.value = 'ready';
   messageForm.reset();
 }
 
 async function handleOptionPress(option: { title: string }): Promise<void> {
   messageForm.setFieldValue('message', option.title);
-  await handleSendMessage();
+  await messageForm.handleSubmit();
+}
+
+async function handleSuggestionClick(suggestion: string): Promise<void> {
+  await handleOptionPress({ title: suggestion });
+}
+
+function handlePromptKeydown(event: KeyboardEvent): void {
+  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'm') {
+    event.preventDefault();
+    cycleModelLabel();
+    return;
+  }
+
+  if (event.key === 'Tab' && event.shiftKey) {
+    event.preventDefault();
+    cyclePermissionMode();
+  }
 }
 </script>
 
 <template>
   <div :class="[responsiveContainerClass, 'min-h-0 bg-background']" :data-single-panel="isSinglePanel || undefined">
-    <!-- Header -->
     <header class="flex items-center gap-4 border-b bg-background sticky top-0 z-10">
       <ResponsiveContainer size="full" padding="compact" class="flex items-center gap-4">
-      <!-- Back button -->
       <Button variant="ghost" size="icon" @click="goBack">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="h-5 w-5"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M15 19l-7-7 7-7"
-          />
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
         </svg>
       </Button>
 
-      <!-- Session info -->
-      <button
-        class="flex-1 min-w-0 text-left"
-        @click="navigateToInfo"
-      >
+      <button class="flex-1 min-w-0 text-left" @click="navigateToInfo">
         <h1 class="font-semibold truncate">{{ sessionName }}</h1>
         <div class="flex items-center gap-2 text-sm">
-          <p v-if="projectPath" class="text-muted-foreground truncate">
-            {{ projectPath }}
-          </p>
+          <p v-if="projectPath" class="text-muted-foreground truncate">{{ projectPath }}</p>
           <span :class="['flex items-center gap-1', statusColor]">
             <span class="w-2 h-2 rounded-full bg-current" />
             {{ statusText }}
@@ -477,45 +480,20 @@ async function handleOptionPress(option: { title: string }): Promise<void> {
         :session-id="sessionId"
       />
 
-      <!-- Share button -->
       <Button variant="ghost" size="icon" @click="openShareModal" title="Share session">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="h-5 w-5"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
-          />
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
         </svg>
       </Button>
 
-      <!-- Info button -->
       <Button variant="ghost" size="icon" @click="navigateToInfo">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="h-5 w-5"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-          />
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       </Button>
       </ResponsiveContainer>
     </header>
 
-    <!-- Content -->
     <ScrollArea class="flex-1 min-h-0 relative">
       <!-- Loading state -->
       <template v-if="isLoading">
@@ -530,97 +508,82 @@ async function handleOptionPress(option: { title: string }): Promise<void> {
         </div>
       </template>
 
-      <!-- Session not found -->
       <template v-else-if="!session">
         <div class="flex flex-col items-center justify-center h-full p-8 text-center">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-12 w-12 text-muted-foreground mb-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            stroke-width="1.5"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-            />
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-muted-foreground mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
           </svg>
           <h2 class="text-lg font-semibold mb-2">Session Not Found</h2>
-          <p class="text-muted-foreground mb-4">
-            This session may have been deleted or is no longer available.
-          </p>
+          <p class="text-muted-foreground mb-4">This session may have been deleted or is no longer available.</p>
           <Button @click="goBack">Go Back</Button>
         </div>
       </template>
 
-      <!-- Messages -->
       <template v-else-if="normalizedMessages.length > 0">
-        <ChatList
-          :messages="normalizedMessages"
-          :session-id="sessionId"
-          :on-option-press="handleOptionPress"
-        />
+        <ChatList :messages="normalizedMessages" :session-id="sessionId" :on-option-press="handleOptionPress" />
       </template>
 
-      <!-- Empty messages -->
       <template v-else>
-        <div class="flex flex-col items-center justify-center h-full p-8 text-center">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-12 w-12 text-muted-foreground mb-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            stroke-width="1.5"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-            />
+        <div class="flex flex-col items-center justify-center h-full p-8 text-center gap-4">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
           </svg>
-          <h2 class="text-lg font-semibold mb-2">No Messages Yet</h2>
-          <p class="text-muted-foreground">
-            Messages will appear here when the session starts.
-          </p>
+          <h2 class="text-lg font-semibold">No Messages Yet</h2>
+          <p class="text-muted-foreground">Messages will appear here when the session starts.</p>
+          <Suggestions v-if="session?.active" class="mt-2 justify-center">
+            <Suggestion v-for="suggestion in emptyStateSuggestions" :key="suggestion" :suggestion="suggestion" @click="handleSuggestionClick" />
+          </Suggestions>
         </div>
       </template>
     </ScrollArea>
 
-    <!-- Input area -->
-    <ResponsiveContainer
-      v-if="session?.active"
-      size="full"
-      padding="compact"
-      class="border-t bg-muted/20"
-    >
-      <AgentInput
-        v-model="messageInput"
-        :online="machineOnline"
-        :disabled="isSending"
-        :model-label="modelLabel"
-        :permission-label="permissionLabel"
-        placeholder="Type a message..."
-        @send="handleSendMessage"
-        @settings="navigateToSettings"
-        @info="navigateToInfo"
-        @cycle-model="cycleModelLabel"
-        @cycle-mode="cyclePermissionMode"
-      />
+    <ResponsiveContainer v-if="session?.active" size="full" padding="compact" class="border-t bg-muted/20">
+      <PromptInput class="rounded-2xl" :multiple="true" @submit="handlePromptSubmit">
+        <PromptInputBody>
+          <PromptInputHeader class="justify-between">
+            <div class="flex items-center gap-2 text-[11px] text-muted-foreground">
+              <span class="h-2 w-2 rounded-full" :class="machineOnline ? 'bg-emerald-500' : 'bg-gray-400'" />
+              <span>{{ machineOnline ? 'online' : 'offline' }}</span>
+            </div>
+            <div class="flex items-center gap-2 text-[11px] text-muted-foreground">
+              <span v-if="modelLabel" class="rounded-full border border-border/60 bg-background/40 px-2 py-0.5 text-foreground">{{ modelLabel }}</span>
+              <span v-if="permissionLabel" class="rounded-full border border-border/60 bg-background/40 px-2 py-0.5 text-foreground">{{ permissionLabel }}</span>
+              <Button variant="outline" size="sm" class="h-6 rounded-full border-border/60 bg-background/40 px-3 text-[11px]" @click="navigateToSettings">
+                CLI Settings
+              </Button>
+            </div>
+          </PromptInputHeader>
+
+          <PromptInputTextarea placeholder="Type a message..." :disabled="isSending" @keydown="handlePromptKeydown" />
+
+          <PromptInputFooter>
+            <div class="flex items-center gap-2 text-muted-foreground">
+              <PromptInputButton aria-label="Settings" variant="ghost" size="icon-sm" @click="navigateToSettings">
+                <Settings class="size-3.5" />
+              </PromptInputButton>
+              <PromptInputButton aria-label="Info" variant="ghost" size="icon-sm" @click="navigateToInfo">
+                <Info class="size-3.5" />
+              </PromptInputButton>
+              <div class="hidden md:flex items-center gap-2 text-[10px] text-muted-foreground">
+                <div class="flex items-center gap-1"><Kbd>Enter</Kbd><span>Send</span></div>
+                <div class="flex items-center gap-1"><Kbd>Shift</Kbd><Kbd>Tab</Kbd><span>Cycle mode</span></div>
+                <div class="flex items-center gap-1"><Kbd>Cmd</Kbd><Kbd>M</Kbd><span>Cycle model</span></div>
+                <div class="flex items-center gap-1"><Kbd>Esc</Kbd><span>Abort</span></div>
+              </div>
+            </div>
+            <PromptInputTools>
+              <VoiceButton :session-id="sessionId" size="icon" variant="ghost" />
+              <PromptInputSubmit :status="sendStatus" :disabled="isSending" />
+            </PromptInputTools>
+          </PromptInputFooter>
+        </PromptInputBody>
+      </PromptInput>
     </ResponsiveContainer>
 
     <div v-else class="border-t p-4 bg-muted/30">
-      <p class="text-sm text-center text-muted-foreground">
-        View-only mode. Use the CLI to send messages.
-      </p>
+      <p class="text-sm text-center text-muted-foreground">View-only mode. Use the CLI to send messages.</p>
     </div>
 
-    <!-- Share Session Modal -->
-    <ShareSessionModal
-      v-model:open="isShareModalOpen"
-      :session-id="sessionId"
-    />
+    <ShareSessionModal v-model:open="isShareModalOpen" :session-id="sessionId" />
   </div>
 </template>
