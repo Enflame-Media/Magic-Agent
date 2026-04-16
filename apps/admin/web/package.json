@@ -57,7 +57,7 @@
     "postcss": "^8.5.8",
     "tailwindcss": "^4.2.2",
     "typescript": "^6.0.2",
-    "vite-plus": "^0.1.13",
+    "vite-plus": "^0.1.17",
     "wrangler": "^4.76.0"
   },
   "dependencies": {
