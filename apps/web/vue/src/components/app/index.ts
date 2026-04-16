@@ -24,7 +24,8 @@ export { default as ToolFullView } from './tools/ToolFullView.vue';
 
 // Artifact components
 export { default as ArtifactViewer } from './ArtifactViewer.vue';
-export { default as FileTree } from './FileTree.vue';
+export { default as AppFileTree } from './AppFileTree.vue';
+export { default as AppFileTreeNode } from './AppFileTreeNode.vue';
 export { default as ImagePreview } from './ImagePreview.vue';
 export { default as OfflineIndicator } from './OfflineIndicator.vue';
 
