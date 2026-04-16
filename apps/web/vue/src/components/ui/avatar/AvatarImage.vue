@@ -2,14 +2,7 @@
 import type { AvatarImageProps } from "reka-ui"
 import { AvatarImage } from "reka-ui"
 
-interface Props extends AvatarImageProps {
-  /** Enable lazy loading for below-fold images */
-  loading?: 'lazy' | 'eager'
-}
-
-const props = withDefaults(defineProps<Props>(), {
-  loading: 'lazy',
-})
+const props = defineProps<AvatarImageProps>()
 </script>
 
 <template>

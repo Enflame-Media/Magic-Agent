@@ -27,9 +27,9 @@ const filterState = reactive({
     /** The count of all visible items. */
     count: 0,
     /** Map from visible item id to its search score. */
-    items: new Map<string, number>(),
+    items: new Map() as Map<string, number>,
     /** Set of groups with at least one visible item. */
-    groups: new Set<string>(),
+    groups: new Set() as Set<string>,
   },
 })
 
@@ -41,7 +41,7 @@ function filterItems() {
   }
 
   // Reset the groups
-  filterState.filtered.groups = new Set<string>()
+  filterState.filtered.groups = new Set()
   let itemCount = 0
 
   // Check which items should be included
