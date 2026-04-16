@@ -638,6 +638,7 @@
 			name = Happy;
 			packageProductDependencies = (
 				LK1A2C3D4E5F0010 /* LiveKit */,
+				RC1A2C3D4E5F0010 /* RevenueCat */,
 			);
 			productName = Happy;
 			productReference = 0A1B2C3D4E5F6772 /* Happy.app */;
@@ -730,6 +731,7 @@
 			mainGroup = 0A1B2C3D4E5F67A0;
 			packageReferences = (
 				LK1A2C3D4E5F0020 /* XCRemoteSwiftPackageReference "client-sdk-swift" */,
+				RC1A2C3D4E5F0020 /* XCRemoteSwiftPackageReference "purchases-ios" */,
 			);
 			productRefGroup = 0A1B2C3D4E5F67A4 /* Products */;
 			projectDirPath = "";
@@ -1244,6 +1246,14 @@
 				minimumVersion = 2.0.0;
 			};
 		};
+		RC1A2C3D4E5F0020 /* XCRemoteSwiftPackageReference "purchases-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/RevenueCat/purchases-ios.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -1251,6 +1261,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = LK1A2C3D4E5F0020 /* XCRemoteSwiftPackageReference "client-sdk-swift" */;
 			productName = LiveKit;
+		};
+		RC1A2C3D4E5F0010 /* RevenueCat */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = RC1A2C3D4E5F0020 /* XCRemoteSwiftPackageReference "purchases-ios" */;
+			productName = RevenueCat;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

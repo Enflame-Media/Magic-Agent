@@ -25,10 +25,25 @@ struct RevenueCatConfiguration {
     /// Whether to enable debug logging.
     let debugLogsEnabled: Bool
 
-    /// Default configuration using environment variable.
+    /// Default configuration using Info.plist value (injected via xcconfig at build time).
+    ///
+    /// The API key is read from `RevenueCatAPIKey` in Info.plist, which is populated
+    /// from the `REVENUECAT_API_KEY` build setting defined in `RevenueCat.xcconfig`.
+    /// Falls back to the `REVENUECAT_IOS_KEY` environment variable for CI/testing.
     static var `default`: RevenueCatConfiguration {
-        RevenueCatConfiguration(
-            apiKey: ProcessInfo.processInfo.environment["REVENUECAT_IOS_KEY"] ?? "",
+        let apiKey: String = {
+            // Primary: read from Info.plist (set via xcconfig build setting)
+            if let plistKey = Bundle.main.infoDictionary?["RevenueCatAPIKey"] as? String,
+               !plistKey.isEmpty,
+               !plistKey.hasPrefix("$(") {
+                return plistKey
+            }
+            // Fallback: environment variable (for CI or testing)
+            return ProcessInfo.processInfo.environment["REVENUECAT_IOS_KEY"] ?? ""
+        }()
+
+        return RevenueCatConfiguration(
+            apiKey: apiKey,
             appUserID: nil,
             debugLogsEnabled: {
                 #if DEBUG

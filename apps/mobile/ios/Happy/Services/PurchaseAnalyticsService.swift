@@ -7,6 +7,10 @@
 
 import Foundation
 
+#if canImport(RevenueCat)
+import RevenueCat
+#endif
+
 // MARK: - Purchase Analytics Events
 
 /// Purchase funnel analytics events for tracking the complete user journey.
@@ -166,9 +170,52 @@ final class PurchaseAnalyticsService {
             print("[PurchaseAnalytics] \(event.rawValue): \(finalProperties.toDictionary())")
         }
 
-        // TODO: Send to analytics provider (Amplitude, Mixpanel, etc.)
-        // Amplitude.instance().logEvent(event.rawValue, withEventProperties: finalProperties.toDictionary())
+        // Forward events to RevenueCat as subscriber attributes for cohort analysis.
+        // RevenueCat automatically tracks purchase/restore/subscription lifecycle events,
+        // so we only forward funnel events (paywall views, gate hits, etc.) as custom
+        // attributes to enrich the subscriber profile.
+        #if canImport(RevenueCat)
+        sendToRevenueCat(event: event, properties: finalProperties)
+        #endif
     }
+
+    // MARK: - RevenueCat Analytics Integration
+
+    #if canImport(RevenueCat)
+    /// Forwards purchase funnel events to RevenueCat as subscriber attributes.
+    ///
+    /// RevenueCat natively tracks purchase, restore, and subscription events.
+    /// This method supplements that with custom funnel events (paywall views,
+    /// entitlement gate hits, billing period changes) as subscriber attributes
+    /// for richer cohort analysis in the RevenueCat dashboard.
+    ///
+    /// - Parameters:
+    ///   - event: The analytics event to forward.
+    ///   - properties: Event properties and metadata.
+    private func sendToRevenueCat(event: PurchaseAnalyticsEvent, properties: PurchaseAnalyticsProperties) {
+        // Only forward funnel/engagement events (RevenueCat already tracks purchase lifecycle)
+        switch event {
+        case .paywallPresented, .paywallDismissed, .entitlementGateHit,
+             .billingPeriodChanged, .subscriptionManagementOpened:
+            var attributes: [String: String] = [
+                "$lastSeenAppVersion": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown",
+                "last_\(event.rawValue)_at": properties.timestamp ?? ISO8601DateFormatter().string(from: Date())
+            ]
+            if let source = properties.source {
+                attributes["last_paywall_source"] = source
+            }
+            if let feature = properties.feature {
+                attributes["last_gated_feature"] = feature
+            }
+            Purchases.shared.attribution.setAttributes(attributes)
+        case .purchaseStarted, .purchaseCompleted, .purchaseFailed,
+             .purchaseCancelled, .purchaseRestoreStarted, .purchaseRestored,
+             .purchaseRestoreFailed, .subscriptionUpgraded, .subscriptionDowngraded:
+            // These events are automatically tracked by RevenueCat SDK
+            break
+        }
+    }
+    #endif
 
     // MARK: - Convenience Methods
 

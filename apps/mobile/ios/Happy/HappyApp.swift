@@ -83,14 +83,22 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
 
     /// Called when the application finishes launching.
     ///
-    /// Initializes the push notification service to set up notification
-    /// categories and check current authorization status.
+    /// Initializes core services:
+    /// - Push notification service for APNs registration
+    /// - RevenueCat SDK for subscription management and analytics
     func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
         // Initialize the shared push notification service
         _ = PushNotificationService.shared
+
+        // Configure RevenueCat SDK for subscription management.
+        // Uses API key from Info.plist (injected via RevenueCat.xcconfig).
+        // If the key is missing or empty, RevenueCatPurchaseService falls back
+        // to StoreKit 2 directly via #if canImport(RevenueCat) guards.
+        RevenueCatPurchaseService.shared.configure()
+
         return true
     }
 

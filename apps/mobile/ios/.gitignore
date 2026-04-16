@@ -99,6 +99,9 @@ build/
 .env.local
 .env.*.local
 
+# RevenueCat API key configuration (contains secrets)
+Happy/Configuration/RevenueCat.xcconfig
+
 # macOS
 .DS_Store
 .AppleDouble
