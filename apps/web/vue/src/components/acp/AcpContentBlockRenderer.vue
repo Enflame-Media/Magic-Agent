@@ -4,11 +4,15 @@
   Selects and renders the appropriate component for each ACP content
   block type. Handles text, image, resource_link, resource types.
   Unknown content types are rendered with a graceful fallback.
+
+  HAP-1099: Text blocks now render via the AI Elements MessageResponse
+  component (vue-stream-markdown) instead of the deprecated
+  AcpStreamingText wrapper.
 -->
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
 import type { AcpContentBlock } from '@magic-agent/protocol';
-import AcpStreamingText from './AcpStreamingText.vue';
+import { MessageResponse } from '@/components/ai-elements/message';
 
 const props = defineProps<{
   content: AcpContentBlock;
@@ -18,7 +22,9 @@ const { t } = useI18n();
 </script>
 
 <template>
-  <AcpStreamingText v-if="props.content.type === 'text'" :text="props.content.text" />
+  <div v-if="props.content.type === 'text' && props.content.text" class="my-1">
+    <MessageResponse :content="props.content.text" />
+  </div>
 
   <div
     v-else-if="props.content.type === 'image'"
