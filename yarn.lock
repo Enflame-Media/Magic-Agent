@@ -4045,7 +4045,7 @@ __metadata:
     cloudflare: "npm:^5.2.0"
     drizzle-kit: "npm:^0.31.10"
     drizzle-orm: "npm:^0.45.1"
-    hono: "npm:^4.12.9"
+    hono: "npm:^4.12.14"
     jose: "npm:^6.2.2"
     jpeg-js: "npm:^0.4.4"
     knip: "npm:^6.0.4"
@@ -16503,7 +16503,7 @@ __metadata:
     "@types/node": "npm:^25.5.0"
     better-auth: "npm:^1.5.6"
     drizzle-orm: "npm:^1.0.0-beta.12-18d8bfb"
-    hono: "npm:^4.12.9"
+    hono: "npm:^4.12.14"
     oxlint: "npm:^1.56.0"
     typescript: "npm:^6.0.2"
     wrangler: "npm:^4.76.0"
@@ -16531,7 +16531,7 @@ __metadata:
     chart.js: "npm:^4.5.1"
     drizzle-orm: "npm:^1.0.0-beta.12-18d8bfb"
     happy-dom: "npm:^20.8.7"
-    hono: "npm:^4.12.9"
+    hono: "npm:^4.12.14"
     oxlint: "npm:^1.56.0"
     oxlint-tsgolint: "npm:^0.17.2"
     postcss: "npm:^8.5.8"
@@ -16854,17 +16854,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"hono@npm:^4.12.14":
+  version: 4.12.14
+  resolution: "hono@npm:4.12.14"
+  checksum: 10c0/78de4c98a9a3da0f067e38dcc4bd27f0d82b45d146ac39f5ca688515ee482c0a2e704d2ac6c1ee91ad17596b7c52b3e4b9483acd9c238d42f6ebcb43414a71b6
+  languageName: node
+  linkType: hard
+
 "hono@npm:^4.12.8":
   version: 4.12.12
   resolution: "hono@npm:4.12.12"
   checksum: 10c0/7e514cac7f0fde53a93b5344605a11bc944c55c7b68e586ab722269a60c2d78e81b91c298e934b232d44aa8fcbfd2584b7cd7e01fb3f0edaaba0597a584b2ead
-  languageName: node
-  linkType: hard
-
-"hono@npm:^4.12.9":
-  version: 4.12.9
-  resolution: "hono@npm:4.12.9"
-  checksum: 10c0/393256552642f681e52935163508d9605e5552e186d9b99ff2caf219d4248341b83e3eb975c40a97149c86890d19d73421efc889aa465a28eb5920ccc42cff34
   languageName: node
   linkType: hard
 
