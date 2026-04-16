@@ -10,6 +10,7 @@ export { default as EmptyState } from './EmptyState.vue';
 export { default as SessionCard } from './SessionCard.vue';
 export { default as MessageView } from './MessageView.vue';
 export { default as ChatList } from './ChatList.vue';
+export { default as SessionMessage } from './SessionMessage.vue';
 export { default as CodeBlock } from './CodeBlock.vue';
 export { default as CommandView } from './CommandView.vue';
 export { default as MultiTextInput } from './MultiTextInput.vue';

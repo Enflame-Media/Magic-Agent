@@ -21,10 +21,14 @@ import { useSessionsStore } from '@/stores/sessions';
 import { useMessagesStore } from '@/stores/messages';
 import { useAuthStore } from '@/stores/auth';
 import { useMachinesStore, isMachineOnline } from '@/stores/machines';
-import { AgentInput, ChatList, VoiceStatusBar, VoiceButton } from '@/components/app';
+import { AgentInput, SessionMessage, VoiceStatusBar, VoiceButton } from '@/components/app';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Conversation,
+  ConversationContent,
+  ConversationScrollButton,
+} from '@/components/ai-elements/conversation';
+import { Shimmer } from '@/components/ai-elements/shimmer';
 import { ShareSessionModal } from '@/components/app/sharing';
 import ResponsiveContainer from '@/components/app/ResponsiveContainer.vue';
 import { useResponsiveLayout } from '@/composables/useResponsiveLayout';
@@ -518,80 +522,88 @@ async function handleOptionPress(option: { title: string }): Promise<void> {
     </header>
 
     <!-- Content -->
-    <ScrollArea class="flex-1 min-h-0 relative">
+    <div class="relative flex flex-1 min-h-0 flex-col">
       <!-- Floating voice status bar -->
       <VoiceStatusBar variant="floating" />
-      <!-- Loading state -->
-      <template v-if="isLoading">
-        <div class="p-4 space-y-4">
-          <div v-for="i in 5" :key="i" class="flex gap-3">
-            <Skeleton class="h-8 w-8 rounded-full" />
-            <div class="flex-1 space-y-2">
-              <Skeleton class="h-4 w-3/4" />
-              <Skeleton class="h-4 w-1/2" />
-            </div>
-          </div>
+
+      <!-- Loading state — Shimmer replaces Skeleton -->
+      <div v-if="isLoading" class="flex-1 space-y-4 p-4">
+        <Shimmer class="text-sm">Loading conversation…</Shimmer>
+        <div class="space-y-3">
+          <Shimmer as="div" class="h-4 w-3/4 rounded bg-muted/50" />
+          <Shimmer as="div" class="h-4 w-1/2 rounded bg-muted/50" />
+          <Shimmer as="div" class="h-4 w-2/3 rounded bg-muted/50" />
         </div>
-      </template>
+      </div>
 
       <!-- Session not found -->
-      <template v-else-if="!session">
-        <div class="flex flex-col items-center justify-center h-full p-8 text-center">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-12 w-12 text-muted-foreground mb-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            stroke-width="1.5"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-            />
-          </svg>
-          <h2 class="text-lg font-semibold mb-2">Session Not Found</h2>
-          <p class="text-muted-foreground mb-4">
-            This session may have been deleted or is no longer available.
-          </p>
-          <Button @click="goBack">Go Back</Button>
-        </div>
-      </template>
+      <div
+        v-else-if="!session"
+        class="flex flex-1 flex-col items-center justify-center p-8 text-center"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-12 w-12 text-muted-foreground mb-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          stroke-width="1.5"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+          />
+        </svg>
+        <h2 class="text-lg font-semibold mb-2">Session Not Found</h2>
+        <p class="text-muted-foreground mb-4">
+          This session may have been deleted or is no longer available.
+        </p>
+        <Button @click="goBack">Go Back</Button>
+      </div>
 
-      <!-- Messages -->
-      <template v-else-if="normalizedMessages.length > 0">
-        <ChatList
-          :messages="normalizedMessages"
-          :session-id="sessionId"
-          :on-option-press="handleOptionPress"
-        />
-      </template>
+      <!-- Messages — AI Elements Conversation with auto-scroll + scroll-to-bottom -->
+      <Conversation
+        v-else-if="normalizedMessages.length > 0"
+        class="flex-1 min-h-0"
+      >
+        <ConversationContent>
+          <SessionMessage
+            v-for="message in normalizedMessages"
+            :key="message.id + String(message.createdAt)"
+            :message="message"
+            :session-id="sessionId"
+            :on-option-press="handleOptionPress"
+          />
+        </ConversationContent>
+        <ConversationScrollButton />
+      </Conversation>
 
       <!-- Empty messages -->
-      <template v-else>
-        <div class="flex flex-col items-center justify-center h-full p-8 text-center">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-12 w-12 text-muted-foreground mb-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            stroke-width="1.5"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-            />
-          </svg>
-          <h2 class="text-lg font-semibold mb-2">No Messages Yet</h2>
-          <p class="text-muted-foreground">
-            Messages will appear here when the session starts.
-          </p>
-        </div>
-      </template>
-    </ScrollArea>
+      <div
+        v-else
+        class="flex flex-1 flex-col items-center justify-center p-8 text-center"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-12 w-12 text-muted-foreground mb-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          stroke-width="1.5"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+          />
+        </svg>
+        <h2 class="text-lg font-semibold mb-2">No Messages Yet</h2>
+        <p class="text-muted-foreground">
+          Messages will appear here when the session starts.
+        </p>
+      </div>
+    </div>
 
     <!-- Input area -->
     <ResponsiveContainer
