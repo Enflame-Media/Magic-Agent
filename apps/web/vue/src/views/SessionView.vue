@@ -21,7 +21,7 @@ import { useSessionsStore } from '@/stores/sessions';
 import { useMessagesStore } from '@/stores/messages';
 import { useAuthStore } from '@/stores/auth';
 import { useMachinesStore, isMachineOnline } from '@/stores/machines';
-import { AgentInput, ChatList, VoiceStatusBar, VoiceButton } from '@/components/app';
+import { AgentInput, ChatList, AppVoiceControls } from '@/components/app';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -471,12 +471,10 @@ async function handleOptionPress(option: { title: string }): Promise<void> {
         </div>
       </button>
 
-      <!-- Voice button -->
-      <VoiceButton
+      <!-- Voice controls (AI Elements SpeechInput + AudioPlayer) -->
+      <AppVoiceControls
         v-if="session?.active"
         :session-id="sessionId"
-        size="icon"
-        variant="ghost"
       />
 
       <!-- Share button -->
@@ -519,8 +517,6 @@ async function handleOptionPress(option: { title: string }): Promise<void> {
 
     <!-- Content -->
     <ScrollArea class="flex-1 min-h-0 relative">
-      <!-- Floating voice status bar -->
-      <VoiceStatusBar variant="floating" />
       <!-- Loading state -->
       <template v-if="isLoading">
         <div class="p-4 space-y-4">

@@ -1,12 +1,10 @@
 /**
  * Voice Components - Voice Assistant UI Components
  *
- * Components for voice assistant functionality including status indicators,
- * audio visualizers, and control buttons.
+ * Wraps the AI Elements voice primitives (SpeechInput + AudioPlayer) and drives
+ * them via the existing 11Labs-backed `useVoice` composable.
  *
- * @see HAP-701 - Create voice UI components
+ * @see HAP-1100 - Replace voice components with AI Elements SpeechInput + AudioPlayer
  */
 
-export { default as VoiceBars } from './VoiceBars.vue';
-export { default as VoiceStatusBar } from './VoiceStatusBar.vue';
-export { default as VoiceButton } from './VoiceButton.vue';
+export { default as AppVoiceControls } from './AppVoiceControls.vue';

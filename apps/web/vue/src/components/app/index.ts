@@ -38,7 +38,7 @@ export { default as UserProfileCard } from './UserProfileCard.vue';
 export { default as UserSearch } from './UserSearch.vue';
 
 // Voice components
-export { VoiceBars, VoiceStatusBar, VoiceButton } from './voice';
+export { AppVoiceControls } from './voice';
 
 // Desktop enhancement components (HAP-918)
 export { default as CommandPalette } from './CommandPalette.vue';
