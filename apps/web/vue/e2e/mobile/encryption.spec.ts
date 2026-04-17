@@ -99,10 +99,6 @@ describe("Mobile Encryption E2E", () => {
 
       const pageSource = await browser.getPageSource();
 
-      // Should not show base64 encoded encrypted content directly
-      // Real encrypted content would look like: "U2FsdGVkX1..."
-      const hasRawEncryption = /[A-Za-z0-9+/=]{100,}/.test(pageSource);
-
       // Some encoded content is expected, but very long strings indicate raw data
       expect(pageSource).toBeTruthy();
     });

@@ -267,11 +267,7 @@ test.describe("Visual Regression - Connection Status Indicators", () => {
     await page.goto("/");
     await page.waitForLoadState("networkidle");
 
-    // The app starts in disconnected state
-    // Capture the connection status card specifically
-    const statusCard = page.locator('[data-testid="connection-status"]').first();
-
-    // If no specific test ID, capture the whole dashboard
+    // The app starts in disconnected state; capture the whole dashboard
     await percySnapshot(page, "Connection Status - Disconnected", {
       widths: PERCY_CONFIG.widths,
     });

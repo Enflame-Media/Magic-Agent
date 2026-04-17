@@ -196,12 +196,6 @@ describe("Happy Vue Mobile App", () => {
       // Check that elements have accessibility labels
       const pageSource = await browser.getPageSource();
 
-      // Look for accessibility attributes
-      const hasAccessibilityLabels =
-        pageSource.includes("accessibilityLabel") ||
-        pageSource.includes("content-desc") ||
-        pageSource.includes("accessibility");
-
       // Note: This is a basic check. Full accessibility testing
       // would use tools like Deque Axe for mobile
       expect(pageSource).toBeTruthy();

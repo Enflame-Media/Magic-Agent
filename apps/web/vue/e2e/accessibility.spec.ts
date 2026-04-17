@@ -56,10 +56,6 @@ test.describe("Accessibility: Home Page", () => {
     const body = page.locator("body");
     await expect(body).toBeVisible();
 
-    // Page should have some structural elements
-    const mainOrRole = page.locator('main, [role="main"]');
-    const headerOrRole = page.locator('header, [role="banner"]');
-
     // At least check the page renders content
     await expect(page.locator("body")).not.toBeEmpty();
   });

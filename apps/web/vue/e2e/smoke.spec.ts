@@ -90,10 +90,6 @@ test.describe("Accessibility", () => {
   test("should have semantic HTML structure", async ({ page }) => {
     await page.goto("/");
 
-    // Check for main landmark
-    const main = page.locator('main, [role="main"]');
-    const mainCount = await main.count();
-
     // At minimum, the page should have some content
     const body = page.locator("body");
     await expect(body).not.toBeEmpty();

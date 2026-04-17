@@ -51,9 +51,6 @@ test.describe("Authentication Flow", () => {
     test("should show disconnected status initially", async ({ page }) => {
       await page.goto("/");
 
-      // Look for connection status indicator
-      const statusText = page.getByText(/disconnected|not connected|offline/i);
-
       // Either the status text exists or the page handles no connection gracefully
       const body = page.locator("body");
       await expect(body).toBeVisible();
