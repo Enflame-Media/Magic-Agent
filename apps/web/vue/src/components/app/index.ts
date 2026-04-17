@@ -8,18 +8,11 @@
 export { default as ConnectionStatus } from './ConnectionStatus.vue';
 export { default as EmptyState } from './EmptyState.vue';
 export { default as SessionCard } from './SessionCard.vue';
-export { default as MessageView } from './MessageView.vue';
-export { default as ChatList } from './ChatList.vue';
 export { default as SessionMessage } from './SessionMessage.vue';
 export { default as CodeBlock } from './CodeBlock.vue';
 export { default as CommandView } from './CommandView.vue';
-export { default as ToolResult } from './ToolResult.vue';
 export { default as PaywallDialog } from './PaywallDialog.vue';
 export { default as MarkdownView } from './markdown/MarkdownView.vue';
-export { default as ToolView } from './tools/ToolView.vue';
-export { default as PermissionFooter } from './tools/PermissionFooter.vue';
-export { default as ToolHeader } from './tools/ToolHeader.vue';
-export { default as ToolStatusIndicator } from './tools/ToolStatusIndicator.vue';
 export { default as ToolFullView } from './tools/ToolFullView.vue';
 
 // Artifact components

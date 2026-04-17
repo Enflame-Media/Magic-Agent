@@ -617,7 +617,6 @@ function handlePromptKeydown(event: KeyboardEvent): void {
               </div>
             </div>
             <PromptInputTools>
-              <VoiceButton :session-id="sessionId" size="icon" variant="ghost" />
               <PromptInputSubmit :status="sendStatus" :disabled="isSending" />
             </PromptInputTools>
           </PromptInputFooter>

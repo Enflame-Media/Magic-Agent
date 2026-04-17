@@ -4,7 +4,8 @@ import { useRoute, useRouter } from 'vue-router';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ToolHeader, ToolFullView } from '@/components/app';
+import { ToolFullView } from '@/components/app';
+import { getToolConfig } from '@/components/app/tools/knownTools';
 import { useSessionsStore } from '@/stores/sessions';
 import { useMessagesStore } from '@/stores/messages';
 import { useAuthStore } from '@/stores/auth';
@@ -105,6 +106,30 @@ const mergedToolCall = computed(() => {
   return toolMessage.value.tool;
 });
 
+/**
+ * Header tool: the tool shown in the page header (back button + title).
+ * Prefers the merged tool call (includes result state) when available,
+ * otherwise falls back to the raw toolMessage.tool.
+ */
+const headerTool = computed(() => mergedToolCall.value ?? toolMessage.value?.tool ?? null);
+
+const headerTitle = computed(() => {
+  const tool = headerTool.value;
+  if (!tool) return 'Tool details';
+  const config = getToolConfig(tool);
+  if (config?.title) {
+    return typeof config.title === 'function' ? config.title(tool) : config.title;
+  }
+  return tool.name;
+});
+
+const headerSubtitle = computed(() => {
+  const tool = headerTool.value;
+  if (!tool) return null;
+  const config = getToolConfig(tool);
+  return config?.subtitle?.(tool) ?? tool.description ?? null;
+});
+
 function goBack(): void {
   router.push(`/session/${sessionId.value}`);
 }
@@ -140,7 +165,12 @@ watch([sessionId, messageId], async () => {
         </svg>
       </Button>
       <div class="min-w-0 flex-1">
-        <ToolHeader v-if="mergedToolCall ?? toolMessage" :tool="mergedToolCall ?? toolMessage!.tool" />
+        <div v-if="headerTool" class="flex flex-col gap-0.5">
+          <div class="truncate text-sm font-semibold text-foreground">{{ headerTitle }}</div>
+          <div v-if="headerSubtitle" class="truncate text-xs text-muted-foreground">
+            {{ headerSubtitle }}
+          </div>
+        </div>
         <div v-else class="text-sm text-muted-foreground">Tool details</div>
       </div>
       </ResponsiveContainer>
