@@ -10,23 +10,17 @@
  * Follows the same structure as apps/web/react/sources/components/SettingsView.tsx
  */
 
-import { computed } from 'vue';
-import { useRouter } from 'vue-router';
-import { useAuthStore } from '@/stores/auth';
-import { useSyncStore } from '@/stores/sync';
-import { useUiStore } from '@/stores/ui';
-import { Button } from '@/components/ui/button';
-import { useLocale } from '@/composables/useLocale';
-import ResponsiveContainer from '@/components/app/ResponsiveContainer.vue';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { openUrl } from '@/shared';
+import { computed } from "vue";
+import { useRouter } from "vue-router";
+import { useAuthStore } from "@/stores/auth";
+import { useSyncStore } from "@/stores/sync";
+import { useUiStore } from "@/stores/ui";
+import { Button } from "@/components/ui/button";
+import { useLocale } from "@/composables/useLocale";
+import ResponsiveContainer from "@/components/app/ResponsiveContainer.vue";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { openUrl } from "@/shared";
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -35,93 +29,93 @@ const ui = useUiStore();
 const { t } = useLocale();
 
 // App version (would come from build config)
-const appVersion = '0.1.0';
+const appVersion = "0.1.0";
 
 // User info
-const displayName = computed(() => authStore.displayName || 'User');
-const initials = computed(() => authStore.initials || 'U');
+const displayName = computed(() => authStore.displayName || "User");
+const initials = computed(() => authStore.initials || "U");
 const isConnected = computed(() => syncStore.isConnected);
 
 // Navigation handlers
 function navigateToAccount() {
-  router.push('/settings/account');
+  router.push("/settings/account");
 }
 
 function navigateToAppearance() {
-  router.push('/settings/appearance');
+  router.push("/settings/appearance");
 }
 
 function navigateToLanguage() {
-  router.push('/settings/language');
+  router.push("/settings/language");
 }
 
 function navigateToPrivacy() {
-  router.push('/settings/privacy');
+  router.push("/settings/privacy");
 }
 
 function navigateToNotifications() {
-  router.push('/settings/notifications');
+  router.push("/settings/notifications");
 }
 
 function navigateToVoice() {
-  router.push('/settings/voice/language');
+  router.push("/settings/voice/language");
 }
 
 function navigateToUsage() {
-  router.push('/settings/usage');
+  router.push("/settings/usage");
 }
 
 function navigateToFeatures() {
-  router.push('/settings/features');
+  router.push("/settings/features");
 }
 
 function navigateToClaudeConnect() {
-  router.push('/settings/connect/claude');
+  router.push("/settings/connect/claude");
 }
 
 function navigateToServer() {
-  router.push('/settings/server');
+  router.push("/settings/server");
 }
 
 function navigateToStorage() {
-  router.push('/settings/storage');
+  router.push("/settings/storage");
 }
 
 function navigateToMcp() {
-  router.push('/settings/mcp');
+  router.push("/settings/mcp");
 }
 
 function navigateToFriends() {
-  router.push('/friends');
+  router.push("/friends");
 }
 
 function handleLogout() {
   authStore.logout();
-  router.push('/auth');
+  router.push("/auth");
 }
 
 function goBack() {
-  router.push('/');
+  router.push("/");
 }
 
 // External links
 async function handleOpenUrl(url: string) {
   const result = await openUrl(url);
   if (!result.success) {
-    ui.error(result.error ?? 'Failed to open link');
+    ui.error(result.error ?? "Failed to open link");
   }
 }
 
 function openPrivacyPolicy() {
-  void handleOpenUrl('https://happy.engineering/privacy/');
+  void handleOpenUrl("https://happy.engineering/privacy/");
 }
 
 function openTerms() {
-  void handleOpenUrl('https://github.com/slopus/happy/blob/main/TERMS.md');
+  void handleOpenUrl("https://github.com/slopus/happy/blob/main/TERMS.md");
 }
 
 function openGitHub() {
-  void handleOpenUrl('https://github.com/slopus/happy');
+  void handleOpenUrl("https://github.com/slopus/happy");
 }
 </script>
 
@@ -138,11 +132,7 @@ function openGitHub() {
           stroke="currentColor"
           stroke-width="2"
         >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M15 19l-7-7 7-7"
-          />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
         </svg>
       </Button>
       <h1 class="text-2xl font-semibold">Settings</h1>
@@ -161,12 +151,9 @@ function openGitHub() {
             <CardTitle>{{ displayName }}</CardTitle>
             <CardDescription class="flex items-center gap-2">
               <span
-                :class="[
-                  'w-2 h-2 rounded-full',
-                  isConnected ? 'bg-green-500' : 'bg-gray-400',
-                ]"
+                :class="['w-2 h-2 rounded-full', isConnected ? 'bg-green-500' : 'bg-gray-400']"
               />
-              {{ isConnected ? 'Connected' : 'Disconnected' }}
+              {{ isConnected ? "Connected" : "Disconnected" }}
             </CardDescription>
           </div>
         </div>
@@ -411,9 +398,9 @@ function openGitHub() {
                   </svg>
                 </div>
                 <div class="text-left">
-                  <p class="font-medium">{{ t('settings.notifications') }}</p>
+                  <p class="font-medium">{{ t("settings.notifications") }}</p>
                   <p class="text-sm text-muted-foreground">
-                    {{ t('settings.notificationsSubtitle') }}
+                    {{ t("settings.notificationsSubtitle") }}
                   </p>
                 </div>
               </div>
@@ -711,7 +698,9 @@ function openGitHub() {
                     fill="currentColor"
                     viewBox="0 0 24 24"
                   >
-                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                    <path
+                      d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"
+                    />
                   </svg>
                 </div>
                 <div class="text-left">
@@ -838,13 +827,7 @@ function openGitHub() {
 
       <!-- Logout -->
       <section class="pt-4">
-        <Button
-          variant="destructive"
-          class="w-full"
-          @click="handleLogout"
-        >
-          Sign Out
-        </Button>
+        <Button variant="destructive" class="w-full" @click="handleLogout"> Sign Out </Button>
       </section>
     </div>
   </ResponsiveContainer>

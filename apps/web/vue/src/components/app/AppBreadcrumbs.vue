@@ -8,8 +8,8 @@
  * @see HAP-918 - Desktop Enhancements - Breadcrumb Navigation
  */
 
-import { computed } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { computed } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -17,8 +17,8 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
-import { useSessionsStore } from '@/stores/sessions';
+} from "@/components/ui/breadcrumb";
+import { useSessionsStore } from "@/stores/sessions";
 
 /**
  * Breadcrumb item structure
@@ -33,66 +33,66 @@ interface BreadcrumbData {
  * Route name to display label mapping
  */
 const ROUTE_LABELS: Record<string, string> = {
-  home: 'Dashboard',
-  'new-session': 'New Session',
-  session: 'Session',
-  'session-message': 'Message',
-  'session-info': 'Session Info',
-  'session-artifacts': 'Session Artifacts',
-  artifacts: 'Artifacts',
-  friends: 'Friends',
-  'friend-profile': 'Friend',
-  settings: 'Settings',
-  'settings-account': 'Account',
-  'settings-appearance': 'Appearance',
-  'settings-language': 'Language',
-  'settings-notifications': 'Notifications',
-  'settings-usage': 'Usage',
-  'settings-features': 'Features',
-  'settings-privacy': 'Privacy',
-  'settings-voice': 'Voice',
-  'settings-voice-language': 'Voice Language',
-  'settings-connect-claude': 'Connect Claude',
-  'settings-server': 'Server',
-  'settings-mcp': 'MCP',
-  'settings-mcp-server': 'MCP Server',
-  'settings-storage': 'Storage',
-  auth: 'Login',
-  'auth-scan': 'Scan QR',
-  'auth-manual': 'Manual Entry',
-  'auth-connect': 'Connecting',
-  'terminal-connect': 'Terminal Connect',
+  home: "Dashboard",
+  "new-session": "New Session",
+  session: "Session",
+  "session-message": "Message",
+  "session-info": "Session Info",
+  "session-artifacts": "Session Artifacts",
+  artifacts: "Artifacts",
+  friends: "Friends",
+  "friend-profile": "Friend",
+  settings: "Settings",
+  "settings-account": "Account",
+  "settings-appearance": "Appearance",
+  "settings-language": "Language",
+  "settings-notifications": "Notifications",
+  "settings-usage": "Usage",
+  "settings-features": "Features",
+  "settings-privacy": "Privacy",
+  "settings-voice": "Voice",
+  "settings-voice-language": "Voice Language",
+  "settings-connect-claude": "Connect Claude",
+  "settings-server": "Server",
+  "settings-mcp": "MCP",
+  "settings-mcp-server": "MCP Server",
+  "settings-storage": "Storage",
+  auth: "Login",
+  "auth-scan": "Scan QR",
+  "auth-manual": "Manual Entry",
+  "auth-connect": "Connecting",
+  "terminal-connect": "Terminal Connect",
 };
 
 /**
  * Route parent hierarchy for building breadcrumb trail
  */
 const ROUTE_PARENTS: Record<string, string> = {
-  'new-session': 'home',
-  session: 'home',
-  'session-message': 'session',
-  'session-info': 'session',
-  'session-artifacts': 'session',
-  artifacts: 'home',
-  friends: 'home',
-  'friend-profile': 'friends',
-  'settings-account': 'settings',
-  'settings-appearance': 'settings',
-  'settings-language': 'settings',
-  'settings-notifications': 'settings',
-  'settings-usage': 'settings',
-  'settings-features': 'settings',
-  'settings-privacy': 'settings',
-  'settings-voice': 'settings',
-  'settings-voice-language': 'settings-voice',
-  'settings-connect-claude': 'settings',
-  'settings-server': 'settings',
-  'settings-mcp': 'settings',
-  'settings-mcp-server': 'settings-mcp',
-  'settings-storage': 'settings',
-  'auth-scan': 'auth',
-  'auth-manual': 'auth',
-  'auth-connect': 'auth',
+  "new-session": "home",
+  session: "home",
+  "session-message": "session",
+  "session-info": "session",
+  "session-artifacts": "session",
+  artifacts: "home",
+  friends: "home",
+  "friend-profile": "friends",
+  "settings-account": "settings",
+  "settings-appearance": "settings",
+  "settings-language": "settings",
+  "settings-notifications": "settings",
+  "settings-usage": "settings",
+  "settings-features": "settings",
+  "settings-privacy": "settings",
+  "settings-voice": "settings",
+  "settings-voice-language": "settings-voice",
+  "settings-connect-claude": "settings",
+  "settings-server": "settings",
+  "settings-mcp": "settings",
+  "settings-mcp-server": "settings-mcp",
+  "settings-storage": "settings",
+  "auth-scan": "auth",
+  "auth-manual": "auth",
+  "auth-connect": "auth",
 };
 
 const route = useRoute();
@@ -119,35 +119,35 @@ function getSessionName(sessionId: string): string {
  */
 function getRouteLabel(routeName: string, params: Record<string, string | string[]>): string {
   // Check for custom meta label first
-  const routeRecord = router.getRoutes().find(r => r.name === routeName);
-  if (routeRecord?.meta?.breadcrumbLabel && typeof routeRecord.meta.breadcrumbLabel === 'string') {
+  const routeRecord = router.getRoutes().find((r) => r.name === routeName);
+  if (routeRecord?.meta?.breadcrumbLabel && typeof routeRecord.meta.breadcrumbLabel === "string") {
     return routeRecord.meta.breadcrumbLabel;
   }
 
   // Special handling for dynamic routes
-  if (routeName === 'session' && params.id) {
-    const sessionId = Array.isArray(params.id) ? (params.id[0] ?? '') : params.id;
+  if (routeName === "session" && params.id) {
+    const sessionId = Array.isArray(params.id) ? (params.id[0] ?? "") : params.id;
     return getSessionName(sessionId);
   }
 
-  if (routeName === 'session-info' && params.id) {
-    return 'Info';
+  if (routeName === "session-info" && params.id) {
+    return "Info";
   }
 
-  if (routeName === 'session-artifacts' && params.id) {
-    return 'Artifacts';
+  if (routeName === "session-artifacts" && params.id) {
+    return "Artifacts";
   }
 
-  if (routeName === 'session-message' && params.messageId) {
-    return 'Message';
+  if (routeName === "session-message" && params.messageId) {
+    return "Message";
   }
 
-  if (routeName === 'friend-profile' && params.id) {
-    return 'Profile';
+  if (routeName === "friend-profile" && params.id) {
+    return "Profile";
   }
 
-  if (routeName === 'settings-mcp-server' && params.server) {
-    const server = Array.isArray(params.server) ? (params.server[0] ?? 'Server') : params.server;
+  if (routeName === "settings-mcp-server" && params.server) {
+    const server = Array.isArray(params.server) ? (params.server[0] ?? "Server") : params.server;
     return server;
   }
 
@@ -163,7 +163,7 @@ function buildPath(routeName: string, currentParams: Record<string, string | str
     const resolved = router.resolve({ name: routeName, params: currentParams });
     return resolved.path;
   } catch {
-    return '/';
+    return "/";
   }
 }
 
@@ -171,11 +171,11 @@ function buildPath(routeName: string, currentParams: Record<string, string | str
  * Build breadcrumb trail from current route
  */
 const breadcrumbs = computed<BreadcrumbData[]>(() => {
-  const currentRouteName = String(route.name ?? '');
+  const currentRouteName = String(route.name ?? "");
   const params = route.params as Record<string, string | string[]>;
 
   // Don't show breadcrumbs for home or auth routes
-  if (currentRouteName === 'home' || currentRouteName.startsWith('auth')) {
+  if (currentRouteName === "home" || currentRouteName.startsWith("auth")) {
     return [];
   }
 
@@ -199,11 +199,12 @@ const breadcrumbs = computed<BreadcrumbData[]>(() => {
     });
 
     // Get parent from meta or mapping
-    const routeRecord = router.getRoutes().find(r => r.name === currentName);
+    const routeRecord = router.getRoutes().find((r) => r.name === currentName);
     const metaParent = routeRecord?.meta?.breadcrumbParent;
-    const parentName = (typeof metaParent === 'string' ? metaParent : undefined) || ROUTE_PARENTS[currentName];
+    const parentName =
+      (typeof metaParent === "string" ? metaParent : undefined) || ROUTE_PARENTS[currentName];
 
-    if (parentName && parentName !== 'home') {
+    if (parentName && parentName !== "home") {
       currentName = parentName;
     } else {
       break;
@@ -213,8 +214,8 @@ const breadcrumbs = computed<BreadcrumbData[]>(() => {
   // Add home at the start if we have any trail items
   if (trail.length > 0) {
     trail.unshift({
-      label: 'Dashboard',
-      path: '/',
+      label: "Dashboard",
+      path: "/",
       isCurrent: false,
     });
   }

@@ -7,29 +7,22 @@
  * This is the primary way to initially authenticate on web.
  */
 
-import { ref, onMounted, onUnmounted, computed } from 'vue';
-import { useRouter } from 'vue-router';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  ArrowLeft,
-  RefreshCw,
-  CheckCircle2,
-  AlertCircle,
-  Loader2,
-  Copy,
-} from 'lucide-vue-next';
-import { createAuthSession } from '@/services/auth';
-import { useAuthStore } from '@/stores/auth';
-import { toast } from 'vue-sonner';
-import ResponsiveContainer from '@/components/app/ResponsiveContainer.vue';
+import { ref, onMounted, onUnmounted, computed } from "vue";
+import { useRouter } from "vue-router";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowLeft, RefreshCw, CheckCircle2, AlertCircle, Loader2, Copy } from "lucide-vue-next";
+import { createAuthSession } from "@/services/auth";
+import { useAuthStore } from "@/stores/auth";
+import { toast } from "vue-sonner";
+import ResponsiveContainer from "@/components/app/ResponsiveContainer.vue";
 
 const router = useRouter();
 const authStore = useAuthStore();
 
-type AuthState = 'loading' | 'waiting' | 'success' | 'error';
+type AuthState = "loading" | "waiting" | "success" | "error";
 
-const state = ref<AuthState>('loading');
+const state = ref<AuthState>("loading");
 const qrData = ref<string | null>(null);
 const errorMessage = ref<string | null>(null);
 const dotCount = ref(0);
@@ -38,7 +31,7 @@ const isCancelled = ref(false);
 let authSession: ReturnType<typeof createAuthSession> | null = null;
 
 const statusMessage = computed(() => {
-  const dots = '.'.repeat((dotCount.value % 3) + 1);
+  const dots = ".".repeat((dotCount.value % 3) + 1);
   return `Waiting for authentication${dots}`;
 });
 
@@ -46,7 +39,7 @@ const statusMessage = computed(() => {
  * Start the authentication session
  */
 async function startAuth() {
-  state.value = 'loading';
+  state.value = "loading";
   errorMessage.value = null;
   isCancelled.value = false;
 
@@ -54,14 +47,14 @@ async function startAuth() {
     // Create auth session (generates keypair and QR data)
     authSession = createAuthSession();
     qrData.value = authSession.qrData;
-    state.value = 'waiting';
+    state.value = "waiting";
 
     // Wait for mobile app to authorize
     const credentials = await authSession.waitForAuth(
       (dots) => {
         dotCount.value = dots;
       },
-      () => isCancelled.value
+      () => isCancelled.value,
     );
 
     if (isCancelled.value) {
@@ -70,25 +63,24 @@ async function startAuth() {
 
     if (credentials) {
       // Update auth store
-      authStore.setCredentials(credentials.token, 'temp-account-id');
+      authStore.setCredentials(credentials.token, "temp-account-id");
 
-      state.value = 'success';
-      toast.success('Authentication successful!');
+      state.value = "success";
+      toast.success("Authentication successful!");
 
       // Redirect to home
       setTimeout(() => {
-        router.push('/');
+        router.push("/");
       }, 1500);
     } else {
-      throw new Error('Authentication failed');
+      throw new Error("Authentication failed");
     }
   } catch (error) {
-    console.error('[ConnectingView] Auth failed:', error);
-    state.value = 'error';
-    errorMessage.value =
-      error instanceof Error ? error.message : 'Authentication failed';
+    console.error("[ConnectingView] Auth failed:", error);
+    state.value = "error";
+    errorMessage.value = error instanceof Error ? error.message : "Authentication failed";
 
-    toast.error('Authentication Failed', {
+    toast.error("Authentication Failed", {
       description: errorMessage.value,
     });
   }
@@ -102,9 +94,9 @@ async function copyToClipboard() {
 
   try {
     await navigator.clipboard.writeText(qrData.value);
-    toast.success('Copied to clipboard');
+    toast.success("Copied to clipboard");
   } catch {
-    toast.error('Failed to copy');
+    toast.error("Failed to copy");
   }
 }
 
@@ -113,7 +105,7 @@ async function copyToClipboard() {
  */
 function goBack() {
   isCancelled.value = true;
-  router.push('/auth');
+  router.push("/auth");
 }
 
 /**
@@ -137,11 +129,7 @@ onUnmounted(() => {
     <div class="connecting-container">
       <!-- Header -->
       <div class="header">
-        <Button
-          variant="ghost"
-          size="icon"
-          @click="goBack"
-        >
+        <Button variant="ghost" size="icon" @click="goBack">
           <ArrowLeft class="h-5 w-5" />
         </Button>
         <h1 class="title">Authenticate</h1>
@@ -152,9 +140,7 @@ onUnmounted(() => {
       <Card>
         <CardHeader>
           <CardTitle>Scan with Happy App</CardTitle>
-          <CardDescription>
-            Open the Happy app on your phone and scan this code
-          </CardDescription>
+          <CardDescription> Open the Happy app on your phone and scan this code </CardDescription>
         </CardHeader>
         <CardContent>
           <!-- Loading State -->
@@ -180,11 +166,7 @@ onUnmounted(() => {
               <p class="status-message">{{ statusMessage }}</p>
 
               <!-- Copy Button -->
-              <Button
-                variant="outline"
-                size="sm"
-                @click="copyToClipboard"
-              >
+              <Button variant="outline" size="sm" @click="copyToClipboard">
                 <Copy class="mr-2 h-4 w-4" />
                 Copy Code
               </Button>
@@ -216,10 +198,7 @@ onUnmounted(() => {
       </Card>
 
       <!-- Instructions -->
-      <div
-        v-if="state === 'waiting'"
-        class="instructions"
-      >
+      <div v-if="state === 'waiting'" class="instructions">
         <p class="instruction-title">How to scan:</p>
         <ol class="instruction-list">
           <li>Open the Happy mobile app</li>

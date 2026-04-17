@@ -18,25 +18,25 @@
  */
 export enum PurchaseAnalyticsEvent {
   /** Paywall was displayed to the user */
-  PAYWALL_PRESENTED = 'paywall_presented',
+  PAYWALL_PRESENTED = "paywall_presented",
 
   /** User initiated a purchase */
-  PURCHASE_STARTED = 'purchase_started',
+  PURCHASE_STARTED = "purchase_started",
 
   /** Purchase completed successfully */
-  PURCHASE_COMPLETED = 'purchase_completed',
+  PURCHASE_COMPLETED = "purchase_completed",
 
   /** User cancelled the purchase */
-  PURCHASE_CANCELLED = 'purchase_cancelled',
+  PURCHASE_CANCELLED = "purchase_cancelled",
 
   /** Purchase failed due to an error */
-  PURCHASE_FAILED = 'purchase_failed',
+  PURCHASE_FAILED = "purchase_failed",
 
   /** User initiated restore purchases */
-  RESTORE_STARTED = 'restore_started',
+  RESTORE_STARTED = "restore_started",
 
   /** Restore purchases completed */
-  RESTORE_COMPLETED = 'restore_completed',
+  RESTORE_COMPLETED = "restore_completed",
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -46,7 +46,7 @@ export enum PurchaseAnalyticsEvent {
 /**
  * Platform identifier for analytics events.
  */
-export type AnalyticsPlatform = 'web' | 'mobile' | 'macos';
+export type AnalyticsPlatform = "web" | "mobile" | "macos";
 
 /**
  * Common properties for all purchase analytics events.

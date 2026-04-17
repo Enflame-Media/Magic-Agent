@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import type { HTMLAttributes } from 'vue'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { cn } from '@/lib/utils'
+import type { HTMLAttributes } from "vue";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
 
-type CommitAuthorAvatarProps = InstanceType<typeof Avatar>['$props']
+type CommitAuthorAvatarProps = InstanceType<typeof Avatar>["$props"];
 
 interface Props extends /* @vue-ignore */ CommitAuthorAvatarProps {
-  class?: HTMLAttributes['class']
-  initials: string
+  class?: HTMLAttributes["class"];
+  initials: string;
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 </script>
 
 <template>

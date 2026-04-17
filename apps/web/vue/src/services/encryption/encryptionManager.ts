@@ -1,15 +1,15 @@
-import nacl from 'tweetnacl';
-import { decodeBase64 } from '@/services/base64';
-import { decryptBox } from '@/services/encryption';
-import { deriveKey } from './deriveKey';
-import { AES256Encryption, SecretBoxEncryption } from './encryptors';
-import { MachineEncryption } from './machineEncryption';
+import nacl from "tweetnacl";
+import { decodeBase64 } from "@/services/base64";
+import { decryptBox } from "@/services/encryption";
+import { deriveKey } from "./deriveKey";
+import { AES256Encryption, SecretBoxEncryption } from "./encryptors";
+import { MachineEncryption } from "./machineEncryption";
 
 function deriveBoxKeyPair(seed: Uint8Array): nacl.BoxKeyPair {
   const hash = nacl.hash(seed);
   const secretKey = hash.slice(0, 32);
   if (secretKey.length < 32) {
-    throw new Error('Failed to derive box keypair');
+    throw new Error("Failed to derive box keypair");
   }
 
   // Curve25519 scalar clamp
@@ -22,7 +22,7 @@ function deriveBoxKeyPair(seed: Uint8Array): nacl.BoxKeyPair {
 
 export class EncryptionManager {
   static async create(masterSecret: Uint8Array): Promise<EncryptionManager> {
-    const contentDataKey = await deriveKey(masterSecret, 'Happy EnCoder', ['content']);
+    const contentDataKey = await deriveKey(masterSecret, "Happy EnCoder", ["content"]);
     const contentKeyPair = deriveBoxKeyPair(contentDataKey);
     return new EncryptionManager(masterSecret, contentKeyPair);
   }
@@ -48,7 +48,7 @@ export class EncryptionManager {
 
   async ensureMachineEncryption(
     machineId: string,
-    dataEncryptionKey: string | null
+    dataEncryptionKey: string | null,
   ): Promise<MachineEncryption> {
     const existing = this.machineEncryptions.get(machineId);
     if (existing) {

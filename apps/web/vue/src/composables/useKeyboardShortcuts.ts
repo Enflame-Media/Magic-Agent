@@ -9,8 +9,8 @@
  * @see HAP-963 - Keyboard Shortcuts and Accessibility
  */
 
-import { useMagicKeys, whenever } from '@vueuse/core';
-import { ref, type Ref, computed } from 'vue';
+import { useMagicKeys, whenever } from "@vueuse/core";
+import { ref, type Ref, computed } from "vue";
 
 /**
  * Keyboard shortcut registration
@@ -67,7 +67,7 @@ export interface UseKeyboardShortcutsReturn {
 function isInputElement(target: EventTarget | null): boolean {
   if (!target || !(target instanceof HTMLElement)) return false;
   const tagName = target.tagName.toLowerCase();
-  const isInput = tagName === 'input' || tagName === 'textarea' || tagName === 'select';
+  const isInput = tagName === "input" || tagName === "textarea" || tagName === "select";
   const isContentEditable = target.isContentEditable;
   return isInput || isContentEditable;
 }
@@ -119,7 +119,7 @@ export function useKeyboardShortcuts(): UseKeyboardShortcutsReturn {
   const cmdK = computed(() => keys.meta_k?.value || keys.ctrl_k?.value);
 
   // Cmd/Ctrl + / for sidebar toggle
-  const cmdSlash = computed(() => keys['meta_/']?.value || keys['ctrl_/']?.value);
+  const cmdSlash = computed(() => keys["meta_/"]?.value || keys["ctrl_/"]?.value);
 
   // Escape key for closing modals
   const escape = keys.escape;
@@ -183,7 +183,7 @@ export function useKeyboardShortcuts(): UseKeyboardShortcutsReturn {
 
   function registerEscapeHandler(id: string, handler: () => void) {
     // Remove existing handler with same ID if present
-    const existingIndex = escapeHandlers.findIndex(h => h.id === id);
+    const existingIndex = escapeHandlers.findIndex((h) => h.id === id);
     if (existingIndex !== -1) {
       escapeHandlers.splice(existingIndex, 1);
     }
@@ -191,7 +191,7 @@ export function useKeyboardShortcuts(): UseKeyboardShortcutsReturn {
   }
 
   function unregisterEscapeHandler(id: string) {
-    const index = escapeHandlers.findIndex(h => h.id === id);
+    const index = escapeHandlers.findIndex((h) => h.id === id);
     if (index !== -1) {
       escapeHandlers.splice(index, 1);
     }
@@ -199,7 +199,7 @@ export function useKeyboardShortcuts(): UseKeyboardShortcutsReturn {
 
   function registerSidebarToggle(id: string, handler: () => void) {
     // Remove existing handler with same ID if present
-    const existingIndex = sidebarToggleHandlers.findIndex(h => h.id === id);
+    const existingIndex = sidebarToggleHandlers.findIndex((h) => h.id === id);
     if (existingIndex !== -1) {
       sidebarToggleHandlers.splice(existingIndex, 1);
     }
@@ -207,7 +207,7 @@ export function useKeyboardShortcuts(): UseKeyboardShortcutsReturn {
   }
 
   function unregisterSidebarToggle(id: string) {
-    const index = sidebarToggleHandlers.findIndex(h => h.id === id);
+    const index = sidebarToggleHandlers.findIndex((h) => h.id === id);
     if (index !== -1) {
       sidebarToggleHandlers.splice(index, 1);
     }
@@ -232,8 +232,14 @@ export function useKeyboardShortcuts(): UseKeyboardShortcutsReturn {
 export function useCommandPaletteState() {
   return {
     isOpen: isCommandPaletteOpen,
-    open: () => { isCommandPaletteOpen.value = true; },
-    close: () => { isCommandPaletteOpen.value = false; },
-    toggle: () => { isCommandPaletteOpen.value = !isCommandPaletteOpen.value; },
+    open: () => {
+      isCommandPaletteOpen.value = true;
+    },
+    close: () => {
+      isCommandPaletteOpen.value = false;
+    },
+    toggle: () => {
+      isCommandPaletteOpen.value = !isCommandPaletteOpen.value;
+    },
   };
 }

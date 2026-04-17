@@ -14,13 +14,13 @@
  * ```
  */
 
-import { useAuthStore } from '@/stores/auth';
-import { useSyncStore } from '@/stores/sync';
-import { useSessionsStore } from '@/stores/sessions';
-import { useMachinesStore } from '@/stores/machines';
-import { useMessagesStore } from '@/stores/messages';
-import { useSettingsStore } from '@/stores/settings';
-import { useUiStore } from '@/stores/ui';
+import { useAuthStore } from "@/stores/auth";
+import { useSyncStore } from "@/stores/sync";
+import { useSessionsStore } from "@/stores/sessions";
+import { useMachinesStore } from "@/stores/machines";
+import { useMessagesStore } from "@/stores/messages";
+import { useSettingsStore } from "@/stores/settings";
+import { useUiStore } from "@/stores/ui";
 
 /**
  * Get all stores in a single call
@@ -29,36 +29,36 @@ import { useUiStore } from '@/stores/ui';
  * unnecessary initialization if not all stores are needed.
  */
 export function useStores() {
-    return {
-        /** Authentication store */
-        get auth() {
-            return useAuthStore();
-        },
-        /** Sync connection store */
-        get sync() {
-            return useSyncStore();
-        },
-        /** Sessions collection store */
-        get sessions() {
-            return useSessionsStore();
-        },
-        /** Machines collection store */
-        get machines() {
-            return useMachinesStore();
-        },
-        /** Messages collection store */
-        get messages() {
-            return useMessagesStore();
-        },
-        /** User settings store */
-        get settings() {
-            return useSettingsStore();
-        },
-        /** UI state store */
-        get ui() {
-            return useUiStore();
-        },
-    };
+  return {
+    /** Authentication store */
+    get auth() {
+      return useAuthStore();
+    },
+    /** Sync connection store */
+    get sync() {
+      return useSyncStore();
+    },
+    /** Sessions collection store */
+    get sessions() {
+      return useSessionsStore();
+    },
+    /** Machines collection store */
+    get machines() {
+      return useMachinesStore();
+    },
+    /** Messages collection store */
+    get messages() {
+      return useMessagesStore();
+    },
+    /** User settings store */
+    get settings() {
+      return useSettingsStore();
+    },
+    /** UI state store */
+    get ui() {
+      return useUiStore();
+    },
+  };
 }
 
 /**
@@ -67,11 +67,11 @@ export function useStores() {
  * Useful for logout or testing scenarios.
  */
 export function resetAllStores() {
-    useAuthStore().$reset();
-    useSyncStore().$reset();
-    useSessionsStore().$reset();
-    useMachinesStore().$reset();
-    useMessagesStore().$reset();
-    useSettingsStore().$reset();
-    useUiStore().$reset();
+  useAuthStore().$reset();
+  useSyncStore().$reset();
+  useSessionsStore().$reset();
+  useMachinesStore().$reset();
+  useMessagesStore().$reset();
+  useSettingsStore().$reset();
+  useUiStore().$reset();
 }

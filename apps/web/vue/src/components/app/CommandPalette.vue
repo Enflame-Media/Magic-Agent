@@ -15,8 +15,8 @@
  * @see HAP-967 - Focus trapping in modals/dialogs
  */
 
-import { computed, ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { computed, ref, watch } from "vue";
+import { useRouter } from "vue-router";
 import {
   CommandDialog,
   CommandEmpty,
@@ -26,37 +26,37 @@ import {
   CommandList,
   CommandSeparator,
   CommandShortcut,
-} from '@/components/ui/command';
-import { useCommandPaletteState } from '@/composables/useKeyboardShortcuts';
-import { useSessionsStore, type Session } from '@/stores/sessions';
-import { useDarkMode } from '@/composables/useDarkMode';
+} from "@/components/ui/command";
+import { useCommandPaletteState } from "@/composables/useKeyboardShortcuts";
+import { useSessionsStore, type Session } from "@/stores/sessions";
+import { useDarkMode } from "@/composables/useDarkMode";
 
 const router = useRouter();
 const sessionsStore = useSessionsStore();
 const { isDark, toggle: toggleDarkMode } = useDarkMode();
 const { isOpen, close } = useCommandPaletteState();
 
-const searchQuery = ref('');
+const searchQuery = ref("");
 
 // Sessions for quick navigation
 const activeSessions = computed(() => sessionsStore.activeSessions);
 
 // Navigation items
 const navigationItems = [
-  { label: 'Home', icon: 'home', path: '/', shortcut: 'H' },
-  { label: 'New Session', icon: 'plus', path: '/new', shortcut: 'N' },
-  { label: 'Artifacts', icon: 'file', path: '/artifacts', shortcut: 'A' },
-  { label: 'Friends', icon: 'users', path: '/friends', shortcut: 'F' },
-  { label: 'Settings', icon: 'settings', path: '/settings', shortcut: 'S' },
+  { label: "Home", icon: "home", path: "/", shortcut: "H" },
+  { label: "New Session", icon: "plus", path: "/new", shortcut: "N" },
+  { label: "Artifacts", icon: "file", path: "/artifacts", shortcut: "A" },
+  { label: "Friends", icon: "users", path: "/friends", shortcut: "F" },
+  { label: "Settings", icon: "settings", path: "/settings", shortcut: "S" },
 ];
 
 // Settings pages
 const settingsItems = [
-  { label: 'Account Settings', path: '/settings/account' },
-  { label: 'Appearance', path: '/settings/appearance' },
-  { label: 'Language', path: '/settings/language' },
-  { label: 'Privacy', path: '/settings/privacy' },
-  { label: 'Voice Settings', path: '/settings/voice' },
+  { label: "Account Settings", path: "/settings/account" },
+  { label: "Appearance", path: "/settings/appearance" },
+  { label: "Language", path: "/settings/language" },
+  { label: "Privacy", path: "/settings/privacy" },
+  { label: "Voice Settings", path: "/settings/voice" },
 ];
 
 function getSessionName(session: Session): string {
@@ -80,19 +80,19 @@ function getSessionPath(session: Session): string | null {
 function navigateTo(path: string) {
   router.push(path);
   close();
-  searchQuery.value = '';
+  searchQuery.value = "";
 }
 
 function handleToggleTheme() {
   toggleDarkMode();
   close();
-  searchQuery.value = '';
+  searchQuery.value = "";
 }
 
 // Reset search when dialog closes
 watch(isOpen, (open) => {
   if (!open) {
-    searchQuery.value = '';
+    searchQuery.value = "";
   }
 });
 </script>
@@ -104,10 +104,7 @@ watch(isOpen, (open) => {
     description="Search for commands, sessions, or navigate to pages"
     @update:open="(open: boolean) => !open && close()"
   >
-    <CommandInput
-      v-model="searchQuery"
-      placeholder="Type a command or search..."
-    />
+    <CommandInput v-model="searchQuery" placeholder="Type a command or search..." />
     <CommandList>
       <CommandEmpty>No results found.</CommandEmpty>
 
@@ -130,10 +127,7 @@ watch(isOpen, (open) => {
           <span>New Session</span>
           <CommandShortcut>⌘N</CommandShortcut>
         </CommandItem>
-        <CommandItem
-          value="toggle-theme"
-          @select="handleToggleTheme"
-        >
+        <CommandItem value="toggle-theme" @select="handleToggleTheme">
           <svg
             v-if="isDark"
             xmlns="http://www.w3.org/2000/svg"
@@ -168,7 +162,7 @@ watch(isOpen, (open) => {
           >
             <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
           </svg>
-          <span>{{ isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode' }}</span>
+          <span>{{ isDark ? "Switch to Light Mode" : "Switch to Dark Mode" }}</span>
         </CommandItem>
       </CommandGroup>
 
@@ -272,7 +266,9 @@ watch(isOpen, (open) => {
             class="mr-2 h-4 w-4"
           >
             <circle cx="12" cy="12" r="3" />
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+            <path
+              d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"
+            />
           </svg>
           <span>{{ item.label }}</span>
           <CommandShortcut v-if="item.shortcut">⌘{{ item.shortcut }}</CommandShortcut>

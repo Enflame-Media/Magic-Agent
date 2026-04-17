@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import type { HTMLAttributes } from 'vue'
-import { Switch } from '@/components/ui/switch'
-import { cn } from '@/lib/utils'
-import { EyeIcon, EyeOffIcon } from 'lucide-vue-next'
-import { useEnvironmentVariablesContext } from './context'
+import type { HTMLAttributes } from "vue";
+import { Switch } from "@/components/ui/switch";
+import { cn } from "@/lib/utils";
+import { EyeIcon, EyeOffIcon } from "lucide-vue-next";
+import { useEnvironmentVariablesContext } from "./context";
 
-type SwitchProps = InstanceType<typeof Switch>['$props']
+type SwitchProps = InstanceType<typeof Switch>["$props"];
 
 interface Props extends /* @vue-ignore */ SwitchProps {
-  class?: HTMLAttributes['class']
+  class?: HTMLAttributes["class"];
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
-const { showValues, setShowValues } = useEnvironmentVariablesContext()
+const { showValues, setShowValues } = useEnvironmentVariablesContext();
 </script>
 
 <template>

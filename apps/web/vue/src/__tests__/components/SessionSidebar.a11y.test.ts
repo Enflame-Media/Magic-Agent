@@ -12,39 +12,39 @@
  * @see HAP-963 - Keyboard Shortcuts and Accessibility
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
-import { mount } from '@vue/test-utils';
-import { createRouter, createWebHistory } from 'vue-router';
-import { createPinia, setActivePinia } from 'pinia';
-import SessionSidebar from '@/components/app/SessionSidebar.vue';
-import { checkComponentA11y } from '../helpers/a11y';
+import { describe, it, expect, vi, beforeEach } from "vite-plus/test";
+import { mount } from "@vue/test-utils";
+import { createRouter, createWebHistory } from "vue-router";
+import { createPinia, setActivePinia } from "pinia";
+import SessionSidebar from "@/components/app/SessionSidebar.vue";
+import { checkComponentA11y } from "../helpers/a11y";
 
 // Mock composables
-vi.mock('@/composables/useDarkMode', () => ({
+vi.mock("@/composables/useDarkMode", () => ({
   useDarkMode: () => ({
     isDark: false,
     toggle: vi.fn(),
   }),
 }));
 
-vi.mock('@/composables/useArrowNavigation', () => ({
+vi.mock("@/composables/useArrowNavigation", () => ({
   useArrowNavigation: vi.fn(),
 }));
 
 // Mock stores
-vi.mock('@/stores/auth', () => ({
+vi.mock("@/stores/auth", () => ({
   useAuthStore: () => ({
-    displayName: 'Test User',
-    initials: 'TU',
+    displayName: "Test User",
+    initials: "TU",
     account: {
-      id: 'test-id',
+      id: "test-id",
       github: null,
       avatar: null,
     },
   }),
 }));
 
-vi.mock('@/stores/sessions', () => ({
+vi.mock("@/stores/sessions", () => ({
   useSessionsStore: () => ({
     activeSessions: [],
     inactiveSessions: [],
@@ -55,16 +55,16 @@ vi.mock('@/stores/sessions', () => ({
 const router = createRouter({
   history: createWebHistory(),
   routes: [
-    { path: '/', component: { template: '<div>Home</div>' } },
-    { path: '/session/:id', component: { template: '<div>Session</div>' } },
-    { path: '/new', component: { template: '<div>New</div>' } },
+    { path: "/", component: { template: "<div>Home</div>" } },
+    { path: "/session/:id", component: { template: "<div>Session</div>" } },
+    { path: "/new", component: { template: "<div>New</div>" } },
   ],
 });
 
-describe('SessionSidebar Accessibility', () => {
+describe("SessionSidebar Accessibility", () => {
   beforeEach(async () => {
     setActivePinia(createPinia());
-    await router.push('/');
+    await router.push("/");
     await router.isReady();
   });
 
@@ -80,10 +80,10 @@ describe('SessionSidebar Accessibility', () => {
             template: '<div role="navigation"><slot /></div>',
           },
           SidebarHeader: {
-            template: '<div><slot /></div>',
+            template: "<div><slot /></div>",
           },
           SidebarFooter: {
-            template: '<div><slot /></div>',
+            template: "<div><slot /></div>",
           },
           SidebarGroup: {
             template: '<div role="group"><slot /></div>',
@@ -101,7 +101,7 @@ describe('SessionSidebar Accessibility', () => {
             template: '<button v-bind="$attrs"><slot /></button>',
           },
           SidebarMenuBadge: {
-            template: '<span><slot /></span>',
+            template: "<span><slot /></span>",
           },
           SidebarSeparator: {
             template: '<hr aria-hidden="true" />',
@@ -120,7 +120,7 @@ describe('SessionSidebar Accessibility', () => {
     });
   }
 
-  it('should have no axe-core violations with empty sessions', async () => {
+  it("should have no axe-core violations with empty sessions", async () => {
     const wrapper = mountSidebar();
     // Disable nested-interactive rule: this is a false positive from test stubs.
     // SidebarMenuButton uses `as-child` which renders a single element in production,
@@ -128,17 +128,17 @@ describe('SessionSidebar Accessibility', () => {
     // The real component does not have this issue.
     await checkComponentA11y(wrapper, {
       rules: {
-        'nested-interactive': { enabled: false },
+        "nested-interactive": { enabled: false },
       },
     });
   });
 
-  it('should render sidebar with aria-label for navigation', () => {
+  it("should render sidebar with aria-label for navigation", () => {
     const wrapper = mountSidebar();
-    const nav = wrapper.find('nav');
+    const nav = wrapper.find("nav");
 
     expect(nav.exists()).toBe(true);
-    expect(nav.attributes('aria-label')).toBe('Session navigation');
+    expect(nav.attributes("aria-label")).toBe("Session navigation");
   });
 
   it('should have accessible "New Session" button', () => {
@@ -148,14 +148,14 @@ describe('SessionSidebar Accessibility', () => {
     expect(newSessionBtn.exists()).toBe(true);
   });
 
-  it('should show status message when no sessions exist', () => {
+  it("should show status message when no sessions exist", () => {
     const wrapper = mountSidebar();
     const status = wrapper.find('[role="status"]');
 
     expect(status.exists()).toBe(true);
   });
 
-  it('should have accessible theme toggle button', () => {
+  it("should have accessible theme toggle button", () => {
     const wrapper = mountSidebar();
     const themeBtn = wrapper.find('button[aria-label="Switch to dark mode"]');
 

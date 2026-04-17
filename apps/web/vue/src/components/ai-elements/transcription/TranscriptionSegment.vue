@@ -1,34 +1,33 @@
 <script setup lang="ts">
-import type { HTMLAttributes } from 'vue'
-import type { TranscriptionSegment } from './context'
-import { cn } from '@/lib/utils'
-import { computed } from 'vue'
-import { useTranscriptionContext } from './context'
+import type { HTMLAttributes } from "vue";
+import type { TranscriptionSegment } from "./context";
+import { cn } from "@/lib/utils";
+import { computed } from "vue";
+import { useTranscriptionContext } from "./context";
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
 interface Props {
-  segment: TranscriptionSegment
-  index: number
-  class?: HTMLAttributes['class']
+  segment: TranscriptionSegment;
+  index: number;
+  class?: HTMLAttributes["class"];
 }
 
-const { currentTime, onSeek } = useTranscriptionContext()
+const { currentTime, onSeek } = useTranscriptionContext();
 
 const isActive = computed(() => {
   return (
-    currentTime.value >= props.segment.startSecond
-    && currentTime.value < props.segment.endSecond
-  )
-})
+    currentTime.value >= props.segment.startSecond && currentTime.value < props.segment.endSecond
+  );
+});
 
 const isPast = computed(() => {
-  return currentTime.value >= props.segment.endSecond
-})
+  return currentTime.value >= props.segment.endSecond;
+});
 
 function handleClick() {
   if (onSeek) {
-    onSeek(props.segment.startSecond)
+    onSeek(props.segment.startSecond);
   }
 }
 </script>

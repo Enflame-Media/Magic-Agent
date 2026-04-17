@@ -7,4 +7,4 @@
  * @see HAP-1100 - Replace voice components with AI Elements SpeechInput + AudioPlayer
  */
 
-export { default as AppVoiceControls } from './AppVoiceControls.vue';
+export { default as AppVoiceControls } from "./AppVoiceControls.vue";

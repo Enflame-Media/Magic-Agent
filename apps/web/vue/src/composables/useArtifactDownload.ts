@@ -18,9 +18,9 @@
  * ```
  */
 
-import { ref, type Ref } from 'vue';
-import JSZip from 'jszip';
-import type { DecryptedArtifact } from '@/stores/artifacts';
+import { ref, type Ref } from "vue";
+import JSZip from "jszip";
+import type { DecryptedArtifact } from "@/stores/artifacts";
 
 /** Progress state for download operations */
 export interface DownloadProgress {
@@ -57,13 +57,13 @@ function getSafeFilename(artifact: DecryptedArtifact, existingPaths: Set<string>
   let basePath = artifact.filePath || artifact.title || `artifact-${artifact.id}`;
 
   // Remove leading slashes
-  basePath = basePath.replace(/^\/+/, '');
+  basePath = basePath.replace(/^\/+/, "");
 
   // Handle path collisions
   let finalPath = basePath;
   let counter = 1;
   while (existingPaths.has(finalPath)) {
-    const ext = basePath.includes('.') ? basePath.slice(basePath.lastIndexOf('.')) : '';
+    const ext = basePath.includes(".") ? basePath.slice(basePath.lastIndexOf(".")) : "";
     const nameWithoutExt = ext ? basePath.slice(0, -ext.length) : basePath;
     finalPath = `${nameWithoutExt}-${counter}${ext}`;
     counter++;
@@ -81,7 +81,7 @@ function getSafeFilename(artifact: DecryptedArtifact, existingPaths: Set<string>
  */
 function triggerDownload(blob: Blob, filename: string): void {
   const url = globalThis.URL.createObjectURL(blob);
-  const a = globalThis.document.createElement('a');
+  const a = globalThis.document.createElement("a");
   a.href = url;
   a.download = filename;
   globalThis.document.body.appendChild(a);
@@ -118,14 +118,14 @@ export function useArtifactDownload(): {
     if (!artifact.body) return;
 
     const filename = artifact.filePath || artifact.title || `artifact-${artifact.id}`;
-    const mimeType = artifact.mimeType || 'text/plain';
+    const mimeType = artifact.mimeType || "text/plain";
 
     // Handle image data (base64)
-    if (artifact.fileType === 'image' && artifact.body.startsWith('data:')) {
+    if (artifact.fileType === "image" && artifact.body.startsWith("data:")) {
       // Extract base64 data from data URL
-      const [header, base64Data] = artifact.body.split(',');
+      const [header, base64Data] = artifact.body.split(",");
       const detectedMime = header?.match(/data:([^;]+)/)?.[1] || mimeType;
-      const binaryString = atob(base64Data || '');
+      const binaryString = atob(base64Data || "");
       const bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
         bytes[i] = binaryString.charCodeAt(i);
@@ -148,7 +148,7 @@ export function useArtifactDownload(): {
    */
   async function downloadAll(
     artifacts: DecryptedArtifact[],
-    sessionName?: string
+    sessionName?: string,
   ): Promise<DownloadResult> {
     // Filter artifacts that have content
     const artifactsWithContent = artifacts.filter((a) => a.body);
@@ -156,14 +156,14 @@ export function useArtifactDownload(): {
     if (artifactsWithContent.length === 0) {
       return {
         success: false,
-        error: 'No artifacts with content to download',
+        error: "No artifacts with content to download",
       };
     }
 
     isDownloading.value = true;
     downloadProgress.value = {
       percent: 0,
-      status: 'Preparing files...',
+      status: "Preparing files...",
       filesProcessed: 0,
       totalFiles: artifactsWithContent.length,
     };
@@ -188,9 +188,9 @@ export function useArtifactDownload(): {
         };
 
         // Handle different content types
-        if (artifact.fileType === 'image' && artifact.body?.startsWith('data:')) {
+        if (artifact.fileType === "image" && artifact.body?.startsWith("data:")) {
           // Image as base64 - decode to binary
-          const [, base64Data] = artifact.body.split(',');
+          const [, base64Data] = artifact.body.split(",");
           if (base64Data) {
             zip.file(filename, base64Data, { base64: true });
           }
@@ -203,15 +203,15 @@ export function useArtifactDownload(): {
       // Generate ZIP with progress
       downloadProgress.value = {
         percent: 50,
-        status: 'Generating ZIP file...',
+        status: "Generating ZIP file...",
         filesProcessed: artifactsWithContent.length,
         totalFiles: artifactsWithContent.length,
       };
 
       const blob = await zip.generateAsync(
         {
-          type: 'blob',
-          compression: 'DEFLATE',
+          type: "blob",
+          compression: "DEFLATE",
           compressionOptions: { level: 6 },
         },
         (metadata) => {
@@ -222,7 +222,7 @@ export function useArtifactDownload(): {
             filesProcessed: artifactsWithContent.length,
             totalFiles: artifactsWithContent.length,
           };
-        }
+        },
       );
 
       // Generate filename
@@ -234,7 +234,7 @@ export function useArtifactDownload(): {
       // Trigger download
       downloadProgress.value = {
         percent: 100,
-        status: 'Download starting...',
+        status: "Download starting...",
         filesProcessed: artifactsWithContent.length,
         totalFiles: artifactsWithContent.length,
       };
@@ -246,7 +246,7 @@ export function useArtifactDownload(): {
         fileCount: artifactsWithContent.length,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
       return {
         success: false,
         error: errorMessage,

@@ -9,17 +9,11 @@
  * @see HAP-919 - Mobile Web Enhancements (Touch Targets)
  */
 
-import { computed } from 'vue';
-import { useRoute, RouterLink } from 'vue-router';
-import {
-  IconHome,
-  IconPlus,
-  IconUsers,
-  IconSettings,
-  IconFolder,
-} from '@tabler/icons-vue';
-import { useSessionsStore } from '@/stores/sessions';
-import { cn } from '@/lib/utils';
+import { computed } from "vue";
+import { useRoute, RouterLink } from "vue-router";
+import { IconHome, IconPlus, IconUsers, IconSettings, IconFolder } from "@tabler/icons-vue";
+import { useSessionsStore } from "@/stores/sessions";
+import { cn } from "@/lib/utils";
 
 const route = useRoute();
 const sessionsStore = useSessionsStore();
@@ -37,39 +31,37 @@ interface NavItem {
 
 const navItems = computed<NavItem[]>(() => [
   {
-    name: 'Home',
-    to: '/',
+    name: "Home",
+    to: "/",
     icon: IconHome,
   },
   {
-    name: 'Sessions',
-    to: hasActiveSessions.value
-      ? `/session/${sessionsStore.activeSessions[0]?.id}`
-      : '/',
+    name: "Sessions",
+    to: hasActiveSessions.value ? `/session/${sessionsStore.activeSessions[0]?.id}` : "/",
     icon: IconFolder,
     badge: sessionCount.value > 0 ? sessionCount.value : undefined,
   },
   {
-    name: 'New',
-    to: '/new',
+    name: "New",
+    to: "/new",
     icon: IconPlus,
     highlight: true,
   },
   {
-    name: 'Friends',
-    to: '/friends',
+    name: "Friends",
+    to: "/friends",
     icon: IconUsers,
   },
   {
-    name: 'Settings',
-    to: '/settings',
+    name: "Settings",
+    to: "/settings",
     icon: IconSettings,
   },
 ]);
 
 function isActive(item: NavItem): boolean {
-  if (item.to === '/') {
-    return route.path === '/';
+  if (item.to === "/") {
+    return route.path === "/";
   }
   return route.path.startsWith(item.to);
 }
@@ -85,13 +77,13 @@ function isActive(item: NavItem): boolean {
       <li v-for="item in navItems" :key="item.name" class="flex-1">
         <RouterLink
           :to="item.to"
-          :class="cn(
-            'touch-target-lg relative w-full flex flex-col items-center justify-center gap-1 p-2 transition-colors',
-            isActive(item)
-              ? 'text-primary'
-              : 'text-muted-foreground hover:text-foreground',
-            item.highlight && 'text-primary-foreground'
-          )"
+          :class="
+            cn(
+              'touch-target-lg relative w-full flex flex-col items-center justify-center gap-1 p-2 transition-colors',
+              isActive(item) ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
+              item.highlight && 'text-primary-foreground',
+            )
+          "
           :aria-current="isActive(item) ? 'page' : undefined"
         >
           <!-- Highlight button (primary action) -->
@@ -111,7 +103,7 @@ function isActive(item: NavItem): boolean {
                 v-if="item.badge"
                 class="absolute -right-2 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-medium text-primary-foreground"
               >
-                {{ typeof item.badge === 'number' && item.badge > 99 ? '99+' : item.badge }}
+                {{ typeof item.badge === "number" && item.badge > 99 ? "99+" : item.badge }}
               </span>
             </span>
             <span class="text-[10px] font-medium leading-tight">

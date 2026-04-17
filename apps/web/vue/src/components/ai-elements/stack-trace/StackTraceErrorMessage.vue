@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import type { HTMLAttributes } from 'vue'
-import { cn } from '@/lib/utils'
-import { useStackTraceContext } from './context'
+import type { HTMLAttributes } from "vue";
+import { cn } from "@/lib/utils";
+import { useStackTraceContext } from "./context";
 
 interface Props extends /* @vue-ignore */ HTMLAttributes {
-  class?: HTMLAttributes['class']
+  class?: HTMLAttributes["class"];
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
-const { trace } = useStackTraceContext('StackTraceErrorMessage')
+const { trace } = useStackTraceContext("StackTraceErrorMessage");
 </script>
 
 <template>

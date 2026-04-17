@@ -14,12 +14,9 @@
  * ```
  */
 
-import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
-import type {
-  CustomerInfo,
-  Offerings,
-} from '@/shared';
+import { defineStore } from "pinia";
+import { ref, computed } from "vue";
+import type { CustomerInfo, Offerings } from "@/shared";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -28,13 +25,7 @@ import type {
 /**
  * Purchase operation status
  */
-export type PurchaseStatus =
-  | 'idle'
-  | 'loading'
-  | 'purchasing'
-  | 'restoring'
-  | 'success'
-  | 'error';
+export type PurchaseStatus = "idle" | "loading" | "purchasing" | "restoring" | "success" | "error";
 
 /**
  * Error information for failed operations
@@ -49,7 +40,7 @@ export interface PurchaseErrorInfo {
 // Store
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const usePurchasesStore = defineStore('purchases', () => {
+export const usePurchasesStore = defineStore("purchases", () => {
   // ─────────────────────────────────────────────────────────────────────────
   // State
   // ─────────────────────────────────────────────────────────────────────────
@@ -61,7 +52,7 @@ export const usePurchasesStore = defineStore('purchases', () => {
   const isLoading = ref(false);
 
   /** Current operation status */
-  const status = ref<PurchaseStatus>('idle');
+  const status = ref<PurchaseStatus>("idle");
 
   /** Customer subscription information */
   const customerInfo = ref<CustomerInfo | null>(null);
@@ -84,7 +75,7 @@ export const usePurchasesStore = defineStore('purchases', () => {
    */
   const isPro = computed(() => {
     if (!customerInfo.value) return false;
-    return customerInfo.value.entitlements.all['pro']?.isActive ?? false;
+    return customerInfo.value.entitlements.all["pro"]?.isActive ?? false;
   });
 
   /**
@@ -122,9 +113,7 @@ export const usePurchasesStore = defineStore('purchases', () => {
    */
   const monthlyPackage = computed(() => {
     return availablePackages.value.find(
-      (pkg) =>
-        pkg.packageType === 'monthly' ||
-        pkg.identifier.toLowerCase().includes('month')
+      (pkg) => pkg.packageType === "monthly" || pkg.identifier.toLowerCase().includes("month"),
     );
   });
 
@@ -134,9 +123,9 @@ export const usePurchasesStore = defineStore('purchases', () => {
   const annualPackage = computed(() => {
     return availablePackages.value.find(
       (pkg) =>
-        pkg.packageType === 'annual' ||
-        pkg.identifier.toLowerCase().includes('annual') ||
-        pkg.identifier.toLowerCase().includes('year')
+        pkg.packageType === "annual" ||
+        pkg.identifier.toLowerCase().includes("annual") ||
+        pkg.identifier.toLowerCase().includes("year"),
     );
   });
 
@@ -176,9 +165,9 @@ export const usePurchasesStore = defineStore('purchases', () => {
   function setLoading(loading: boolean) {
     isLoading.value = loading;
     if (loading) {
-      status.value = 'loading';
-    } else if (status.value === 'loading') {
-      status.value = 'idle';
+      status.value = "loading";
+    } else if (status.value === "loading") {
+      status.value = "idle";
     }
   }
 
@@ -187,9 +176,9 @@ export const usePurchasesStore = defineStore('purchases', () => {
    */
   function setPurchasing(purchasing: boolean) {
     if (purchasing) {
-      status.value = 'purchasing';
-    } else if (status.value === 'purchasing') {
-      status.value = 'idle';
+      status.value = "purchasing";
+    } else if (status.value === "purchasing") {
+      status.value = "idle";
     }
   }
 
@@ -198,9 +187,9 @@ export const usePurchasesStore = defineStore('purchases', () => {
    */
   function setRestoring(restoring: boolean) {
     if (restoring) {
-      status.value = 'restoring';
-    } else if (status.value === 'restoring') {
-      status.value = 'idle';
+      status.value = "restoring";
+    } else if (status.value === "restoring") {
+      status.value = "idle";
     }
   }
 
@@ -213,7 +202,7 @@ export const usePurchasesStore = defineStore('purchases', () => {
       message,
       timestamp: new Date(),
     };
-    status.value = 'error';
+    status.value = "error";
   }
 
   /**
@@ -221,8 +210,8 @@ export const usePurchasesStore = defineStore('purchases', () => {
    */
   function clearError() {
     lastError.value = null;
-    if (status.value === 'error') {
-      status.value = 'idle';
+    if (status.value === "error") {
+      status.value = "idle";
     }
   }
 
@@ -237,7 +226,7 @@ export const usePurchasesStore = defineStore('purchases', () => {
    * Mark operation as successful
    */
   function setSuccess() {
-    status.value = 'success';
+    status.value = "success";
     clearError();
   }
 
@@ -246,9 +235,7 @@ export const usePurchasesStore = defineStore('purchases', () => {
    */
   function hasEntitlement(entitlementId: string): boolean {
     if (!customerInfo.value) return false;
-    return (
-      customerInfo.value.entitlements.all[entitlementId]?.isActive ?? false
-    );
+    return customerInfo.value.entitlements.all[entitlementId]?.isActive ?? false;
   }
 
   /**
@@ -257,7 +244,7 @@ export const usePurchasesStore = defineStore('purchases', () => {
   function $reset() {
     isConfigured.value = false;
     isLoading.value = false;
-    status.value = 'idle';
+    status.value = "idle";
     customerInfo.value = null;
     offerings.value = null;
     lastError.value = null;

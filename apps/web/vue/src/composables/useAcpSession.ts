@@ -29,10 +29,10 @@
  * ```
  */
 
-import { computed, type MaybeRefOrGetter, toValue } from 'vue';
-import { useAcpStore, type AcpSessionState } from '@/stores/acp';
-import { getNextPendingPermission } from '@/stores/acpTypes';
-import type { AcpAgentRegistryState, AcpRegisteredAgent } from '@/stores/acpTypes';
+import { computed, type MaybeRefOrGetter, toValue } from "vue";
+import { useAcpStore, type AcpSessionState } from "@/stores/acp";
+import { getNextPendingPermission } from "@/stores/acpTypes";
+import type { AcpAgentRegistryState, AcpRegisteredAgent } from "@/stores/acpTypes";
 
 /**
  * Reactive composable for ACP session state.
@@ -54,13 +54,13 @@ export function useAcpSession(sessionId: MaybeRefOrGetter<string>) {
   const hasSession = computed(() => session.value !== null);
 
   /** Accumulated agent message text */
-  const agentMessage = computed(() => session.value?.agentMessage ?? '');
+  const agentMessage = computed(() => session.value?.agentMessage ?? "");
 
   /** Accumulated user message text */
-  const userMessage = computed(() => session.value?.userMessage ?? '');
+  const userMessage = computed(() => session.value?.userMessage ?? "");
 
   /** Accumulated agent thought text */
-  const agentThought = computed(() => session.value?.agentThought ?? '');
+  const agentThought = computed(() => session.value?.agentThought ?? "");
 
   /** Active tool calls keyed by toolCallId */
   const toolCalls = computed(() => session.value?.toolCalls ?? {});
@@ -99,8 +99,7 @@ export function useAcpSession(sessionId: MaybeRefOrGetter<string>) {
 
   /** Count of pending permission requests */
   const pendingPermissionCount = computed(() => {
-    return Object.values(permissionRequests.value)
-      .filter((r) => r.status === 'pending').length;
+    return Object.values(permissionRequests.value).filter((r) => r.status === "pending").length;
   });
 
   /** History of resolved permission decisions */

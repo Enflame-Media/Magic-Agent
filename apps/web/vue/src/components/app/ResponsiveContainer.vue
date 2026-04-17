@@ -15,9 +15,9 @@
  * @see HAP-916 - Responsive Design System
  */
 
-import { computed, type HTMLAttributes } from 'vue';
-import { cn } from '@/lib/utils';
-import { useBreakpoints } from '@/composables/useBreakpoints';
+import { computed, type HTMLAttributes } from "vue";
+import { cn } from "@/lib/utils";
+import { useBreakpoints } from "@/composables/useBreakpoints";
 
 export interface ResponsiveContainerProps {
   /**
@@ -28,7 +28,7 @@ export interface ResponsiveContainerProps {
    * - 'wide': max-w-7xl (1280px) - for dashboards, data tables
    * - 'ultrawide': max-w-screen-2xl (1536px) - for 4K displays
    */
-  size?: 'full' | 'narrow' | 'default' | 'wide' | 'ultrawide';
+  size?: "full" | "narrow" | "default" | "wide" | "ultrawide";
 
   /**
    * Padding variant
@@ -37,7 +37,7 @@ export interface ResponsiveContainerProps {
    * - 'default': Standard padding with responsive scaling
    * - 'comfortable': Extra padding for reading content
    */
-  padding?: 'none' | 'compact' | 'default' | 'comfortable';
+  padding?: "none" | "compact" | "default" | "comfortable";
 
   /**
    * Whether to center the container horizontally
@@ -48,47 +48,44 @@ export interface ResponsiveContainerProps {
   /**
    * Additional CSS classes
    */
-  class?: HTMLAttributes['class'];
+  class?: HTMLAttributes["class"];
 }
 
 const props = withDefaults(defineProps<ResponsiveContainerProps>(), {
-  size: 'default',
-  padding: 'default',
+  size: "default",
+  padding: "default",
   centered: true,
 });
 
 const { isMobile } = useBreakpoints();
 
-const sizeClasses: Record<NonNullable<ResponsiveContainerProps['size']>, string> = {
-  full: 'w-full',
-  narrow: 'w-full max-w-2xl',
-  default: 'w-full max-w-5xl',
-  wide: 'w-full max-w-7xl',
-  ultrawide: 'w-full max-w-screen-2xl',
+const sizeClasses: Record<NonNullable<ResponsiveContainerProps["size"]>, string> = {
+  full: "w-full",
+  narrow: "w-full max-w-2xl",
+  default: "w-full max-w-5xl",
+  wide: "w-full max-w-7xl",
+  ultrawide: "w-full max-w-screen-2xl",
 };
 
-const paddingClasses: Record<NonNullable<ResponsiveContainerProps['padding']>, string> = {
-  none: '',
-  compact: 'px-3 py-2 sm:px-4 sm:py-3',
-  default: 'px-4 py-4 sm:px-6 sm:py-5 lg:px-8 lg:py-6',
-  comfortable: 'px-4 py-6 sm:px-8 sm:py-8 lg:px-12 lg:py-10',
+const paddingClasses: Record<NonNullable<ResponsiveContainerProps["padding"]>, string> = {
+  none: "",
+  compact: "px-3 py-2 sm:px-4 sm:py-3",
+  default: "px-4 py-4 sm:px-6 sm:py-5 lg:px-8 lg:py-6",
+  comfortable: "px-4 py-6 sm:px-8 sm:py-8 lg:px-12 lg:py-10",
 };
 
 const containerClass = computed(() =>
   cn(
     sizeClasses[props.size],
     paddingClasses[props.padding],
-    props.centered && 'mx-auto',
+    props.centered && "mx-auto",
     props.class,
-  )
+  ),
 );
 </script>
 
 <template>
-  <div
-    :class="containerClass"
-    :data-mobile="isMobile ? 'true' : undefined"
-  >
+  <div :class="containerClass" :data-mobile="isMobile ? 'true' : undefined">
     <slot />
   </div>
 </template>

@@ -8,8 +8,8 @@
  * @see HAP-916 - Responsive Design System
  */
 
-import { breakpointsTailwind, useBreakpoints as useVueUseBreakpoints } from '@vueuse/core';
-import { computed, type ComputedRef, type Ref } from 'vue';
+import { breakpointsTailwind, useBreakpoints as useVueUseBreakpoints } from "@vueuse/core";
+import { computed, type ComputedRef, type Ref } from "vue";
 
 /**
  * TailwindCSS default breakpoints (mobile-first)
@@ -24,7 +24,7 @@ export const BREAKPOINTS = {
   md: 768,
   lg: 1024,
   xl: 1280,
-  '2xl': 1536,
+  "2xl": 1536,
 } as const;
 
 export type BreakpointKey = keyof typeof BREAKPOINTS;
@@ -37,7 +37,7 @@ export interface UseBreakpointsReturn {
    * Currently active breakpoint name
    * Returns 'xs' for screens smaller than sm (640px)
    */
-  current: ComputedRef<BreakpointKey | 'xs'>;
+  current: ComputedRef<BreakpointKey | "xs">;
 
   /**
    * True when viewport is below sm breakpoint (mobile phones)
@@ -94,16 +94,16 @@ export function useBreakpoints(options?: { ssrWidth?: number }): UseBreakpointsR
   const breakpoints = useVueUseBreakpoints(breakpointsTailwind, options);
 
   // Common breakpoint checks
-  const isMobile = breakpoints.smaller('sm');
-  const isTablet = breakpoints.greaterOrEqual('sm');
-  const isDesktop = breakpoints.greaterOrEqual('lg');
-  const isLargeScreen = breakpoints.greaterOrEqual('xl');
+  const isMobile = breakpoints.smaller("sm");
+  const isTablet = breakpoints.greaterOrEqual("sm");
+  const isDesktop = breakpoints.greaterOrEqual("lg");
+  const isLargeScreen = breakpoints.greaterOrEqual("xl");
 
   // Active breakpoint with 'xs' fallback for mobile
-  const current = computed<BreakpointKey | 'xs'>(() => {
+  const current = computed<BreakpointKey | "xs">(() => {
     const active = breakpoints.active();
     // When no breakpoint is active (below sm), return 'xs'
-    return (active.value as BreakpointKey | undefined) ?? 'xs';
+    return (active.value as BreakpointKey | undefined) ?? "xs";
   });
 
   return {

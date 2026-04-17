@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import type { HTMLAttributes } from 'vue'
-import { CommandItem } from '@/components/ui/command'
-import { cn } from '@/lib/utils'
+import type { HTMLAttributes } from "vue";
+import { CommandItem } from "@/components/ui/command";
+import { cn } from "@/lib/utils";
 
-type VoiceSelectorItemProps = InstanceType<typeof CommandItem>['$props']
+type VoiceSelectorItemProps = InstanceType<typeof CommandItem>["$props"];
 
 interface Props extends /* @vue-ignore */ VoiceSelectorItemProps {
-  class?: HTMLAttributes['class']
+  class?: HTMLAttributes["class"];
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
-const { class: _, ...rest } = props
+const { class: _, ...rest } = props;
 </script>
 
 <template>

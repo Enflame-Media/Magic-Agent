@@ -1,11 +1,11 @@
-import { wsService } from './WebSocketService';
-import { encryptSessionMessage } from '@/services/encryption/sessionDecryption';
-import type { Session } from '@/stores/sessions';
+import { wsService } from "./WebSocketService";
+import { encryptSessionMessage } from "@/services/encryption/sessionDecryption";
+import type { Session } from "@/stores/sessions";
 
 type UserMessagePayload = {
-  role: 'user';
+  role: "user";
   content: {
-    type: 'text';
+    type: "text";
     text: string;
   };
   meta?: {
@@ -18,41 +18,41 @@ type UserMessagePayload = {
 export async function sendSessionMessage(
   session: Session,
   text: string,
-  permissionMode: string = 'default'
+  permissionMode: string = "default",
 ): Promise<{ ok: boolean; error?: string }> {
   const trimmed = text.trim();
   if (!trimmed) {
-    return { ok: false, error: 'Message is empty' };
+    return { ok: false, error: "Message is empty" };
   }
 
   const payload: UserMessagePayload = {
-    role: 'user',
+    role: "user",
     content: {
-      type: 'text',
+      type: "text",
       text: trimmed,
     },
     meta: {
-      sentFrom: 'web',
+      sentFrom: "web",
       permissionMode,
     },
   };
 
   const encryptedMessage = await encryptSessionMessage(session, payload);
   if (!encryptedMessage) {
-    return { ok: false, error: 'Failed to encrypt message' };
+    return { ok: false, error: "Failed to encrypt message" };
   }
 
   const localId = crypto.randomUUID();
-  const sent = wsService.send('message', {
+  const sent = wsService.send("message", {
     sid: session.id,
     message: encryptedMessage,
     localId,
-    sentFrom: 'web',
+    sentFrom: "web",
     permissionMode,
   });
 
   if (!sent) {
-    return { ok: false, error: 'WebSocket not connected' };
+    return { ok: false, error: "WebSocket not connected" };
   }
 
   return { ok: true };

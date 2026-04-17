@@ -7,7 +7,7 @@
  * @see HAP-919 - Mobile Web Enhancements
  */
 
-import { ref, computed, onMounted, onUnmounted, type Ref, type ComputedRef } from 'vue';
+import { ref, computed, onMounted, onUnmounted, type Ref, type ComputedRef } from "vue";
 
 /**
  * Configuration options for pull-to-refresh
@@ -259,10 +259,10 @@ export function usePullToRefresh(options: UsePullToRefreshOptions = {}): UsePull
     const element = containerRef.value;
 
     // Use passive: false to allow preventDefault during pull
-    element.addEventListener('touchstart', handleTouchStart, { passive: true });
-    element.addEventListener('touchmove', handleTouchMove, { passive: false });
-    element.addEventListener('touchend', handleTouchEnd, { passive: true });
-    element.addEventListener('touchcancel', reset, { passive: true });
+    element.addEventListener("touchstart", handleTouchStart, { passive: true });
+    element.addEventListener("touchmove", handleTouchMove, { passive: false });
+    element.addEventListener("touchend", handleTouchEnd, { passive: true });
+    element.addEventListener("touchcancel", reset, { passive: true });
   });
 
   onUnmounted(() => {
@@ -270,10 +270,10 @@ export function usePullToRefresh(options: UsePullToRefreshOptions = {}): UsePull
 
     const element = containerRef.value;
 
-    element.removeEventListener('touchstart', handleTouchStart);
-    element.removeEventListener('touchmove', handleTouchMove);
-    element.removeEventListener('touchend', handleTouchEnd);
-    element.removeEventListener('touchcancel', reset);
+    element.removeEventListener("touchstart", handleTouchStart);
+    element.removeEventListener("touchmove", handleTouchMove);
+    element.removeEventListener("touchend", handleTouchEnd);
+    element.removeEventListener("touchcancel", reset);
   });
 
   return {

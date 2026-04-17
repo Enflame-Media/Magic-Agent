@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { CommandEmpty } from '@/components/ui/command'
+import { CommandEmpty } from "@/components/ui/command";
 
-type CommandEmptyProps = InstanceType<typeof CommandEmpty>['$props']
+type CommandEmptyProps = InstanceType<typeof CommandEmpty>["$props"];
 
 interface Props extends /* @vue-ignore */ CommandEmptyProps {}
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 </script>
 
 <template>

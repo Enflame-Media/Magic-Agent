@@ -8,9 +8,9 @@
  * @see HAP-919 - Mobile Web Enhancements
  */
 
-import { computed, ref, onMounted, onUnmounted, type StyleValue } from 'vue';
-import { IconRefresh, IconLoader2 } from '@tabler/icons-vue';
-import { useBreakpoints } from '@/composables/useBreakpoints';
+import { computed, ref, onMounted, onUnmounted, type StyleValue } from "vue";
+import { IconRefresh, IconLoader2 } from "@tabler/icons-vue";
+import { useBreakpoints } from "@/composables/useBreakpoints";
 
 const props = withDefaults(
   defineProps<{
@@ -39,7 +39,7 @@ const props = withDefaults(
     maxPullDistance: 120,
     enabled: true,
     mobileOnly: true,
-  }
+  },
 );
 
 const emit = defineEmits<{
@@ -117,7 +117,7 @@ async function triggerRefresh(): Promise<void> {
   pullDistance.value = props.threshold;
 
   try {
-    emit('refresh');
+    emit("refresh");
     // Wait a bit to show the refreshing state
     await new Promise((resolve) => setTimeout(resolve, 500));
   } finally {
@@ -176,20 +176,20 @@ onMounted(() => {
   if (!containerRef.value) return;
 
   const el = containerRef.value;
-  el.addEventListener('touchstart', handleTouchStart, { passive: true });
-  el.addEventListener('touchmove', handleTouchMove, { passive: false });
-  el.addEventListener('touchend', handleTouchEnd, { passive: true });
-  el.addEventListener('touchcancel', reset, { passive: true });
+  el.addEventListener("touchstart", handleTouchStart, { passive: true });
+  el.addEventListener("touchmove", handleTouchMove, { passive: false });
+  el.addEventListener("touchend", handleTouchEnd, { passive: true });
+  el.addEventListener("touchcancel", reset, { passive: true });
 });
 
 onUnmounted(() => {
   if (!containerRef.value) return;
 
   const el = containerRef.value;
-  el.removeEventListener('touchstart', handleTouchStart);
-  el.removeEventListener('touchmove', handleTouchMove);
-  el.removeEventListener('touchend', handleTouchEnd);
-  el.removeEventListener('touchcancel', reset);
+  el.removeEventListener("touchstart", handleTouchStart);
+  el.removeEventListener("touchmove", handleTouchMove);
+  el.removeEventListener("touchend", handleTouchEnd);
+  el.removeEventListener("touchcancel", reset);
 });
 
 // Expose for parent components
@@ -215,10 +215,7 @@ defineExpose({
         class="flex h-10 w-10 items-center justify-center rounded-full bg-background shadow-lg border border-border"
       >
         <!-- Refreshing spinner -->
-        <IconLoader2
-          v-if="isRefreshing"
-          class="h-5 w-5 text-primary animate-spin"
-        />
+        <IconLoader2 v-if="isRefreshing" class="h-5 w-5 text-primary animate-spin" />
         <!-- Pull progress indicator -->
         <IconRefresh
           v-else

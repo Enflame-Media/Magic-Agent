@@ -27,8 +27,8 @@
  * @see HAP-874 - Offline Artifact Caching
  */
 
-import Dexie, { type Table } from 'dexie';
-import type { ArtifactHeader, DecryptedArtifact, ArtifactFileType } from '@/stores/artifacts';
+import Dexie, { type Table } from "dexie";
+import type { ArtifactHeader, DecryptedArtifact, ArtifactFileType } from "@/stores/artifacts";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -111,13 +111,13 @@ class ArtifactCacheDatabase extends Dexie {
   artifacts!: Table<CachedArtifact, string>;
 
   constructor() {
-    super('HappyArtifactCache');
+    super("HappyArtifactCache");
 
     // Schema version 1
     this.version(1).stores({
       // Primary key: id
       // Indexes: cachedAt (for LRU), bodyCachedAt (for body eviction), sessions
-      artifacts: 'id, cachedAt, bodyCachedAt, *header.sessions',
+      artifacts: "id, cachedAt, bodyCachedAt, *header.sessions",
     });
   }
 }
@@ -164,7 +164,7 @@ class ArtifactCacheService {
       this.initialized = true;
 
       // Load saved config from localStorage
-      const savedConfig = localStorage.getItem('artifact_cache_config');
+      const savedConfig = localStorage.getItem("artifact_cache_config");
       if (savedConfig) {
         try {
           const parsed = JSON.parse(savedConfig) as Partial<CacheConfig>;
@@ -174,9 +174,9 @@ class ArtifactCacheService {
         }
       }
 
-      console.debug('[cache] Artifact cache initialized');
+      console.debug("[cache] Artifact cache initialized");
     } catch (error) {
-      console.error('[cache] Failed to initialize artifact cache:', error);
+      console.error("[cache] Failed to initialize artifact cache:", error);
       // Continue without caching
       this.config.enabled = false;
     }
@@ -189,7 +189,7 @@ class ArtifactCacheService {
    */
   setConfig(config: Partial<CacheConfig>): void {
     this.config = { ...this.config, ...config };
-    localStorage.setItem('artifact_cache_config', JSON.stringify(this.config));
+    localStorage.setItem("artifact_cache_config", JSON.stringify(this.config));
   }
 
   /**
@@ -209,10 +209,7 @@ class ArtifactCacheService {
    * @param artifact - The decrypted artifact to cache
    * @param includeBody - Whether to cache the body content (default: true if available)
    */
-  async cacheArtifact(
-    artifact: DecryptedArtifact,
-    includeBody = true
-  ): Promise<void> {
+  async cacheArtifact(artifact: DecryptedArtifact, includeBody = true): Promise<void> {
     if (!this.config.enabled || !artifact.isDecrypted) return;
     await this.initialize();
 
@@ -270,10 +267,7 @@ class ArtifactCacheService {
    * @param artifacts - Array of artifacts to cache
    * @param includeBodies - Whether to cache body content
    */
-  async cacheArtifacts(
-    artifacts: DecryptedArtifact[],
-    includeBodies = true
-  ): Promise<void> {
+  async cacheArtifacts(artifacts: DecryptedArtifact[], includeBodies = true): Promise<void> {
     if (!this.config.enabled) return;
     await this.initialize();
 
@@ -321,7 +315,7 @@ class ArtifactCacheService {
       await this.runEviction();
       console.debug(`[cache] Cached ${cachedItems.length} artifacts`);
     } catch (error) {
-      console.error('[cache] Failed to batch cache artifacts:', error);
+      console.error("[cache] Failed to batch cache artifacts:", error);
     }
   }
 
@@ -374,7 +368,7 @@ class ArtifactCacheService {
 
       return cached.map((c) => this.toDecryptedArtifact(c));
     } catch (error) {
-      console.error('[cache] Failed to load cached artifacts:', error);
+      console.error("[cache] Failed to load cached artifacts:", error);
       return [];
     }
   }
@@ -416,9 +410,7 @@ class ArtifactCacheService {
     try {
       // Filter by session in the header.sessions array
       const all = await this.db.artifacts.toArray();
-      const filtered = all.filter((c) =>
-        c.header.sessions?.includes(sessionId)
-      );
+      const filtered = all.filter((c) => c.header.sessions?.includes(sessionId));
 
       return filtered.map((c) => this.toDecryptedArtifact(c));
     } catch (error) {
@@ -439,11 +431,7 @@ class ArtifactCacheService {
    * @param bodyVersion - Current body version from server (if applicable)
    * @returns True if cached version is older than server version
    */
-  async isStale(
-    id: string,
-    headerVersion: number,
-    bodyVersion: number | null
-  ): Promise<boolean> {
+  async isStale(id: string, headerVersion: number, bodyVersion: number | null): Promise<boolean> {
     if (!this.config.enabled) return true;
     await this.initialize();
 
@@ -495,9 +483,9 @@ class ArtifactCacheService {
 
     try {
       await this.db.artifacts.clear();
-      console.debug('[cache] Cleared all cached artifacts');
+      console.debug("[cache] Cleared all cached artifacts");
     } catch (error) {
-      console.error('[cache] Failed to clear cache:', error);
+      console.error("[cache] Failed to clear cache:", error);
     }
   }
 
@@ -531,7 +519,7 @@ class ArtifactCacheService {
         newestCachedAt,
       };
     } catch (error) {
-      console.error('[cache] Failed to get cache stats:', error);
+      console.error("[cache] Failed to get cache stats:", error);
       return {
         totalArtifacts: 0,
         artifactsWithBody: 0,
@@ -561,14 +549,14 @@ class ArtifactCacheService {
       return;
     }
 
-    console.debug('[cache] Running cache eviction...');
+    console.debug("[cache] Running cache eviction...");
 
     try {
       // First, evict bodies from least recently used artifacts
       if (stats.artifactsWithBody > this.config.maxBodiesCount) {
         const artifactsWithBody = await this.db.artifacts
           .filter((a) => a.body !== null)
-          .sortBy('bodyCachedAt');
+          .sortBy("bodyCachedAt");
 
         const toEvictCount = stats.artifactsWithBody - this.config.maxBodiesCount;
         const toEvict = artifactsWithBody.slice(0, toEvictCount);
@@ -588,7 +576,7 @@ class ArtifactCacheService {
       const newStats = await this.getStats();
       if (newStats.totalSizeBytes > this.config.maxSizeBytes) {
         // Sort by cachedAt (LRU) and delete oldest
-        const allSorted = await this.db.artifacts.orderBy('cachedAt').toArray();
+        const allSorted = await this.db.artifacts.orderBy("cachedAt").toArray();
         let currentSize = newStats.totalSizeBytes;
 
         for (const artifact of allSorted) {
@@ -600,7 +588,7 @@ class ArtifactCacheService {
         }
       }
     } catch (error) {
-      console.error('[cache] Failed to run eviction:', error);
+      console.error("[cache] Failed to run eviction:", error);
     }
   }
 

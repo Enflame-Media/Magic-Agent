@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import type { HTMLAttributes } from 'vue'
-import { cn } from '@/lib/utils'
-import { PlusIcon } from 'lucide-vue-next'
+import type { HTMLAttributes } from "vue";
+import { cn } from "@/lib/utils";
+import { PlusIcon } from "lucide-vue-next";
 
 interface Props extends /* @vue-ignore */ HTMLAttributes {
-  count: number
-  class?: HTMLAttributes['class']
+  count: number;
+  class?: HTMLAttributes["class"];
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 </script>
 
 <template>

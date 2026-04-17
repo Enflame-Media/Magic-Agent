@@ -7,9 +7,9 @@
  * @see HAP-708 - Integrate Artifacts Store with Sync Service
  */
 
-import { EncryptionManager, ArtifactEncryption } from '@/services/encryption/index';
-import { secureStorage } from '@/services/storage';
-import { decodeBase64 } from '@/services/base64';
+import { EncryptionManager, ArtifactEncryption } from "@/services/encryption/index";
+import { secureStorage } from "@/services/storage";
+import { decodeBase64 } from "@/services/base64";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Encryption Manager Singleton
@@ -109,7 +109,7 @@ export function clearArtifactKeys(): void {
  */
 export async function getArtifactEncryption(
   artifactId: string,
-  dataEncryptionKey?: string
+  dataEncryptionKey?: string,
 ): Promise<ArtifactEncryption | null> {
   // Check if we already have the decrypted key
   let decryptedKey = artifactDataKeys.get(artifactId);
@@ -118,11 +118,11 @@ export async function getArtifactEncryption(
   if (!decryptedKey && dataEncryptionKey) {
     const encryptionManager = await getEncryptionManager();
     if (!encryptionManager) {
-      console.error('[artifact] Encryption manager not available');
+      console.error("[artifact] Encryption manager not available");
       return null;
     }
 
-    decryptedKey = await encryptionManager.decryptEncryptionKey(dataEncryptionKey) ?? undefined;
+    decryptedKey = (await encryptionManager.decryptEncryptionKey(dataEncryptionKey)) ?? undefined;
     if (!decryptedKey) {
       console.error(`[artifact] Failed to decrypt key for artifact ${artifactId}`);
       return null;

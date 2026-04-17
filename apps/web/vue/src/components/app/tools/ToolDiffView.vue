@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { CodeBlock } from '@/components/app';
+import { computed } from "vue";
+import { CodeBlock } from "@/components/app";
 
 interface Props {
   input: unknown;
@@ -12,27 +12,19 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const diffText = computed(() => {
-  if (!props.input || typeof props.input !== 'object') {
-    return '';
+  if (!props.input || typeof props.input !== "object") {
+    return "";
   }
   const record = props.input as Record<string, unknown>;
-  if (typeof record.patch === 'string') {
+  if (typeof record.patch === "string") {
     return record.patch;
   }
-  const before = typeof record.oldText === 'string' ? record.oldText : '';
-  const after = typeof record.newText === 'string' ? record.newText : '';
-  return [
-    '--- before',
-    before,
-    '+++ after',
-    after,
-  ].join('\n');
+  const before = typeof record.oldText === "string" ? record.oldText : "";
+  const after = typeof record.newText === "string" ? record.newText : "";
+  return ["--- before", before, "+++ after", after].join("\n");
 });
 </script>
 
 <template>
-  <CodeBlock
-    :code="diffText"
-    language="diff"
-  />
+  <CodeBlock :code="diffText" language="diff" />
 </template>

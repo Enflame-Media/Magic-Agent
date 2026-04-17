@@ -8,13 +8,13 @@
  * @see HAP-769 - Implement Share Session UI for happy-vue web app
  */
 
-import { computed } from 'vue';
-import { useI18n } from 'vue-i18n';
-import { Trash2 } from 'lucide-vue-next';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import PermissionSelect from './PermissionSelect.vue';
-import type { SessionShareEntry, SessionSharePermission } from '@magic-agent/protocol';
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+import { Trash2 } from "lucide-vue-next";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import PermissionSelect from "./PermissionSelect.vue";
+import type { SessionShareEntry, SessionSharePermission } from "@magic-agent/protocol";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Props & Emits
@@ -32,8 +32,8 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<{
-  'update:permission': [shareId: string, permission: SessionSharePermission];
-  'remove': [shareId: string];
+  "update:permission": [shareId: string, permission: SessionSharePermission];
+  remove: [shareId: string];
 }>();
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -49,15 +49,15 @@ const { t } = useI18n();
 /** Display name for the user */
 const displayName = computed(() => {
   const profile = props.share.userProfile;
-  if (!profile) return 'Unknown User';
+  if (!profile) return "Unknown User";
 
-  const fullName = [profile.firstName, profile.lastName].filter(Boolean).join(' ');
+  const fullName = [profile.firstName, profile.lastName].filter(Boolean).join(" ");
   return fullName || profile.username;
 });
 
 /** Username for the user */
 const username = computed(() => {
-  return props.share.userProfile?.username ?? '';
+  return props.share.userProfile?.username ?? "";
 });
 
 /** Avatar URL */
@@ -68,7 +68,7 @@ const avatarUrl = computed(() => {
 /** Initials for avatar fallback */
 const initials = computed(() => {
   const profile = props.share.userProfile;
-  if (!profile) return '?';
+  if (!profile) return "?";
 
   if (profile.firstName && profile.lastName) {
     return `${profile.firstName[0]}${profile.lastName[0]}`.toUpperCase();
@@ -81,11 +81,11 @@ const initials = computed(() => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function handlePermissionChange(permission: SessionSharePermission): void {
-  emit('update:permission', props.share.id, permission);
+  emit("update:permission", props.share.id, permission);
 }
 
 function handleRemove(): void {
-  emit('remove', props.share.id);
+  emit("remove", props.share.id);
 }
 </script>
 
@@ -100,9 +100,7 @@ function handleRemove(): void {
     <!-- User Info -->
     <div class="flex-1 min-w-0">
       <p class="font-medium text-sm truncate">{{ displayName }}</p>
-      <p v-if="username" class="text-xs text-muted-foreground truncate">
-        @{{ username }}
-      </p>
+      <p v-if="username" class="text-xs text-muted-foreground truncate">@{{ username }}</p>
     </div>
 
     <!-- Permission Select -->
@@ -122,7 +120,7 @@ function handleRemove(): void {
       @click="handleRemove"
     >
       <Trash2 class="size-4" />
-      <span class="sr-only">{{ t('sharing.removeAccess') }}</span>
+      <span class="sr-only">{{ t("sharing.removeAccess") }}</span>
     </Button>
   </div>
 </template>

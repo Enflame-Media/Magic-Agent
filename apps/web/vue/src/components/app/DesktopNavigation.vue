@@ -13,9 +13,9 @@
  * @see HAP-927 - Resizable Sidebar
  */
 
-import { computed, type HTMLAttributes } from 'vue';
-import { cn } from '@/lib/utils';
-import { useBreakpoints } from '@/composables/useBreakpoints';
+import { computed, type HTMLAttributes } from "vue";
+import { cn } from "@/lib/utils";
+import { useBreakpoints } from "@/composables/useBreakpoints";
 
 export interface DesktopNavigationProps {
   /**
@@ -33,7 +33,7 @@ export interface DesktopNavigationProps {
   /**
    * Additional CSS classes
    */
-  class?: HTMLAttributes['class'];
+  class?: HTMLAttributes["class"];
 }
 
 const props = withDefaults(defineProps<DesktopNavigationProps>(), {
@@ -43,23 +43,23 @@ const props = withDefaults(defineProps<DesktopNavigationProps>(), {
 
 defineEmits<{
   /** Emitted when collapse state changes */
-  (e: 'toggle-collapse'): void;
+  (e: "toggle-collapse"): void;
   /** Emitted when width changes via resize */
-  (e: 'resize', width: number): void;
+  (e: "resize", width: number): void;
 }>();
 
 const { isDesktop } = useBreakpoints();
 
 const navStyle = computed(() => ({
-  width: props.collapsed ? '48px' : `${props.width}px`,
+  width: props.collapsed ? "48px" : `${props.width}px`,
 }));
 
 const navClass = computed(() =>
   cn(
-    'hidden lg:flex flex-col h-full border-r border-border bg-sidebar-background transition-[width] duration-200 ease-in-out',
-    props.collapsed && 'items-center',
+    "hidden lg:flex flex-col h-full border-r border-border bg-sidebar-background transition-[width] duration-200 ease-in-out",
+    props.collapsed && "items-center",
     props.class,
-  )
+  ),
 );
 </script>
 

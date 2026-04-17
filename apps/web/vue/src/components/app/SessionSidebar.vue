@@ -7,11 +7,11 @@
  * Supports arrow key navigation for keyboard accessibility (HAP-963).
  */
 
-import { computed, ref } from 'vue';
-import { useRoute, useRouter, RouterLink } from 'vue-router';
-import { Button } from '@/components/ui/button';
-import { ConnectionStatus } from '@/components/app';
-import NavUser from '@/components/NavUser.vue';
+import { computed, ref } from "vue";
+import { useRoute, useRouter, RouterLink } from "vue-router";
+import { Button } from "@/components/ui/button";
+import { ConnectionStatus } from "@/components/app";
+import NavUser from "@/components/NavUser.vue";
 import {
   Sidebar,
   SidebarContent,
@@ -24,11 +24,11 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
-} from '@/components/ui/sidebar';
-import { useAuthStore } from '@/stores/auth';
-import { useSessionsStore, type Session } from '@/stores/sessions';
-import { useDarkMode } from '@/composables/useDarkMode';
-import { useArrowNavigation } from '@/composables/useArrowNavigation';
+} from "@/components/ui/sidebar";
+import { useAuthStore } from "@/stores/auth";
+import { useSessionsStore, type Session } from "@/stores/sessions";
+import { useDarkMode } from "@/composables/useDarkMode";
+import { useArrowNavigation } from "@/composables/useArrowNavigation";
 
 const route = useRoute();
 const router = useRouter();
@@ -39,19 +39,19 @@ const authStore = useAuthStore();
 const activeSessions = computed(() => sessionsStore.activeSessions);
 const inactiveSessions = computed(() => sessionsStore.inactiveSessions);
 const hasAnySessions = computed(() => sessionsStore.count > 0);
-const displayName = computed(() => authStore.displayName ?? 'Happy User');
-const initials = computed(() => authStore.initials ?? 'HU');
+const displayName = computed(() => authStore.displayName ?? "Happy User");
+const initials = computed(() => authStore.initials ?? "HU");
 const account = computed(() => authStore.account);
-const avatarUrl = computed(() => account.value?.avatar?.url ?? account.value?.avatar?.path ?? '');
+const avatarUrl = computed(() => account.value?.avatar?.url ?? account.value?.avatar?.path ?? "");
 const accountLabel = computed(() => {
   if (account.value?.github?.login) return `@${account.value.github.login}`;
   if (account.value?.id) return `Account ${account.value.id.slice(0, 8)}`;
-  return 'Signed in';
+  return "Signed in";
 });
 
 const currentSessionId = computed(() => {
   const id = route.params.id;
-  return typeof id === 'string' ? id : null;
+  return typeof id === "string" ? id : null;
 });
 
 // Arrow key navigation for session lists (HAP-963)
@@ -59,17 +59,17 @@ const activeSessionsListRef = ref<HTMLElement | null>(null);
 const inactiveSessionsListRef = ref<HTMLElement | null>(null);
 
 useArrowNavigation(activeSessionsListRef, {
-  itemSelector: '[data-nav-item]',
+  itemSelector: "[data-nav-item]",
   loop: false,
 });
 
 useArrowNavigation(inactiveSessionsListRef, {
-  itemSelector: '[data-nav-item]',
+  itemSelector: "[data-nav-item]",
   loop: false,
 });
 
 function startNewSession() {
-  router.push('/new');
+  router.push("/new");
 }
 
 function sessionName(session: Session): string {
@@ -98,13 +98,12 @@ function lastActivity(session: Session): string {
   const diffHours = Math.floor(diffMins / 60);
   const diffDays = Math.floor(diffHours / 24);
 
-  if (diffMins < 1) return 'Just now';
+  if (diffMins < 1) return "Just now";
   if (diffMins < 60) return `${diffMins}m ago`;
   if (diffHours < 24) return `${diffHours}h ago`;
   if (diffDays < 7) return `${diffDays}d ago`;
   return date.toLocaleDateString();
 }
-
 </script>
 
 <template>
@@ -139,7 +138,11 @@ function lastActivity(session: Session): string {
       <template v-else>
         <SidebarGroup v-if="activeSessions.length > 0">
           <SidebarGroupLabel id="active-sessions-label">Active Sessions</SidebarGroupLabel>
-          <SidebarMenu ref="activeSessionsListRef" role="listbox" aria-labelledby="active-sessions-label">
+          <SidebarMenu
+            ref="activeSessionsListRef"
+            role="listbox"
+            aria-labelledby="active-sessions-label"
+          >
             <SidebarMenuItem
               v-for="session in activeSessions"
               :key="session.id"
@@ -149,11 +152,7 @@ function lastActivity(session: Session): string {
               :aria-selected="session.id === currentSessionId"
               :aria-label="`${sessionName(session)} - ${session.id === currentSessionId ? 'currently selected' : 'active session'}`"
             >
-              <SidebarMenuButton
-                as-child
-                :is-active="session.id === currentSessionId"
-                size="lg"
-              >
+              <SidebarMenuButton as-child :is-active="session.id === currentSessionId" size="lg">
                 <RouterLink :to="`/session/${session.id}`">
                   <span class="mt-1 h-2 w-2 rounded-full bg-emerald-500" aria-hidden="true" />
                   <span class="flex flex-col gap-0.5">
@@ -161,7 +160,7 @@ function lastActivity(session: Session): string {
                       {{ sessionName(session) }}
                     </span>
                     <span class="text-xs text-muted-foreground">
-                      {{ sessionPath(session) ?? 'Active session' }}
+                      {{ sessionPath(session) ?? "Active session" }}
                     </span>
                   </span>
                 </RouterLink>
@@ -177,7 +176,11 @@ function lastActivity(session: Session): string {
 
         <SidebarGroup v-if="inactiveSessions.length > 0">
           <SidebarGroupLabel id="archived-sessions-label">Archived Sessions</SidebarGroupLabel>
-          <SidebarMenu ref="inactiveSessionsListRef" role="listbox" aria-labelledby="archived-sessions-label">
+          <SidebarMenu
+            ref="inactiveSessionsListRef"
+            role="listbox"
+            aria-labelledby="archived-sessions-label"
+          >
             <SidebarMenuItem
               v-for="session in inactiveSessions"
               :key="session.id"
@@ -187,19 +190,18 @@ function lastActivity(session: Session): string {
               :aria-selected="session.id === currentSessionId"
               :aria-label="`${sessionName(session)} - archived session`"
             >
-              <SidebarMenuButton
-                as-child
-                :is-active="session.id === currentSessionId"
-                size="lg"
-              >
+              <SidebarMenuButton as-child :is-active="session.id === currentSessionId" size="lg">
                 <RouterLink :to="`/session/${session.id}`">
-                  <span class="mt-1 h-2 w-2 rounded-full bg-muted-foreground/60" aria-hidden="true" />
+                  <span
+                    class="mt-1 h-2 w-2 rounded-full bg-muted-foreground/60"
+                    aria-hidden="true"
+                  />
                   <span class="flex flex-col gap-0.5">
                     <span class="text-sm font-medium leading-none">
                       {{ sessionName(session) }}
                     </span>
                     <span class="text-xs text-muted-foreground">
-                      {{ sessionPath(session) ?? 'Archived session' }}
+                      {{ sessionPath(session) ?? "Archived session" }}
                     </span>
                   </span>
                 </RouterLink>
@@ -259,7 +261,7 @@ function lastActivity(session: Session): string {
             >
               <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
             </svg>
-            <span>{{ isDark ? 'Light mode' : 'Dark mode' }}</span>
+            <span>{{ isDark ? "Light mode" : "Dark mode" }}</span>
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>

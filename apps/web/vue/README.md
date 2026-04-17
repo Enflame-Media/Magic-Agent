@@ -76,12 +76,12 @@ Port of `@magic-agent/protocol` with Zod schemas for:
 
 This repository is part of the Vue.js migration from React Native.
 
-| Phase | Description               | Status      |
-| ----- | ------------------------- | ----------- |
-| 0     | Monorepo setup            | ✅ Complete |
-| 1     | Web app implementation    | 🔜 Planned  |
-| 2     | Integration testing       | 🔜 Planned  |
-| 3     | Production deployment     | 🔜 Planned  |
+| Phase | Description            | Status      |
+| ----- | ---------------------- | ----------- |
+| 0     | Monorepo setup         | ✅ Complete |
+| 1     | Web app implementation | 🔜 Planned  |
+| 2     | Integration testing    | 🔜 Planned  |
+| 3     | Production deployment  | 🔜 Planned  |
 
 See [HAP-660](https://linear.app/enflame-media/issue/HAP-660) for the migration epic.
 

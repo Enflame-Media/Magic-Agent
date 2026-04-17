@@ -11,39 +11,35 @@
   share the same design system as the rest of the app.
 -->
 <script setup lang="ts">
-import { computed } from 'vue';
-import { useI18n } from 'vue-i18n';
-import { useAcpSession } from '@/composables/useAcpSession';
-import AcpModeIndicator from './AcpModeIndicator.vue';
-import AcpUsageWidget from './AcpUsageWidget.vue';
-import AcpCommandPalette from './AcpCommandPalette.vue';
-import AcpConfigPanel from './AcpConfigPanel.vue';
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+import { useAcpSession } from "@/composables/useAcpSession";
+import AcpModeIndicator from "./AcpModeIndicator.vue";
+import AcpUsageWidget from "./AcpUsageWidget.vue";
+import AcpCommandPalette from "./AcpCommandPalette.vue";
+import AcpConfigPanel from "./AcpConfigPanel.vue";
 import {
   ChainOfThought,
   ChainOfThoughtContent,
   ChainOfThoughtHeader,
-} from '@/components/ai-elements/chain-of-thought';
-import { MessageResponse } from '@/components/ai-elements/message';
+} from "@/components/ai-elements/chain-of-thought";
+import { MessageResponse } from "@/components/ai-elements/message";
 import {
   Plan,
   PlanContent,
   PlanHeader,
   PlanTitle,
   PlanTrigger,
-} from '@/components/ai-elements/plan';
-import { Tool, ToolContent, ToolHeader } from '@/components/ai-elements/tool';
-import type { ToolUIPart } from 'ai';
+} from "@/components/ai-elements/plan";
+import { Tool, ToolContent, ToolHeader } from "@/components/ai-elements/tool";
+import type { ToolUIPart } from "ai";
 import type {
   AcpAvailableCommand,
   AcpPlanEntryStatus,
   AcpToolCall,
   AcpToolCallStatus,
-} from '@magic-agent/protocol';
-import {
-  IconCircle,
-  IconCircleCheck,
-  IconCircleFilled,
-} from '@tabler/icons-vue';
+} from "@magic-agent/protocol";
+import { IconCircle, IconCircleCheck, IconCircleFilled } from "@tabler/icons-vue";
 
 const props = defineProps<{
   sessionId: string;
@@ -75,17 +71,17 @@ const toolCallList = computed(() => Object.values(toolCalls.value));
  * AI Elements Tool/ToolHeader. Unknown/undefined statuses fall back to
  * 'input-streaming' (pending).
  */
-function mapToolState(status: AcpToolCallStatus | undefined): ToolUIPart['state'] {
+function mapToolState(status: AcpToolCallStatus | undefined): ToolUIPart["state"] {
   switch (status) {
-    case 'completed':
-      return 'output-available';
-    case 'failed':
-      return 'output-error';
-    case 'in_progress':
-      return 'input-available';
-    case 'pending':
+    case "completed":
+      return "output-available";
+    case "failed":
+      return "output-error";
+    case "in_progress":
+      return "input-available";
+    case "pending":
     default:
-      return 'input-streaming';
+      return "input-streaming";
   }
 }
 
@@ -97,13 +93,13 @@ function toolLocation(tc: AcpToolCall): string | null {
 
 function planStatusClass(status: AcpPlanEntryStatus): string {
   switch (status) {
-    case 'completed':
-      return 'text-green-500';
-    case 'in_progress':
-      return 'text-primary';
-    case 'pending':
+    case "completed":
+      return "text-green-500";
+    case "in_progress":
+      return "text-primary";
+    case "pending":
     default:
-      return 'text-muted-foreground';
+      return "text-muted-foreground";
   }
 }
 </script>
@@ -111,25 +107,18 @@ function planStatusClass(status: AcpPlanEntryStatus): string {
 <template>
   <div v-if="hasSession" class="flex flex-col gap-1">
     <!-- Header: mode indicator + usage -->
-    <div
-      v-if="currentModeId || usage"
-      class="flex flex-wrap items-center justify-between gap-2"
-    >
+    <div v-if="currentModeId || usage" class="flex flex-wrap items-center justify-between gap-2">
       <AcpModeIndicator v-if="currentModeId" :mode-id="currentModeId" />
       <div class="flex-1" />
       <div v-if="usage" class="w-full sm:w-auto sm:min-w-[240px]">
-        <AcpUsageWidget
-          :used="usage.used"
-          :size="usage.size"
-          :cost="usage.cost"
-        />
+        <AcpUsageWidget :used="usage.used" :size="usage.size" :cost="usage.cost" />
       </div>
     </div>
 
     <!-- Agent thought (collapsible chain of thought) -->
     <ChainOfThought v-if="agentThought" class="my-1">
       <ChainOfThoughtHeader>
-        {{ t('acp.thought.title') }}
+        {{ t("acp.thought.title") }}
       </ChainOfThoughtHeader>
       <ChainOfThoughtContent>
         <p class="text-[13px] leading-[18px] text-muted-foreground whitespace-pre-wrap">
@@ -141,16 +130,12 @@ function planStatusClass(status: AcpPlanEntryStatus): string {
     <!-- Execution plan -->
     <Plan v-if="plan.length > 0" class="my-1">
       <PlanHeader>
-        <PlanTitle>{{ t('acp.plan') }}</PlanTitle>
+        <PlanTitle>{{ t("acp.plan") }}</PlanTitle>
         <PlanTrigger />
       </PlanHeader>
       <PlanContent>
         <div class="flex flex-col gap-1">
-          <div
-            v-for="(entry, index) in plan"
-            :key="index"
-            class="flex items-start gap-2 py-1"
-          >
+          <div v-for="(entry, index) in plan" :key="index" class="flex items-start gap-2 py-1">
             <IconCircleCheck
               v-if="entry.status === 'completed'"
               class="mt-0.5 size-4 shrink-0"
@@ -186,11 +171,7 @@ function planStatusClass(status: AcpPlanEntryStatus): string {
     </div>
 
     <!-- Tool calls -->
-    <Tool
-      v-for="tc in toolCallList"
-      :key="tc.toolCallId"
-      class="my-1"
-    >
+    <Tool v-for="tc in toolCallList" :key="tc.toolCallId" class="my-1">
       <ToolHeader
         type="dynamic-tool"
         :tool-name="tc.kind ?? 'tool'"

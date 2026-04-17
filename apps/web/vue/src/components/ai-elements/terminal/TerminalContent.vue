@@ -1,18 +1,18 @@
 <script setup lang="ts">
-import type { HTMLAttributes } from 'vue'
-import { cn } from '@/lib/utils'
-import Ansi from 'ansi-to-vue3'
-import { nextTick, ref, watch } from 'vue'
-import { useTerminalContext } from './context'
+import type { HTMLAttributes } from "vue";
+import { cn } from "@/lib/utils";
+import Ansi from "ansi-to-vue3";
+import { nextTick, ref, watch } from "vue";
+import { useTerminalContext } from "./context";
 
 interface Props extends /* @vue-ignore */ HTMLAttributes {
-  class?: HTMLAttributes['class']
+  class?: HTMLAttributes["class"];
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
-const { output, isStreaming, autoScroll } = useTerminalContext('TerminalContent')
-const containerRef = ref<HTMLDivElement | null>(null)
+const { output, isStreaming, autoScroll } = useTerminalContext("TerminalContent");
+const containerRef = ref<HTMLDivElement | null>(null);
 
 watch(
   [output, autoScroll],
@@ -20,22 +20,19 @@ watch(
     if (autoScroll.value) {
       nextTick(() => {
         if (containerRef.value) {
-          containerRef.value.scrollTop = containerRef.value.scrollHeight
+          containerRef.value.scrollTop = containerRef.value.scrollHeight;
         }
-      })
+      });
     }
   },
   { immediate: true },
-)
+);
 </script>
 
 <template>
   <div
     ref="containerRef"
-    :class="cn(
-      'max-h-96 overflow-auto p-4 font-mono text-sm leading-relaxed',
-      props.class,
-    )"
+    :class="cn('max-h-96 overflow-auto p-4 font-mono text-sm leading-relaxed', props.class)"
     v-bind="$attrs"
   >
     <slot>

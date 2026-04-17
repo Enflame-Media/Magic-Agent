@@ -7,8 +7,8 @@
  * @see HAP-918 - Desktop Enhancements - Resizable Sidebar
  */
 
-import { useLocalStorage } from '@vueuse/core';
-import { computed, type Ref, type ComputedRef } from 'vue';
+import { useLocalStorage } from "@vueuse/core";
+import { computed, type Ref, type ComputedRef } from "vue";
 
 /**
  * Sidebar state shape persisted to localStorage
@@ -35,7 +35,7 @@ export const SIDEBAR_DEFAULTS = {
   /** Default collapsed state */
   collapsed: false,
   /** localStorage key */
-  storageKey: 'happy-sidebar-state',
+  storageKey: "happy-sidebar-state",
 } as const;
 
 /**
@@ -91,7 +91,7 @@ export function useSidebarState(): UseSidebarStateReturn {
     {
       // Deep merge to handle partial state
       mergeDefaults: true,
-    }
+    },
   );
 
   // Derived reactive values
@@ -111,7 +111,7 @@ export function useSidebarState(): UseSidebarStateReturn {
 
   // Effective width accounts for collapsed state
   const effectiveWidth = computed(() =>
-    isCollapsed.value ? SIDEBAR_DEFAULTS.collapsedWidth : width.value
+    isCollapsed.value ? SIDEBAR_DEFAULTS.collapsedWidth : width.value,
   );
 
   // CSS-ready width value
@@ -121,10 +121,7 @@ export function useSidebarState(): UseSidebarStateReturn {
    * Clamp width to allowed range
    */
   function clampWidth(value: number): number {
-    return Math.max(
-      SIDEBAR_DEFAULTS.minWidth,
-      Math.min(SIDEBAR_DEFAULTS.maxWidth, value)
-    );
+    return Math.max(SIDEBAR_DEFAULTS.minWidth, Math.min(SIDEBAR_DEFAULTS.maxWidth, value));
   }
 
   /**

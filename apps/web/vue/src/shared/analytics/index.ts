@@ -20,7 +20,7 @@
  * @module @/shared/analytics
  */
 
-export * from './types';
+export * from "./types";
 
 import type {
   AnalyticsProvider,
@@ -29,7 +29,7 @@ import type {
   PurchaseEventProperties_All,
   AnalyticsPlatform,
   BasePurchaseEventProperties,
-} from './types';
+} from "./types";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Default Console Provider
@@ -43,11 +43,11 @@ import type {
  */
 const consoleProvider: AnalyticsProvider = {
   track(event: PurchaseAnalyticsEvent, properties: PurchaseEventData): void {
-    console.log('[Analytics]', event, properties);
+    console.log("[Analytics]", event, properties);
   },
 
   identify(userId: string, traits?: Record<string, unknown>): void {
-    console.log('[Analytics] Identify:', userId, traits);
+    console.log("[Analytics] Identify:", userId, traits);
   },
 };
 
@@ -140,7 +140,7 @@ export function resetAnalyticsProvider(): void {
  */
 export function trackPurchaseEvent(
   event: PurchaseAnalyticsEvent,
-  properties: Omit<PurchaseEventProperties_All, 'timestamp'> & { timestamp?: string }
+  properties: Omit<PurchaseEventProperties_All, "timestamp"> & { timestamp?: string },
 ): void {
   const fullProperties: PurchaseEventData = {
     ...properties,
@@ -151,7 +151,7 @@ export function trackPurchaseEvent(
     currentProvider.track(event, fullProperties);
   } catch (error) {
     // Never let analytics errors break the app
-    console.error('[Analytics] Failed to track event:', error);
+    console.error("[Analytics] Failed to track event:", error);
   }
 }
 
@@ -170,7 +170,7 @@ export function trackPurchaseEvent(
  */
 export function createBaseProperties(
   platform: AnalyticsPlatform,
-  userId?: string
+  userId?: string,
 ): BasePurchaseEventProperties {
   return {
     platform,
@@ -187,13 +187,10 @@ export function createBaseProperties(
  * @param userId - The user identifier
  * @param traits - Optional user traits
  */
-export function identifyUser(
-  userId: string,
-  traits?: Record<string, unknown>
-): void {
+export function identifyUser(userId: string, traits?: Record<string, unknown>): void {
   try {
     currentProvider.identify?.(userId, traits);
   } catch (error) {
-    console.error('[Analytics] Failed to identify user:', error);
+    console.error("[Analytics] Failed to identify user:", error);
   }
 }

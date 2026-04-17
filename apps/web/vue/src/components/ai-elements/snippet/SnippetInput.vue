@@ -1,15 +1,16 @@
 <script setup lang="ts">
-import { InputGroupInput } from '@/components/ui/input-group'
-import { cn } from '@/lib/utils'
-import { useSnippetContext } from './context'
+import { InputGroupInput } from "@/components/ui/input-group";
+import { cn } from "@/lib/utils";
+import { useSnippetContext } from "./context";
 
-type InputGroupInputProps = InstanceType<typeof InputGroupInput>['$props']
+type InputGroupInputProps = InstanceType<typeof InputGroupInput>["$props"];
 
-interface Props extends /* @vue-ignore */ Omit<InputGroupInputProps, 'readonly' | 'modelValue' | 'value'> {}
+interface Props
+  extends /* @vue-ignore */ Omit<InputGroupInputProps, "readonly" | "modelValue" | "value"> {}
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
-const { code } = useSnippetContext('SnippetInput')
+const { code } = useSnippetContext("SnippetInput");
 </script>
 
 <template>

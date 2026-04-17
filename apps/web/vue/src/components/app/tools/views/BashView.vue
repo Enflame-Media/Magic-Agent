@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed } from "vue";
 import {
   Terminal,
   TerminalActions,
   TerminalContent,
   TerminalCopyButton,
-} from '@/components/ai-elements/terminal';
-import type { ToolViewProps } from './types';
+} from "@/components/ai-elements/terminal";
+import type { ToolViewProps } from "./types";
 
 const props = defineProps<ToolViewProps>();
 
@@ -17,9 +17,9 @@ const command = computed(() => {
 
 const result = computed(() => {
   if (props.tool.result === undefined || props.tool.result === null) {
-    return '';
+    return "";
   }
-  if (typeof props.tool.result === 'string') {
+  if (typeof props.tool.result === "string") {
     return props.tool.result;
   }
   return JSON.stringify(props.tool.result, null, 2);
@@ -30,7 +30,7 @@ const output = computed(() => {
   return result.value ? `${prompt}\n${result.value}` : prompt;
 });
 
-const isStreaming = computed(() => props.tool.state === 'running');
+const isStreaming = computed(() => props.tool.state === "running");
 </script>
 
 <template>

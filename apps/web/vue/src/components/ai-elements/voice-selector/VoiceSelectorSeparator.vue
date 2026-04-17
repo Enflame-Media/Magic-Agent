@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { CommandSeparator } from '@/components/ui/command'
+import { CommandSeparator } from "@/components/ui/command";
 
-type VoiceSelectorSeparatorProps = InstanceType<typeof CommandSeparator>['$props']
+type VoiceSelectorSeparatorProps = InstanceType<typeof CommandSeparator>["$props"];
 
 interface Props extends /* @vue-ignore */ VoiceSelectorSeparatorProps {}
 
-defineProps<Props>()
+defineProps<Props>();
 </script>
 
 <template>

@@ -11,11 +11,11 @@
  * - Project path is truncated with ellipsis for long paths
  */
 
-import { computed } from 'vue';
-import { useRouter } from 'vue-router';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import type { Session } from '@/stores/sessions';
+import { computed } from "vue";
+import { useRouter } from "vue-router";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import type { Session } from "@/stores/sessions";
 
 interface Props {
   session: Session;
@@ -45,13 +45,9 @@ const projectPath = computed(() => {
   }
 });
 
-const statusColor = computed(() =>
-  props.session.active ? 'bg-green-500' : 'bg-gray-400'
-);
+const statusColor = computed(() => (props.session.active ? "bg-green-500" : "bg-gray-400"));
 
-const statusText = computed(() =>
-  props.session.active ? 'Active' : 'Archived'
-);
+const statusText = computed(() => (props.session.active ? "Active" : "Archived"));
 
 const lastActivityFormatted = computed(() => {
   const date = new Date(props.session.updatedAt);
@@ -61,7 +57,7 @@ const lastActivityFormatted = computed(() => {
   const diffHours = Math.floor(diffMins / 60);
   const diffDays = Math.floor(diffHours / 24);
 
-  if (diffMins < 1) return 'Just now';
+  if (diffMins < 1) return "Just now";
   if (diffMins < 60) return `${diffMins}m ago`;
   if (diffHours < 24) return `${diffHours}h ago`;
   if (diffDays < 7) return `${diffDays}d ago`;
@@ -107,10 +103,7 @@ function handleClick() {
           </div>
 
           <!-- Project path -->
-          <p
-            v-if="projectPath"
-            class="text-sm text-muted-foreground truncate mt-1"
-          >
+          <p v-if="projectPath" class="text-sm text-muted-foreground truncate mt-1">
             {{ projectPath }}
           </p>
         </div>

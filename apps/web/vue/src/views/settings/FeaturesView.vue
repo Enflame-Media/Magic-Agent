@@ -2,12 +2,12 @@
 /**
  * Features Settings - Experimental and advanced feature controls.
  */
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Switch } from '@/components/ui/switch';
-import ResponsiveContainer from '@/components/app/ResponsiveContainer.vue';
+import { ref } from "vue";
+import { useRouter } from "vue-router";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import ResponsiveContainer from "@/components/app/ResponsiveContainer.vue";
 
 const router = useRouter();
 
@@ -16,7 +16,7 @@ const enableCompactSessions = ref(false);
 const enableAdvancedTools = ref(false);
 
 function goBack() {
-  router.push('/settings');
+  router.push("/settings");
 }
 </script>
 
@@ -32,11 +32,7 @@ function goBack() {
           stroke="currentColor"
           stroke-width="2"
         >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M15 19l-7-7 7-7"
-          />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
         </svg>
       </Button>
       <h1 class="text-2xl font-semibold">Features</h1>

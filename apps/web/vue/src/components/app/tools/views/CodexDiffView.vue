@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import ToolSectionView from '../ToolSectionView.vue';
-import ToolDiffView from '../ToolDiffView.vue';
-import type { ToolViewProps } from './types';
+import ToolSectionView from "../ToolSectionView.vue";
+import ToolDiffView from "../ToolDiffView.vue";
+import type { ToolViewProps } from "./types";
 
 const props = defineProps<ToolViewProps>();
 </script>

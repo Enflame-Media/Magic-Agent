@@ -73,13 +73,13 @@ yarn typecheck # Run TypeScript check
 
 ```typescript
 // Import from local source
-import { useAuthStore } from '@/stores/auth';
+import { useAuthStore } from "@/stores/auth";
 
 // Import shared utilities
-import { openUrl, trackPurchaseEvent } from '@/shared';
+import { openUrl, trackPurchaseEvent } from "@/shared";
 
 // Import protocol types (from root monorepo)
-import { ApiUpdateSchema, type ApiUpdate } from '@magic-agent/protocol';
+import { ApiUpdateSchema, type ApiUpdate } from "@magic-agent/protocol";
 ```
 
 ### Code Style

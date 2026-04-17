@@ -1,23 +1,19 @@
 <script setup lang="ts">
-import type { HTMLAttributes } from 'vue'
-import { Badge } from '@/components/ui/badge'
-import { cn } from '@/lib/utils'
+import type { HTMLAttributes } from "vue";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
-type BadgeProps = InstanceType<typeof Badge>['$props']
+type BadgeProps = InstanceType<typeof Badge>["$props"];
 
 interface Props extends /* @vue-ignore */ BadgeProps {
-  class?: HTMLAttributes['class']
+  class?: HTMLAttributes["class"];
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 </script>
 
 <template>
-  <Badge
-    :class="cn('text-xs', props.class)"
-    variant="secondary"
-    v-bind="$attrs"
-  >
+  <Badge :class="cn('text-xs', props.class)" variant="secondary" v-bind="$attrs">
     <slot>Required</slot>
   </Badge>
 </template>

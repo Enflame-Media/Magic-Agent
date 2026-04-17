@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { CommandGroup, CommandList } from '@/components/ui/command'
-import { useMicSelector } from './context'
+import { CommandGroup, CommandList } from "@/components/ui/command";
+import { useMicSelector } from "./context";
 
-type CommandListProps = InstanceType<typeof CommandList>['$props']
+type CommandListProps = InstanceType<typeof CommandList>["$props"];
 
 interface Props extends /* @vue-ignore */ CommandListProps {}
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
-const { devices } = useMicSelector('MicSelectorList')
+const { devices } = useMicSelector("MicSelectorList");
 </script>
 
 <template>

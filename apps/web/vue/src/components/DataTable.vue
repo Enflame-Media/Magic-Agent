@@ -1,10 +1,10 @@
 <script lang="ts">
-import { z } from 'zod';
+import { z } from "zod";
 
 export const schema = z.object({
   id: z.string(),
   name: z.string(),
-  status: z.enum(['Active', 'Archived']),
+  status: z.enum(["Active", "Archived"]),
   path: z.string(),
   lastActive: z.string(),
 });
@@ -16,7 +16,7 @@ import type {
   ColumnFiltersState,
   SortingState,
   VisibilityState,
-} from '@tanstack/vue-table';
+} from "@tanstack/vue-table";
 import {
   IconChevronDown,
   IconChevronLeft,
@@ -27,7 +27,7 @@ import {
   IconDotsVertical,
   IconLoader,
   IconPlus,
-} from '@tabler/icons-vue';
+} from "@tabler/icons-vue";
 import {
   FlexRender,
   getCoreRowModel,
@@ -35,27 +35,27 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   useVueTable,
-} from '@tanstack/vue-table';
-import { computed, h, ref } from 'vue';
-import { useRouter } from 'vue-router';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
+} from "@tanstack/vue-table";
+import { computed, h, ref } from "vue";
+import { useRouter } from "vue-router";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Label } from '@/components/ui/label';
+} from "@/components/ui/dropdown-menu";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -63,30 +63,25 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/components/ui/tabs';
-import DragHandle from './DragHandle.vue';
-import DraggableRow from './DraggableRow.vue';
+} from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import DragHandle from "./DragHandle.vue";
+import DraggableRow from "./DraggableRow.vue";
 
 export interface TableData {
-  id: string
-  name: string
-  status: 'Active' | 'Archived'
-  path: string
-  lastActive: string
+  id: string;
+  name: string;
+  status: "Active" | "Archived";
+  path: string;
+  lastActive: string;
 }
 
 const props = defineProps<{
-  data: TableData[]
+  data: TableData[];
 }>();
 
 const emit = defineEmits<{
-  (event: 'new-session'): void
+  (event: "new-session"): void;
 }>();
 
 const router = useRouter();
@@ -94,117 +89,160 @@ const sorting = ref<SortingState>([]);
 const columnFilters = ref<ColumnFiltersState>([]);
 const columnVisibility = ref<VisibilityState>({});
 const rowSelection = ref({});
-const activeTab = ref<'all' | 'active' | 'archived'>('all');
+const activeTab = ref<"all" | "active" | "archived">("all");
 
 const counts = computed(() => ({
   all: props.data.length,
-  active: props.data.filter((row) => row.status === 'Active').length,
-  archived: props.data.filter((row) => row.status === 'Archived').length,
+  active: props.data.filter((row) => row.status === "Active").length,
+  archived: props.data.filter((row) => row.status === "Archived").length,
 }));
 
 const filteredData = computed(() => {
-  if (activeTab.value === 'active') {
-    return props.data.filter((row) => row.status === 'Active');
+  if (activeTab.value === "active") {
+    return props.data.filter((row) => row.status === "Active");
   }
-  if (activeTab.value === 'archived') {
-    return props.data.filter((row) => row.status === 'Archived');
+  if (activeTab.value === "archived") {
+    return props.data.filter((row) => row.status === "Archived");
   }
   return props.data;
 });
 
 function setActiveTab(value: string) {
-  if (value === 'active' || value === 'archived' || value === 'all') {
+  if (value === "active" || value === "archived" || value === "all") {
     activeTab.value = value;
   }
 }
 
 const columns: ColumnDef<TableData>[] = [
   {
-    id: 'drag',
+    id: "drag",
     header: () => null,
     cell: () => h(DragHandle),
   },
   {
-    id: 'select',
-    header: ({ table }) => h(Checkbox, {
-      modelValue: table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && 'indeterminate'),
-      'onUpdate:modelValue': (value) => { table.toggleAllPageRowsSelected(!!value); },
-      'aria-label': 'Select all',
-    }),
-    cell: ({ row }) => h(Checkbox, {
-      modelValue: row.getIsSelected(),
-      'onUpdate:modelValue': (value) => { row.toggleSelected(!!value); },
-      'aria-label': 'Select row',
-    }),
+    id: "select",
+    header: ({ table }) =>
+      h(Checkbox, {
+        modelValue:
+          table.getIsAllPageRowsSelected() ||
+          (table.getIsSomePageRowsSelected() && "indeterminate"),
+        "onUpdate:modelValue": (value) => {
+          table.toggleAllPageRowsSelected(!!value);
+        },
+        "aria-label": "Select all",
+      }),
+    cell: ({ row }) =>
+      h(Checkbox, {
+        modelValue: row.getIsSelected(),
+        "onUpdate:modelValue": (value) => {
+          row.toggleSelected(!!value);
+        },
+        "aria-label": "Select row",
+      }),
     enableSorting: false,
     enableHiding: false,
   },
   {
-    accessorKey: 'name',
-    header: 'Session',
+    accessorKey: "name",
+    header: "Session",
     cell: ({ row }) => {
-      const name = row.getValue<string>('name');
+      const name = row.getValue<string>("name");
       const path = row.original.path;
 
-      return h('div', { class: 'flex flex-col gap-1' }, [
-        h('span', { class: 'text-sm font-medium' }, String(name ?? '')),
-        h('span', { class: 'text-xs text-muted-foreground' }, path || 'No project path'),
+      return h("div", { class: "flex flex-col gap-1" }, [
+        h("span", { class: "text-sm font-medium" }, String(name ?? "")),
+        h("span", { class: "text-xs text-muted-foreground" }, path || "No project path"),
       ]);
     },
     enableHiding: false,
   },
   {
-    accessorKey: 'status',
-    header: 'Status',
+    accessorKey: "status",
+    header: "Status",
     cell: ({ row }) => {
-      const status = row.getValue('status');
-      const isActive = status === 'Active';
+      const status = row.getValue("status");
+      const isActive = status === "Active";
 
-      return h(Badge, {
-        variant: isActive ? 'default' : 'secondary',
-        class: 'gap-1',
-      }, () => [
-        isActive
-          ? h(IconCircleCheckFilled, { class: 'h-3 w-3' })
-          : h(IconLoader, { class: 'h-3 w-3' }),
-        status,
-      ]);
+      return h(
+        Badge,
+        {
+          variant: isActive ? "default" : "secondary",
+          class: "gap-1",
+        },
+        () => [
+          isActive
+            ? h(IconCircleCheckFilled, { class: "h-3 w-3" })
+            : h(IconLoader, { class: "h-3 w-3" }),
+          status,
+        ],
+      );
     },
   },
   {
-    accessorKey: 'lastActive',
-    header: 'Last Active',
-    cell: ({ row }) => h('span', { class: 'text-sm text-muted-foreground tabular-nums' }, String(row.getValue('lastActive'))),
+    accessorKey: "lastActive",
+    header: "Last Active",
+    cell: ({ row }) =>
+      h(
+        "span",
+        { class: "text-sm text-muted-foreground tabular-nums" },
+        String(row.getValue("lastActive")),
+      ),
   },
   {
-    id: 'actions',
-    cell: ({ row }) => h(DropdownMenu, {}, {
-      default: () => [
-        h(DropdownMenuTrigger, { asChild: true }, {
-          default: () => h(Button, {
-            variant: 'ghost',
-            class: 'h-8 w-8 p-0',
-          }, {
-            default: () => [
-              h('span', { class: 'sr-only' }, 'Open menu'),
-              h(IconDotsVertical, { class: 'h-4 w-4' }),
-            ],
-          }),
-        }),
-        h(DropdownMenuContent, { align: 'end' }, {
+    id: "actions",
+    cell: ({ row }) =>
+      h(
+        DropdownMenu,
+        {},
+        {
           default: () => [
-            h(DropdownMenuItem, {
-              onClick: () => router.push(`/session/${row.original.id}`),
-            }, () => 'Open session'),
-            h(DropdownMenuItem, {
-              onClick: () => router.push(`/session/${row.original.id}/artifacts`),
-            }, () => 'View artifacts'),
-            h(DropdownMenuSeparator, {}),
-            h(DropdownMenuItem, {}, () => 'Archive'),
+            h(
+              DropdownMenuTrigger,
+              { asChild: true },
+              {
+                default: () =>
+                  h(
+                    Button,
+                    {
+                      variant: "ghost",
+                      class: "h-8 w-8 p-0",
+                    },
+                    {
+                      default: () => [
+                        h("span", { class: "sr-only" }, "Open menu"),
+                        h(IconDotsVertical, { class: "h-4 w-4" }),
+                      ],
+                    },
+                  ),
+              },
+            ),
+            h(
+              DropdownMenuContent,
+              { align: "end" },
+              {
+                default: () => [
+                  h(
+                    DropdownMenuItem,
+                    {
+                      onClick: () => router.push(`/session/${row.original.id}`),
+                    },
+                    () => "Open session",
+                  ),
+                  h(
+                    DropdownMenuItem,
+                    {
+                      onClick: () => router.push(`/session/${row.original.id}/artifacts`),
+                    },
+                    () => "View artifacts",
+                  ),
+                  h(DropdownMenuSeparator, {}),
+                  h(DropdownMenuItem, {}, () => "Archive"),
+                ],
+              },
+            ),
           ],
-        }),
-      ],
-    }),
+        },
+      ),
   },
 ];
 
@@ -218,73 +256,71 @@ const table = useVueTable({
   getSortedRowModel: getSortedRowModel(),
   getFilteredRowModel: getFilteredRowModel(),
   onSortingChange: (updaterOrValue) => {
-    sorting.value = typeof updaterOrValue === 'function'
-      ? updaterOrValue(sorting.value)
-      : updaterOrValue;
+    sorting.value =
+      typeof updaterOrValue === "function" ? updaterOrValue(sorting.value) : updaterOrValue;
   },
   onColumnFiltersChange: (updaterOrValue) => {
-    columnFilters.value = typeof updaterOrValue === 'function'
-      ? updaterOrValue(columnFilters.value)
-      : updaterOrValue;
+    columnFilters.value =
+      typeof updaterOrValue === "function" ? updaterOrValue(columnFilters.value) : updaterOrValue;
   },
   onColumnVisibilityChange: (updaterOrValue) => {
-    columnVisibility.value = typeof updaterOrValue === 'function'
-      ? updaterOrValue(columnVisibility.value)
-      : updaterOrValue;
+    columnVisibility.value =
+      typeof updaterOrValue === "function"
+        ? updaterOrValue(columnVisibility.value)
+        : updaterOrValue;
   },
   onRowSelectionChange: (updaterOrValue) => {
-    rowSelection.value = typeof updaterOrValue === 'function'
-      ? updaterOrValue(rowSelection.value)
-      : updaterOrValue;
+    rowSelection.value =
+      typeof updaterOrValue === "function" ? updaterOrValue(rowSelection.value) : updaterOrValue;
   },
   state: {
-    get sorting() { return sorting.value; },
-    get columnFilters() { return columnFilters.value; },
-    get columnVisibility() { return columnVisibility.value; },
-    get rowSelection() { return rowSelection.value; },
+    get sorting() {
+      return sorting.value;
+    },
+    get columnFilters() {
+      return columnFilters.value;
+    },
+    get columnVisibility() {
+      return columnVisibility.value;
+    },
+    get rowSelection() {
+      return rowSelection.value;
+    },
   },
 });
 
 const tabItems = [
-  { value: 'all', label: 'All Sessions', count: () => counts.value.all },
-  { value: 'active', label: 'Active', count: () => counts.value.active },
-  { value: 'archived', label: 'Archived', count: () => counts.value.archived },
+  { value: "all", label: "All Sessions", count: () => counts.value.all },
+  { value: "active", label: "Active", count: () => counts.value.active },
+  { value: "archived", label: "Archived", count: () => counts.value.archived },
 ];
 </script>
 
 <template>
-  <Tabs
-    v-model="activeTab"
-    default-value="all"
-    class="w-full flex-col justify-start gap-6"
-  >
+  <Tabs v-model="activeTab" default-value="all" class="w-full flex-col justify-start gap-6">
     <div class="flex flex-wrap items-center justify-between gap-3 px-4 lg:px-6">
-      <Label for="view-selector" class="sr-only">
-        View
-      </Label>
+      <Label for="view-selector" class="sr-only"> View </Label>
       <Select
         id="view-selector"
         :model-value="activeTab"
-        @update:model-value="(value) => {
-          setActiveTab(String(value));
-        }"
+        @update:model-value="
+          (value) => {
+            setActiveTab(String(value));
+          }
+        "
       >
         <SelectTrigger class="flex w-fit @4xl/main:hidden" size="sm">
           <SelectValue placeholder="Select a view" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">
-            All Sessions
-          </SelectItem>
-          <SelectItem value="active">
-            Active
-          </SelectItem>
-          <SelectItem value="archived">
-            Archived
-          </SelectItem>
+          <SelectItem value="all"> All Sessions </SelectItem>
+          <SelectItem value="active"> Active </SelectItem>
+          <SelectItem value="archived"> Archived </SelectItem>
         </SelectContent>
       </Select>
-      <TabsList class="**:data-[slot=badge]:bg-muted-foreground/30 hidden **:data-[slot=badge]:size-5 **:data-[slot=badge]:rounded-full **:data-[slot=badge]:px-1 @4xl/main:flex">
+      <TabsList
+        class="**:data-[slot=badge]:bg-muted-foreground/30 hidden **:data-[slot=badge]:size-5 **:data-[slot=badge]:rounded-full **:data-[slot=badge]:px-1 @4xl/main:flex"
+      >
         <TabsTrigger v-for="tab in tabItems" :key="tab.value" :value="tab.value">
           {{ tab.label }}
           <Badge v-if="tab.count()" variant="secondary">
@@ -305,7 +341,9 @@ const tabItems = [
             <template
               v-for="column in table
                 .getAllColumns()
-                .filter((column) => typeof column.accessorFn !== 'undefined' && column.getCanHide())"
+                .filter(
+                  (column) => typeof column.accessorFn !== 'undefined' && column.getCanHide(),
+                )"
               :key="column.id"
             >
               <DropdownMenuItem
@@ -334,20 +372,30 @@ const tabItems = [
         <Table>
           <TableHeader class="bg-muted sticky top-0 z-10">
             <TableRow v-for="headerGroup in table.getHeaderGroups()" :key="headerGroup.id">
-              <TableHead v-for="header in headerGroup.headers" :key="header.id" :col-span="header.colSpan">
-                <FlexRender v-if="!header.isPlaceholder" :render="header.column.columnDef.header" :props="header.getContext()" />
+              <TableHead
+                v-for="header in headerGroup.headers"
+                :key="header.id"
+                :col-span="header.colSpan"
+              >
+                <FlexRender
+                  v-if="!header.isPlaceholder"
+                  :render="header.column.columnDef.header"
+                  :props="header.getContext()"
+                />
               </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody class="**:data-[slot=table-cell]:first:w-8">
             <template v-if="table.getRowModel().rows.length">
-              <DraggableRow v-for="row in table.getRowModel().rows" :key="row.id" :row="row" :index="row.index" />
+              <DraggableRow
+                v-for="row in table.getRowModel().rows"
+                :key="row.id"
+                :row="row"
+                :index="row.index"
+              />
             </template>
             <TableRow v-else>
-              <TableCell
-                :col-span="columns.length"
-                class="h-24 text-center"
-              >
+              <TableCell :col-span="columns.length" class="h-24 text-center">
                 No sessions yet.
               </TableCell>
             </TableRow>
@@ -361,20 +409,24 @@ const tabItems = [
         </div>
         <div class="flex w-full items-center gap-8 lg:w-fit">
           <div class="hidden items-center gap-2 lg:flex">
-            <Label for="rows-per-page" class="text-sm font-medium">
-              Rows per page
-            </Label>
+            <Label for="rows-per-page" class="text-sm font-medium"> Rows per page </Label>
             <Select
               :model-value="table.getState().pagination.pageSize"
-              @update:model-value="(value) => {
-                table.setPageSize(Number(value))
-              }"
+              @update:model-value="
+                (value) => {
+                  table.setPageSize(Number(value));
+                }
+              "
             >
               <SelectTrigger id="rows-per-page" size="sm" class="w-20">
                 <SelectValue :placeholder="`${table.getState().pagination.pageSize}`" />
               </SelectTrigger>
               <SelectContent side="top">
-                <SelectItem v-for="pageSize in [10, 20, 30, 40, 50]" :key="pageSize" :value="`${pageSize}`">
+                <SelectItem
+                  v-for="pageSize in [10, 20, 30, 40, 50]"
+                  :key="pageSize"
+                  :value="`${pageSize}`"
+                >
                   {{ pageSize }}
                 </SelectItem>
               </SelectContent>

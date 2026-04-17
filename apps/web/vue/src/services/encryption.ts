@@ -11,7 +11,7 @@
  * 4. Web app decrypts to get shared secret
  */
 
-import nacl from 'tweetnacl';
+import nacl from "tweetnacl";
 
 /**
  * Key pair for box encryption
@@ -43,13 +43,13 @@ export function generateBoxKeyPair(): BoxKeyPair {
  */
 export function decryptBox(
   encryptedBundle: Uint8Array,
-  recipientSecretKey: Uint8Array
+  recipientSecretKey: Uint8Array,
 ): Uint8Array | null {
   const PUBLICKEY_BYTES = nacl.box.publicKeyLength; // 32
   const NONCE_BYTES = nacl.box.nonceLength; // 24
 
   if (encryptedBundle.length < PUBLICKEY_BYTES + NONCE_BYTES + 1) {
-    console.error('[Encryption] Bundle too short to contain valid encrypted data');
+    console.error("[Encryption] Bundle too short to contain valid encrypted data");
     return null;
   }
 
@@ -62,7 +62,7 @@ export function decryptBox(
     const decrypted = nacl.box.open(ciphertext, nonce, ephemeralPublicKey, recipientSecretKey);
     return decrypted ?? null;
   } catch (error) {
-    console.error('[Encryption] Decryption failed:', error);
+    console.error("[Encryption] Decryption failed:", error);
     return null;
   }
 }
@@ -102,10 +102,7 @@ export function randomBytes(length: number): Uint8Array {
  * @param recipientPublicKey - The recipient's public key (32 bytes)
  * @returns Encrypted bundle as Uint8Array
  */
-export function encryptBox(
-  data: Uint8Array,
-  recipientPublicKey: Uint8Array
-): Uint8Array {
+export function encryptBox(data: Uint8Array, recipientPublicKey: Uint8Array): Uint8Array {
   const NONCE_BYTES = nacl.box.nonceLength; // 24
 
   // Generate ephemeral keypair for this encryption
@@ -119,7 +116,7 @@ export function encryptBox(
 
   // Bundle format: ephemeral public key (32 bytes) + nonce (24 bytes) + ciphertext
   const result = new Uint8Array(
-    ephemeralKeypair.publicKey.length + nonce.length + ciphertext.length
+    ephemeralKeypair.publicKey.length + nonce.length + ciphertext.length,
   );
   result.set(ephemeralKeypair.publicKey, 0);
   result.set(nonce, ephemeralKeypair.publicKey.length);
@@ -137,10 +134,7 @@ export function encryptBox(
  * @param recipientPublicKey - The recipient's public key (32 bytes)
  * @returns Encrypted bundle as Uint8Array
  */
-export function encryptBoxString(
-  message: string,
-  recipientPublicKey: Uint8Array
-): Uint8Array {
+export function encryptBoxString(message: string, recipientPublicKey: Uint8Array): Uint8Array {
   const messageBytes = new TextEncoder().encode(message);
   return encryptBox(messageBytes, recipientPublicKey);
 }
@@ -156,7 +150,7 @@ export function encryptBoxString(
  */
 export function decryptBoxString(
   encryptedBundle: Uint8Array,
-  recipientSecretKey: Uint8Array
+  recipientSecretKey: Uint8Array,
 ): string | null {
   const decrypted = decryptBox(encryptedBundle, recipientSecretKey);
   if (!decrypted) return null;

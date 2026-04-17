@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import type { HTMLAttributes } from 'vue'
-import { Collapsible } from '@/components/ui/collapsible'
-import { cn } from '@/lib/utils'
+import type { HTMLAttributes } from "vue";
+import { Collapsible } from "@/components/ui/collapsible";
+import { cn } from "@/lib/utils";
 
-type ToolProps = InstanceType<typeof Collapsible>['$props']
+type ToolProps = InstanceType<typeof Collapsible>["$props"];
 
 interface Props extends /* @vue-ignore */ ToolProps {
-  class?: HTMLAttributes['class']
+  class?: HTMLAttributes["class"];
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 </script>
 
 <template>

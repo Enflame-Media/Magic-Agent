@@ -10,16 +10,16 @@
  * @see HAP-874 - Offline Artifact Caching
  */
 
-import { ref, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Progress } from '@/components/ui/progress';
-import { useUiStore } from '@/stores/ui';
-import { useOfflineArtifacts } from '@/composables/useOfflineArtifacts';
-import ResponsiveContainer from '@/components/app/ResponsiveContainer.vue';
+import { ref, computed, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Progress } from "@/components/ui/progress";
+import { useUiStore } from "@/stores/ui";
+import { useOfflineArtifacts } from "@/composables/useOfflineArtifacts";
+import ResponsiveContainer from "@/components/app/ResponsiveContainer.vue";
 
 const router = useRouter();
 const ui = useUiStore();
@@ -48,17 +48,17 @@ onMounted(async () => {
 
 // Handlers
 function goBack() {
-  router.push('/settings');
+  router.push("/settings");
 }
 
 async function handleClearCache() {
   isClearing.value = true;
   try {
     await clearCache();
-    ui.success('Artifact cache cleared');
+    ui.success("Artifact cache cleared");
   } catch (error) {
-    ui.error('Failed to clear cache');
-    console.error('[storage] Failed to clear cache:', error);
+    ui.error("Failed to clear cache");
+    console.error("[storage] Failed to clear cache:", error);
   } finally {
     isClearing.value = false;
   }
@@ -68,9 +68,9 @@ function handleToggleCaching(enabled: boolean) {
   cacheEnabled.value = enabled;
   setCacheConfig({ enabled });
   if (enabled) {
-    ui.success('Offline caching enabled');
+    ui.success("Offline caching enabled");
   } else {
-    ui.success('Offline caching disabled');
+    ui.success("Offline caching disabled");
   }
 }
 
@@ -78,7 +78,7 @@ function handleToggleCaching(enabled: boolean) {
 const artifactCount = computed(() => cacheStats.value?.totalArtifacts ?? 0);
 const bodiesCount = computed(() => cacheStats.value?.artifactsWithBody ?? 0);
 const lastCachedFormatted = computed(() => {
-  if (!cacheStats.value?.newestCachedAt) return 'Never';
+  if (!cacheStats.value?.newestCachedAt) return "Never";
   return new Date(cacheStats.value.newestCachedAt).toLocaleString();
 });
 </script>
@@ -96,11 +96,7 @@ const lastCachedFormatted = computed(() => {
           stroke="currentColor"
           stroke-width="2"
         >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M15 19l-7-7 7-7"
-          />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
         </svg>
       </Button>
       <h1 class="text-2xl font-semibold">Storage</h1>
@@ -120,14 +116,9 @@ const lastCachedFormatted = computed(() => {
           <div class="flex items-center justify-between">
             <div>
               <Label class="text-base">Enable offline caching</Label>
-              <p class="text-sm text-muted-foreground">
-                Cache artifacts for offline viewing
-              </p>
+              <p class="text-sm text-muted-foreground">Cache artifacts for offline viewing</p>
             </div>
-            <Switch
-              :checked="cacheEnabled"
-              @update:checked="handleToggleCaching"
-            />
+            <Switch :checked="cacheEnabled" @update:checked="handleToggleCaching" />
           </div>
 
           <!-- Cache usage -->
@@ -199,7 +190,7 @@ const lastCachedFormatted = computed(() => {
                   d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                 />
               </svg>
-              {{ isClearing ? 'Clearing...' : 'Clear Cache' }}
+              {{ isClearing ? "Clearing..." : "Clear Cache" }}
             </Button>
           </div>
         </CardContent>
@@ -225,9 +216,9 @@ const lastCachedFormatted = computed(() => {
             </svg>
             <div>
               <p class="text-sm text-muted-foreground">
-                Artifact caching uses IndexedDB for storage. The cache is automatically
-                managed using a least-recently-used (LRU) policy to stay within size limits.
-                Cached items are automatically updated when you connect to the server.
+                Artifact caching uses IndexedDB for storage. The cache is automatically managed
+                using a least-recently-used (LRU) policy to stay within size limits. Cached items
+                are automatically updated when you connect to the server.
               </p>
             </div>
           </div>

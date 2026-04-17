@@ -8,13 +8,13 @@
  * @see HAP-727 - Add privacy setting to hide online status from friends
  */
 
-import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { getPrivacySettings, updatePrivacySettings } from '@/services/privacy';
-import ResponsiveContainer from '@/components/app/ResponsiveContainer.vue';
+import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { getPrivacySettings, updatePrivacySettings } from "@/services/privacy";
+import ResponsiveContainer from "@/components/app/ResponsiveContainer.vue";
 
 const router = useRouter();
 
@@ -31,8 +31,8 @@ onMounted(async () => {
     const settings = await getPrivacySettings();
     showOnlineStatus.value = settings.showOnlineStatus;
   } catch (err) {
-    console.error('Failed to load privacy settings:', err);
-    error.value = 'Failed to load privacy settings';
+    console.error("Failed to load privacy settings:", err);
+    error.value = "Failed to load privacy settings";
   } finally {
     isLoading.value = false;
   }
@@ -48,8 +48,8 @@ async function handleToggle() {
     const updated = await updatePrivacySettings({ showOnlineStatus: newValue });
     showOnlineStatus.value = updated.showOnlineStatus;
   } catch (err) {
-    console.error('Failed to update privacy settings:', err);
-    error.value = 'Failed to save settings';
+    console.error("Failed to update privacy settings:", err);
+    error.value = "Failed to save settings";
     // Revert on error (value wasn't changed yet since we update after success)
   } finally {
     isSaving.value = false;
@@ -57,7 +57,7 @@ async function handleToggle() {
 }
 
 function goBack() {
-  router.push('/settings');
+  router.push("/settings");
 }
 </script>
 
@@ -74,11 +74,7 @@ function goBack() {
           stroke="currentColor"
           stroke-width="2"
         >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M15 19l-7-7 7-7"
-          />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
         </svg>
       </Button>
       <h1 class="text-2xl font-semibold">Privacy</h1>
@@ -89,9 +85,7 @@ function goBack() {
       <Card>
         <CardHeader>
           <CardTitle>Online Status</CardTitle>
-          <CardDescription>
-            Control who can see when you're online
-          </CardDescription>
+          <CardDescription> Control who can see when you're online </CardDescription>
         </CardHeader>
         <CardContent>
           <!-- Loading State -->
@@ -143,7 +137,11 @@ function goBack() {
               <div>
                 <p class="font-medium">Show Online Status</p>
                 <p class="text-sm text-muted-foreground">
-                  {{ showOnlineStatus ? 'Friends can see when you\'re online' : 'You appear offline to all friends' }}
+                  {{
+                    showOnlineStatus
+                      ? "Friends can see when you're online"
+                      : "You appear offline to all friends"
+                  }}
                 </p>
               </div>
             </div>
@@ -172,7 +170,8 @@ function goBack() {
 
           <!-- Info Text -->
           <p class="mt-4 text-sm text-muted-foreground">
-            When disabled, you'll appear offline to all friends, but you can still see when they're online.
+            When disabled, you'll appear offline to all friends, but you can still see when they're
+            online.
           </p>
         </CardContent>
       </Card>

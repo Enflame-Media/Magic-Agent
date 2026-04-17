@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import ToolSectionView from '../ToolSectionView.vue';
-import type { ToolViewProps } from './types';
+import { computed } from "vue";
+import ToolSectionView from "../ToolSectionView.vue";
+import type { ToolViewProps } from "./types";
 
 const props = defineProps<ToolViewProps>();
 
@@ -10,7 +10,7 @@ const tasks = computed(() => {
     return [];
   }
   return props.messages
-    .filter((message) => message.kind === 'tool-call')
+    .filter((message) => message.kind === "tool-call")
     .map((message) => message.tool.name);
 });
 </script>

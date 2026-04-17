@@ -6,15 +6,15 @@
  * Includes share session functionality (HAP-767).
  */
 
-import { computed, ref, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import { toast } from 'vue-sonner';
-import { useAuthStore } from '@/stores/auth';
-import { useMessagesStore } from '@/stores/messages';
-import { useMachinesStore, isMachineOnline } from '@/stores/machines';
-import { useSessionsStore } from '@/stores/sessions';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { computed, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { toast } from "vue-sonner";
+import { useAuthStore } from "@/stores/auth";
+import { useMessagesStore } from "@/stores/messages";
+import { useMachinesStore, isMachineOnline } from "@/stores/machines";
+import { useSessionsStore } from "@/stores/sessions";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Item,
   ItemContent,
@@ -24,8 +24,8 @@ import {
   ItemMedia,
   ItemSeparator,
   ItemTitle,
-} from '@/components/ui/item';
-import { ShareSessionModal } from '@/components/app/sharing';
+} from "@/components/ui/item";
+import { ShareSessionModal } from "@/components/app/sharing";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,16 +35,16 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { archiveSession, deleteSession } from '@/services/sessions';
-import { encryptionCache } from '@/services/encryption/EncryptionCache';
-import { decryptSessionMetadata } from '@/services/encryption/sessionDecryption';
+} from "@/components/ui/alert-dialog";
+import { archiveSession, deleteSession } from "@/services/sessions";
+import { encryptionCache } from "@/services/encryption/EncryptionCache";
+import { decryptSessionMetadata } from "@/services/encryption/sessionDecryption";
 import {
   isTemporaryPidSessionId,
   machineSpawnNewSession,
   pollForRealSession,
-} from '@/services/sync/ops';
-import ResponsiveContainer from '@/components/app/ResponsiveContainer.vue';
+} from "@/services/sync/ops";
+import ResponsiveContainer from "@/components/app/ResponsiveContainer.vue";
 
 interface SessionMetadata {
   name?: string;
@@ -79,7 +79,7 @@ const showDeleteDialog = ref(false);
 
 const sessionId = computed(() => route.params.id as string);
 const session = computed(() =>
-  sessionId.value ? sessionsStore.getSession(sessionId.value) : undefined
+  sessionId.value ? sessionsStore.getSession(sessionId.value) : undefined,
 );
 
 async function refreshMetadata(): Promise<void> {
@@ -109,7 +109,7 @@ async function refreshMetadata(): Promise<void> {
 const metadata = computed<SessionMetadata | null>(() => decryptedMetadata.value);
 
 const sessionName = computed(() => {
-  if (!session.value) return 'Session';
+  if (!session.value) return "Session";
   const meta = metadata.value;
   return meta?.name || meta?.title || `Session ${sessionId.value.slice(0, 8)}`;
 });
@@ -119,25 +119,19 @@ const projectPath = computed(() => {
   return meta?.path || meta?.projectPath || null;
 });
 
-const statusText = computed(() =>
-  session.value?.active ? 'Connected' : 'Archived'
-);
+const statusText = computed(() => (session.value?.active ? "Connected" : "Archived"));
 
 const statusColor = computed(() =>
-  session.value?.active ? 'text-emerald-500' : 'text-muted-foreground'
+  session.value?.active ? "text-emerald-500" : "text-muted-foreground",
 );
 
 const messageCount = computed(() =>
-  session.value ? messagesStore.getMessageCount(session.value.id) : 0
+  session.value ? messagesStore.getMessageCount(session.value.id) : 0,
 );
 
-const createdAt = computed(() =>
-  session.value ? formatDate(session.value.createdAt) : '—'
-);
+const createdAt = computed(() => (session.value ? formatDate(session.value.createdAt) : "—"));
 
-const updatedAt = computed(() =>
-  session.value ? formatDate(session.value.updatedAt) : '—'
-);
+const updatedAt = computed(() => (session.value ? formatDate(session.value.updatedAt) : "—"));
 
 const machineOnline = computed(() => {
   const machineId = metadata.value?.machineId;
@@ -150,10 +144,7 @@ const restorePath = computed(() => projectPath.value ?? metadata.value?.path ?? 
 
 const canRestore = computed(() => {
   return Boolean(
-    session.value &&
-    !session.value.active &&
-    metadata.value?.machineId &&
-    restorePath.value
+    session.value && !session.value.active && metadata.value?.machineId && restorePath.value,
   );
 });
 
@@ -164,9 +155,9 @@ function formatDate(timestamp: number): string {
 }
 
 function displayProvider(flavor?: string): string {
-  if (!flavor || flavor === 'claude') return 'Claude';
-  if (flavor === 'gpt' || flavor === 'openai') return 'Codex';
-  if (flavor === 'gemini') return 'Gemini';
+  if (!flavor || flavor === "claude") return "Claude";
+  if (flavor === "gpt" || flavor === "openai") return "Codex";
+  if (flavor === "gemini") return "Gemini";
   return flavor;
 }
 
@@ -183,7 +174,7 @@ watch(
   async () => {
     await refreshMetadata();
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 async function handleRestore(): Promise<void> {
@@ -191,12 +182,12 @@ async function handleRestore(): Promise<void> {
 
   if (isRestoring.value) return;
   if (!metadata.value.machineId || !restorePath.value) {
-    toast.error('Missing machine metadata for restore');
+    toast.error("Missing machine metadata for restore");
     return;
   }
 
   if (!machineOnline.value) {
-    toast.error('Machine must be online to restore this session');
+    toast.error("Machine must be online to restore this session");
     return;
   }
 
@@ -204,9 +195,10 @@ async function handleRestore(): Promise<void> {
   try {
     const spawnStartTime = Date.now();
     const flavor = metadata.value.flavor;
-    const agent = flavor === 'gpt' || flavor === 'openai'
-      ? 'codex'
-      : (flavor as 'claude' | 'codex' | 'gemini') ?? 'claude';
+    const agent =
+      flavor === "gpt" || flavor === "openai"
+        ? "codex"
+        : ((flavor as "claude" | "codex" | "gemini") ?? "claude");
     const result = await machineSpawnNewSession({
       machineId: metadata.value.machineId,
       directory: restorePath.value,
@@ -214,35 +206,34 @@ async function handleRestore(): Promise<void> {
       sessionId: session.value.id,
     });
 
-    if (result.type === 'requestToApproveDirectoryCreation') {
-      toast.error('Directory creation must be approved in the CLI');
+    if (result.type === "requestToApproveDirectoryCreation") {
+      toast.error("Directory creation must be approved in the CLI");
       return;
     }
 
-    if (result.type === 'error') {
-      toast.error(result.errorMessage || 'Failed to restore session');
+    if (result.type === "error") {
+      toast.error(result.errorMessage || "Failed to restore session");
       return;
     }
 
     let restoredSessionId = result.sessionId;
     if (isTemporaryPidSessionId(restoredSessionId)) {
-      const realSessionId = await pollForRealSession(
-        metadata.value.machineId,
-        spawnStartTime,
-        { interval: 5000, maxAttempts: 24 }
-      );
+      const realSessionId = await pollForRealSession(metadata.value.machineId, spawnStartTime, {
+        interval: 5000,
+        maxAttempts: 24,
+      });
       if (!realSessionId) {
-        toast.error('Failed to confirm restored session');
+        toast.error("Failed to confirm restored session");
         return;
       }
       restoredSessionId = realSessionId;
     }
 
-    toast.success(result.message || 'Session restored');
+    toast.success(result.message || "Session restored");
     router.replace(`/session/${restoredSessionId}`);
   } catch (error) {
-    console.error('[session] Failed to restore session', error);
-    toast.error('Failed to restore session');
+    console.error("[session] Failed to restore session", error);
+    toast.error("Failed to restore session");
   } finally {
     isRestoring.value = false;
   }
@@ -258,7 +249,7 @@ async function handleArchive(): Promise<void> {
   showArchiveDialog.value = false;
 
   if (!authStore.token) {
-    toast.error('Not authenticated');
+    toast.error("Not authenticated");
     return;
   }
 
@@ -266,12 +257,12 @@ async function handleArchive(): Promise<void> {
   try {
     const result = await archiveSession(session.value.id, authStore.token);
 
-    if ('deleted' in result && result.deleted) {
+    if ("deleted" in result && result.deleted) {
       sessionsStore.removeSession(session.value.id);
       messagesStore.clearSessionMessages(session.value.id);
       encryptionCache.clearSessionCache(session.value.id);
-      toast.success('Session deleted');
-      router.push('/');
+      toast.success("Session deleted");
+      router.push("/");
       return;
     }
 
@@ -279,10 +270,10 @@ async function handleArchive(): Promise<void> {
       active: false,
       updatedAt: Date.now(),
     });
-    toast.success('Session archived');
+    toast.success("Session archived");
   } catch (error) {
-    console.error('[session] Failed to archive session', error);
-    toast.error('Failed to archive session');
+    console.error("[session] Failed to archive session", error);
+    toast.error("Failed to archive session");
   } finally {
     isArchiving.value = false;
   }
@@ -298,7 +289,7 @@ async function handleDelete(): Promise<void> {
   showDeleteDialog.value = false;
 
   if (!authStore.token) {
-    toast.error('Not authenticated');
+    toast.error("Not authenticated");
     return;
   }
 
@@ -308,11 +299,11 @@ async function handleDelete(): Promise<void> {
     sessionsStore.removeSession(session.value.id);
     messagesStore.clearSessionMessages(session.value.id);
     encryptionCache.clearSessionCache(session.value.id);
-    toast.success('Session deleted');
-    router.push('/');
+    toast.success("Session deleted");
+    router.push("/");
   } catch (error) {
-    console.error('[session] Failed to delete session', error);
-    toast.error('Failed to delete session');
+    console.error("[session] Failed to delete session", error);
+    toast.error("Failed to delete session");
   } finally {
     isDeleting.value = false;
   }
@@ -331,11 +322,7 @@ async function handleDelete(): Promise<void> {
           stroke="currentColor"
           stroke-width="2"
         >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M15 19l-7-7 7-7"
-          />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
         </svg>
       </Button>
       <div>
@@ -355,7 +342,9 @@ async function handleDelete(): Promise<void> {
           <h1 class="text-xl font-semibold">
             {{ sessionName }}
           </h1>
-          <div class="flex flex-wrap items-center justify-center gap-2 text-sm text-muted-foreground">
+          <div
+            class="flex flex-wrap items-center justify-center gap-2 text-sm text-muted-foreground"
+          >
             <span v-if="projectPath" class="max-w-[20rem] truncate">
               {{ projectPath }}
             </span>
@@ -414,7 +403,7 @@ async function handleDelete(): Promise<void> {
             <ItemHeader>
               <ItemTitle>Sequence</ItemTitle>
             </ItemHeader>
-            <ItemDescription>{{ session?.seq ?? '—' }}</ItemDescription>
+            <ItemDescription>{{ session?.seq ?? "—" }}</ItemDescription>
           </ItemContent>
         </Item>
       </ItemGroup>
@@ -459,15 +448,17 @@ async function handleDelete(): Promise<void> {
           <ItemContent>
             <ItemHeader>
               <ItemTitle>
-                {{ isActiveSession ? 'Archive Session' : 'Restore Session' }}
+                {{ isActiveSession ? "Archive Session" : "Restore Session" }}
               </ItemTitle>
             </ItemHeader>
             <ItemDescription>
-              <template v-if="isActiveSession">
-                Archive this session and stop it.
-              </template>
+              <template v-if="isActiveSession"> Archive this session and stop it. </template>
               <template v-else>
-                {{ machineOnline ? 'Resume this session on its original machine.' : 'Machine must be online to restore.' }}
+                {{
+                  machineOnline
+                    ? "Resume this session on its original machine."
+                    : "Machine must be online to restore."
+                }}
               </template>
             </ItemDescription>
           </ItemContent>
@@ -478,10 +469,10 @@ async function handleDelete(): Promise<void> {
             @click="isActiveSession ? openArchiveDialog() : handleRestore()"
           >
             <template v-if="isActiveSession">
-              {{ isArchiving ? 'Archiving...' : 'Archive' }}
+              {{ isArchiving ? "Archiving..." : "Archive" }}
             </template>
             <template v-else>
-              {{ isRestoring ? 'Restoring...' : 'Restore' }}
+              {{ isRestoring ? "Restoring..." : "Restore" }}
             </template>
           </Button>
         </Item>
@@ -497,24 +488,18 @@ async function handleDelete(): Promise<void> {
               stroke-linecap="round"
               stroke-linejoin="round"
             >
-              <path d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+              <path
+                d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+              />
             </svg>
           </ItemMedia>
           <ItemContent>
             <ItemHeader>
               <ItemTitle>Share Session</ItemTitle>
             </ItemHeader>
-            <ItemDescription>
-              Share this session with friends or via link.
-            </ItemDescription>
+            <ItemDescription> Share this session with friends or via link. </ItemDescription>
           </ItemContent>
-          <Button
-            variant="outline"
-            size="sm"
-            @click="openShareModal"
-          >
-            Share
-          </Button>
+          <Button variant="outline" size="sm" @click="openShareModal"> Share </Button>
         </Item>
         <ItemSeparator v-if="!isActiveSession" />
         <Item v-if="!isActiveSession" size="sm">
@@ -542,13 +527,8 @@ async function handleDelete(): Promise<void> {
               Permanently remove this session and its message history.
             </ItemDescription>
           </ItemContent>
-          <Button
-            variant="destructive"
-            size="sm"
-            :disabled="isDeleting"
-            @click="openDeleteDialog"
-          >
-            {{ isDeleting ? 'Deleting...' : 'Delete' }}
+          <Button variant="destructive" size="sm" :disabled="isDeleting" @click="openDeleteDialog">
+            {{ isDeleting ? "Deleting..." : "Delete" }}
           </Button>
         </Item>
       </ItemGroup>
@@ -564,7 +544,7 @@ async function handleDelete(): Promise<void> {
             <ItemHeader>
               <ItemTitle>Host</ItemTitle>
             </ItemHeader>
-            <ItemDescription>{{ metadata.host ?? '—' }}</ItemDescription>
+            <ItemDescription>{{ metadata.host ?? "—" }}</ItemDescription>
           </ItemContent>
         </Item>
         <ItemSeparator />
@@ -573,7 +553,7 @@ async function handleDelete(): Promise<void> {
             <ItemHeader>
               <ItemTitle>Path</ItemTitle>
             </ItemHeader>
-            <ItemDescription>{{ projectPath ?? '—' }}</ItemDescription>
+            <ItemDescription>{{ projectPath ?? "—" }}</ItemDescription>
           </ItemContent>
         </Item>
         <ItemSeparator />
@@ -582,7 +562,7 @@ async function handleDelete(): Promise<void> {
             <ItemHeader>
               <ItemTitle>CLI Version</ItemTitle>
             </ItemHeader>
-            <ItemDescription>{{ metadata.version ?? '—' }}</ItemDescription>
+            <ItemDescription>{{ metadata.version ?? "—" }}</ItemDescription>
           </ItemContent>
         </Item>
         <ItemSeparator />
@@ -591,7 +571,7 @@ async function handleDelete(): Promise<void> {
             <ItemHeader>
               <ItemTitle>Operating System</ItemTitle>
             </ItemHeader>
-            <ItemDescription>{{ metadata.os ?? '—' }}</ItemDescription>
+            <ItemDescription>{{ metadata.os ?? "—" }}</ItemDescription>
           </ItemContent>
         </Item>
         <ItemSeparator />
@@ -609,17 +589,14 @@ async function handleDelete(): Promise<void> {
             <ItemHeader>
               <ItemTitle>Process ID</ItemTitle>
             </ItemHeader>
-            <ItemDescription>{{ metadata.hostPid ?? '—' }}</ItemDescription>
+            <ItemDescription>{{ metadata.hostPid ?? "—" }}</ItemDescription>
           </ItemContent>
         </Item>
       </ItemGroup>
     </section>
 
     <!-- Share Session Modal -->
-    <ShareSessionModal
-      v-model:open="isShareModalOpen"
-      :session-id="sessionId"
-    />
+    <ShareSessionModal v-model:open="isShareModalOpen" :session-id="sessionId" />
 
     <!-- Archive Session Dialog -->
     <AlertDialog v-model:open="showArchiveDialog">
@@ -632,9 +609,7 @@ async function handleDelete(): Promise<void> {
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction @click="handleArchive">
-            Archive
-          </AlertDialogAction>
+          <AlertDialogAction @click="handleArchive"> Archive </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
@@ -645,8 +620,8 @@ async function handleDelete(): Promise<void> {
         <AlertDialogHeader>
           <AlertDialogTitle>Delete Session?</AlertDialogTitle>
           <AlertDialogDescription>
-            This will permanently delete this archived session and all of its messages.
-            This action cannot be undone.
+            This will permanently delete this archived session and all of its messages. This action
+            cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

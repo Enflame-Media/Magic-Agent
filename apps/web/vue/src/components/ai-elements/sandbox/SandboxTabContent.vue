@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import type { HTMLAttributes } from 'vue'
-import { TabsContent } from '@/components/ui/tabs'
-import { cn } from '@/lib/utils'
+import type { HTMLAttributes } from "vue";
+import { TabsContent } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 
-type TabsContentProps = InstanceType<typeof TabsContent>['$props']
+type TabsContentProps = InstanceType<typeof TabsContent>["$props"];
 
 interface Props extends /* @vue-ignore */ TabsContentProps {
-  class?: HTMLAttributes['class']
+  class?: HTMLAttributes["class"];
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 </script>
 
 <template>

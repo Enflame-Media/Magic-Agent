@@ -1,6 +1,6 @@
-import type { ApiMessage } from '@magic-agent/protocol';
-import type { EncryptedContent } from '@magic-agent/protocol';
-import { getApiBaseUrl } from './apiBase';
+import type { ApiMessage } from "@magic-agent/protocol";
+import type { EncryptedContent } from "@magic-agent/protocol";
+import { getApiBaseUrl } from "./apiBase";
 
 const API_ENDPOINT = getApiBaseUrl();
 
@@ -26,7 +26,7 @@ export type ArchiveSessionResult =
     };
 
 function normalizeMessageContent(content: unknown): EncryptedContent {
-  if (typeof content === 'string') {
+  if (typeof content === "string") {
     try {
       return JSON.parse(content) as EncryptedContent;
     } catch {
@@ -48,7 +48,7 @@ async function fetchJson<T>(path: string, token: string): Promise<T> {
   const response = await fetch(`${API_ENDPOINT}${path}`, {
     headers: {
       Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
   });
 
@@ -61,21 +61,21 @@ async function fetchJson<T>(path: string, token: string): Promise<T> {
 
 export async function fetchSessionMessages(
   sessionId: string,
-  token: string
+  token: string,
 ): Promise<ApiMessage[]> {
   const messages: ApiMessage[] = [];
   let cursor: string | null = null;
 
   while (true) {
     const query = new URLSearchParams();
-    query.set('limit', '200');
+    query.set("limit", "200");
     if (cursor) {
-      query.set('cursor', cursor);
+      query.set("cursor", cursor);
     }
 
     const result = await fetchJson<PaginatedMessagesResponse>(
       `/v2/sessions/${sessionId}/messages?${query.toString()}`,
-      token
+      token,
     );
 
     messages.push(...normalizeMessages(result.messages));
@@ -91,46 +91,43 @@ export async function fetchSessionMessages(
     return messages;
   }
 
-  const legacy = await fetchJson<ListMessagesResponse>(
-    `/v1/sessions/${sessionId}/messages`,
-    token
-  );
+  const legacy = await fetchJson<ListMessagesResponse>(`/v1/sessions/${sessionId}/messages`, token);
 
   return normalizeMessages(legacy.messages);
 }
 
 export async function deleteSession(sessionId: string, token: string): Promise<void> {
   const response = await fetch(`${API_ENDPOINT}/v1/sessions/${sessionId}`, {
-    method: 'DELETE',
+    method: "DELETE",
     headers: {
       Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
   });
 
   if (!response.ok) {
     const message = await response.text();
-    throw new Error(message || 'Failed to delete session');
+    throw new Error(message || "Failed to delete session");
   }
 }
 
 export async function archiveSession(
   sessionId: string,
   token: string,
-  reason: 'revival_failed' | 'user_requested' | 'timeout' = 'user_requested'
+  reason: "revival_failed" | "user_requested" | "timeout" = "user_requested",
 ): Promise<ArchiveSessionResult> {
   const response = await fetch(`${API_ENDPOINT}/v1/sessions/${sessionId}/archive`, {
-    method: 'POST',
+    method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
     body: JSON.stringify({ reason }),
   });
 
   if (!response.ok) {
     const message = await response.text();
-    throw new Error(message || 'Failed to archive session');
+    throw new Error(message || "Failed to archive session");
   }
 
   return response.json() as Promise<ArchiveSessionResult>;

@@ -1,8 +1,8 @@
-import { getApiBaseUrl } from '@/services/apiBase';
-import { useSessionsStore, type Session } from '@/stores/sessions';
-import { useMachinesStore, type Machine } from '@/stores/machines';
-import { useAuthStore } from '@/stores/auth';
-import type { ImageRef, GitHubProfile } from '@magic-agent/protocol';
+import { getApiBaseUrl } from "@/services/apiBase";
+import { useSessionsStore, type Session } from "@/stores/sessions";
+import { useMachinesStore, type Machine } from "@/stores/machines";
+import { useAuthStore } from "@/stores/auth";
+import type { ImageRef, GitHubProfile } from "@magic-agent/protocol";
 
 interface ApiSession {
   id?: string;
@@ -48,7 +48,7 @@ async function fetchJson<T>(path: string, token: string): Promise<T> {
   const response = await fetch(`${API_ENDPOINT}${path}`, {
     headers: {
       Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
   });
 
@@ -104,17 +104,14 @@ export async function bootstrapSyncData(token: string): Promise<void> {
 
   try {
     const [sessionsResult, machinesResult, profileResult] = await Promise.allSettled([
-      fetchJson<{ sessions: ApiSession[] }>('/v1/sessions', token),
-      fetchJson<{ machines: ApiMachine[] }>('/v1/machines', token),
-      fetchJson<AccountProfile>('/v1/account/profile', token),
+      fetchJson<{ sessions: ApiSession[] }>("/v1/sessions", token),
+      fetchJson<{ machines: ApiMachine[] }>("/v1/machines", token),
+      fetchJson<AccountProfile>("/v1/account/profile", token),
     ]);
 
-    const sessions =
-      sessionsResult.status === 'fulfilled' ? sessionsResult.value.sessions : [];
-    const machines =
-      machinesResult.status === 'fulfilled' ? machinesResult.value.machines : [];
-    const profile =
-      profileResult.status === 'fulfilled' ? profileResult.value : null;
+    const sessions = sessionsResult.status === "fulfilled" ? sessionsResult.value.sessions : [];
+    const machines = machinesResult.status === "fulfilled" ? machinesResult.value.machines : [];
+    const profile = profileResult.status === "fulfilled" ? profileResult.value : null;
 
     const mappedSessions = sessions
       .map(toSession)
@@ -137,6 +134,6 @@ export async function bootstrapSyncData(token: string): Promise<void> {
       });
     }
   } catch (error) {
-    console.error('[sync] Bootstrap failed:', error);
+    console.error("[sync] Bootstrap failed:", error);
   }
 }

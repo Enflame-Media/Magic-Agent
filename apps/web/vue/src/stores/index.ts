@@ -30,59 +30,43 @@
 // Store Exports
 // ─────────────────────────────────────────────────────────────────────────────
 
-export { useAuthStore, type AccountInfo } from './auth';
+export { useAuthStore, type AccountInfo } from "./auth";
 
-export { useSyncStore, type SyncStatus } from './sync';
+export { useSyncStore, type SyncStatus } from "./sync";
 
-export {
-    useSessionsStore,
-    type Session,
-} from './sessions';
+export { useSessionsStore, type Session } from "./sessions";
 
-export {
-    useMachinesStore,
-    type Machine,
-} from './machines';
+export { useMachinesStore, type Machine } from "./machines";
+
+export { useMessagesStore, type Message } from "./messages";
 
 export {
-    useMessagesStore,
-    type Message,
-} from './messages';
+  useSettingsStore,
+  type ThemeMode,
+  type NotificationSettings,
+  type DisplaySettings,
+  type UserSettings,
+} from "./settings";
 
 export {
-    useSettingsStore,
-    type ThemeMode,
-    type NotificationSettings,
-    type DisplaySettings,
-    type UserSettings,
-} from './settings';
+  useUiStore,
+  type ModalType,
+  type ModalState,
+  type ToastType,
+  type Toast,
+  type SidebarState,
+} from "./ui";
+
+export { useVoiceStore } from "./voice";
+
+export { usePurchasesStore, type PurchaseStatus, type PurchaseErrorInfo } from "./purchases";
 
 export {
-    useUiStore,
-    type ModalType,
-    type ModalState,
-    type ToastType,
-    type Toast,
-    type SidebarState,
-} from './ui';
+  useArtifactsStore,
+  type DecryptedArtifact,
+  type ArtifactHeader,
+  type ArtifactFileType,
+  type FileTreeNode,
+} from "./artifacts";
 
-export { useVoiceStore } from './voice';
-
-export {
-    usePurchasesStore,
-    type PurchaseStatus,
-    type PurchaseErrorInfo,
-} from './purchases';
-
-export {
-    useArtifactsStore,
-    type DecryptedArtifact,
-    type ArtifactHeader,
-    type ArtifactFileType,
-    type FileTreeNode,
-} from './artifacts';
-
-export {
-    useAcpStore,
-    type AcpSessionState,
-} from './acp';
+export { useAcpStore, type AcpSessionState } from "./acp";

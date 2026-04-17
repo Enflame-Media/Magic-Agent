@@ -11,60 +11,60 @@
  * @see HAP-963 - Keyboard Shortcuts and Accessibility
  */
 
-import { describe, it, expect } from 'vite-plus/test';
-import { mount } from '@vue/test-utils';
-import SkipLink from '@/components/app/SkipLink.vue';
-import { checkComponentA11y } from '../helpers/a11y';
+import { describe, it, expect } from "vite-plus/test";
+import { mount } from "@vue/test-utils";
+import SkipLink from "@/components/app/SkipLink.vue";
+import { checkComponentA11y } from "../helpers/a11y";
 
-describe('SkipLink Accessibility', () => {
-  it('should have no axe-core violations with default props', async () => {
+describe("SkipLink Accessibility", () => {
+  it("should have no axe-core violations with default props", async () => {
     const wrapper = mount(SkipLink);
     await checkComponentA11y(wrapper);
   });
 
-  it('should have no axe-core violations with custom props', async () => {
+  it("should have no axe-core violations with custom props", async () => {
     const wrapper = mount(SkipLink, {
       props: {
-        targetId: 'content-area',
-        label: 'Skip to content',
+        targetId: "content-area",
+        label: "Skip to content",
       },
     });
     await checkComponentA11y(wrapper);
   });
 
-  it('should render as a link element', () => {
+  it("should render as a link element", () => {
     const wrapper = mount(SkipLink);
-    const link = wrapper.find('a');
+    const link = wrapper.find("a");
 
     expect(link.exists()).toBe(true);
-    expect(link.attributes('href')).toBe('#main-content');
+    expect(link.attributes("href")).toBe("#main-content");
   });
 
-  it('should have accessible label text', () => {
+  it("should have accessible label text", () => {
     const wrapper = mount(SkipLink, {
-      props: { label: 'Skip to main content' },
+      props: { label: "Skip to main content" },
     });
 
-    expect(wrapper.text()).toBe('Skip to main content');
+    expect(wrapper.text()).toBe("Skip to main content");
   });
 
-  it('should point to correct target with custom targetId', () => {
+  it("should point to correct target with custom targetId", () => {
     const wrapper = mount(SkipLink, {
-      props: { targetId: 'primary-content' },
+      props: { targetId: "primary-content" },
     });
 
-    const link = wrapper.find('a');
-    expect(link.attributes('href')).toBe('#primary-content');
+    const link = wrapper.find("a");
+    expect(link.attributes("href")).toBe("#primary-content");
   });
 
-  it('should use default label when none provided', () => {
+  it("should use default label when none provided", () => {
     const wrapper = mount(SkipLink);
-    expect(wrapper.text()).toBe('Skip to main content');
+    expect(wrapper.text()).toBe("Skip to main content");
   });
 
-  it('should use default targetId when none provided', () => {
+  it("should use default targetId when none provided", () => {
     const wrapper = mount(SkipLink);
-    const link = wrapper.find('a');
-    expect(link.attributes('href')).toBe('#main-content');
+    const link = wrapper.find("a");
+    expect(link.attributes("href")).toBe("#main-content");
   });
 });

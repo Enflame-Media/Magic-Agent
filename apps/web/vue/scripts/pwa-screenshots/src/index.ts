@@ -12,25 +12,25 @@
  * @see HAP-923 - Create PWA screenshot assets for install prompt
  */
 
-import puppeteer from '@cloudflare/puppeteer';
+import puppeteer from "@cloudflare/puppeteer";
 
 /**
  * Screenshot specifications matching manifest.json requirements
  */
 const SCREENSHOTS = [
   {
-    name: 'desktop-home.png',
+    name: "desktop-home.png",
     width: 1920,
     height: 1080,
-    route: '/',
-    label: 'Happy Dashboard - Desktop View',
+    route: "/",
+    label: "Happy Dashboard - Desktop View",
   },
   {
-    name: 'mobile-home.png',
+    name: "mobile-home.png",
     width: 390,
     height: 844,
-    route: '/',
-    label: 'Happy Dashboard - Mobile View',
+    route: "/",
+    label: "Happy Dashboard - Mobile View",
   },
 ] as const;
 
@@ -46,7 +46,7 @@ interface Env {
  */
 async function generateScreenshot(
   env: Env,
-  spec: (typeof SCREENSHOTS)[number]
+  spec: (typeof SCREENSHOTS)[number],
 ): Promise<{ name: string; size: number }> {
   const browser = await puppeteer.launch(env.MYBROWSER);
 
@@ -61,12 +61,12 @@ async function generateScreenshot(
     });
 
     // Emulate dark color scheme for brand consistency
-    await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'dark' }]);
+    await page.emulateMediaFeatures([{ name: "prefers-color-scheme", value: "dark" }]);
 
     // Navigate to the target page
     const targetUrl = `${env.TARGET_URL}${spec.route}`;
     await page.goto(targetUrl, {
-      waitUntil: 'networkidle0',
+      waitUntil: "networkidle0",
       timeout: 30000,
     });
 
@@ -76,15 +76,15 @@ async function generateScreenshot(
 
     // Capture screenshot as PNG
     const screenshot = await page.screenshot({
-      type: 'png',
+      type: "png",
       fullPage: false,
     });
 
     // Store in R2 bucket
     await env.SCREENSHOTS_BUCKET.put(spec.name, screenshot, {
       httpMetadata: {
-        contentType: 'image/png',
-        cacheControl: 'public, max-age=86400',
+        contentType: "image/png",
+        cacheControl: "public, max-age=86400",
       },
       customMetadata: {
         width: String(spec.width),
@@ -114,19 +114,19 @@ export default {
 
     // CORS headers for cross-origin requests
     const corsHeaders = {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
     };
 
     // Handle CORS preflight
-    if (request.method === 'OPTIONS') {
+    if (request.method === "OPTIONS") {
       return new Response(null, { headers: corsHeaders });
     }
 
     try {
       // GET /generate - Generate all screenshots
-      if (path === '/generate') {
+      if (path === "/generate") {
         const results: Array<{ name: string; size: number; error?: string }> = [];
 
         for (const spec of SCREENSHOTS) {
@@ -137,7 +137,7 @@ export default {
             results.push({
               name: spec.name,
               size: 0,
-              error: error instanceof Error ? error.message : 'Unknown error',
+              error: error instanceof Error ? error.message : "Unknown error",
             });
           }
         }
@@ -156,15 +156,15 @@ export default {
               timestamp: new Date().toISOString(),
             },
             null,
-            2
+            2,
           ),
           {
             status: failed === 0 ? 200 : 207,
             headers: {
-              'Content-Type': 'application/json',
+              "Content-Type": "application/json",
               ...corsHeaders,
             },
-          }
+          },
         );
       }
 
@@ -177,21 +177,21 @@ export default {
         if (!object) {
           return new Response(JSON.stringify({ error: `Screenshot '${name}' not found` }), {
             status: 404,
-            headers: { 'Content-Type': 'application/json', ...corsHeaders },
+            headers: { "Content-Type": "application/json", ...corsHeaders },
           });
         }
 
         return new Response(object.body, {
           headers: {
-            'Content-Type': 'image/png',
-            'Cache-Control': 'public, max-age=86400',
+            "Content-Type": "image/png",
+            "Cache-Control": "public, max-age=86400",
             ...corsHeaders,
           },
         });
       }
 
       // GET /status - Check screenshot status
-      if (path === '/status') {
+      if (path === "/status") {
         const status: Array<{
           name: string;
           exists: boolean;
@@ -219,27 +219,28 @@ export default {
               screenshots: status,
             },
             null,
-            2
+            2,
           ),
           {
-            headers: { 'Content-Type': 'application/json', ...corsHeaders },
-          }
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          },
         );
       }
 
       // GET / - API documentation
-      if (path === '/') {
+      if (path === "/") {
         return new Response(
           JSON.stringify(
             {
-              name: 'Happy PWA Screenshot Generator',
-              version: '1.0.0',
+              name: "Happy PWA Screenshot Generator",
+              version: "1.0.0",
               environment: env.ENVIRONMENT,
               endpoints: {
-                'GET /': 'This documentation',
-                'GET /generate': 'Generate all PWA screenshots',
-                'GET /screenshot/:name': 'Serve a specific screenshot (e.g., /screenshot/desktop-home.png)',
-                'GET /status': 'Check if screenshots exist in R2',
+                "GET /": "This documentation",
+                "GET /generate": "Generate all PWA screenshots",
+                "GET /screenshot/:name":
+                  "Serve a specific screenshot (e.g., /screenshot/desktop-home.png)",
+                "GET /status": "Check if screenshots exist in R2",
               },
               screenshots: SCREENSHOTS.map((s) => ({
                 name: s.name,
@@ -248,30 +249,30 @@ export default {
               })),
             },
             null,
-            2
+            2,
           ),
           {
-            headers: { 'Content-Type': 'application/json', ...corsHeaders },
-          }
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          },
         );
       }
 
       // 404 for unknown routes
-      return new Response(JSON.stringify({ error: 'Not found' }), {
+      return new Response(JSON.stringify({ error: "Not found" }), {
         status: 404,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     } catch (error) {
-      console.error('Worker error:', error);
+      console.error("Worker error:", error);
       return new Response(
         JSON.stringify({
-          error: 'Internal server error',
-          message: error instanceof Error ? error.message : 'Unknown error',
+          error: "Internal server error",
+          message: error instanceof Error ? error.message : "Unknown error",
         }),
         {
           status: 500,
-          headers: { 'Content-Type': 'application/json', ...corsHeaders },
-        }
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
       );
     }
   },

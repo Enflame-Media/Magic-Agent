@@ -19,18 +19,18 @@
  * ```
  */
 
-export { wsService } from './WebSocketService';
-export { setupSyncHandlers, areHandlersSetup } from './handlers';
+export { wsService } from "./WebSocketService";
+export { setupSyncHandlers, areHandlersSetup } from "./handlers";
 export {
-    getEncryptionManager,
-    resetEncryptionManager,
-    getArtifactEncryption,
-    storeArtifactKey,
-    getArtifactKey,
-    removeArtifactKey,
-    clearArtifactKeys,
-} from './artifactSync';
-export { sendSessionMessage } from './messages';
-export { sessionRPC } from './rpc';
-export { sessionAllow, sessionDeny } from './ops';
-export { clearAcpSyncCache } from './acpSync';
+  getEncryptionManager,
+  resetEncryptionManager,
+  getArtifactEncryption,
+  storeArtifactKey,
+  getArtifactKey,
+  removeArtifactKey,
+  clearArtifactKeys,
+} from "./artifactSync";
+export { sendSessionMessage } from "./messages";
+export { sessionRPC } from "./rpc";
+export { sessionAllow, sessionDeny } from "./ops";
+export { clearAcpSyncCache } from "./acpSync";

@@ -10,7 +10,7 @@
  * @see HAP-720 - NativeScript Mobile Testing Suite
  */
 
-import { describe, it, expect } from 'vite-plus/test';
+import { describe, it, expect } from "vite-plus/test";
 import {
   generateBoxKeyPair,
   encryptBox,
@@ -20,12 +20,12 @@ import {
   signDetached,
   generateSigningKeyPair,
   randomBytes,
-} from '@/services/encryption';
-import nacl from 'tweetnacl';
+} from "@/services/encryption";
+import nacl from "tweetnacl";
 
-describe('Encryption Service', () => {
-  describe('generateBoxKeyPair', () => {
-    it('should generate a valid keypair', () => {
+describe("Encryption Service", () => {
+  describe("generateBoxKeyPair", () => {
+    it("should generate a valid keypair", () => {
       const keypair = generateBoxKeyPair();
 
       expect(keypair).toBeDefined();
@@ -35,7 +35,7 @@ describe('Encryption Service', () => {
       expect(keypair.secretKey.length).toBe(nacl.box.secretKeyLength);
     });
 
-    it('should generate unique keypairs each time', () => {
+    it("should generate unique keypairs each time", () => {
       const keypair1 = generateBoxKeyPair();
       const keypair2 = generateBoxKeyPair();
 
@@ -45,10 +45,10 @@ describe('Encryption Service', () => {
     });
   });
 
-  describe('encryptBox and decryptBox', () => {
-    it('should encrypt and decrypt data correctly', () => {
+  describe("encryptBox and decryptBox", () => {
+    it("should encrypt and decrypt data correctly", () => {
       const recipientKeyPair = generateBoxKeyPair();
-      const message = new TextEncoder().encode('Hello, World!');
+      const message = new TextEncoder().encode("Hello, World!");
 
       // Encrypt with recipient's public key
       const encrypted = encryptBox(message, recipientKeyPair.publicKey);
@@ -64,10 +64,10 @@ describe('Encryption Service', () => {
       expect(decrypted).toEqual(message);
     });
 
-    it('should fail to decrypt with wrong key', () => {
+    it("should fail to decrypt with wrong key", () => {
       const recipientKeyPair = generateBoxKeyPair();
       const wrongKeyPair = generateBoxKeyPair();
-      const message = new TextEncoder().encode('Secret message');
+      const message = new TextEncoder().encode("Secret message");
 
       const encrypted = encryptBox(message, recipientKeyPair.publicKey);
       const decrypted = decryptBox(encrypted, wrongKeyPair.secretKey);
@@ -75,9 +75,9 @@ describe('Encryption Service', () => {
       expect(decrypted).toBeNull();
     });
 
-    it('should return null for corrupted ciphertext', () => {
+    it("should return null for corrupted ciphertext", () => {
       const recipientKeyPair = generateBoxKeyPair();
-      const message = new TextEncoder().encode('Test message');
+      const message = new TextEncoder().encode("Test message");
 
       const encrypted = encryptBox(message, recipientKeyPair.publicKey);
 
@@ -88,7 +88,7 @@ describe('Encryption Service', () => {
       expect(decrypted).toBeNull();
     });
 
-    it('should return null for bundle that is too short', () => {
+    it("should return null for bundle that is too short", () => {
       const recipientKeyPair = generateBoxKeyPair();
       const shortBundle = new Uint8Array(10); // Too short to contain valid data
 
@@ -96,7 +96,7 @@ describe('Encryption Service', () => {
       expect(decrypted).toBeNull();
     });
 
-    it('should handle empty data', () => {
+    it("should handle empty data", () => {
       const recipientKeyPair = generateBoxKeyPair();
       const emptyMessage = new Uint8Array(0);
 
@@ -107,7 +107,7 @@ describe('Encryption Service', () => {
       expect(decrypted?.length).toBe(0);
     });
 
-    it('should handle large data', { timeout: 30000 }, () => {
+    it("should handle large data", { timeout: 30000 }, () => {
       const recipientKeyPair = generateBoxKeyPair();
       // 100 KB of random data (reduced for test performance)
       const largeData = new Uint8Array(100 * 1024);
@@ -122,10 +122,10 @@ describe('Encryption Service', () => {
     });
   });
 
-  describe('encryptBoxString and decryptBoxString', () => {
-    it('should encrypt and decrypt strings correctly', () => {
+  describe("encryptBoxString and decryptBoxString", () => {
+    it("should encrypt and decrypt strings correctly", () => {
       const recipientKeyPair = generateBoxKeyPair();
-      const message = 'Hello, World! 👋';
+      const message = "Hello, World! 👋";
 
       const encrypted = encryptBoxString(message, recipientKeyPair.publicKey);
       expect(encrypted).toBeInstanceOf(Uint8Array);
@@ -134,9 +134,9 @@ describe('Encryption Service', () => {
       expect(decrypted).toBe(message);
     });
 
-    it('should handle empty string', () => {
+    it("should handle empty string", () => {
       const recipientKeyPair = generateBoxKeyPair();
-      const message = '';
+      const message = "";
 
       const encrypted = encryptBoxString(message, recipientKeyPair.publicKey);
       const decrypted = decryptBoxString(encrypted, recipientKeyPair.secretKey);
@@ -144,9 +144,9 @@ describe('Encryption Service', () => {
       expect(decrypted).toBe(message);
     });
 
-    it('should handle Unicode characters', () => {
+    it("should handle Unicode characters", () => {
       const recipientKeyPair = generateBoxKeyPair();
-      const message = '日本語テスト 🎉 Emoji test! Привет мир';
+      const message = "日本語テスト 🎉 Emoji test! Привет мир";
 
       const encrypted = encryptBoxString(message, recipientKeyPair.publicKey);
       const decrypted = decryptBoxString(encrypted, recipientKeyPair.secretKey);
@@ -154,10 +154,10 @@ describe('Encryption Service', () => {
       expect(decrypted).toBe(message);
     });
 
-    it('should return null for decryption failure', () => {
+    it("should return null for decryption failure", () => {
       const recipientKeyPair = generateBoxKeyPair();
       const wrongKeyPair = generateBoxKeyPair();
-      const message = 'Secret';
+      const message = "Secret";
 
       const encrypted = encryptBoxString(message, recipientKeyPair.publicKey);
       const decrypted = decryptBoxString(encrypted, wrongKeyPair.secretKey);
@@ -166,8 +166,8 @@ describe('Encryption Service', () => {
     });
   });
 
-  describe('generateSigningKeyPair', () => {
-    it('should generate signing keypair from seed', () => {
+  describe("generateSigningKeyPair", () => {
+    it("should generate signing keypair from seed", () => {
       const seed = randomBytes(32);
       const keypair = generateSigningKeyPair(seed);
 
@@ -177,7 +177,7 @@ describe('Encryption Service', () => {
       expect(keypair.secretKey.length).toBe(nacl.sign.secretKeyLength);
     });
 
-    it('should generate deterministic keypairs from same seed', () => {
+    it("should generate deterministic keypairs from same seed", () => {
       const seed = randomBytes(32);
       const keypair1 = generateSigningKeyPair(seed);
       const keypair2 = generateSigningKeyPair(seed);
@@ -186,7 +186,7 @@ describe('Encryption Service', () => {
       expect(keypair1.secretKey).toEqual(keypair2.secretKey);
     });
 
-    it('should generate different keypairs from different seeds', () => {
+    it("should generate different keypairs from different seeds", () => {
       const seed1 = randomBytes(32);
       const seed2 = randomBytes(32);
       const keypair1 = generateSigningKeyPair(seed1);
@@ -196,11 +196,11 @@ describe('Encryption Service', () => {
     });
   });
 
-  describe('signDetached', () => {
-    it('should create a valid detached signature', () => {
+  describe("signDetached", () => {
+    it("should create a valid detached signature", () => {
       const seed = randomBytes(32);
       const keypair = generateSigningKeyPair(seed);
-      const message = new TextEncoder().encode('Test message');
+      const message = new TextEncoder().encode("Test message");
 
       const signature = signDetached(message, keypair.secretKey);
 
@@ -212,10 +212,10 @@ describe('Encryption Service', () => {
       expect(isValid).toBe(true);
     });
 
-    it('should fail verification with wrong key', () => {
+    it("should fail verification with wrong key", () => {
       const keypair1 = generateSigningKeyPair(randomBytes(32));
       const keypair2 = generateSigningKeyPair(randomBytes(32));
-      const message = new TextEncoder().encode('Test message');
+      const message = new TextEncoder().encode("Test message");
 
       const signature = signDetached(message, keypair1.secretKey);
 
@@ -224,22 +224,22 @@ describe('Encryption Service', () => {
       expect(isValid).toBe(false);
     });
 
-    it('should fail verification for tampered message', () => {
+    it("should fail verification for tampered message", () => {
       const keypair = generateSigningKeyPair(randomBytes(32));
-      const message = new TextEncoder().encode('Original message');
+      const message = new TextEncoder().encode("Original message");
 
       const signature = signDetached(message, keypair.secretKey);
 
       // Tamper with the message
-      const tamperedMessage = new TextEncoder().encode('Tampered message');
+      const tamperedMessage = new TextEncoder().encode("Tampered message");
 
       const isValid = nacl.sign.detached.verify(tamperedMessage, signature, keypair.publicKey);
       expect(isValid).toBe(false);
     });
   });
 
-  describe('randomBytes', () => {
-    it('should generate random bytes of specified length', () => {
+  describe("randomBytes", () => {
+    it("should generate random bytes of specified length", () => {
       const length = 32;
       const bytes = randomBytes(length);
 
@@ -247,7 +247,7 @@ describe('Encryption Service', () => {
       expect(bytes.length).toBe(length);
     });
 
-    it('should generate different bytes each time', () => {
+    it("should generate different bytes each time", () => {
       const bytes1 = randomBytes(32);
       const bytes2 = randomBytes(32);
 
@@ -255,12 +255,12 @@ describe('Encryption Service', () => {
       expect(bytes1).not.toEqual(bytes2);
     });
 
-    it('should handle zero length', () => {
+    it("should handle zero length", () => {
       const bytes = randomBytes(0);
       expect(bytes.length).toBe(0);
     });
 
-    it('should handle large lengths', () => {
+    it("should handle large lengths", () => {
       const bytes = randomBytes(1024);
       expect(bytes.length).toBe(1024);
     });

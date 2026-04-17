@@ -1,6 +1,6 @@
-import nacl from 'tweetnacl';
-import { decodeBase64, encodeBase64 } from '@/services/base64';
-import { decryptAESGCMString, encryptAESGCMString } from './aes';
+import nacl from "tweetnacl";
+import { decodeBase64, encodeBase64 } from "@/services/base64";
+import { decryptAESGCMString, encryptAESGCMString } from "./aes";
 
 export interface Encryptor {
   encrypt(data: unknown[]): Promise<Uint8Array[]>;
@@ -15,7 +15,9 @@ export class SecretBoxEncryption implements Encryptor, Decryptor {
 
   constructor(secretKey: Uint8Array) {
     if (secretKey.length !== 32) {
-      throw new Error(`Invalid SecretBox key length: expected 32 bytes, got ${String(secretKey.length)} bytes`);
+      throw new Error(
+        `Invalid SecretBox key length: expected 32 bytes, got ${String(secretKey.length)} bytes`,
+      );
     }
     this.secretKey = secretKey;
   }
@@ -59,7 +61,9 @@ export class AES256Encryption implements Encryptor, Decryptor {
 
   constructor(secretKey: Uint8Array) {
     if (secretKey.length !== 32) {
-      throw new Error(`Invalid AES-256 key length: expected 32 bytes, got ${String(secretKey.length)} bytes`);
+      throw new Error(
+        `Invalid AES-256 key length: expected 32 bytes, got ${String(secretKey.length)} bytes`,
+      );
     }
     this.secretKeyB64 = encodeBase64(secretKey);
   }
@@ -67,7 +71,9 @@ export class AES256Encryption implements Encryptor, Decryptor {
   async encrypt(data: unknown[]): Promise<Uint8Array[]> {
     const results: Uint8Array[] = [];
     for (const item of data) {
-      const encrypted = decodeBase64(await encryptAESGCMString(JSON.stringify(item), this.secretKeyB64));
+      const encrypted = decodeBase64(
+        await encryptAESGCMString(JSON.stringify(item), this.secretKeyB64),
+      );
       const output = new Uint8Array(encrypted.length + 1);
       output[0] = 0;
       output.set(encrypted, 1);
@@ -84,7 +90,10 @@ export class AES256Encryption implements Encryptor, Decryptor {
           results.push(null);
           continue;
         }
-        const decryptedString = await decryptAESGCMString(encodeBase64(item.slice(1)), this.secretKeyB64);
+        const decryptedString = await decryptAESGCMString(
+          encodeBase64(item.slice(1)),
+          this.secretKeyB64,
+        );
         if (!decryptedString) {
           results.push(null);
           continue;

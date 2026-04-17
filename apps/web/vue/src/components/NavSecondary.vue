@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Component } from "vue"
+import type { Component } from "vue";
 
 import {
   SidebarGroup,
@@ -7,27 +7,24 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from '@/components/ui/sidebar'
+} from "@/components/ui/sidebar";
 
 interface NavItem {
-  title: string
-  url: string
-  icon?: Component
+  title: string;
+  url: string;
+  icon?: Component;
 }
 
 defineProps<{
-  items: NavItem[]
-}>()
+  items: NavItem[];
+}>();
 </script>
 
 <template>
   <SidebarGroup>
     <SidebarGroupContent>
       <SidebarMenu>
-        <SidebarMenuItem
-          v-for="item in items"
-          :key="item.title"
-        >
+        <SidebarMenuItem v-for="item in items" :key="item.title">
           <SidebarMenuButton as-child>
             <a :href="item.url">
               <component :is="item.icon" v-if="item.icon" />

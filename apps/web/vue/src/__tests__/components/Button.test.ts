@@ -10,196 +10,196 @@
  * @see HAP-720 - NativeScript Mobile Testing Suite
  */
 
-import { describe, it, expect } from 'vite-plus/test';
-import { mount } from '@vue/test-utils';
-import { Button } from '@/components/ui/button';
+import { describe, it, expect } from "vite-plus/test";
+import { mount } from "@vue/test-utils";
+import { Button } from "@/components/ui/button";
 
-describe('Button Component', () => {
-  describe('Default Rendering', () => {
-    it('should render with default variant and size', () => {
+describe("Button Component", () => {
+  describe("Default Rendering", () => {
+    it("should render with default variant and size", () => {
       const wrapper = mount(Button, {
         slots: {
-          default: 'Click me',
+          default: "Click me",
         },
       });
 
-      expect(wrapper.text()).toBe('Click me');
-      expect(wrapper.element.tagName).toBe('BUTTON');
+      expect(wrapper.text()).toBe("Click me");
+      expect(wrapper.element.tagName).toBe("BUTTON");
     });
 
-    it('should render as button by default', () => {
+    it("should render as button by default", () => {
       const wrapper = mount(Button, {
-        slots: { default: 'Button' },
+        slots: { default: "Button" },
       });
 
-      expect(wrapper.element.tagName).toBe('BUTTON');
+      expect(wrapper.element.tagName).toBe("BUTTON");
     });
 
     it('should have data-slot="button" attribute', () => {
       const wrapper = mount(Button, {
-        slots: { default: 'Test' },
+        slots: { default: "Test" },
       });
 
-      expect(wrapper.attributes('data-slot')).toBe('button');
+      expect(wrapper.attributes("data-slot")).toBe("button");
     });
   });
 
-  describe('Variants', () => {
-    it('should apply default variant classes', () => {
+  describe("Variants", () => {
+    it("should apply default variant classes", () => {
       const wrapper = mount(Button, {
-        props: { variant: 'default' },
-        slots: { default: 'Default' },
+        props: { variant: "default" },
+        slots: { default: "Default" },
       });
 
       // Default variant should have primary background
-      expect(wrapper.classes().join(' ')).toMatch(/bg-primary/);
+      expect(wrapper.classes().join(" ")).toMatch(/bg-primary/);
     });
 
-    it('should apply destructive variant classes', () => {
+    it("should apply destructive variant classes", () => {
       const wrapper = mount(Button, {
-        props: { variant: 'destructive' },
-        slots: { default: 'Delete' },
+        props: { variant: "destructive" },
+        slots: { default: "Delete" },
       });
 
       // Destructive variant should have destructive background
-      expect(wrapper.classes().join(' ')).toMatch(/bg-destructive/);
+      expect(wrapper.classes().join(" ")).toMatch(/bg-destructive/);
     });
 
-    it('should apply outline variant classes', () => {
+    it("should apply outline variant classes", () => {
       const wrapper = mount(Button, {
-        props: { variant: 'outline' },
-        slots: { default: 'Outline' },
+        props: { variant: "outline" },
+        slots: { default: "Outline" },
       });
 
-      expect(wrapper.classes().join(' ')).toMatch(/border/);
+      expect(wrapper.classes().join(" ")).toMatch(/border/);
     });
 
-    it('should apply secondary variant classes', () => {
+    it("should apply secondary variant classes", () => {
       const wrapper = mount(Button, {
-        props: { variant: 'secondary' },
-        slots: { default: 'Secondary' },
+        props: { variant: "secondary" },
+        slots: { default: "Secondary" },
       });
 
-      expect(wrapper.classes().join(' ')).toMatch(/bg-secondary/);
+      expect(wrapper.classes().join(" ")).toMatch(/bg-secondary/);
     });
 
-    it('should apply ghost variant classes', () => {
+    it("should apply ghost variant classes", () => {
       const wrapper = mount(Button, {
-        props: { variant: 'ghost' },
-        slots: { default: 'Ghost' },
+        props: { variant: "ghost" },
+        slots: { default: "Ghost" },
       });
 
       // Ghost buttons have hover effects but minimal base styling
-      expect(wrapper.classes().join(' ')).toMatch(/hover:/);
+      expect(wrapper.classes().join(" ")).toMatch(/hover:/);
     });
 
-    it('should apply link variant classes', () => {
+    it("should apply link variant classes", () => {
       const wrapper = mount(Button, {
-        props: { variant: 'link' },
-        slots: { default: 'Link' },
+        props: { variant: "link" },
+        slots: { default: "Link" },
       });
 
-      expect(wrapper.classes().join(' ')).toMatch(/underline-offset/);
+      expect(wrapper.classes().join(" ")).toMatch(/underline-offset/);
     });
   });
 
-  describe('Sizes', () => {
-    it('should apply default size', () => {
+  describe("Sizes", () => {
+    it("should apply default size", () => {
       const wrapper = mount(Button, {
-        props: { size: 'default' },
-        slots: { default: 'Default' },
+        props: { size: "default" },
+        slots: { default: "Default" },
       });
 
-      expect(wrapper.classes().join(' ')).toMatch(/h-9/);
+      expect(wrapper.classes().join(" ")).toMatch(/h-9/);
     });
 
-    it('should apply sm size', () => {
+    it("should apply sm size", () => {
       const wrapper = mount(Button, {
-        props: { size: 'sm' },
-        slots: { default: 'Small' },
+        props: { size: "sm" },
+        slots: { default: "Small" },
       });
 
-      expect(wrapper.classes().join(' ')).toMatch(/h-8/);
+      expect(wrapper.classes().join(" ")).toMatch(/h-8/);
     });
 
-    it('should apply lg size', () => {
+    it("should apply lg size", () => {
       const wrapper = mount(Button, {
-        props: { size: 'lg' },
-        slots: { default: 'Large' },
+        props: { size: "lg" },
+        slots: { default: "Large" },
       });
 
-      expect(wrapper.classes().join(' ')).toMatch(/h-10/);
+      expect(wrapper.classes().join(" ")).toMatch(/h-10/);
     });
 
-    it('should apply icon size', () => {
+    it("should apply icon size", () => {
       const wrapper = mount(Button, {
-        props: { size: 'icon' },
-        slots: { default: 'X' },
+        props: { size: "icon" },
+        slots: { default: "X" },
       });
 
-      expect(wrapper.classes().join(' ')).toMatch(/size-9/);
+      expect(wrapper.classes().join(" ")).toMatch(/size-9/);
     });
   });
 
-  describe('Custom Classes', () => {
-    it('should merge custom classes', () => {
+  describe("Custom Classes", () => {
+    it("should merge custom classes", () => {
       const wrapper = mount(Button, {
-        props: { class: 'my-custom-class' },
-        slots: { default: 'Custom' },
+        props: { class: "my-custom-class" },
+        slots: { default: "Custom" },
       });
 
-      expect(wrapper.classes()).toContain('my-custom-class');
+      expect(wrapper.classes()).toContain("my-custom-class");
     });
 
-    it('should allow class overrides with tailwind-merge', () => {
+    it("should allow class overrides with tailwind-merge", () => {
       const wrapper = mount(Button, {
-        props: { class: 'bg-red-500' },
-        slots: { default: 'Red' },
+        props: { class: "bg-red-500" },
+        slots: { default: "Red" },
       });
 
       // Custom background should be present
-      expect(wrapper.classes()).toContain('bg-red-500');
+      expect(wrapper.classes()).toContain("bg-red-500");
     });
   });
 
-  describe('Polymorphic Rendering', () => {
+  describe("Polymorphic Rendering", () => {
     it('should render as different element with "as" prop', () => {
       const wrapper = mount(Button, {
-        props: { as: 'a' },
-        slots: { default: 'Link' },
+        props: { as: "a" },
+        slots: { default: "Link" },
       });
 
-      expect(wrapper.element.tagName).toBe('A');
+      expect(wrapper.element.tagName).toBe("A");
     });
 
-    it('should render as div when specified', () => {
+    it("should render as div when specified", () => {
       const wrapper = mount(Button, {
-        props: { as: 'div' },
-        slots: { default: 'Div Button' },
+        props: { as: "div" },
+        slots: { default: "Div Button" },
       });
 
-      expect(wrapper.element.tagName).toBe('DIV');
+      expect(wrapper.element.tagName).toBe("DIV");
     });
   });
 
-  describe('Slot Content', () => {
-    it('should render text content', () => {
+  describe("Slot Content", () => {
+    it("should render text content", () => {
       const wrapper = mount(Button, {
-        slots: { default: 'Text content' },
+        slots: { default: "Text content" },
       });
 
-      expect(wrapper.text()).toBe('Text content');
+      expect(wrapper.text()).toBe("Text content");
     });
 
-    it('should render HTML content', () => {
+    it("should render HTML content", () => {
       const wrapper = mount(Button, {
         slots: {
           default: '<span class="icon">+</span> Add',
         },
       });
 
-      expect(wrapper.find('.icon').exists()).toBe(true);
-      expect(wrapper.text()).toContain('Add');
+      expect(wrapper.find(".icon").exists()).toBe(true);
+      expect(wrapper.text()).toContain("Add");
     });
   });
 });

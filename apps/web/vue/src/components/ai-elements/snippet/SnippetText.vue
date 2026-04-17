@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import type { HTMLAttributes } from 'vue'
-import { InputGroupText } from '@/components/ui/input-group'
-import { cn } from '@/lib/utils'
+import type { HTMLAttributes } from "vue";
+import { InputGroupText } from "@/components/ui/input-group";
+import { cn } from "@/lib/utils";
 
-type InputGroupTextProps = InstanceType<typeof InputGroupText>['$props']
+type InputGroupTextProps = InstanceType<typeof InputGroupText>["$props"];
 
 interface Props extends /* @vue-ignore */ InputGroupTextProps {
-  class?: HTMLAttributes['class']
+  class?: HTMLAttributes["class"];
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 </script>
 
 <template>

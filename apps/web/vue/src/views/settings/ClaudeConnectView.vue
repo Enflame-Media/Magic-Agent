@@ -2,23 +2,23 @@
 /**
  * Claude Connect - Connect a CLI to the web app.
  */
-import { useRouter } from 'vue-router';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import ResponsiveContainer from '@/components/app/ResponsiveContainer.vue';
+import { useRouter } from "vue-router";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import ResponsiveContainer from "@/components/app/ResponsiveContainer.vue";
 
 const router = useRouter();
 
 function goBack() {
-  router.push('/settings');
+  router.push("/settings");
 }
 
 function connectWithQr() {
-  router.push('/auth/scan');
+  router.push("/auth/scan");
 }
 
 function connectWithManual() {
-  router.push('/auth/manual');
+  router.push("/auth/manual");
 }
 </script>
 
@@ -34,11 +34,7 @@ function connectWithManual() {
           stroke="currentColor"
           stroke-width="2"
         >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M15 19l-7-7 7-7"
-          />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
         </svg>
       </Button>
       <h1 class="text-2xl font-semibold">Connect Claude</h1>
@@ -69,7 +65,8 @@ function connectWithManual() {
         <CardHeader>
           <CardTitle>Security note</CardTitle>
           <CardDescription>
-            Connection links are processed locally in your browser and are never sent to Happy servers.
+            Connection links are processed locally in your browser and are never sent to Happy
+            servers.
           </CardDescription>
         </CardHeader>
       </Card>

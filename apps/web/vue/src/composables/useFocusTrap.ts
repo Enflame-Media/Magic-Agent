@@ -16,7 +16,7 @@
  * @see WCAG 2.4.3 - Focus Order
  */
 
-import { ref, watch, onUnmounted, nextTick, type Ref } from 'vue';
+import { ref, watch, onUnmounted, nextTick, type Ref } from "vue";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -73,18 +73,18 @@ const focusTrapStack: Array<{ id: symbol; pause: () => void; resume: () => void 
 // ─────────────────────────────────────────────────────────────────────────────
 
 const FOCUSABLE_SELECTOR = [
-  'a[href]',
-  'area[href]',
+  "a[href]",
+  "area[href]",
   'input:not([disabled]):not([type="hidden"])',
-  'select:not([disabled])',
-  'textarea:not([disabled])',
-  'button:not([disabled])',
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  "button:not([disabled])",
   '[tabindex]:not([tabindex="-1"])',
-  'audio[controls]',
-  'video[controls]',
+  "audio[controls]",
+  "video[controls]",
   '[contenteditable]:not([contenteditable="false"])',
-  'details > summary:first-of-type',
-].join(', ');
+  "details > summary:first-of-type",
+].join(", ");
 
 /**
  * Get all focusable/tabbable elements within a container.
@@ -94,10 +94,10 @@ export function getTabbableElements(container: HTMLElement): HTMLElement[] {
   const elements = Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
   return elements.filter((el) => {
     // Skip elements that are not visible
-    if (el.offsetParent === null && el.style.position !== 'fixed') return false;
+    if (el.offsetParent === null && el.style.position !== "fixed") return false;
     // Skip elements with visibility: hidden
     const style = getComputedStyle(el);
-    if (style.visibility === 'hidden' || style.display === 'none') return false;
+    if (style.visibility === "hidden" || style.display === "none") return false;
     return true;
   });
 }
@@ -138,16 +138,11 @@ export function getTabbableEdges(container: HTMLElement): [HTMLElement | null, H
  * ```
  */
 export function useFocusTrap(options: UseFocusTrapOptions): UseFocusTrapReturn {
-  const {
-    enabled,
-    loop = true,
-    autoFocus = true,
-    restoreFocus = true,
-  } = options;
+  const { enabled, loop = true, autoFocus = true, restoreFocus = true } = options;
 
   const containerRef = ref<HTMLElement | null>(null);
   const isActive = ref(false);
-  const trapId = Symbol('focus-trap');
+  const trapId = Symbol("focus-trap");
 
   let previouslyFocusedElement: HTMLElement | null = null;
   let isPaused = false;
@@ -155,8 +150,12 @@ export function useFocusTrap(options: UseFocusTrapOptions): UseFocusTrapReturn {
   // Stack entry for nested trap support
   const stackEntry = {
     id: trapId,
-    pause: () => { isPaused = true; },
-    resume: () => { isPaused = false; },
+    pause: () => {
+      isPaused = true;
+    },
+    resume: () => {
+      isPaused = false;
+    },
   };
 
   /**
@@ -164,7 +163,7 @@ export function useFocusTrap(options: UseFocusTrapOptions): UseFocusTrapReturn {
    */
   function handleKeyDown(event: KeyboardEvent): void {
     if (isPaused) return;
-    if (event.key !== 'Tab') return;
+    if (event.key !== "Tab") return;
 
     const container = containerRef.value;
     if (!container) return;
@@ -242,8 +241,8 @@ export function useFocusTrap(options: UseFocusTrapOptions): UseFocusTrapReturn {
     isPaused = false;
 
     // Attach event listeners
-    container.addEventListener('keydown', handleKeyDown);
-    document.addEventListener('focusin', handleFocusIn);
+    container.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("focusin", handleFocusIn);
 
     isActive.value = true;
 
@@ -255,7 +254,7 @@ export function useFocusTrap(options: UseFocusTrapOptions): UseFocusTrapReturn {
           first.focus();
         } else {
           // If no tabbable elements, focus the container itself
-          container.setAttribute('tabindex', '-1');
+          container.setAttribute("tabindex", "-1");
           container.focus();
         }
       });
@@ -272,9 +271,9 @@ export function useFocusTrap(options: UseFocusTrapOptions): UseFocusTrapReturn {
 
     // Remove event listeners
     if (container) {
-      container.removeEventListener('keydown', handleKeyDown);
+      container.removeEventListener("keydown", handleKeyDown);
     }
-    document.removeEventListener('focusin', handleFocusIn);
+    document.removeEventListener("focusin", handleFocusIn);
 
     // Remove from stack
     const stackIndex = focusTrapStack.findIndex((entry) => entry.id === trapId);

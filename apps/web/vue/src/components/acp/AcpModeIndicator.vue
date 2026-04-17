@@ -11,8 +11,8 @@ import {
   IconBuildingArch,
   IconList,
   IconCircleFilled,
-} from '@tabler/icons-vue';
-import { computed } from 'vue';
+} from "@tabler/icons-vue";
+import { computed } from "vue";
 
 const props = defineProps<{
   modeId: string;

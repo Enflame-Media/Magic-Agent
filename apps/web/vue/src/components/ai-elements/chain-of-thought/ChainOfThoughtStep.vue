@@ -1,25 +1,25 @@
 <script setup lang="ts">
-import type { HTMLAttributes } from 'vue'
-import { cn } from '@/lib/utils'
+import type { HTMLAttributes } from "vue";
+import { cn } from "@/lib/utils";
 
 const props = withDefaults(
   defineProps<{
-    label: string
-    description?: string
-    status?: 'complete' | 'active' | 'pending'
-    class?: HTMLAttributes['class']
+    label: string;
+    description?: string;
+    status?: "complete" | "active" | "pending";
+    class?: HTMLAttributes["class"];
   }>(),
   {
-    status: 'complete',
+    status: "complete",
     description: undefined,
   },
-)
+);
 
 const statusStyles = {
-  complete: 'text-muted-foreground',
-  active: 'text-foreground',
-  pending: 'text-muted-foreground/50',
-}
+  complete: "text-muted-foreground",
+  active: "text-foreground",
+  pending: "text-muted-foreground/50",
+};
 </script>
 
 <template>
@@ -36,16 +36,11 @@ const statusStyles = {
   >
     <div class="relative mt-0.5">
       <slot name="icon" />
-      <div
-        class="-mx-px absolute top-7 bottom-0 left-1/2 w-px bg-border"
-      />
+      <div class="-mx-px absolute top-7 bottom-0 left-1/2 w-px bg-border" />
     </div>
     <div class="flex-1 space-y-2">
       <div>{{ props.label }}</div>
-      <div
-        v-if="props.description"
-        class="text-muted-foreground text-xs"
-      >
+      <div v-if="props.description" class="text-muted-foreground text-xs">
         {{ props.description }}
       </div>
       <slot />

@@ -8,25 +8,16 @@
  * @see HAP-874 - Offline Artifact Caching
  */
 
-import { computed } from 'vue';
-import { Badge } from '@/components/ui/badge';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { useOfflineArtifacts } from '@/composables/useOfflineArtifacts';
+import { computed } from "vue";
+import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useOfflineArtifacts } from "@/composables/useOfflineArtifacts";
 
-const {
-  isOfflineMode,
-  cacheStats,
-  cacheSizeFormatted,
-} = useOfflineArtifacts();
+const { isOfflineMode, cacheStats, cacheSizeFormatted } = useOfflineArtifacts();
 
 // Format the cached at time
 const cachedAtFormatted = computed(() => {
-  if (!cacheStats.value?.newestCachedAt) return 'Unknown';
+  if (!cacheStats.value?.newestCachedAt) return "Unknown";
   const date = new Date(cacheStats.value.newestCachedAt);
   return date.toLocaleString();
 });

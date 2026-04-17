@@ -6,14 +6,8 @@
  * Encourages first-time setup and explains the app's purpose.
  */
 
-import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface Props {
   title?: string;
@@ -22,9 +16,10 @@ interface Props {
 }
 
 withDefaults(defineProps<Props>(), {
-  title: 'No Sessions Yet',
-  description: 'Connect a terminal to get started. Run the Happy CLI on your machine to see your Claude Code sessions here.',
-  actionLabel: '',
+  title: "No Sessions Yet",
+  description:
+    "Connect a terminal to get started. Run the Happy CLI on your machine to see your Claude Code sessions here.",
+  actionLabel: "",
 });
 
 const emit = defineEmits<{

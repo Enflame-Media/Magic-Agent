@@ -8,17 +8,17 @@
  * @see HAP-769 - Implement Share Session UI for happy-vue web app
  */
 
-import { ref, computed, onMounted } from 'vue';
-import { useI18n } from 'vue-i18n';
-import { UserPlus, Search, Mail, Loader2, Check } from 'lucide-vue-next';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import PermissionSelect from './PermissionSelect.vue';
-import { useFriendSearch } from '@/composables/useFriendSearch';
-import type { UserProfile, SessionSharePermission } from '@magic-agent/protocol';
+import { ref, computed, onMounted } from "vue";
+import { useI18n } from "vue-i18n";
+import { UserPlus, Search, Mail, Loader2, Check } from "lucide-vue-next";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import PermissionSelect from "./PermissionSelect.vue";
+import { useFriendSearch } from "@/composables/useFriendSearch";
+import type { UserProfile, SessionSharePermission } from "@magic-agent/protocol";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Props & Emits
@@ -36,8 +36,8 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<{
-  'add-friend': [userId: string, permission: SessionSharePermission];
-  'send-invitation': [email: string, permission: SessionSharePermission];
+  "add-friend": [userId: string, permission: SessionSharePermission];
+  "send-invitation": [email: string, permission: SessionSharePermission];
 }>();
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -47,20 +47,15 @@ const emit = defineEmits<{
 const { t } = useI18n();
 
 const excludeUserIdsRef = computed(() => props.excludeUserIds);
-const {
-  searchQuery,
-  searchResults,
-  isSearching,
-  allFriends,
-  loadFriends,
-} = useFriendSearch(excludeUserIdsRef);
+const { searchQuery, searchResults, isSearching, allFriends, loadFriends } =
+  useFriendSearch(excludeUserIdsRef);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Local State
 // ─────────────────────────────────────────────────────────────────────────────
 
-const emailInput = ref('');
-const selectedPermission = ref<SessionSharePermission>('view_only');
+const emailInput = ref("");
+const selectedPermission = ref<SessionSharePermission>("view_only");
 const showEmailInput = ref(false);
 const addingUserId = ref<string | null>(null);
 
@@ -95,7 +90,7 @@ onMounted(() => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function getDisplayName(friend: UserProfile): string {
-  const fullName = [friend.firstName, friend.lastName].filter(Boolean).join(' ');
+  const fullName = [friend.firstName, friend.lastName].filter(Boolean).join(" ");
   return fullName || friend.username;
 }
 
@@ -112,7 +107,7 @@ function getInitials(friend: UserProfile): string {
 
 async function handleAddFriend(friend: UserProfile): Promise<void> {
   addingUserId.value = friend.id;
-  emit('add-friend', friend.id, selectedPermission.value);
+  emit("add-friend", friend.id, selectedPermission.value);
   // Parent will handle the loading state
   setTimeout(() => {
     addingUserId.value = null;
@@ -122,15 +117,15 @@ async function handleAddFriend(friend: UserProfile): Promise<void> {
 function handleSendInvitation(): void {
   if (!isValidEmail.value) return;
 
-  emit('send-invitation', emailInput.value.trim(), selectedPermission.value);
-  emailInput.value = '';
+  emit("send-invitation", emailInput.value.trim(), selectedPermission.value);
+  emailInput.value = "";
   showEmailInput.value = false;
 }
 
 function toggleEmailInput(): void {
   showEmailInput.value = !showEmailInput.value;
   if (!showEmailInput.value) {
-    emailInput.value = '';
+    emailInput.value = "";
   }
 }
 </script>
@@ -141,12 +136,9 @@ function toggleEmailInput(): void {
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-2">
         <UserPlus class="size-4 text-muted-foreground" />
-        <Label class="font-medium">{{ t('sharing.addPeople.title') }}</Label>
+        <Label class="font-medium">{{ t("sharing.addPeople.title") }}</Label>
       </div>
-      <PermissionSelect
-        v-model="selectedPermission"
-        size="sm"
-      />
+      <PermissionSelect v-model="selectedPermission" size="sm" />
     </div>
 
     <!-- Friend Search -->
@@ -203,7 +195,7 @@ function toggleEmailInput(): void {
       v-else-if="!isSearching && allFriends.length === 0"
       class="py-6 text-center text-sm text-muted-foreground"
     >
-      {{ t('sharing.addPeople.noFriends') }}
+      {{ t("sharing.addPeople.noFriends") }}
     </div>
 
     <!-- No Search Results -->
@@ -211,7 +203,7 @@ function toggleEmailInput(): void {
       v-else-if="isFiltering && displayFriends.length === 0"
       class="py-6 text-center text-sm text-muted-foreground"
     >
-      {{ t('sharing.addPeople.noResults') }}
+      {{ t("sharing.addPeople.noResults") }}
     </div>
 
     <!-- Separator -->
@@ -221,7 +213,7 @@ function toggleEmailInput(): void {
       </div>
       <div class="relative flex justify-center text-xs uppercase">
         <span class="bg-background px-2 text-muted-foreground">
-          {{ t('sharing.addPeople.or') }}
+          {{ t("sharing.addPeople.or") }}
         </span>
       </div>
     </div>
@@ -236,32 +228,19 @@ function toggleEmailInput(): void {
           :disabled="isLoading"
           @keyup.enter="handleSendInvitation"
         />
-        <Button
-          :disabled="!isValidEmail || isLoading"
-          @click="handleSendInvitation"
-        >
-          {{ t('sharing.addPeople.sendInvite') }}
+        <Button :disabled="!isValidEmail || isLoading" @click="handleSendInvitation">
+          {{ t("sharing.addPeople.sendInvite") }}
         </Button>
       </div>
-      <Button
-        variant="ghost"
-        size="sm"
-        class="text-muted-foreground"
-        @click="toggleEmailInput"
-      >
-        {{ t('common.cancel') }}
+      <Button variant="ghost" size="sm" class="text-muted-foreground" @click="toggleEmailInput">
+        {{ t("common.cancel") }}
       </Button>
     </div>
 
     <!-- Invite by Email Button -->
-    <Button
-      v-else
-      variant="outline"
-      class="w-full"
-      @click="toggleEmailInput"
-    >
+    <Button v-else variant="outline" class="w-full" @click="toggleEmailInput">
       <Mail class="mr-2 size-4" />
-      {{ t('sharing.addPeople.inviteByEmail') }}
+      {{ t("sharing.addPeople.inviteByEmail") }}
     </Button>
   </div>
 </template>

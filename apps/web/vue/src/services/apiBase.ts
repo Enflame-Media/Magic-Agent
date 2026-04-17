@@ -1,5 +1,5 @@
-const DEFAULT_PROD_API_URL = 'https://happy-api.enflamemedia.com';
-const DEFAULT_DEV_API_URL = 'https://happy-api-dev.enflamemedia.com';
+const DEFAULT_PROD_API_URL = "https://happy-api.enflamemedia.com";
+const DEFAULT_DEV_API_URL = "https://happy-api-dev.enflamemedia.com";
 
 export function getApiBaseUrl(): string {
   const configuredUrl = import.meta.env.VITE_API_URL ?? import.meta.env.VITE_HAPPY_SERVER_URL;
@@ -8,10 +8,14 @@ export function getApiBaseUrl(): string {
     return configuredUrl;
   }
 
-  if (typeof window !== 'undefined') {
+  if (typeof window !== "undefined") {
     const hostname = window.location.hostname;
 
-    if (hostname.includes('happy-vue-dev.') || hostname === 'localhost' || hostname === '127.0.0.1') {
+    if (
+      hostname.includes("happy-vue-dev.") ||
+      hostname === "localhost" ||
+      hostname === "127.0.0.1"
+    ) {
       return DEFAULT_DEV_API_URL;
     }
   }

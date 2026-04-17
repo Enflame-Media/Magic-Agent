@@ -1,60 +1,58 @@
 <script setup lang="ts">
-import type { HTMLAttributes } from 'vue'
-import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
-import { CheckIcon, CopyIcon } from 'lucide-vue-next'
-import { computed, ref } from 'vue'
-import { useEnvironmentVariableContext } from './context'
+import type { HTMLAttributes } from "vue";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { CheckIcon, CopyIcon } from "lucide-vue-next";
+import { computed, ref } from "vue";
+import { useEnvironmentVariableContext } from "./context";
 
-type ButtonProps = InstanceType<typeof Button>['$props']
+type ButtonProps = InstanceType<typeof Button>["$props"];
 
 interface Props extends /* @vue-ignore */ ButtonProps {
-  timeout?: number
-  copyFormat?: 'name' | 'value' | 'export'
-  class?: HTMLAttributes['class']
+  timeout?: number;
+  copyFormat?: "name" | "value" | "export";
+  class?: HTMLAttributes["class"];
 }
 
 const props = withDefaults(defineProps<Props>(), {
   timeout: 2000,
-  copyFormat: 'value',
-})
+  copyFormat: "value",
+});
 
 const emit = defineEmits<{
-  (e: 'copy'): void
-  (e: 'error', error: Error): void
-}>()
+  (e: "copy"): void;
+  (e: "error", error: Error): void;
+}>();
 
-const isCopied = ref(false)
-const { name, value } = useEnvironmentVariableContext()
+const isCopied = ref(false);
+const { name, value } = useEnvironmentVariableContext();
 
-const icon = computed(() => (isCopied.value ? CheckIcon : CopyIcon))
+const icon = computed(() => (isCopied.value ? CheckIcon : CopyIcon));
 
 async function copyToClipboard() {
-  if (typeof window === 'undefined' || !navigator?.clipboard?.writeText) {
-    const error = new Error('Clipboard API not available')
-    emit('error', error)
-    return
+  if (typeof window === "undefined" || !navigator?.clipboard?.writeText) {
+    const error = new Error("Clipboard API not available");
+    emit("error", error);
+    return;
   }
 
-  let textToCopy = value
-  if (props.copyFormat === 'name') {
-    textToCopy = name
-  }
-  else if (props.copyFormat === 'export') {
-    textToCopy = `export ${name}="${value}"`
+  let textToCopy = value;
+  if (props.copyFormat === "name") {
+    textToCopy = name;
+  } else if (props.copyFormat === "export") {
+    textToCopy = `export ${name}="${value}"`;
   }
 
   try {
-    await navigator.clipboard.writeText(textToCopy)
-    isCopied.value = true
-    emit('copy')
+    await navigator.clipboard.writeText(textToCopy);
+    isCopied.value = true;
+    emit("copy");
     setTimeout(() => {
-      isCopied.value = false
-    }, props.timeout)
-  }
-  catch (error) {
-    const err = error as Error
-    emit('error', err)
+      isCopied.value = false;
+    }, props.timeout);
+  } catch (error) {
+    const err = error as Error;
+    emit("error", err);
   }
 }
 </script>

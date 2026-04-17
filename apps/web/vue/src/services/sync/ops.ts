@@ -1,15 +1,15 @@
-import { machineRPC, sessionRPC } from './rpc';
-import { useSessionsStore, type Session } from '@/stores/sessions';
+import { machineRPC, sessionRPC } from "./rpc";
+import { useSessionsStore, type Session } from "@/stores/sessions";
 
 /**
  * Permission mode for Claude sessions
  */
-export type PermissionMode = 'default' | 'acceptEdits' | 'bypassPermissions' | 'plan';
+export type PermissionMode = "default" | "acceptEdits" | "bypassPermissions" | "plan";
 
 /**
  * Permission decision type
  */
-export type PermissionDecision = 'approved' | 'approved_for_session' | 'denied' | 'abort';
+export type PermissionDecision = "approved" | "approved_for_session" | "denied" | "abort";
 
 /**
  * Request payload for session permission operations
@@ -23,16 +23,16 @@ interface SessionPermissionRequest {
 }
 
 export type SpawnSessionResult =
-  | { type: 'success'; sessionId: string; resumedFrom?: string; message?: string }
-  | { type: 'requestToApproveDirectoryCreation'; directory: string }
-  | { type: 'error'; errorMessage: string };
+  | { type: "success"; sessionId: string; resumedFrom?: string; message?: string }
+  | { type: "requestToApproveDirectoryCreation"; directory: string }
+  | { type: "error"; errorMessage: string };
 
 export interface SpawnSessionOptions {
   machineId: string;
   directory: string;
   approvedNewDirectoryCreation?: boolean;
   token?: string;
-  agent?: 'codex' | 'claude' | 'gemini';
+  agent?: "codex" | "claude" | "gemini";
   sessionId?: string;
 }
 
@@ -43,7 +43,7 @@ export interface PollForSessionOptions {
 }
 
 export function isTemporaryPidSessionId(sessionId: string): boolean {
-  return sessionId.startsWith('PID-');
+  return sessionId.startsWith("PID-");
 }
 
 function getSessionMachineId(session: Session): string | null {
@@ -58,7 +58,7 @@ function getSessionMachineId(session: Session): string | null {
 export async function pollForRealSession(
   machineId: string,
   spawnStartTime: number,
-  options: PollForSessionOptions = {}
+  options: PollForSessionOptions = {},
 ): Promise<string | null> {
   const { interval = 5000, maxAttempts = 24, onPoll } = options;
   const sessionsStore = useSessionsStore();
@@ -89,7 +89,7 @@ export async function pollForRealSession(
 const SESSION_SPAWN_TIMEOUT_MS = 90000;
 
 export async function machineSpawnNewSession(
-  options: SpawnSessionOptions
+  options: SpawnSessionOptions,
 ): Promise<SpawnSessionResult> {
   const {
     machineId,
@@ -101,30 +101,33 @@ export async function machineSpawnNewSession(
   } = options;
 
   try {
-    return await machineRPC<SpawnSessionResult, {
-      type: 'spawn-in-directory';
-      directory: string;
-      approvedNewDirectoryCreation?: boolean;
-      token?: string;
-      agent?: 'codex' | 'claude' | 'gemini';
-      sessionId?: string;
-    }>(
-      machineId,
-      'spawn-happy-session',
+    return await machineRPC<
+      SpawnSessionResult,
       {
-        type: 'spawn-in-directory',
+        type: "spawn-in-directory";
+        directory: string;
+        approvedNewDirectoryCreation?: boolean;
+        token?: string;
+        agent?: "codex" | "claude" | "gemini";
+        sessionId?: string;
+      }
+    >(
+      machineId,
+      "spawn-happy-session",
+      {
+        type: "spawn-in-directory",
         directory,
         approvedNewDirectoryCreation,
         token,
         agent,
         sessionId,
       },
-      { timeout: SESSION_SPAWN_TIMEOUT_MS }
+      { timeout: SESSION_SPAWN_TIMEOUT_MS },
     );
   } catch (error) {
     return {
-      type: 'error',
-      errorMessage: error instanceof Error ? error.message : 'Failed to spawn session',
+      type: "error",
+      errorMessage: error instanceof Error ? error.message : "Failed to spawn session",
     };
   }
 }
@@ -139,7 +142,7 @@ export async function sessionAllow(
   id: string,
   mode?: PermissionMode,
   allowedTools?: string[],
-  decision?: 'approved' | 'approved_for_session'
+  decision?: "approved" | "approved_for_session",
 ): Promise<void> {
   const request: SessionPermissionRequest = {
     id,
@@ -148,7 +151,7 @@ export async function sessionAllow(
     allowTools: allowedTools,
     decision,
   };
-  await sessionRPC<unknown, SessionPermissionRequest>(sessionId, 'permission', request);
+  await sessionRPC<unknown, SessionPermissionRequest>(sessionId, "permission", request);
 }
 
 /**
@@ -161,7 +164,7 @@ export async function sessionDeny(
   id: string,
   mode?: PermissionMode,
   allowedTools?: string[],
-  decision?: 'denied' | 'abort'
+  decision?: "denied" | "abort",
 ): Promise<void> {
   const request: SessionPermissionRequest = {
     id,
@@ -170,5 +173,5 @@ export async function sessionDeny(
     allowTools: allowedTools,
     decision,
   };
-  await sessionRPC<unknown, SessionPermissionRequest>(sessionId, 'permission', request);
+  await sessionRPC<unknown, SessionPermissionRequest>(sessionId, "permission", request);
 }

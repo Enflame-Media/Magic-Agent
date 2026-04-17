@@ -10,39 +10,30 @@
  * mobile swipe navigation (HAP-919),
  * and skip links with ARIA landmarks for accessibility (HAP-963).
  */
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
-import { useWindowSize } from '@vueuse/core';
-import { Toaster } from '@/components/ui/sonner';
-import { useSync } from '@/composables/useSync';
-import { useSessionRevival } from '@/composables/useSessionRevival';
-import { useRevivalCooldown, type RevivalCooldownState } from '@/composables/useRevivalCooldown';
-import { useBreakpoints } from '@/composables/useBreakpoints';
-import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts';
-import { useSidebarState } from '@/composables/useSidebarState';
-import { useSwipeNavigation, shouldEnableSwipeForRoute } from '@/composables/useSwipeNavigation';
-import { useAuthStore } from '@/stores/auth';
-import { storeToRefs } from 'pinia';
-import SessionErrorDialog from '@/components/app/SessionErrorDialog.vue';
-import RevivalCooldownBanner from '@/components/app/RevivalCooldownBanner.vue';
-import SessionSidebar from '@/components/app/SessionSidebar.vue';
-import DesktopNavigation from '@/components/app/DesktopNavigation.vue';
-import MobileBottomNav from '@/components/app/MobileBottomNav.vue';
-import CommandPalette from '@/components/app/CommandPalette.vue';
-import SkipLink from '@/components/app/SkipLink.vue';
-import SiteHeader from '@/components/SiteHeader.vue';
-import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
-import {
-  ResizablePanelGroup,
-  ResizablePanel,
-  ResizableHandle,
-} from '@/components/ui/resizable';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { useRoute } from "vue-router";
+import { useWindowSize } from "@vueuse/core";
+import { Toaster } from "@/components/ui/sonner";
+import { useSync } from "@/composables/useSync";
+import { useSessionRevival } from "@/composables/useSessionRevival";
+import { useRevivalCooldown, type RevivalCooldownState } from "@/composables/useRevivalCooldown";
+import { useBreakpoints } from "@/composables/useBreakpoints";
+import { useKeyboardShortcuts } from "@/composables/useKeyboardShortcuts";
+import { useSidebarState } from "@/composables/useSidebarState";
+import { useSwipeNavigation, shouldEnableSwipeForRoute } from "@/composables/useSwipeNavigation";
+import { useAuthStore } from "@/stores/auth";
+import { storeToRefs } from "pinia";
+import SessionErrorDialog from "@/components/app/SessionErrorDialog.vue";
+import RevivalCooldownBanner from "@/components/app/RevivalCooldownBanner.vue";
+import SessionSidebar from "@/components/app/SessionSidebar.vue";
+import DesktopNavigation from "@/components/app/DesktopNavigation.vue";
+import MobileBottomNav from "@/components/app/MobileBottomNav.vue";
+import CommandPalette from "@/components/app/CommandPalette.vue";
+import SkipLink from "@/components/app/SkipLink.vue";
+import SiteHeader from "@/components/SiteHeader.vue";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const route = useRoute();
 
@@ -51,18 +42,10 @@ useSync();
 
 // Initialize global keyboard shortcuts (HAP-918, HAP-963)
 // This registers Cmd/Ctrl+K for command palette, Cmd/Ctrl+/ for sidebar, and Escape for closing modals
-const {
-  registerSidebarToggle,
-  unregisterSidebarToggle,
-} = useKeyboardShortcuts();
+const { registerSidebarToggle, unregisterSidebarToggle } = useKeyboardShortcuts();
 
 // Session revival error handling (HAP-736)
-const {
-  revivalFailed,
-  copySessionId,
-  archiveFailedSession,
-  dismissError,
-} = useSessionRevival();
+const { revivalFailed, copySessionId, archiveFailedSession, dismissError } = useSessionRevival();
 
 // Session revival cooldown banner (HAP-870)
 // Note: useRevivalCooldown's return type has an incorrect interface definition
@@ -84,23 +67,33 @@ const { containerRef: swipeContainerRef } = useSwipeNavigation({
 });
 
 // Sync swipe container ref with mobile main ref
-watch(mobileMainRef, (el) => {
-  swipeContainerRef.value = el;
-}, { immediate: true });
+watch(
+  mobileMainRef,
+  (el) => {
+    swipeContainerRef.value = el;
+  },
+  { immediate: true },
+);
 
 // Resizable sidebar state (HAP-927)
-const { width: sidebarWidth, setWidth: setSidebarWidth, reset: resetSidebarWidth, toggleCollapsed, config: sidebarConfig } = useSidebarState();
+const {
+  width: sidebarWidth,
+  setWidth: setSidebarWidth,
+  reset: resetSidebarWidth,
+  toggleCollapsed,
+  config: sidebarConfig,
+} = useSidebarState();
 const { width: windowWidth } = useWindowSize();
 
 // Register Cmd/Ctrl+/ sidebar toggle (HAP-963)
 onMounted(() => {
-  registerSidebarToggle('app-sidebar', () => {
+  registerSidebarToggle("app-sidebar", () => {
     toggleCollapsed();
   });
 });
 
 onUnmounted(() => {
-  unregisterSidebarToggle('app-sidebar');
+  unregisterSidebarToggle("app-sidebar");
 });
 
 // Convert pixel width to percentage for ResizablePanel
@@ -135,25 +128,25 @@ const { isAuthenticated } = storeToRefs(authStore);
 
 const showShell = computed(() => isAuthenticated.value && route.meta.requiresAuth);
 const pageTitle = computed(() => {
-  const name = String(route.name ?? '');
+  const name = String(route.name ?? "");
   const titles: Record<string, string> = {
-    home: 'Dashboard',
-    'new-session': 'New Session',
-    session: 'Session',
-    'session-info': 'Session Details',
-    'session-artifacts': 'Session Artifacts',
-    artifacts: 'Artifacts',
-    friends: 'Friends',
-    'friend-profile': 'Friend Profile',
-    settings: 'Settings',
-    'settings-account': 'Account',
-    'settings-appearance': 'Appearance',
-    'settings-language': 'Language',
-    'settings-privacy': 'Privacy',
-    'settings-voice': 'Voice',
+    home: "Dashboard",
+    "new-session": "New Session",
+    session: "Session",
+    "session-info": "Session Details",
+    "session-artifacts": "Session Artifacts",
+    artifacts: "Artifacts",
+    friends: "Friends",
+    "friend-profile": "Friend Profile",
+    settings: "Settings",
+    "settings-account": "Account",
+    "settings-appearance": "Appearance",
+    "settings-language": "Language",
+    "settings-privacy": "Privacy",
+    "settings-voice": "Voice",
   };
 
-  return titles[name] ?? 'Happy';
+  return titles[name] ?? "Happy";
 });
 </script>
 
@@ -212,9 +205,7 @@ const pageTitle = computed(() => {
                 @dblclick="resetSidebarWidth"
               />
             </TooltipTrigger>
-            <TooltipContent>
-              Double-click to reset to default width
-            </TooltipContent>
+            <TooltipContent> Double-click to reset to default width </TooltipContent>
           </Tooltip>
         </TooltipProvider>
 
@@ -222,7 +213,12 @@ const pageTitle = computed(() => {
         <ResizablePanel :default-size="100 - sidebarDefaultSize">
           <SidebarInset>
             <SiteHeader :title="pageTitle" />
-            <main id="main-content" class="flex min-h-0 flex-1 flex-col" role="main" :aria-label="pageTitle">
+            <main
+              id="main-content"
+              class="flex min-h-0 flex-1 flex-col"
+              role="main"
+              :aria-label="pageTitle"
+            >
               <RouterView />
             </main>
           </SidebarInset>

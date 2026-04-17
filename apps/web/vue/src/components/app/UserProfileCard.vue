@@ -8,13 +8,13 @@
  * @see HAP-717 - Implement friends UI for happy-vue web app
  */
 
-import { computed } from 'vue';
-import type { UserProfile } from '@magic-agent/protocol';
-import { getDisplayName } from '@/composables/useFriends';
-import { Card, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { useFriendStatus } from '@/composables/useFriendStatus';
+import { computed } from "vue";
+import type { UserProfile } from "@magic-agent/protocol";
+import { getDisplayName } from "@/composables/useFriends";
+import { Card, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { useFriendStatus } from "@/composables/useFriendStatus";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Props
@@ -72,15 +72,15 @@ const displayName = computed(() => getDisplayName(props.user));
 const avatarUrl = computed(() => props.user.avatar?.url ?? props.user.avatar?.path);
 
 const initials = computed(() => {
-  const first = props.user.firstName?.[0]?.toUpperCase() ?? '';
-  const last = props.user.lastName?.[0]?.toUpperCase() ?? '';
-  return (first + last) || (props.user.username[0]?.toUpperCase() ?? '?');
+  const first = props.user.firstName?.[0]?.toUpperCase() ?? "";
+  const last = props.user.lastName?.[0]?.toUpperCase() ?? "";
+  return first + last || (props.user.username[0]?.toUpperCase() ?? "?");
 });
 
 const userIsOnline = computed(() => props.showStatus && isOnline(props.user.id));
 
 const lastSeenText = computed(() => {
-  if (!props.showStatus || userIsOnline.value) return '';
+  if (!props.showStatus || userIsOnline.value) return "";
   return getLastSeenText(props.user.id);
 });
 
@@ -89,23 +89,29 @@ const actionConfig = computed(() => {
   if (!props.showAction) return null;
 
   switch (props.user.status) {
-    case 'none':
+    case "none":
       return {
-        label: 'Add Friend',
-        variant: 'default' as const,
-        action: () => { emit('addFriend', props.user.id); },
+        label: "Add Friend",
+        variant: "default" as const,
+        action: () => {
+          emit("addFriend", props.user.id);
+        },
       };
-    case 'requested':
+    case "requested":
       return {
-        label: 'Pending',
-        variant: 'secondary' as const,
-        action: () => { emit('cancelRequest', props.user.id); },
+        label: "Pending",
+        variant: "secondary" as const,
+        action: () => {
+          emit("cancelRequest", props.user.id);
+        },
       };
-    case 'friend':
+    case "friend":
       return {
-        label: 'Friends',
-        variant: 'outline' as const,
-        action: () => { emit('removeFriend', props.user.id); },
+        label: "Friends",
+        variant: "outline" as const,
+        action: () => {
+          emit("removeFriend", props.user.id);
+        },
       };
     default:
       return null;
@@ -118,17 +124,14 @@ const actionConfig = computed(() => {
 
 function handleClick(): void {
   if (props.clickable) {
-    emit('click');
+    emit("click");
   }
 }
 </script>
 
 <template>
   <Card
-    :class="[
-      'transition-colors',
-      clickable && 'cursor-pointer hover:bg-muted/50',
-    ]"
+    :class="['transition-colors', clickable && 'cursor-pointer hover:bg-muted/50']"
     @click="handleClick"
   >
     <CardContent class="flex items-center gap-3 p-3">

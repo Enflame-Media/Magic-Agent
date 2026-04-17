@@ -8,9 +8,9 @@
  * @see https://vueuse.org/core/useswipe/
  */
 
-import { ref, watch, onUnmounted, type Ref } from 'vue';
-import { useSwipe, type UseSwipeDirection } from '@vueuse/core';
-import { useRouter, type RouteLocationNormalized } from 'vue-router';
+import { ref, watch, onUnmounted, type Ref } from "vue";
+import { useSwipe, type UseSwipeDirection } from "@vueuse/core";
+import { useRouter, type RouteLocationNormalized } from "vue-router";
 
 /**
  * Configuration options for swipe navigation
@@ -43,12 +43,12 @@ export interface UseSwipeNavigationOptions {
   /**
    * Callback when swipe navigation occurs
    */
-  onNavigate?: (direction: 'back' | 'forward') => void;
+  onNavigate?: (direction: "back" | "forward") => void;
 
   /**
    * Route guard - return false to prevent navigation
    */
-  canNavigate?: (direction: 'back' | 'forward', currentRoute: RouteLocationNormalized) => boolean;
+  canNavigate?: (direction: "back" | "forward", currentRoute: RouteLocationNormalized) => boolean;
 }
 
 /**
@@ -109,7 +109,9 @@ export interface UseSwipeNavigationReturn {
  * </template>
  * ```
  */
-export function useSwipeNavigation(options: UseSwipeNavigationOptions = {}): UseSwipeNavigationReturn {
+export function useSwipeNavigation(
+  options: UseSwipeNavigationOptions = {},
+): UseSwipeNavigationReturn {
   const {
     threshold = 50,
     enabled = true,
@@ -143,20 +145,20 @@ export function useSwipeNavigation(options: UseSwipeNavigationOptions = {}): Use
 
       const currentRoute = router.currentRoute.value;
 
-      if (swipeDirection === 'right' && enableBack) {
+      if (swipeDirection === "right" && enableBack) {
         // Swipe right = go back
-        if (canNavigate && !canNavigate('back', currentRoute)) return;
+        if (canNavigate && !canNavigate("back", currentRoute)) return;
 
         // Check if we can go back in history
         if (window.history.length > 1) {
-          onNavigate?.('back');
+          onNavigate?.("back");
           router.back();
         }
-      } else if (swipeDirection === 'left' && enableForward) {
+      } else if (swipeDirection === "left" && enableForward) {
         // Swipe left = go forward
-        if (canNavigate && !canNavigate('forward', currentRoute)) return;
+        if (canNavigate && !canNavigate("forward", currentRoute)) return;
 
-        onNavigate?.('forward');
+        onNavigate?.("forward");
         router.forward();
       }
     },
@@ -191,8 +193,8 @@ export function useSwipeNavigation(options: UseSwipeNavigationOptions = {}): Use
  * (e.g., routes with their own gesture handling)
  */
 export const SWIPE_DISABLED_ROUTES = [
-  'session', // Session view may have its own scroll/swipe handling
-  'artifacts', // Artifact viewer may need gesture interactions
+  "session", // Session view may have its own scroll/swipe handling
+  "artifacts", // Artifact viewer may need gesture interactions
 ];
 
 /**

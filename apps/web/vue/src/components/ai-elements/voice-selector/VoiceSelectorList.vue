@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { CommandList } from '@/components/ui/command'
+import { CommandList } from "@/components/ui/command";
 
-type VoiceSelectorListProps = InstanceType<typeof CommandList>['$props']
+type VoiceSelectorListProps = InstanceType<typeof CommandList>["$props"];
 
 interface Props extends /* @vue-ignore */ VoiceSelectorListProps {}
 
-defineProps<Props>()
+defineProps<Props>();
 </script>
 
 <template>

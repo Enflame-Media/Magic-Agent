@@ -1,11 +1,14 @@
-import { hmacSha512 } from './hmac_sha512';
+import { hmacSha512 } from "./hmac_sha512";
 
 export type KeyTreeState = {
   key: Uint8Array;
   chainCode: Uint8Array;
 };
 
-export async function deriveSecretKeyTreeRoot(seed: Uint8Array, usage: string): Promise<KeyTreeState> {
+export async function deriveSecretKeyTreeRoot(
+  seed: Uint8Array,
+  usage: string,
+): Promise<KeyTreeState> {
   const key = new TextEncoder().encode(`${usage} Master Seed`);
   const I = await hmacSha512(key, seed);
   return {
@@ -16,7 +19,7 @@ export async function deriveSecretKeyTreeRoot(seed: Uint8Array, usage: string): 
 
 export async function deriveSecretKeyTreeChild(
   chainCode: Uint8Array,
-  index: string
+  index: string,
 ): Promise<KeyTreeState> {
   const data = new Uint8Array([0x0, ...new TextEncoder().encode(index)]);
   const I = await hmacSha512(chainCode, data);
@@ -29,7 +32,7 @@ export async function deriveSecretKeyTreeChild(
 export async function deriveKey(
   master: Uint8Array,
   usage: string,
-  path: string[]
+  path: string[],
 ): Promise<Uint8Array> {
   let state = await deriveSecretKeyTreeRoot(master, usage);
   for (const index of path) {

@@ -15,9 +15,9 @@
  * @see HAP-962 - Responsive Mobile-First Design System
  */
 
-import { describe, it, expect } from 'vite-plus/test';
-import { twMerge } from 'tailwind-merge';
-import { clsx } from 'clsx';
+import { describe, it, expect } from "vite-plus/test";
+import { twMerge } from "tailwind-merge";
+import { clsx } from "clsx";
 
 /**
  * Replicates the cn utility from @/lib/utils
@@ -31,7 +31,7 @@ function cn(...inputs: (string | undefined | null | boolean)[]): string {
  */
 function computeNavStyle(collapsed: boolean, width: number) {
   return {
-    width: collapsed ? '48px' : `${width}px`,
+    width: collapsed ? "48px" : `${width}px`,
   };
 }
 
@@ -40,95 +40,95 @@ function computeNavStyle(collapsed: boolean, width: number) {
  */
 function computeNavClass(collapsed: boolean, customClass?: string) {
   return cn(
-    'hidden lg:flex flex-col h-full border-r border-border bg-sidebar-background transition-[width] duration-200 ease-in-out',
-    collapsed && 'items-center',
+    "hidden lg:flex flex-col h-full border-r border-border bg-sidebar-background transition-[width] duration-200 ease-in-out",
+    collapsed && "items-center",
     customClass,
   );
 }
 
-describe('DesktopNavigation', () => {
-  describe('visibility', () => {
-    it('should include lg:flex for desktop visibility', () => {
+describe("DesktopNavigation", () => {
+  describe("visibility", () => {
+    it("should include lg:flex for desktop visibility", () => {
       const result = computeNavClass(false);
-      expect(result).toContain('lg:flex');
+      expect(result).toContain("lg:flex");
     });
 
-    it('should include hidden for mobile hiding', () => {
+    it("should include hidden for mobile hiding", () => {
       const result = computeNavClass(false);
-      expect(result).toContain('hidden');
+      expect(result).toContain("hidden");
     });
   });
 
-  describe('width', () => {
-    it('should compute default width of 256px', () => {
+  describe("width", () => {
+    it("should compute default width of 256px", () => {
       const style = computeNavStyle(false, 256);
-      expect(style.width).toBe('256px');
+      expect(style.width).toBe("256px");
     });
 
-    it('should compute custom width', () => {
+    it("should compute custom width", () => {
       const style = computeNavStyle(false, 300);
-      expect(style.width).toBe('300px');
+      expect(style.width).toBe("300px");
     });
 
-    it('should compute large custom width', () => {
+    it("should compute large custom width", () => {
       const style = computeNavStyle(false, 400);
-      expect(style.width).toBe('400px');
+      expect(style.width).toBe("400px");
     });
   });
 
-  describe('collapsed state', () => {
-    it('should use 48px width when collapsed', () => {
+  describe("collapsed state", () => {
+    it("should use 48px width when collapsed", () => {
       const style = computeNavStyle(true, 256);
-      expect(style.width).toBe('48px');
+      expect(style.width).toBe("48px");
     });
 
-    it('should use full width when not collapsed', () => {
+    it("should use full width when not collapsed", () => {
       const style = computeNavStyle(false, 256);
-      expect(style.width).toBe('256px');
+      expect(style.width).toBe("256px");
     });
 
-    it('should add items-center class when collapsed', () => {
+    it("should add items-center class when collapsed", () => {
       const result = computeNavClass(true);
-      expect(result).toContain('items-center');
+      expect(result).toContain("items-center");
     });
 
-    it('should not add items-center class when not collapsed', () => {
+    it("should not add items-center class when not collapsed", () => {
       const result = computeNavClass(false);
-      expect(result).not.toContain('items-center');
+      expect(result).not.toContain("items-center");
     });
   });
 
-  describe('styling', () => {
-    it('should include border-r for right border', () => {
+  describe("styling", () => {
+    it("should include border-r for right border", () => {
       const result = computeNavClass(false);
-      expect(result).toContain('border-r');
+      expect(result).toContain("border-r");
     });
 
-    it('should include sidebar background color', () => {
+    it("should include sidebar background color", () => {
       const result = computeNavClass(false);
-      expect(result).toContain('bg-sidebar-background');
+      expect(result).toContain("bg-sidebar-background");
     });
 
-    it('should include width transition', () => {
+    it("should include width transition", () => {
       const result = computeNavClass(false);
-      expect(result).toContain('transition-[width]');
+      expect(result).toContain("transition-[width]");
     });
 
-    it('should include h-full for full height', () => {
+    it("should include h-full for full height", () => {
       const result = computeNavClass(false);
-      expect(result).toContain('h-full');
+      expect(result).toContain("h-full");
     });
 
-    it('should include flex-col for vertical layout', () => {
+    it("should include flex-col for vertical layout", () => {
       const result = computeNavClass(false);
-      expect(result).toContain('flex-col');
+      expect(result).toContain("flex-col");
     });
   });
 
-  describe('custom classes', () => {
-    it('should merge custom classes', () => {
-      const result = computeNavClass(false, 'custom-nav-class');
-      expect(result).toContain('custom-nav-class');
+  describe("custom classes", () => {
+    it("should merge custom classes", () => {
+      const result = computeNavClass(false, "custom-nav-class");
+      expect(result).toContain("custom-nav-class");
     });
   });
 });

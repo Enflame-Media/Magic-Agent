@@ -7,7 +7,7 @@
  * @see HAP-963 - Keyboard Shortcuts and Accessibility
  */
 
-import { onMounted, onUnmounted, type Ref } from 'vue';
+import { onMounted, onUnmounted, type Ref } from "vue";
 
 /**
  * Configuration options for arrow navigation
@@ -20,14 +20,14 @@ export interface ArrowNavigationOptions {
   /** Whether navigation is enabled */
   enabled?: Ref<boolean> | boolean;
   /** Orientation of the list */
-  orientation?: 'vertical' | 'horizontal';
+  orientation?: "vertical" | "horizontal";
 }
 
-const defaultOptions: Required<Omit<ArrowNavigationOptions, 'enabled'>> & { enabled: boolean } = {
+const defaultOptions: Required<Omit<ArrowNavigationOptions, "enabled">> & { enabled: boolean } = {
   itemSelector: '[role="option"], [role="menuitem"], [role="listitem"], [data-nav-item]',
   loop: true,
   enabled: true,
-  orientation: 'vertical',
+  orientation: "vertical",
 };
 
 /**
@@ -69,8 +69,8 @@ export function useArrowNavigation(
   }
 
   function isEnabled(): boolean {
-    if (typeof config.enabled === 'boolean') return config.enabled;
-    if (config.enabled && 'value' in config.enabled) return config.enabled.value;
+    if (typeof config.enabled === "boolean") return config.enabled;
+    if (config.enabled && "value" in config.enabled) return config.enabled.value;
     return true;
   }
 
@@ -85,7 +85,7 @@ export function useArrowNavigation(
       item.focus();
       // Update aria-activedescendant on container if it has an ID
       if (containerRef.value && item.id) {
-        containerRef.value.setAttribute('aria-activedescendant', item.id);
+        containerRef.value.setAttribute("aria-activedescendant", item.id);
       }
     }
   }
@@ -96,9 +96,9 @@ export function useArrowNavigation(
     const items = getItems();
     if (items.length === 0) return;
 
-    const isVertical = config.orientation === 'vertical';
-    const nextKey = isVertical ? 'ArrowDown' : 'ArrowRight';
-    const prevKey = isVertical ? 'ArrowUp' : 'ArrowLeft';
+    const isVertical = config.orientation === "vertical";
+    const nextKey = isVertical ? "ArrowDown" : "ArrowRight";
+    const prevKey = isVertical ? "ArrowUp" : "ArrowLeft";
 
     let currentIndex = getCurrentIndex(items);
 
@@ -127,12 +127,12 @@ export function useArrowNavigation(
         }
         break;
       }
-      case 'Home': {
+      case "Home": {
         event.preventDefault();
         focusItem(items, 0);
         break;
       }
-      case 'End': {
+      case "End": {
         event.preventDefault();
         focusItem(items, items.length - 1);
         break;
@@ -141,11 +141,11 @@ export function useArrowNavigation(
   }
 
   onMounted(() => {
-    containerRef.value?.addEventListener('keydown', handleKeyDown);
+    containerRef.value?.addEventListener("keydown", handleKeyDown);
   });
 
   onUnmounted(() => {
-    containerRef.value?.removeEventListener('keydown', handleKeyDown);
+    containerRef.value?.removeEventListener("keydown", handleKeyDown);
   });
 
   return {

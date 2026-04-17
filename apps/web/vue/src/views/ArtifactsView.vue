@@ -16,15 +16,15 @@
  * @see HAP-874 - Offline Artifact Caching
  */
 
-import { computed, onMounted, ref } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import { useArtifactsStore } from '@/stores/artifacts';
-import { ArtifactViewer, EmptyState, OfflineIndicator, PullToRefresh } from '@/components/app';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useOfflineArtifacts } from '@/composables/useOfflineArtifacts';
-import { useBreakpoints } from '@/composables/useBreakpoints';
-import ResponsiveContainer from '@/components/app/ResponsiveContainer.vue';
+import { computed, onMounted, ref } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { useArtifactsStore } from "@/stores/artifacts";
+import { ArtifactViewer, EmptyState, OfflineIndicator, PullToRefresh } from "@/components/app";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useOfflineArtifacts } from "@/composables/useOfflineArtifacts";
+import { useBreakpoints } from "@/composables/useBreakpoints";
+import ResponsiveContainer from "@/components/app/ResponsiveContainer.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -55,9 +55,9 @@ const isLoading = ref(true);
 // Page title
 const pageTitle = computed(() => {
   if (sessionId.value) {
-    return 'Session Artifacts';
+    return "Session Artifacts";
   }
-  return 'All Artifacts';
+  return "All Artifacts";
 });
 
 // Artifact count
@@ -76,7 +76,7 @@ function goBack() {
   if (sessionId.value) {
     router.push(`/session/${sessionId.value}`);
   } else {
-    router.push('/');
+    router.push("/");
   }
 }
 
@@ -93,34 +93,30 @@ onMounted(() => {
     <!-- Header -->
     <header class="flex items-center gap-4 border-b bg-background sticky top-0 z-10">
       <ResponsiveContainer size="full" padding="compact" class="flex items-center gap-4">
-      <!-- Back button -->
-      <Button variant="ghost" size="icon" @click="goBack">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="h-5 w-5"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M15 19l-7-7 7-7"
-          />
-        </svg>
-      </Button>
+        <!-- Back button -->
+        <Button variant="ghost" size="icon" @click="goBack">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+        </Button>
 
-      <!-- Title -->
-      <div class="flex-1 min-w-0">
-        <h1 class="font-semibold truncate">{{ pageTitle }}</h1>
-        <p class="text-sm text-muted-foreground">
-          {{ artifactCount }} {{ artifactCount === 1 ? 'file' : 'files' }}
-        </p>
-      </div>
+        <!-- Title -->
+        <div class="flex-1 min-w-0">
+          <h1 class="font-semibold truncate">{{ pageTitle }}</h1>
+          <p class="text-sm text-muted-foreground">
+            {{ artifactCount }} {{ artifactCount === 1 ? "file" : "files" }}
+          </p>
+        </div>
 
-      <!-- HAP-874: Offline indicator -->
-      <OfflineIndicator />
+        <!-- HAP-874: Offline indicator -->
+        <OfflineIndicator />
       </ResponsiveContainer>
     </header>
 
@@ -153,11 +149,7 @@ onMounted(() => {
         />
 
         <!-- Artifact viewer -->
-        <ArtifactViewer
-          v-else
-          :session-id="sessionId"
-          class="h-full"
-        />
+        <ArtifactViewer v-else :session-id="sessionId" class="h-full" />
       </ResponsiveContainer>
     </PullToRefresh>
   </div>

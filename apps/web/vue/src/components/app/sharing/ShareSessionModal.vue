@@ -19,25 +19,25 @@
  * @see HAP-769 - Implement Share Session UI for happy-vue web app
  */
 
-import { computed, watch } from 'vue';
-import { useI18n } from 'vue-i18n';
-import { Share2, Loader2 } from 'lucide-vue-next';
+import { computed, watch } from "vue";
+import { useI18n } from "vue-i18n";
+import { Share2, Loader2 } from "lucide-vue-next";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from '@/components/ui/dialog';
-import { Separator } from '@/components/ui/separator';
-import { Skeleton } from '@/components/ui/skeleton';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import ShareList from './ShareList.vue';
-import UrlSharingSection from './UrlSharingSection.vue';
-import AddPeopleSection from './AddPeopleSection.vue';
-import InvitationList from './InvitationList.vue';
-import { useSessionSharing } from '@/composables/useSessionSharing';
-import type { SessionSharePermission } from '@magic-agent/protocol';
+} from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import ShareList from "./ShareList.vue";
+import UrlSharingSection from "./UrlSharingSection.vue";
+import AddPeopleSection from "./AddPeopleSection.vue";
+import InvitationList from "./InvitationList.vue";
+import { useSessionSharing } from "@/composables/useSessionSharing";
+import type { SessionSharePermission } from "@magic-agent/protocol";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Props & Emits
@@ -53,7 +53,7 @@ interface Props {
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-  'update:open': [value: boolean];
+  "update:open": [value: boolean];
 }>();
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -87,9 +87,7 @@ const {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** User IDs of people who already have access */
-const existingUserIds = computed(() =>
-  shares.value.map((share) => share.userId)
-);
+const existingUserIds = computed(() => shares.value.map((share) => share.userId));
 
 /** Whether any operation is in progress */
 const isBusy = computed(() => isLoading.value || isAdding.value || isUpdatingUrl.value);
@@ -105,7 +103,7 @@ watch(
     if (isOpen && props.sessionId) {
       void loadSharing();
     }
-  }
+  },
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -113,12 +111,12 @@ watch(
 // ─────────────────────────────────────────────────────────────────────────────
 
 function handleOpenChange(open: boolean): void {
-  emit('update:open', open);
+  emit("update:open", open);
 }
 
 async function handleUpdatePermission(
   shareId: string,
-  permission: SessionSharePermission
+  permission: SessionSharePermission,
 ): Promise<void> {
   await updatePermission(shareId, permission);
 }
@@ -130,7 +128,7 @@ async function handleRemoveShare(shareId: string): Promise<void> {
 async function handleUrlConfigUpdate(
   enabled: boolean,
   password: string | null,
-  permission: SessionSharePermission
+  permission: SessionSharePermission,
 ): Promise<void> {
   await configureUrlSharing(enabled, password, permission);
 }
@@ -139,16 +137,13 @@ async function handleCopyUrl(): Promise<void> {
   await copyShareableUrl();
 }
 
-async function handleAddFriend(
-  userId: string,
-  permission: SessionSharePermission
-): Promise<void> {
+async function handleAddFriend(userId: string, permission: SessionSharePermission): Promise<void> {
   await addShare(userId, permission);
 }
 
 async function handleSendInvitation(
   email: string,
-  permission: SessionSharePermission
+  permission: SessionSharePermission,
 ): Promise<void> {
   await sendInvitation(email, permission);
 }
@@ -168,10 +163,10 @@ async function handleResendInvitation(invitationId: string): Promise<void> {
       <DialogHeader>
         <DialogTitle class="flex items-center gap-2">
           <Share2 class="size-5" />
-          {{ t('sharing.modal.title') }}
+          {{ t("sharing.modal.title") }}
         </DialogTitle>
         <DialogDescription>
-          {{ t('sharing.modal.description') }}
+          {{ t("sharing.modal.description") }}
         </DialogDescription>
       </DialogHeader>
 
@@ -227,10 +222,7 @@ async function handleResendInvitation(invitationId: string): Promise<void> {
       </ScrollArea>
 
       <!-- Loading Indicator -->
-      <div
-        v-if="isBusy && !isLoading"
-        class="absolute bottom-4 right-4"
-      >
+      <div v-if="isBusy && !isLoading" class="absolute bottom-4 right-4">
         <Loader2 class="size-5 animate-spin text-muted-foreground" />
       </div>
     </DialogContent>

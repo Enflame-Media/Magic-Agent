@@ -7,10 +7,10 @@
  * Handles camera permissions gracefully and provides error feedback.
  */
 
-import { ref, onMounted, onUnmounted, watch } from 'vue';
-import { BrowserQRCodeReader } from '@zxing/browser';
-import { Button } from '@/components/ui/button';
-import { Camera, CameraOff, RefreshCw } from 'lucide-vue-next';
+import { ref, onMounted, onUnmounted, watch } from "vue";
+import { BrowserQRCodeReader } from "@zxing/browser";
+import { Button } from "@/components/ui/button";
+import { Camera, CameraOff, RefreshCw } from "lucide-vue-next";
 
 const props = defineProps<{
   active?: boolean;
@@ -35,8 +35,7 @@ let controls: { stop: () => void } | null = null;
  */
 async function startScanning(): Promise<void> {
   if (!videoRef.value) {
-     
-    console.error('[QRScanner] Video element not ready');
+    console.error("[QRScanner] Video element not ready");
     return;
   }
 
@@ -52,35 +51,31 @@ async function startScanning(): Promise<void> {
       (result, error) => {
         if (result) {
           const text = result.getText();
-          emit('scan', text);
+          emit("scan", text);
         }
 
-        if (error && error.name !== 'NotFoundException') {
+        if (error && error.name !== "NotFoundException") {
           // NotFoundException is normal when no QR code is visible - ignore silently
         }
-      }
+      },
     );
 
     isScanning.value = true;
     hasPermission.value = true;
   } catch (error) {
-     
-    console.error('[QRScanner] Failed to start:', error);
+    console.error("[QRScanner] Failed to start:", error);
 
     if (error instanceof Error) {
-      if (
-        error.name === 'NotAllowedError' ||
-        error.message.includes('Permission denied')
-      ) {
+      if (error.name === "NotAllowedError" || error.message.includes("Permission denied")) {
         hasPermission.value = false;
-        errorMessage.value = 'Camera permission denied';
-        emit('permissionDenied');
-      } else if (error.name === 'NotFoundError') {
-        errorMessage.value = 'No camera found on this device';
-        emit('error', error);
+        errorMessage.value = "Camera permission denied";
+        emit("permissionDenied");
+      } else if (error.name === "NotFoundError") {
+        errorMessage.value = "No camera found on this device";
+        emit("error", error);
       } else {
         errorMessage.value = error.message;
-        emit('error', error);
+        emit("error", error);
       }
     }
   }
@@ -132,7 +127,7 @@ watch(
     } else {
       stopScanning();
     }
-  }
+  },
 );
 
 // Expose methods for parent component
@@ -146,72 +141,46 @@ defineExpose({
   <div class="qr-scanner">
     <!-- Video element for camera feed -->
     <div class="video-container">
-      <video
-        ref="videoRef"
-        class="video"
-        playsinline
-        muted
-      />
+      <video ref="videoRef" class="video" playsinline muted />
 
       <!-- Scanning overlay -->
-      <div
-        v-if="isScanning"
-        class="scan-overlay"
-      >
+      <div v-if="isScanning" class="scan-overlay">
         <div class="scan-frame" />
       </div>
 
       <!-- Permission denied state -->
-      <div
-        v-if="hasPermission === false"
-        class="error-state"
-      >
+      <div v-if="hasPermission === false" class="error-state">
         <CameraOff class="error-icon" />
         <p class="error-title">Camera Access Denied</p>
         <p class="error-description">
           Please allow camera access in your browser settings to scan QR codes.
         </p>
-        <Button
-          variant="outline"
-          @click="retry"
-        >
+        <Button variant="outline" @click="retry">
           <RefreshCw class="mr-2 h-4 w-4" />
           Try Again
         </Button>
       </div>
 
       <!-- Error state -->
-      <div
-        v-else-if="errorMessage"
-        class="error-state"
-      >
+      <div v-else-if="errorMessage" class="error-state">
         <Camera class="error-icon" />
         <p class="error-title">Scanner Error</p>
         <p class="error-description">{{ errorMessage }}</p>
-        <Button
-          variant="outline"
-          @click="retry"
-        >
+        <Button variant="outline" @click="retry">
           <RefreshCw class="mr-2 h-4 w-4" />
           Try Again
         </Button>
       </div>
 
       <!-- Loading state -->
-      <div
-        v-else-if="!isScanning && hasPermission === null"
-        class="loading-state"
-      >
+      <div v-else-if="!isScanning && hasPermission === null" class="loading-state">
         <Camera class="loading-icon" />
         <p>Requesting camera access...</p>
       </div>
     </div>
 
     <!-- Instructions -->
-    <p
-      v-if="isScanning"
-      class="instructions"
-    >
+    <p v-if="isScanning" class="instructions">
       Point your camera at the QR code displayed in your terminal
     </p>
   </div>

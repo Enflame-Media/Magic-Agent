@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import type { HTMLAttributes } from 'vue'
-import { cn } from '@/lib/utils'
-import { Shimmer } from '../shimmer'
-import { useTerminalContext } from './context'
+import type { HTMLAttributes } from "vue";
+import { cn } from "@/lib/utils";
+import { Shimmer } from "../shimmer";
+import { useTerminalContext } from "./context";
 
 interface Props extends /* @vue-ignore */ HTMLAttributes {
-  class?: HTMLAttributes['class']
+  class?: HTMLAttributes["class"];
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
-const { isStreaming } = useTerminalContext('TerminalStatus')
+const { isStreaming } = useTerminalContext("TerminalStatus");
 </script>
 
 <template>

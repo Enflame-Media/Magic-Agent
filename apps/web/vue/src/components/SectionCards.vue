@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { IconTrendingDown, IconTrendingUp } from "@tabler/icons-vue"
+import { IconTrendingDown, IconTrendingUp } from "@tabler/icons-vue";
 
-import { Badge } from '@/components/ui/badge'
+import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardAction,
@@ -9,29 +9,27 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
+} from "@/components/ui/card";
 
 interface SectionCard {
-  title: string
-  value: string
-  badgeLabel: string
-  badgeDirection?: "up" | "down"
-  summary: string
-  detail: string
+  title: string;
+  value: string;
+  badgeLabel: string;
+  badgeDirection?: "up" | "down";
+  summary: string;
+  detail: string;
 }
 
 const props = defineProps<{
-  cards: SectionCard[]
-}>()
+  cards: SectionCard[];
+}>();
 </script>
 
 <template>
-  <div class="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
-    <Card
-      v-for="card in props.cards"
-      :key="card.title"
-      class="@container/card"
-    >
+  <div
+    class="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4"
+  >
+    <Card v-for="card in props.cards" :key="card.title" class="@container/card">
       <CardHeader>
         <CardDescription>{{ card.title }}</CardDescription>
         <CardTitle class="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">

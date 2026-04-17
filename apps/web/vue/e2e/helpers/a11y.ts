@@ -22,10 +22,10 @@
  * @see HAP-889 - Reference implementation in happy-admin
  */
 
-import { AxeBuilder } from '@axe-core/playwright';
-import type { Page } from '@playwright/test';
-import { expect } from '@playwright/test';
-import type { AxeResults } from 'axe-core';
+import { AxeBuilder } from "@axe-core/playwright";
+import type { Page } from "@playwright/test";
+import { expect } from "@playwright/test";
+import type { AxeResults } from "axe-core";
 
 /**
  * Configuration options for accessibility checks.
@@ -67,7 +67,7 @@ export interface CheckA11yOptions {
  * Default WCAG tags for accessibility compliance.
  * Covers WCAG 2.1 Level A and Level AA criteria.
  */
-const DEFAULT_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
+const DEFAULT_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"];
 
 /**
  * Run axe-core accessibility analysis on a Playwright page.
@@ -95,10 +95,7 @@ const DEFAULT_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
  * await checkA11y(page, { exclude: ['.third-party-widget'] });
  * ```
  */
-export async function checkA11y(
-  page: Page,
-  options: CheckA11yOptions = {},
-): Promise<AxeResults> {
+export async function checkA11y(page: Page, options: CheckA11yOptions = {}): Promise<AxeResults> {
   const {
     tags = DEFAULT_TAGS,
     disableRules = [],
@@ -126,13 +123,9 @@ export async function checkA11y(
   if (softMode) {
     // Log violations without failing the test
     if (results.violations.length > 0) {
-      console.warn(
-        `[a11y] ${results.violations.length} accessibility violation(s) found:`,
-      );
+      console.warn(`[a11y] ${results.violations.length} accessibility violation(s) found:`);
       for (const violation of results.violations) {
-        console.warn(
-          `  - [${violation.impact}] ${violation.id}: ${violation.description}`,
-        );
+        console.warn(`  - [${violation.impact}] ${violation.id}: ${violation.description}`);
         console.warn(`    Help: ${violation.helpUrl}`);
         console.warn(`    Nodes affected: ${violation.nodes.length}`);
       }
@@ -140,15 +133,13 @@ export async function checkA11y(
   } else {
     // Hard mode - fail the test on any violation
     const violationMessages = results.violations.map((violation) => {
-      const nodes = violation.nodes
-        .map((node) => `    - ${node.html}`)
-        .join('\n');
+      const nodes = violation.nodes.map((node) => `    - ${node.html}`).join("\n");
       return `[${violation.impact}] ${violation.id}: ${violation.description}\n  Help: ${violation.helpUrl}\n  Affected nodes:\n${nodes}`;
     });
 
     expect(
       results.violations,
-      `Accessibility violations found:\n${violationMessages.join('\n\n')}`,
+      `Accessibility violations found:\n${violationMessages.join("\n\n")}`,
     ).toHaveLength(0);
   }
 
@@ -173,13 +164,11 @@ export function formatA11yResults(results: AxeResults): string {
   ];
 
   if (results.violations.length > 0) {
-    lines.push('', 'Violations:');
+    lines.push("", "Violations:");
     for (const violation of results.violations) {
-      lines.push(
-        `  [${violation.impact}] ${violation.id}: ${violation.description}`,
-      );
+      lines.push(`  [${violation.impact}] ${violation.id}: ${violation.description}`);
     }
   }
 
-  return lines.join('\n');
+  return lines.join("\n");
 }

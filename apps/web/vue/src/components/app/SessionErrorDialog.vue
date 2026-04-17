@@ -11,9 +11,9 @@
  * @see HAP-736 - Handle "Method not found" errors with session revival flow
  * @see HAP-967 - Focus trapping in modals/dialogs
  */
-import { computed } from 'vue';
-import { useI18n } from 'vue-i18n';
-import { TriangleAlertIcon, CopyIcon } from 'lucide-vue-next';
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+import { TriangleAlertIcon, CopyIcon } from "lucide-vue-next";
 import {
   Dialog,
   DialogContent,
@@ -21,9 +21,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import type { RevivalFailedState } from '@/composables/useSessionRevival';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import type { RevivalFailedState } from "@/composables/useSessionRevival";
 
 const props = defineProps<{
   /** Revival failure state, or null if no error */
@@ -46,7 +46,7 @@ const isOpen = computed(() => props.revivalFailed !== null);
 
 /** Truncate session ID for display if too long */
 const displaySessionId = computed(() => {
-  if (!props.revivalFailed) return '';
+  if (!props.revivalFailed) return "";
   const id = props.revivalFailed.sessionId;
   // Show full ID if short enough, otherwise truncate middle
   if (id.length <= 24) return id;
@@ -54,16 +54,16 @@ const displaySessionId = computed(() => {
 });
 
 function handleCopy(): void {
-  emit('copy');
+  emit("copy");
 }
 
 function handleArchive(): void {
-  emit('archive');
+  emit("archive");
 }
 
 function handleOpenChange(open: boolean): void {
   if (!open) {
-    emit('dismiss');
+    emit("dismiss");
   }
 }
 </script>
@@ -74,10 +74,10 @@ function handleOpenChange(open: boolean): void {
       <DialogHeader>
         <DialogTitle class="flex items-center gap-2">
           <TriangleAlertIcon class="size-5 text-destructive" />
-          {{ t('sessionRevival.failedTitle') }}
+          {{ t("sessionRevival.failedTitle") }}
         </DialogTitle>
         <DialogDescription>
-          {{ t('sessionRevival.failedDescription') }}
+          {{ t("sessionRevival.failedDescription") }}
         </DialogDescription>
       </DialogHeader>
 
@@ -86,14 +86,9 @@ function handleOpenChange(open: boolean): void {
         <code class="font-mono text-sm break-all" :title="revivalFailed?.sessionId">
           {{ displaySessionId }}
         </code>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          :title="t('common.copy')"
-          @click="handleCopy"
-        >
+        <Button variant="ghost" size="icon-sm" :title="t('common.copy')" @click="handleCopy">
           <CopyIcon class="size-4" />
-          <span class="sr-only">{{ t('common.copy') }}</span>
+          <span class="sr-only">{{ t("common.copy") }}</span>
         </Button>
       </div>
 
@@ -104,10 +99,10 @@ function handleOpenChange(open: boolean): void {
 
       <DialogFooter class="flex-col gap-2 sm:flex-row">
         <Button variant="outline" @click="handleOpenChange(false)">
-          {{ t('sessionRevival.dismiss') }}
+          {{ t("sessionRevival.dismiss") }}
         </Button>
         <Button variant="destructive" @click="handleArchive">
-          {{ t('sessionRevival.archiveSession') }}
+          {{ t("sessionRevival.archiveSession") }}
         </Button>
       </DialogFooter>
     </DialogContent>

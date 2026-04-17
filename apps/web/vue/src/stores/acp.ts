@@ -18,9 +18,9 @@
  * ```
  */
 
-import { defineStore } from 'pinia';
-import { shallowRef, triggerRef } from 'vue';
-import type { AcpSessionUpdate } from '@magic-agent/protocol';
+import { defineStore } from "pinia";
+import { shallowRef, triggerRef } from "vue";
+import type { AcpSessionUpdate } from "@magic-agent/protocol";
 import {
   type AcpSessionState,
   type AcpPermissionRequestState,
@@ -31,11 +31,11 @@ import {
   applyAcpSessionUpdate,
   addPermissionRequest,
   resolvePermissionRequest,
-} from './acpTypes';
+} from "./acpTypes";
 
-export { type AcpSessionState } from './acpTypes';
+export { type AcpSessionState } from "./acpTypes";
 
-export const useAcpStore = defineStore('acp', () => {
+export const useAcpStore = defineStore("acp", () => {
   // ─────────────────────────────────────────────────────────────────────────
   // State
   // ─────────────────────────────────────────────────────────────────────────
@@ -101,8 +101,8 @@ export const useAcpStore = defineStore('acp', () => {
   function resolvePermission(
     sessionId: string,
     requestId: string,
-    outcome: 'selected' | 'expired' | 'cancelled',
-    selectedOptionId: string | null
+    outcome: "selected" | "expired" | "cancelled",
+    selectedOptionId: string | null,
   ): void {
     const existing = sessions.value.get(sessionId);
     if (!existing) return;
@@ -117,7 +117,7 @@ export const useAcpStore = defineStore('acp', () => {
   function updateAgentRegistry(
     sessionId: string,
     agents: Record<string, AcpRegisteredAgent>,
-    activeAgentId: string | null
+    activeAgentId: string | null,
   ): void {
     const existing = agentRegistries.value.get(sessionId) ?? createAcpAgentRegistryState();
     agentRegistries.value.set(sessionId, {
@@ -134,7 +134,7 @@ export const useAcpStore = defineStore('acp', () => {
   function setAgentSwitching(
     sessionId: string,
     switching: boolean,
-    switchError: string | null = null
+    switchError: string | null = null,
   ): void {
     const existing = agentRegistries.value.get(sessionId) ?? createAcpAgentRegistryState();
     agentRegistries.value.set(sessionId, {

@@ -33,8 +33,8 @@
  * ```
  */
 
-import { computed, type ComputedRef, type WritableComputedRef } from 'vue';
-import { useColorMode, usePreferredDark } from '@vueuse/core';
+import { computed, type ComputedRef, type WritableComputedRef } from "vue";
+import { useColorMode, usePreferredDark } from "@vueuse/core";
 
 /**
  * Color mode options
@@ -42,7 +42,7 @@ import { useColorMode, usePreferredDark } from '@vueuse/core';
  * - 'dark': Force dark mode
  * - 'auto': Follow system preference
  */
-export type ColorMode = 'light' | 'dark' | 'auto';
+export type ColorMode = "light" | "dark" | "auto";
 
 export interface UseDarkModeReturn {
   /** Whether dark mode is currently active (computed from mode and system preference) */
@@ -61,7 +61,7 @@ export interface UseDarkModeReturn {
   systemPrefersDark: ComputedRef<boolean>;
 }
 
-const STORAGE_KEY = 'happy-vue-color-mode';
+const STORAGE_KEY = "happy-vue-color-mode";
 
 /**
  * Composable for managing dark mode state.
@@ -79,16 +79,16 @@ export function useDarkMode(): UseDarkModeReturn {
   // Color mode with localStorage persistence
   const colorMode = useColorMode({
     storageKey: STORAGE_KEY,
-    attribute: 'class',
+    attribute: "class",
     modes: {
-      light: '',
-      dark: 'dark',
-      auto: '',
+      light: "",
+      dark: "dark",
+      auto: "",
     },
     onChanged: (mode, defaultHandler) => {
       // When auto, apply based on system preference
-      if (mode === 'auto') {
-        document.documentElement.classList.toggle('dark', systemPrefersDark.value);
+      if (mode === "auto") {
+        document.documentElement.classList.toggle("dark", systemPrefersDark.value);
       } else {
         defaultHandler(mode);
       }
@@ -97,10 +97,10 @@ export function useDarkMode(): UseDarkModeReturn {
 
   // Computed: is dark mode currently active?
   const isDark = computed(() => {
-    if (colorMode.value === 'auto') {
+    if (colorMode.value === "auto") {
       return systemPrefersDark.value;
     }
-    return colorMode.value === 'dark';
+    return colorMode.value === "dark";
   });
 
   // Writable computed for mode
@@ -109,16 +109,16 @@ export function useDarkMode(): UseDarkModeReturn {
     set: (value: ColorMode) => {
       colorMode.value = value;
       // Re-apply the dark class when setting mode
-      if (value === 'auto') {
-        document.documentElement.classList.toggle('dark', systemPrefersDark.value);
+      if (value === "auto") {
+        document.documentElement.classList.toggle("dark", systemPrefersDark.value);
       } else {
-        document.documentElement.classList.toggle('dark', value === 'dark');
+        document.documentElement.classList.toggle("dark", value === "dark");
       }
     },
   });
 
   // Whether using auto mode
-  const isAuto = computed(() => colorMode.value === 'auto');
+  const isAuto = computed(() => colorMode.value === "auto");
 
   /**
    * Toggle between light and dark modes.
@@ -126,9 +126,9 @@ export function useDarkMode(): UseDarkModeReturn {
    */
   function toggle(): void {
     if (isDark.value) {
-      mode.value = 'light';
+      mode.value = "light";
     } else {
-      mode.value = 'dark';
+      mode.value = "dark";
     }
   }
 
@@ -146,7 +146,7 @@ export function useDarkMode(): UseDarkModeReturn {
    * @param value - true for dark mode, false for light mode
    */
   function setDark(value: boolean): void {
-    mode.value = value ? 'dark' : 'light';
+    mode.value = value ? "dark" : "light";
   }
 
   return {

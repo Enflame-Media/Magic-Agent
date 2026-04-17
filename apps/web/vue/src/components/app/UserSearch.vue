@@ -10,13 +10,13 @@
  * @see HAP-717 - Implement friends UI for happy-vue web app
  */
 
-import { ref } from 'vue';
-import { useForm } from '@tanstack/vue-form';
-import { useFriends } from '@/composables/useFriends';
-import { Input } from '@/components/ui/input';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Field } from '@/components/ui/form';
-import UserProfileCard from './UserProfileCard.vue';
+import { ref } from "vue";
+import { useForm } from "@tanstack/vue-form";
+import { useFriends } from "@/composables/useFriends";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Field } from "@/components/ui/form";
+import UserProfileCard from "./UserProfileCard.vue";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Props
@@ -28,7 +28,7 @@ interface Props {
 }
 
 withDefaults(defineProps<Props>(), {
-  placeholder: 'Search by username...',
+  placeholder: "Search by username...",
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -44,13 +44,7 @@ const emit = defineEmits<{
 // Composables
 // ─────────────────────────────────────────────────────────────────────────────
 
-const {
-  searchResults,
-  isSearching,
-  searchUsers,
-  clearSearch,
-  addFriend,
-} = useFriends();
+const { searchResults, isSearching, searchUsers, clearSearch, addFriend } = useFriends();
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Form Schema
@@ -62,7 +56,7 @@ const {
 
 const form = useForm({
   defaultValues: {
-    query: '',
+    query: "",
   },
 });
 
@@ -74,7 +68,7 @@ const processingId = ref<string | null>(null);
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 // Get current query value for template conditionals
-const queryValue = () => form.getFieldValue('query') ?? '';
+const queryValue = () => form.getFieldValue("query") ?? "";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Debounced Search
@@ -114,7 +108,7 @@ async function handleAddFriend(userId: string): Promise<void> {
 }
 
 function handleUserClick(userId: string): void {
-  emit('select', userId);
+  emit("select", userId);
 }
 </script>
 
@@ -140,11 +134,13 @@ function handleUserClick(userId: string): void {
             :id="field.name"
             type="search"
             :model-value="field.state.value"
-            @input="(e: Event) => {
-              const value = (e.target as HTMLInputElement).value;
-              field.handleChange(value);
-              handleQueryChange(value);
-            }"
+            @input="
+              (e: Event) => {
+                const value = (e.target as HTMLInputElement).value;
+                field.handleChange(value);
+                handleQueryChange(value);
+              }
+            "
             @blur="field.handleBlur"
             :placeholder="placeholder"
             class="pl-9"
@@ -198,10 +194,7 @@ function handleUserClick(userId: string): void {
     </div>
 
     <!-- Initial state -->
-    <div
-      v-else-if="!queryValue().trim()"
-      class="text-center py-8 text-muted-foreground"
-    >
+    <div v-else-if="!queryValue().trim()" class="text-center py-8 text-muted-foreground">
       <svg
         class="mx-auto h-12 w-12 mb-3 opacity-50"
         xmlns="http://www.w3.org/2000/svg"

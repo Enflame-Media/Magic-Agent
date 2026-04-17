@@ -20,13 +20,13 @@
  * @see HAP-889 - Reference implementation in happy-admin
  */
 
-import { test, expect } from '@playwright/test';
-import { checkA11y, formatA11yResults } from './helpers/a11y';
+import { test, expect } from "@playwright/test";
+import { checkA11y, formatA11yResults } from "./helpers/a11y";
 
-test.describe('Accessibility: Home Page', () => {
-  test('should have no critical accessibility violations on home page', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
+test.describe("Accessibility: Home Page", () => {
+  test("should have no critical accessibility violations on home page", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
 
     // Use soft mode for initial adoption - violations are logged as warnings
     // rather than failing the build. Follow-up issues will be created for
@@ -38,7 +38,7 @@ test.describe('Accessibility: Home Page', () => {
 
     // Assert no critical (level A) violations at minimum
     const criticalViolations = results.violations.filter(
-      (v) => v.impact === 'critical' || v.impact === 'serious',
+      (v) => v.impact === "critical" || v.impact === "serious",
     );
 
     if (criticalViolations.length > 0) {
@@ -48,12 +48,12 @@ test.describe('Accessibility: Home Page', () => {
     }
   });
 
-  test('should have proper landmark structure on home page', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
+  test("should have proper landmark structure on home page", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
 
     // Check for essential landmarks
-    const body = page.locator('body');
+    const body = page.locator("body");
     await expect(body).toBeVisible();
 
     // Page should have some structural elements
@@ -61,12 +61,12 @@ test.describe('Accessibility: Home Page', () => {
     const headerOrRole = page.locator('header, [role="banner"]');
 
     // At least check the page renders content
-    await expect(page.locator('body')).not.toBeEmpty();
+    await expect(page.locator("body")).not.toBeEmpty();
   });
 
-  test('should have accessible skip link on home page', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
+  test("should have accessible skip link on home page", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
 
     // Skip link should exist (may be visually hidden until focused)
     const skipLink = page.locator('a.skip-link, a[href="#main-content"]');
@@ -81,18 +81,18 @@ test.describe('Accessibility: Home Page', () => {
   });
 });
 
-test.describe('Accessibility: Session Detail Page', () => {
-  test('should have no critical accessibility violations on session page', async ({ page }) => {
+test.describe("Accessibility: Session Detail Page", () => {
+  test("should have no critical accessibility violations on session page", async ({ page }) => {
     // Navigate to a session page - the app may redirect if no session exists,
     // so we test the resulting page state regardless
-    await page.goto('/session/test-session-id');
-    await page.waitForLoadState('networkidle');
+    await page.goto("/session/test-session-id");
+    await page.waitForLoadState("networkidle");
 
     const results = await checkA11y(page, { softMode: true });
     console.log(formatA11yResults(results));
 
     const criticalViolations = results.violations.filter(
-      (v) => v.impact === 'critical' || v.impact === 'serious',
+      (v) => v.impact === "critical" || v.impact === "serious",
     );
 
     if (criticalViolations.length > 0) {
@@ -102,25 +102,25 @@ test.describe('Accessibility: Session Detail Page', () => {
     }
   });
 
-  test('should have proper ARIA roles on session page', async ({ page }) => {
-    await page.goto('/session/test-session-id');
-    await page.waitForLoadState('networkidle');
+  test("should have proper ARIA roles on session page", async ({ page }) => {
+    await page.goto("/session/test-session-id");
+    await page.waitForLoadState("networkidle");
 
     // Verify page has loaded some content
-    await expect(page.locator('body')).not.toBeEmpty();
+    await expect(page.locator("body")).not.toBeEmpty();
   });
 });
 
-test.describe('Accessibility: Settings Pages', () => {
-  test('should have no critical accessibility violations on settings page', async ({ page }) => {
-    await page.goto('/settings');
-    await page.waitForLoadState('networkidle');
+test.describe("Accessibility: Settings Pages", () => {
+  test("should have no critical accessibility violations on settings page", async ({ page }) => {
+    await page.goto("/settings");
+    await page.waitForLoadState("networkidle");
 
     const results = await checkA11y(page, { softMode: true });
     console.log(formatA11yResults(results));
 
     const criticalViolations = results.violations.filter(
-      (v) => v.impact === 'critical' || v.impact === 'serious',
+      (v) => v.impact === "critical" || v.impact === "serious",
     );
 
     if (criticalViolations.length > 0) {
@@ -130,40 +130,38 @@ test.describe('Accessibility: Settings Pages', () => {
     }
   });
 
-  test('should have proper heading hierarchy on settings page', async ({ page }) => {
-    await page.goto('/settings');
-    await page.waitForLoadState('networkidle');
+  test("should have proper heading hierarchy on settings page", async ({ page }) => {
+    await page.goto("/settings");
+    await page.waitForLoadState("networkidle");
 
     // Settings page should have some content
-    await expect(page.locator('body')).not.toBeEmpty();
+    await expect(page.locator("body")).not.toBeEmpty();
 
     // Check that headings don't skip levels (h1 -> h3 without h2)
-    const headings = await page.locator('h1, h2, h3, h4, h5, h6').all();
+    const headings = await page.locator("h1, h2, h3, h4, h5, h6").all();
 
     if (headings.length > 1) {
       let previousLevel = 0;
       for (const heading of headings) {
         const tagName = await heading.evaluate((el) => el.tagName);
-        const currentLevel = parseInt(tagName.replace('H', ''), 10);
+        const currentLevel = parseInt(tagName.replace("H", ""), 10);
 
         // Heading level should not skip more than one level
         if (previousLevel > 0 && currentLevel > previousLevel + 1) {
-          console.warn(
-            `[a11y] Heading level skipped: h${previousLevel} -> h${currentLevel}`,
-          );
+          console.warn(`[a11y] Heading level skipped: h${previousLevel} -> h${currentLevel}`);
         }
         previousLevel = currentLevel;
       }
     }
   });
 
-  test('should have accessible form controls on settings page', async ({ page }) => {
-    await page.goto('/settings');
-    await page.waitForLoadState('networkidle');
+  test("should have accessible form controls on settings page", async ({ page }) => {
+    await page.goto("/settings");
+    await page.waitForLoadState("networkidle");
 
     // Check that interactive elements are keyboard accessible
-    await page.keyboard.press('Tab');
-    const focusedElement = page.locator(':focus');
+    await page.keyboard.press("Tab");
+    const focusedElement = page.locator(":focus");
 
     // At least one element should be focusable
     const count = await focusedElement.count();
@@ -171,16 +169,16 @@ test.describe('Accessibility: Settings Pages', () => {
   });
 });
 
-test.describe('Accessibility: Authentication Pages', () => {
-  test('should have no critical accessibility violations on login page', async ({ page }) => {
-    await page.goto('/scan');
-    await page.waitForLoadState('networkidle');
+test.describe("Accessibility: Authentication Pages", () => {
+  test("should have no critical accessibility violations on login page", async ({ page }) => {
+    await page.goto("/scan");
+    await page.waitForLoadState("networkidle");
 
     const results = await checkA11y(page, { softMode: true });
     console.log(formatA11yResults(results));
 
     const criticalViolations = results.violations.filter(
-      (v) => v.impact === 'critical' || v.impact === 'serious',
+      (v) => v.impact === "critical" || v.impact === "serious",
     );
 
     if (criticalViolations.length > 0) {
@@ -191,41 +189,41 @@ test.describe('Accessibility: Authentication Pages', () => {
   });
 });
 
-test.describe('Accessibility: Global Checks', () => {
-  test('should have lang attribute on html element', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('domcontentloaded');
+test.describe("Accessibility: Global Checks", () => {
+  test("should have lang attribute on html element", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("domcontentloaded");
 
-    const lang = await page.locator('html').getAttribute('lang');
+    const lang = await page.locator("html").getAttribute("lang");
     expect(lang).toBeTruthy();
-    expect(lang).not.toBe('');
+    expect(lang).not.toBe("");
   });
 
-  test('should have a page title', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('domcontentloaded');
+  test("should have a page title", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("domcontentloaded");
 
     const title = await page.title();
     expect(title).toBeTruthy();
-    expect(title).not.toBe('');
+    expect(title).not.toBe("");
   });
 
-  test('should have no images without alt text', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
+  test("should have no images without alt text", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
 
     // Find all images
-    const images = page.locator('img');
+    const images = page.locator("img");
     const imageCount = await images.count();
 
     for (let i = 0; i < imageCount; i++) {
       const img = images.nth(i);
-      const alt = await img.getAttribute('alt');
-      const ariaHidden = await img.getAttribute('aria-hidden');
-      const role = await img.getAttribute('role');
+      const alt = await img.getAttribute("alt");
+      const ariaHidden = await img.getAttribute("aria-hidden");
+      const role = await img.getAttribute("role");
 
       // Image should have alt text, or be marked as decorative
-      const isDecorative = ariaHidden === 'true' || role === 'presentation' || alt === '';
+      const isDecorative = ariaHidden === "true" || role === "presentation" || alt === "";
       const hasAlt = alt !== null;
 
       expect(

@@ -193,9 +193,7 @@ export class EncryptionCache {
     const toEvict = cache.size - maxSize;
 
     // Sort entries by access time (oldest first)
-    const entries = Array.from(cache.entries()).sort(
-      (a, b) => a[1].accessTime - b[1].accessTime
-    );
+    const entries = Array.from(cache.entries()).sort((a, b) => a[1].accessTime - b[1].accessTime);
 
     // Delete oldest entries
     for (let i = 0; i < toEvict; i++) {

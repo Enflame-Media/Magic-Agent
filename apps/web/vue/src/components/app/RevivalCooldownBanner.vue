@@ -13,8 +13,8 @@
  * @see HAP-867 - React Native reference implementation
  * @see HAP-869 - useRevivalCooldown composable
  */
-import { computed } from 'vue';
-import { PauseCircle, X } from 'lucide-vue-next';
+import { computed } from "vue";
+import { PauseCircle, X } from "lucide-vue-next";
 
 interface Props {
   /** Remaining seconds until cooldown expires */
@@ -27,8 +27,9 @@ const emit = defineEmits<{
   dismiss: [];
 }>();
 
-const description = computed(() =>
-  `Revival paused for ${props.remainingSeconds} second${props.remainingSeconds === 1 ? '' : 's'}`
+const description = computed(
+  () =>
+    `Revival paused for ${props.remainingSeconds} second${props.remainingSeconds === 1 ? "" : "s"}`,
 );
 </script>
 
@@ -47,9 +48,7 @@ const description = computed(() =>
 
         <!-- Text content -->
         <div class="flex-1 min-w-0">
-          <p class="text-sm font-semibold text-foreground">
-            Revival Paused
-          </p>
+          <p class="text-sm font-semibold text-foreground">Revival Paused</p>
           <p class="text-sm text-muted-foreground">
             {{ description }}
           </p>

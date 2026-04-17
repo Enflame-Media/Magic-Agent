@@ -9,13 +9,13 @@
  * across the app, with proper system preference detection.
  */
 
-import { computed } from 'vue';
-import { useRouter } from 'vue-router';
-import { useDarkMode, type ColorMode } from '@/composables/useDarkMode';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { IconSun, IconMoon, IconDeviceDesktop, IconChevronLeft } from '@tabler/icons-vue';
-import ResponsiveContainer from '@/components/app/ResponsiveContainer.vue';
+import { computed } from "vue";
+import { useRouter } from "vue-router";
+import { useDarkMode, type ColorMode } from "@/composables/useDarkMode";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { IconSun, IconMoon, IconDeviceDesktop, IconChevronLeft } from "@tabler/icons-vue";
+import ResponsiveContainer from "@/components/app/ResponsiveContainer.vue";
 
 const router = useRouter();
 
@@ -25,30 +25,30 @@ const { mode, isDark, isAuto, systemPrefersDark, setMode } = useDarkMode();
 // Theme options
 const themeOptions: { value: ColorMode; label: string; description: string }[] = [
   {
-    value: 'light',
-    label: 'Light',
-    description: 'Always use light mode',
+    value: "light",
+    label: "Light",
+    description: "Always use light mode",
   },
   {
-    value: 'dark',
-    label: 'Dark',
-    description: 'Always use dark mode',
+    value: "dark",
+    label: "Dark",
+    description: "Always use dark mode",
   },
   {
-    value: 'auto',
-    label: 'System',
-    description: 'Follow your device settings',
+    value: "auto",
+    label: "System",
+    description: "Follow your device settings",
   },
 ];
 
 // Get icon component for each theme option
 function getThemeIcon(value: ColorMode) {
   switch (value) {
-    case 'light':
+    case "light":
       return IconSun;
-    case 'dark':
+    case "dark":
       return IconMoon;
-    case 'auto':
+    case "auto":
       return IconDeviceDesktop;
     default:
       return IconSun;
@@ -58,9 +58,11 @@ function getThemeIcon(value: ColorMode) {
 // Current theme preview text
 const currentThemeText = computed(() => {
   if (isAuto.value) {
-    return systemPrefersDark.value ? 'Currently using dark mode (from system)' : 'Currently using light mode (from system)';
+    return systemPrefersDark.value
+      ? "Currently using dark mode (from system)"
+      : "Currently using light mode (from system)";
   }
-  return isDark.value ? 'Dark mode active' : 'Light mode active';
+  return isDark.value ? "Dark mode active" : "Light mode active";
 });
 
 function selectTheme(theme: ColorMode) {
@@ -68,7 +70,7 @@ function selectTheme(theme: ColorMode) {
 }
 
 function goBack() {
-  router.push('/settings');
+  router.push("/settings");
 }
 </script>
 

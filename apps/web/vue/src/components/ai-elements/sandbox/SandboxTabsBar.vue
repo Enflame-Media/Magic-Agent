@@ -1,20 +1,17 @@
 <script setup lang="ts">
-import type { HTMLAttributes } from 'vue'
-import { cn } from '@/lib/utils'
+import type { HTMLAttributes } from "vue";
+import { cn } from "@/lib/utils";
 
 interface Props extends /* @vue-ignore */ HTMLAttributes {
-  class?: HTMLAttributes['class']
+  class?: HTMLAttributes["class"];
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 </script>
 
 <template>
   <div
-    :class="cn(
-      'flex w-full items-center border-border border-t border-b',
-      props.class,
-    )"
+    :class="cn('flex w-full items-center border-border border-t border-b', props.class)"
     v-bind="$attrs"
   >
     <slot />

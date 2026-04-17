@@ -2,19 +2,19 @@
 /**
  * MCP Server Detail - Server tool inventory.
  */
-import { computed } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import ResponsiveContainer from '@/components/app/ResponsiveContainer.vue';
+import { computed } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import ResponsiveContainer from "@/components/app/ResponsiveContainer.vue";
 
 const router = useRouter();
 const route = useRoute();
 
-const serverName = computed(() => String(route.params.server ?? 'Unknown'));
+const serverName = computed(() => String(route.params.server ?? "Unknown"));
 
 function goBack() {
-  router.push('/settings/mcp');
+  router.push("/settings/mcp");
 }
 </script>
 
@@ -30,11 +30,7 @@ function goBack() {
           stroke="currentColor"
           stroke-width="2"
         >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M15 19l-7-7 7-7"
-          />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
         </svg>
       </Button>
       <h1 class="text-2xl font-semibold">{{ serverName }}</h1>
@@ -48,9 +44,7 @@ function goBack() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div class="rounded-lg border p-4 text-sm text-muted-foreground">
-          No tools loaded yet.
-        </div>
+        <div class="rounded-lg border p-4 text-sm text-muted-foreground">No tools loaded yet.</div>
       </CardContent>
     </Card>
   </ResponsiveContainer>

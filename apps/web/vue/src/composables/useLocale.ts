@@ -12,8 +12,8 @@
  *   const { locale, setLocale, t, formatDate, formatNumber } = useLocale();
  */
 
-import { computed, watch, type ComputedRef } from 'vue';
-import { useI18n } from 'vue-i18n';
+import { computed, watch, type ComputedRef } from "vue";
+import { useI18n } from "vue-i18n";
 import {
   type SupportedLanguage,
   type LanguageInfo,
@@ -25,7 +25,7 @@ import {
   isRtlLanguage,
   getLanguageInfo,
   isSupportedLanguage,
-} from '@/i18n';
+} from "@/i18n";
 
 /**
  * Date/time format options for different display contexts
@@ -66,24 +66,27 @@ export interface NumberFormatOptions {
  */
 export interface UseLocaleReturn {
   locale: ComputedRef<SupportedLanguage>;
-  t: ReturnType<typeof useI18n>['t'];
-  n: ReturnType<typeof useI18n>['n'];
-  d: ReturnType<typeof useI18n>['d'];
+  t: ReturnType<typeof useI18n>["t"];
+  n: ReturnType<typeof useI18n>["n"];
+  d: ReturnType<typeof useI18n>["d"];
   currentLanguageInfo: ComputedRef<LanguageInfo>;
   availableLanguages: ComputedRef<LanguageInfo[]>;
   setLocale: (newLocale: SupportedLanguage) => void;
   resetToSystemLocale: () => void;
   detectSystemLocale: () => SupportedLanguage;
   isRtl: ComputedRef<boolean>;
-  formatDate: (date: Date | number | string, style?: 'short' | 'medium' | 'long' | 'full') => string;
+  formatDate: (
+    date: Date | number | string,
+    style?: "short" | "medium" | "long" | "full",
+  ) => string;
   formatTime: (date: Date | number | string, includeSeconds?: boolean) => string;
   formatDateTime: (
     date: Date | number | string,
-    dateStyle?: 'short' | 'medium' | 'long',
-    timeStyle?: 'short' | 'medium'
+    dateStyle?: "short" | "medium" | "long",
+    timeStyle?: "short" | "medium",
   ) => string;
   formatRelativeTime: (date: Date | number | string) => string;
-  formatNumber: (value: number, style?: 'decimal' | 'percent' | 'compact') => string;
+  formatNumber: (value: number, style?: "decimal" | "percent" | "compact") => string;
   formatCurrency: (value: number, currency?: string) => string;
   formatBytes: (bytes: number, decimals?: number) => string;
   isSupportedLanguage: typeof isSupportedLanguage;
@@ -149,11 +152,11 @@ export function useLocale(): UseLocaleReturn {
    * Update HTML document attributes (lang, dir)
    */
   function updateDocumentAttributes(loc: SupportedLanguage): void {
-    if (typeof document !== 'undefined') {
+    if (typeof document !== "undefined") {
       // Map locale to BCP 47 language tag
-      const langTag = loc === 'zh-Hans' ? 'zh-Hans' : loc;
+      const langTag = loc === "zh-Hans" ? "zh-Hans" : loc;
       document.documentElement.lang = langTag;
-      document.documentElement.dir = isRtlLanguage(loc) ? 'rtl' : 'ltr';
+      document.documentElement.dir = isRtlLanguage(loc) ? "rtl" : "ltr";
     }
   }
 
@@ -175,15 +178,15 @@ export function useLocale(): UseLocaleReturn {
   function getIntlLocale(): string {
     // Map our locale codes to Intl-compatible codes
     const localeMap: Record<SupportedLanguage, string> = {
-      en: 'en-US',
-      es: 'es-ES',
-      ru: 'ru-RU',
-      pl: 'pl-PL',
-      pt: 'pt-BR',
-      ca: 'ca-ES',
-      'zh-Hans': 'zh-CN',
+      en: "en-US",
+      es: "es-ES",
+      ru: "ru-RU",
+      pl: "pl-PL",
+      pt: "pt-BR",
+      ca: "ca-ES",
+      "zh-Hans": "zh-CN",
     };
-    return localeMap[currentLocale.value] || 'en-US';
+    return localeMap[currentLocale.value] || "en-US";
   }
 
   /**
@@ -191,16 +194,16 @@ export function useLocale(): UseLocaleReturn {
    */
   function formatDate(
     date: Date | number | string,
-    style: 'short' | 'medium' | 'long' | 'full' = 'medium'
+    style: "short" | "medium" | "long" | "full" = "medium",
   ): string {
     const dateObj = date instanceof Date ? date : new Date(date);
     const intlLocale = getIntlLocale();
 
     const options: Record<string, Intl.DateTimeFormatOptions> = {
-      short: { dateStyle: 'short' },
-      medium: { dateStyle: 'medium' },
-      long: { dateStyle: 'long' },
-      full: { dateStyle: 'full' },
+      short: { dateStyle: "short" },
+      medium: { dateStyle: "medium" },
+      long: { dateStyle: "long" },
+      full: { dateStyle: "full" },
     };
 
     return new Intl.DateTimeFormat(intlLocale, options[style]).format(dateObj);
@@ -214,7 +217,7 @@ export function useLocale(): UseLocaleReturn {
     const intlLocale = getIntlLocale();
 
     const options: Intl.DateTimeFormatOptions = {
-      timeStyle: includeSeconds ? 'medium' : 'short',
+      timeStyle: includeSeconds ? "medium" : "short",
     };
 
     return new Intl.DateTimeFormat(intlLocale, options).format(dateObj);
@@ -225,8 +228,8 @@ export function useLocale(): UseLocaleReturn {
    */
   function formatDateTime(
     date: Date | number | string,
-    dateStyle: 'short' | 'medium' | 'long' = 'medium',
-    timeStyle: 'short' | 'medium' = 'short'
+    dateStyle: "short" | "medium" | "long" = "medium",
+    timeStyle: "short" | "medium" = "short",
   ): string {
     const dateObj = date instanceof Date ? date : new Date(date);
     const intlLocale = getIntlLocale();
@@ -253,23 +256,23 @@ export function useLocale(): UseLocaleReturn {
     const diffYears = Math.round(diffDays / 365);
 
     const intlLocale = getIntlLocale();
-    const rtf = new Intl.RelativeTimeFormat(intlLocale, { numeric: 'auto' });
+    const rtf = new Intl.RelativeTimeFormat(intlLocale, { numeric: "auto" });
 
     // Choose the most appropriate unit
     if (Math.abs(diffSecs) < 60) {
-      return rtf.format(diffSecs, 'second');
+      return rtf.format(diffSecs, "second");
     } else if (Math.abs(diffMins) < 60) {
-      return rtf.format(diffMins, 'minute');
+      return rtf.format(diffMins, "minute");
     } else if (Math.abs(diffHours) < 24) {
-      return rtf.format(diffHours, 'hour');
+      return rtf.format(diffHours, "hour");
     } else if (Math.abs(diffDays) < 7) {
-      return rtf.format(diffDays, 'day');
+      return rtf.format(diffDays, "day");
     } else if (Math.abs(diffWeeks) < 4) {
-      return rtf.format(diffWeeks, 'week');
+      return rtf.format(diffWeeks, "week");
     } else if (Math.abs(diffMonths) < 12) {
-      return rtf.format(diffMonths, 'month');
+      return rtf.format(diffMonths, "month");
     } else {
-      return rtf.format(diffYears, 'year');
+      return rtf.format(diffYears, "year");
     }
   }
 
@@ -280,13 +283,16 @@ export function useLocale(): UseLocaleReturn {
   /**
    * Format a number according to the current locale
    */
-  function formatNumber(value: number, style: 'decimal' | 'percent' | 'compact' = 'decimal'): string {
+  function formatNumber(
+    value: number,
+    style: "decimal" | "percent" | "compact" = "decimal",
+  ): string {
     const intlLocale = getIntlLocale();
 
     const options: Record<string, Intl.NumberFormatOptions> = {
-      decimal: { style: 'decimal' },
-      percent: { style: 'percent' },
-      compact: { notation: 'compact', compactDisplay: 'short' },
+      decimal: { style: "decimal" },
+      percent: { style: "percent" },
+      compact: { notation: "compact", compactDisplay: "short" },
     };
 
     return new Intl.NumberFormat(intlLocale, options[style]).format(value);
@@ -295,11 +301,11 @@ export function useLocale(): UseLocaleReturn {
   /**
    * Format a currency value according to the current locale
    */
-  function formatCurrency(value: number, currency = 'USD'): string {
+  function formatCurrency(value: number, currency = "USD"): string {
     const intlLocale = getIntlLocale();
 
     return new Intl.NumberFormat(intlLocale, {
-      style: 'currency',
+      style: "currency",
       currency,
     }).format(value);
   }
@@ -308,16 +314,16 @@ export function useLocale(): UseLocaleReturn {
    * Format bytes into human-readable string (e.g., "1.5 MB")
    */
   function formatBytes(bytes: number, _decimals = 2): string {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
 
     const k = 1024;
-    const sizes: readonly string[] = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    const sizes: readonly string[] = ["Bytes", "KB", "MB", "GB", "TB"];
 
     const i = Math.min(Math.floor(Math.log(bytes) / Math.log(k)), sizes.length - 1);
     const value = bytes / Math.pow(k, i);
-    const unit = sizes[i] ?? 'Bytes';
+    const unit = sizes[i] ?? "Bytes";
 
-    return `${formatNumber(value, 'decimal')} ${unit}`;
+    return `${formatNumber(value, "decimal")} ${unit}`;
   }
 
   return {

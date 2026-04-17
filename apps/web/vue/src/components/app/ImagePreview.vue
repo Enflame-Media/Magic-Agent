@@ -18,9 +18,9 @@
  * ```
  */
 
-import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ref, computed, onMounted, onUnmounted } from "vue";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Props {
   /** Image source (URL or data URL) */
@@ -32,8 +32,8 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  alt: 'Artifact image',
-  filename: '',
+  alt: "Artifact image",
+  filename: "",
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -58,7 +58,7 @@ const zoomPercent = computed(() => Math.round(scale.value * 100));
 
 const imageStyle = computed(() => ({
   transform: `translate(${position.value.x}px, ${position.value.y}px) scale(${scale.value})`,
-  cursor: isDragging.value ? 'grabbing' : 'grab',
+  cursor: isDragging.value ? "grabbing" : "grab",
 }));
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -134,13 +134,13 @@ function handleMouseUp() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 onMounted(() => {
-  globalThis.document.addEventListener('mousemove', handleMouseMove);
-  globalThis.document.addEventListener('mouseup', handleMouseUp);
+  globalThis.document.addEventListener("mousemove", handleMouseMove);
+  globalThis.document.addEventListener("mouseup", handleMouseUp);
 });
 
 onUnmounted(() => {
-  globalThis.document.removeEventListener('mousemove', handleMouseMove);
-  globalThis.document.removeEventListener('mouseup', handleMouseUp);
+  globalThis.document.removeEventListener("mousemove", handleMouseMove);
+  globalThis.document.removeEventListener("mouseup", handleMouseUp);
 });
 </script>
 
@@ -190,7 +190,13 @@ onUnmounted(() => {
           </svg>
         </Button>
 
-        <Button variant="ghost" size="sm" class="h-7 w-7 p-0" title="Fit to window" @click="fitToContainer">
+        <Button
+          variant="ghost"
+          size="sm"
+          class="h-7 w-7 p-0"
+          title="Fit to window"
+          @click="fitToContainer"
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             class="h-4 w-4"

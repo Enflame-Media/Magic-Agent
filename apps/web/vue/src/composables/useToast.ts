@@ -41,7 +41,7 @@
  * ```
  */
 
-import { toast as sonnerToast, type ExternalToast } from 'vue-sonner';
+import { toast as sonnerToast, type ExternalToast } from "vue-sonner";
 
 /**
  * Toast action configuration
@@ -97,7 +97,11 @@ export interface ToastInterface {
   /** Show a loading toast */
   loading: (message: string, options?: ToastOptions) => ToastId;
   /** Show a promise-based toast (loading -> success/error) */
-  promise: <T>(promise: Promise<T>, messages: PromiseToastMessages<T>, options?: ToastOptions) => void;
+  promise: <T>(
+    promise: Promise<T>,
+    messages: PromiseToastMessages<T>,
+    options?: ToastOptions,
+  ) => void;
   /** Show a custom toast */
   custom: (message: string, options?: ToastOptions) => ToastId;
   /** Dismiss a toast by ID */
@@ -169,7 +173,11 @@ export function useToast(): { toast: ToastInterface } {
       return sonnerToast.loading(message, createOptions(options));
     },
 
-    promise<T>(promise: Promise<T>, messages: PromiseToastMessages<T>, options?: ToastOptions): void {
+    promise<T>(
+      promise: Promise<T>,
+      messages: PromiseToastMessages<T>,
+      options?: ToastOptions,
+    ): void {
       sonnerToast.promise(promise, {
         loading: messages.loading,
         success: messages.success,

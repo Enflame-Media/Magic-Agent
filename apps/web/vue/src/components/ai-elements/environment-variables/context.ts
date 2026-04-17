@@ -1,34 +1,34 @@
-import type { InjectionKey, Ref } from 'vue'
-import { inject } from 'vue'
+import type { InjectionKey, Ref } from "vue";
+import { inject } from "vue";
 
 export interface EnvironmentVariablesContextValue {
-  showValues: Ref<boolean>
-  setShowValues: (show: boolean) => void
+  showValues: Ref<boolean>;
+  setShowValues: (show: boolean) => void;
 }
 
-export const EnvironmentVariablesKey: InjectionKey<EnvironmentVariablesContextValue>
-  = Symbol('EnvironmentVariables')
+export const EnvironmentVariablesKey: InjectionKey<EnvironmentVariablesContextValue> =
+  Symbol("EnvironmentVariables");
 
 export function useEnvironmentVariablesContext() {
-  const context = inject(EnvironmentVariablesKey)
+  const context = inject(EnvironmentVariablesKey);
   if (!context) {
-    throw new Error('useEnvironmentVariablesContext must be used within <EnvironmentVariables>')
+    throw new Error("useEnvironmentVariablesContext must be used within <EnvironmentVariables>");
   }
-  return context
+  return context;
 }
 
 export interface EnvironmentVariableContextValue {
-  name: string
-  value: string
+  name: string;
+  value: string;
 }
 
-export const EnvironmentVariableKey: InjectionKey<EnvironmentVariableContextValue>
-  = Symbol('EnvironmentVariable')
+export const EnvironmentVariableKey: InjectionKey<EnvironmentVariableContextValue> =
+  Symbol("EnvironmentVariable");
 
 export function useEnvironmentVariableContext() {
-  const context = inject(EnvironmentVariableKey)
+  const context = inject(EnvironmentVariableKey);
   if (!context) {
-    throw new Error('useEnvironmentVariableContext must be used within <EnvironmentVariable>')
+    throw new Error("useEnvironmentVariableContext must be used within <EnvironmentVariable>");
   }
-  return context
+  return context;
 }

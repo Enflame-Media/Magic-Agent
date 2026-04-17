@@ -24,7 +24,7 @@ import type {
   AcpPermissionOptionKind,
   AcpToolCallLocation,
   AcpSessionInfo,
-} from '@magic-agent/protocol';
+} from "@magic-agent/protocol";
 
 /**
  * Accumulated ACP session state for a single session.
@@ -82,7 +82,7 @@ export interface AcpSessionState {
 /**
  * Status of a permission request in the Vue app.
  */
-export type AcpPermissionRequestStatus = 'pending' | 'responded' | 'expired';
+export type AcpPermissionRequestStatus = "pending" | "responded" | "expired";
 
 /**
  * A permission request received from the CLI agent.
@@ -127,7 +127,7 @@ export interface AcpPermissionDecision {
     name: string;
     kind: AcpPermissionOptionKind;
   } | null;
-  outcome: 'selected' | 'expired' | 'cancelled';
+  outcome: "selected" | "expired" | "cancelled";
   decidedAt: number;
 }
 
@@ -136,7 +136,7 @@ export interface AcpPermissionDecision {
 /**
  * Connection status for a registered ACP agent.
  */
-export type AcpAgentStatus = 'connected' | 'available' | 'unavailable' | 'error';
+export type AcpAgentStatus = "connected" | "available" | "unavailable" | "error";
 
 /**
  * A registered ACP agent in the agent registry.
@@ -203,7 +203,7 @@ export interface AcpSessionBrowserCapabilities {
  * Extract session browser capabilities from agent capabilities.
  */
 export function getSessionBrowserCapabilities(
-  capabilities: AcpAgentCapabilities | null
+  capabilities: AcpAgentCapabilities | null,
 ): AcpSessionBrowserCapabilities {
   if (!capabilities) {
     return {
@@ -237,7 +237,7 @@ export interface AcpBrowserSession {
  */
 export function toBrowserSessions(
   sessions: AcpSessionInfo[],
-  activeSessionId: string | null
+  activeSessionId: string | null,
 ): AcpBrowserSession[] {
   return sessions.map((s) => ({
     sessionId: s.sessionId,
@@ -255,9 +255,9 @@ export function toBrowserSessions(
  */
 export function createAcpSessionState(): AcpSessionState {
   return {
-    agentMessage: '',
-    userMessage: '',
-    agentThought: '',
+    agentMessage: "",
+    userMessage: "",
+    agentThought: "",
     toolCalls: {},
     plan: [],
     availableCommands: [],
@@ -276,10 +276,10 @@ export function createAcpSessionState(): AcpSessionState {
  * Returns the text content or empty string for non-text blocks.
  */
 export function extractTextFromContentBlock(content: AcpContentBlock): string {
-  if (content.type === 'text') {
+  if (content.type === "text") {
     return content.text;
   }
-  return '';
+  return "";
 }
 
 // ─── Permission Helpers ─────────────────────────────────────────────────────
@@ -292,7 +292,7 @@ const PERMISSION_HISTORY_MAX = 50;
  */
 export function addPermissionRequest(
   state: AcpSessionState,
-  request: AcpPermissionRequestState
+  request: AcpPermissionRequestState,
 ): AcpSessionState {
   return {
     ...state,
@@ -311,8 +311,8 @@ export function addPermissionRequest(
 export function resolvePermissionRequest(
   state: AcpSessionState,
   requestId: string,
-  outcome: 'selected' | 'expired' | 'cancelled',
-  selectedOptionId: string | null
+  outcome: "selected" | "expired" | "cancelled",
+  selectedOptionId: string | null,
 ): AcpSessionState {
   const request = state.permissionRequests[requestId];
   if (!request) return state;
@@ -350,11 +350,9 @@ export function resolvePermissionRequest(
 /**
  * Get the oldest pending permission request (first in queue).
  */
-export function getNextPendingPermission(
-  state: AcpSessionState
-): AcpPermissionRequestState | null {
+export function getNextPendingPermission(state: AcpSessionState): AcpPermissionRequestState | null {
   const pending = Object.values(state.permissionRequests)
-    .filter((r) => r.status === 'pending')
+    .filter((r) => r.status === "pending")
     .sort((a, b) => a.receivedAt - b.receivedAt);
   return pending[0] ?? null;
 }
@@ -367,12 +365,12 @@ export function getNextPendingPermission(
  */
 export function applyAcpSessionUpdate(
   state: AcpSessionState,
-  update: AcpSessionUpdate
+  update: AcpSessionUpdate,
 ): AcpSessionState {
   const now = Date.now();
 
   switch (update.sessionUpdate) {
-    case 'agent_message_chunk': {
+    case "agent_message_chunk": {
       const text = extractTextFromContentBlock(update.content);
       return {
         ...state,
@@ -381,7 +379,7 @@ export function applyAcpSessionUpdate(
       };
     }
 
-    case 'user_message_chunk': {
+    case "user_message_chunk": {
       const text = extractTextFromContentBlock(update.content);
       return {
         ...state,
@@ -390,7 +388,7 @@ export function applyAcpSessionUpdate(
       };
     }
 
-    case 'agent_thought_chunk': {
+    case "agent_thought_chunk": {
       const text = extractTextFromContentBlock(update.content);
       return {
         ...state,
@@ -399,7 +397,7 @@ export function applyAcpSessionUpdate(
       };
     }
 
-    case 'tool_call': {
+    case "tool_call": {
       return {
         ...state,
         toolCalls: {
@@ -410,7 +408,7 @@ export function applyAcpSessionUpdate(
       };
     }
 
-    case 'tool_call_update': {
+    case "tool_call_update": {
       const existing = state.toolCalls[update.toolCallId];
       if (!existing) {
         // Update for unknown tool call — create a minimal entry
@@ -421,7 +419,7 @@ export function applyAcpSessionUpdate(
             [update.toolCallId]: {
               _meta: update._meta,
               toolCallId: update.toolCallId,
-              title: update.title ?? 'Unknown Tool',
+              title: update.title ?? "Unknown Tool",
               kind: update.kind ?? undefined,
               status: update.status ?? undefined,
               content: update.content ?? undefined,
@@ -438,7 +436,8 @@ export function applyAcpSessionUpdate(
       if (update.kind !== undefined && update.kind !== null) merged.kind = update.kind;
       if (update.status !== undefined && update.status !== null) merged.status = update.status;
       if (update.content !== undefined && update.content !== null) merged.content = update.content;
-      if (update.locations !== undefined && update.locations !== null) merged.locations = update.locations;
+      if (update.locations !== undefined && update.locations !== null)
+        merged.locations = update.locations;
 
       return {
         ...state,
@@ -450,7 +449,7 @@ export function applyAcpSessionUpdate(
       };
     }
 
-    case 'plan': {
+    case "plan": {
       return {
         ...state,
         plan: update.entries,
@@ -458,7 +457,7 @@ export function applyAcpSessionUpdate(
       };
     }
 
-    case 'available_commands_update': {
+    case "available_commands_update": {
       return {
         ...state,
         availableCommands: update.availableCommands,
@@ -466,7 +465,7 @@ export function applyAcpSessionUpdate(
       };
     }
 
-    case 'current_mode_update': {
+    case "current_mode_update": {
       return {
         ...state,
         currentModeId: update.currentModeId,
@@ -474,7 +473,7 @@ export function applyAcpSessionUpdate(
       };
     }
 
-    case 'config_option_update': {
+    case "config_option_update": {
       return {
         ...state,
         configOptions: update.configOptions,
@@ -482,7 +481,7 @@ export function applyAcpSessionUpdate(
       };
     }
 
-    case 'session_info_update': {
+    case "session_info_update": {
       return {
         ...state,
         sessionTitle: update.title ?? state.sessionTitle,
@@ -490,7 +489,7 @@ export function applyAcpSessionUpdate(
       };
     }
 
-    case 'usage_update': {
+    case "usage_update": {
       return {
         ...state,
         usage: {

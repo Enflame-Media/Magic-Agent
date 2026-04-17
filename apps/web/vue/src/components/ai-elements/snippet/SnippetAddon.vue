@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { InputGroupAddon } from '@/components/ui/input-group'
+import { InputGroupAddon } from "@/components/ui/input-group";
 
-type InputGroupAddonProps = InstanceType<typeof InputGroupAddon>['$props']
+type InputGroupAddonProps = InstanceType<typeof InputGroupAddon>["$props"];
 
 interface Props extends /* @vue-ignore */ InputGroupAddonProps {}
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 </script>
 
 <template>

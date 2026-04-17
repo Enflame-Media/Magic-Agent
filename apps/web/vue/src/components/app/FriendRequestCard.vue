@@ -8,12 +8,12 @@
  * @see HAP-717 - Implement friends UI for happy-vue web app
  */
 
-import { computed, ref } from 'vue';
-import type { UserProfile } from '@magic-agent/protocol';
-import { getDisplayName } from '@/composables/useFriends';
-import { Card, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
+import { computed, ref } from "vue";
+import type { UserProfile } from "@magic-agent/protocol";
+import { getDisplayName } from "@/composables/useFriends";
+import { Card, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Props
@@ -48,7 +48,7 @@ const emit = defineEmits<{
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Track which action was triggered for spinner display */
-const activeAction = ref<'accept' | 'reject' | null>(null);
+const activeAction = ref<"accept" | "reject" | null>(null);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Computed
@@ -59,30 +59,30 @@ const displayName = computed(() => getDisplayName(props.user));
 const avatarUrl = computed(() => props.user.avatar?.url ?? props.user.avatar?.path);
 
 const initials = computed(() => {
-  const first = props.user.firstName?.[0]?.toUpperCase() ?? '';
-  const last = props.user.lastName?.[0]?.toUpperCase() ?? '';
-  return (first + last) || (props.user.username[0]?.toUpperCase() ?? '?');
+  const first = props.user.firstName?.[0]?.toUpperCase() ?? "";
+  const last = props.user.lastName?.[0]?.toUpperCase() ?? "";
+  return first + last || (props.user.username[0]?.toUpperCase() ?? "?");
 });
 
-const isAccepting = computed(() => props.isProcessing && activeAction.value === 'accept');
-const isRejecting = computed(() => props.isProcessing && activeAction.value === 'reject');
+const isAccepting = computed(() => props.isProcessing && activeAction.value === "accept");
+const isRejecting = computed(() => props.isProcessing && activeAction.value === "reject");
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Handlers
 // ─────────────────────────────────────────────────────────────────────────────
 
 function handleAccept(): void {
-  activeAction.value = 'accept';
-  emit('accept', props.user.id);
+  activeAction.value = "accept";
+  emit("accept", props.user.id);
 }
 
 function handleReject(): void {
-  activeAction.value = 'reject';
-  emit('reject', props.user.id);
+  activeAction.value = "reject";
+  emit("reject", props.user.id);
 }
 
 function handleClick(): void {
-  emit('click');
+  emit("click");
 }
 </script>
 
@@ -100,9 +100,7 @@ function handleClick(): void {
         <p class="font-medium text-sm truncate">
           {{ displayName }}
         </p>
-        <p class="text-xs text-muted-foreground truncate">
-          @{{ user.username }}
-        </p>
+        <p class="text-xs text-muted-foreground truncate">@{{ user.username }}</p>
       </div>
 
       <!-- Action buttons -->
@@ -116,12 +114,7 @@ function handleClick(): void {
           @click.stop="handleReject"
         >
           <span v-if="isRejecting" class="animate-spin">
-            <svg
-              class="h-4 w-4"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
+            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle
                 class="opacity-25"
                 cx="12"
@@ -160,12 +153,7 @@ function handleClick(): void {
           @click.stop="handleAccept"
         >
           <span v-if="isAccepting" class="animate-spin">
-            <svg
-              class="h-4 w-4"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
+            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle
                 class="opacity-25"
                 cx="12"

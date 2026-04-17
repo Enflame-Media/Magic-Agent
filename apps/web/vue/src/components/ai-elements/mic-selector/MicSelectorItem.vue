@@ -1,26 +1,26 @@
 <script setup lang="ts">
-import { CommandItem } from '@/components/ui/command'
-import { computed } from 'vue'
-import { useMicSelector } from './context'
+import { CommandItem } from "@/components/ui/command";
+import { computed } from "vue";
+import { useMicSelector } from "./context";
 
-type CommandItemProps = InstanceType<typeof CommandItem>['$props']
+type CommandItemProps = InstanceType<typeof CommandItem>["$props"];
 
 interface Props extends /* @vue-ignore */ CommandItemProps {
-  value: string
+  value: string;
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
 const forwardedProps = computed(() => {
-  const { value, ...rest } = props
-  return rest
-})
+  const { value, ...rest } = props;
+  return rest;
+});
 
-const { setValue, setOpen } = useMicSelector('MicSelectorItem')
+const { setValue, setOpen } = useMicSelector("MicSelectorItem");
 
 function handleSelect() {
-  setValue(props.value)
-  setOpen(false)
+  setValue(props.value);
+  setOpen(false);
 }
 </script>
 

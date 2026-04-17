@@ -1,26 +1,26 @@
 <script setup lang="ts">
-import type { AcceptableValue } from 'reka-ui'
-import type { HTMLAttributes } from 'vue'
-import { Command } from '@/components/ui/command'
-import { PopoverContent } from '@/components/ui/popover'
-import { cn } from '@/lib/utils'
-import { useMicSelector } from './context'
+import type { AcceptableValue } from "reka-ui";
+import type { HTMLAttributes } from "vue";
+import { Command } from "@/components/ui/command";
+import { PopoverContent } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { useMicSelector } from "./context";
 
-type PopoverContentProps = InstanceType<typeof PopoverContent>['$props']
-type CommandProps = InstanceType<typeof Command>['$props']
+type PopoverContentProps = InstanceType<typeof PopoverContent>["$props"];
+type CommandProps = InstanceType<typeof Command>["$props"];
 
 interface Props extends /* @vue-ignore */ CommandProps {
-  class?: HTMLAttributes['class']
-  popoverOptions?: PopoverContentProps
+  class?: HTMLAttributes["class"];
+  popoverOptions?: PopoverContentProps;
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
-const { width, value, setValue } = useMicSelector('MicSelectorContent')
+const { width, value, setValue } = useMicSelector("MicSelectorContent");
 
 function handleValueChange(newValue: AcceptableValue) {
-  if (typeof newValue === 'string') {
-    setValue(newValue)
+  if (typeof newValue === "string") {
+    setValue(newValue);
   }
 }
 </script>
@@ -31,11 +31,7 @@ function handleValueChange(newValue: AcceptableValue) {
     :style="{ width: `${width}px` }"
     v-bind="props.popoverOptions"
   >
-    <Command
-      :model-value="value"
-      v-bind="$attrs"
-      @update:model-value="handleValueChange"
-    >
+    <Command :model-value="value" v-bind="$attrs" @update:model-value="handleValueChange">
       <slot />
     </Command>
   </PopoverContent>

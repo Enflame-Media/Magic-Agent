@@ -14,12 +14,12 @@ import {
   IconSearch,
   IconSettings,
   IconUsers,
-} from "@tabler/icons-vue"
+} from "@tabler/icons-vue";
 
-import NavDocuments from '@/components/NavDocuments.vue'
-import NavMain from '@/components/NavMain.vue'
-import NavSecondary from '@/components/NavSecondary.vue'
-import NavUser from '@/components/NavUser.vue'
+import NavDocuments from "@/components/NavDocuments.vue";
+import NavMain from "@/components/NavMain.vue";
+import NavSecondary from "@/components/NavSecondary.vue";
+import NavUser from "@/components/NavUser.vue";
 import {
   Sidebar,
   SidebarContent,
@@ -28,7 +28,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from '@/components/ui/sidebar'
+} from "@/components/ui/sidebar";
 
 const data = {
   user: {
@@ -145,7 +145,7 @@ const data = {
       icon: IconFileDescription,
     },
   ],
-}
+};
 </script>
 
 <template>
@@ -153,10 +153,7 @@ const data = {
     <SidebarHeader>
       <SidebarMenu>
         <SidebarMenuItem>
-          <SidebarMenuButton
-            as-child
-            class="data-[slot=sidebar-menu-button]:!p-1.5"
-          >
+          <SidebarMenuButton as-child class="data-[slot=sidebar-menu-button]:!p-1.5">
             <a href="#">
               <IconInnerShadowTop class="!size-5" />
               <span class="text-base font-semibold">Acme Inc.</span>

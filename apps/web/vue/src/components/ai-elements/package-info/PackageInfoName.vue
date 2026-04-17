@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import type { HTMLAttributes } from 'vue'
-import { cn } from '@/lib/utils'
-import { PackageIcon } from 'lucide-vue-next'
-import { usePackageInfoContext } from './context'
+import type { HTMLAttributes } from "vue";
+import { cn } from "@/lib/utils";
+import { PackageIcon } from "lucide-vue-next";
+import { usePackageInfoContext } from "./context";
 
 interface Props extends /* @vue-ignore */ HTMLAttributes {
-  class?: HTMLAttributes['class']
+  class?: HTMLAttributes["class"];
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
-const { name } = usePackageInfoContext()
+const { name } = usePackageInfoContext();
 </script>
 
 <template>

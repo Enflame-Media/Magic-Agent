@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { CodeBlock } from '@/components/app';
-import ToolSectionView from '../ToolSectionView.vue';
-import type { ToolViewProps } from './types';
+import { computed } from "vue";
+import { CodeBlock } from "@/components/app";
+import ToolSectionView from "../ToolSectionView.vue";
+import type { ToolViewProps } from "./types";
 
 const props = defineProps<ToolViewProps>();
 
 const formattedInput = computed(() => JSON.stringify(props.tool.input, null, 2));
 const formattedResult = computed(() => {
   if (props.tool.result === undefined || props.tool.result === null) {
-    return '';
+    return "";
   }
-  if (typeof props.tool.result === 'string') {
+  if (typeof props.tool.result === "string") {
     return props.tool.result;
   }
   return JSON.stringify(props.tool.result, null, 2);

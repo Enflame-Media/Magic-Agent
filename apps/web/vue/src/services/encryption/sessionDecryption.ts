@@ -1,10 +1,15 @@
-import { decodeBase64, encodeBase64 } from '@/services/base64';
-import { secureStorage } from '@/services/storage';
-import { encryptionCache } from '@/services/encryption/EncryptionCache';
-import { EncryptionManager } from '@/services/encryption/encryptionManager';
-import { AES256Encryption, SecretBoxEncryption, type Decryptor, type Encryptor } from '@/services/encryption/encryptors';
-import type { Message } from '@/stores/messages';
-import type { Session } from '@/stores/sessions';
+import { decodeBase64, encodeBase64 } from "@/services/base64";
+import { secureStorage } from "@/services/storage";
+import { encryptionCache } from "@/services/encryption/EncryptionCache";
+import { EncryptionManager } from "@/services/encryption/encryptionManager";
+import {
+  AES256Encryption,
+  SecretBoxEncryption,
+  type Decryptor,
+  type Encryptor,
+} from "@/services/encryption/encryptors";
+import type { Message } from "@/stores/messages";
+import type { Session } from "@/stores/sessions";
 
 let encryptionManagerPromise: Promise<EncryptionManager | null> | null = null;
 let masterSecretPromise: Promise<Uint8Array | null> | null = null;
@@ -38,7 +43,7 @@ async function getEncryptionManager(): Promise<EncryptionManager | null> {
 }
 
 async function getSessionCrypto(session: Session): Promise<(Encryptor & Decryptor) | null> {
-  const key = `${session.id}:${session.dataEncryptionKey ?? 'legacy'}`;
+  const key = `${session.id}:${session.dataEncryptionKey ?? "legacy"}`;
   let existing = sessionCryptos.get(key);
   if (!existing) {
     existing = (async () => {
@@ -52,7 +57,9 @@ async function getSessionCrypto(session: Session): Promise<(Encryptor & Decrypto
         if (!encryptionManager) {
           return null;
         }
-        const decryptedKey = await encryptionManager.decryptEncryptionKey(session.dataEncryptionKey);
+        const decryptedKey = await encryptionManager.decryptEncryptionKey(
+          session.dataEncryptionKey,
+        );
         if (!decryptedKey) {
           return null;
         }
@@ -67,9 +74,7 @@ async function getSessionCrypto(session: Session): Promise<(Encryptor & Decrypto
   return existing;
 }
 
-export async function decryptSessionMetadata<T>(
-  session: Session
-): Promise<T | null> {
+export async function decryptSessionMetadata<T>(session: Session): Promise<T | null> {
   if (!session.metadata) {
     return null;
   }
@@ -88,7 +93,7 @@ export async function decryptSessionMetadata<T>(
     const encryptedData = decodeBase64(session.metadata);
     const decrypted = await decryptor.decrypt([encryptedData]);
     const payload = decrypted[0];
-    if (!payload || typeof payload !== 'object') {
+    if (!payload || typeof payload !== "object") {
       return null;
     }
 
@@ -101,14 +106,14 @@ export async function decryptSessionMetadata<T>(
 
 export async function decryptMessageContent(
   message: Message,
-  session: Session
+  session: Session,
 ): Promise<string | null> {
   const cached = encryptionCache.getCachedMessage(message.id);
   if (cached !== null) {
     return cached;
   }
 
-  if (message.content.t !== 'encrypted') {
+  if (message.content.t !== "encrypted") {
     return null;
   }
 
@@ -125,7 +130,7 @@ export async function decryptMessageContent(
       return null;
     }
 
-    const content = typeof payload === 'string' ? payload : JSON.stringify(payload);
+    const content = typeof payload === "string" ? payload : JSON.stringify(payload);
     encryptionCache.setCachedMessage(message.id, content);
     return content;
   } catch {
@@ -135,7 +140,7 @@ export async function decryptMessageContent(
 
 export async function encryptSessionMessage(
   session: Session,
-  payload: unknown
+  payload: unknown,
 ): Promise<string | null> {
   try {
     const crypto = await getSessionCrypto(session);
@@ -168,24 +173,25 @@ export interface AgentStateRequest {
 export interface AgentState {
   controlledByUser?: boolean;
   requests?: Record<string, AgentStateRequest>;
-  completedRequests?: Record<string, AgentStateRequest & {
-    permissions?: {
-      date?: number;
-      result?: 'approved' | 'denied' | 'canceled';
-      mode?: string;
-      reason?: string;
-      allowedTools?: string[];
-      decision?: 'approved' | 'approved_for_session' | 'denied' | 'abort';
-    };
-  }>;
+  completedRequests?: Record<
+    string,
+    AgentStateRequest & {
+      permissions?: {
+        date?: number;
+        result?: "approved" | "denied" | "canceled";
+        mode?: string;
+        reason?: string;
+        allowedTools?: string[];
+        decision?: "approved" | "approved_for_session" | "denied" | "abort";
+      };
+    }
+  >;
 }
 
 /**
  * Decrypt and parse session agent state
  */
-export async function decryptAgentState(
-  session: Session
-): Promise<AgentState | null> {
+export async function decryptAgentState(session: Session): Promise<AgentState | null> {
   if (!session.agentState) {
     return null;
   }
@@ -199,7 +205,7 @@ export async function decryptAgentState(
     const encryptedData = decodeBase64(session.agentState);
     const decrypted = await decryptor.decrypt([encryptedData]);
     const payload = decrypted[0];
-    if (!payload || typeof payload !== 'object') {
+    if (!payload || typeof payload !== "object") {
       return null;
     }
     return payload as AgentState;

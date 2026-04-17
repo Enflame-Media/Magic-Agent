@@ -7,9 +7,9 @@
  * @see HAP-918 - Desktop Enhancements - Breadcrumb Navigation
  */
 
-import 'vue-router';
+import "vue-router";
 
-declare module 'vue-router' {
+declare module "vue-router" {
   interface RouteMeta {
     /** Route requires authentication */
     requiresAuth?: boolean;

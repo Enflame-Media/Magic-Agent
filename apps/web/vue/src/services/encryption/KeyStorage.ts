@@ -11,11 +11,11 @@
  * with the rest of the encryption system.
  */
 
-import { encodeBase64, decodeBase64 } from '../base64';
+import { encodeBase64, decodeBase64 } from "../base64";
 
-const DB_NAME = 'happy-encryption';
+const DB_NAME = "happy-encryption";
 const DB_VERSION = 1;
-const KEYS_STORE = 'keys';
+const KEYS_STORE = "keys";
 
 /**
  * Stored keypair format
@@ -80,7 +80,7 @@ export const keyStorage = {
     };
 
     return new Promise((resolve, reject) => {
-      const transaction = db.transaction(KEYS_STORE, 'readwrite');
+      const transaction = db.transaction(KEYS_STORE, "readwrite");
       const store = transaction.objectStore(KEYS_STORE);
       const request = store.put(stored, keyId);
 
@@ -108,7 +108,7 @@ export const keyStorage = {
     const db = await openDatabase();
 
     return new Promise((resolve, reject) => {
-      const transaction = db.transaction(KEYS_STORE, 'readonly');
+      const transaction = db.transaction(KEYS_STORE, "readonly");
       const store = transaction.objectStore(KEYS_STORE);
       const request = store.get(keyId);
 
@@ -145,7 +145,7 @@ export const keyStorage = {
     const db = await openDatabase();
 
     return new Promise((resolve, reject) => {
-      const transaction = db.transaction(KEYS_STORE, 'readwrite');
+      const transaction = db.transaction(KEYS_STORE, "readwrite");
       const store = transaction.objectStore(KEYS_STORE);
       const request = store.delete(keyId);
 
@@ -172,7 +172,7 @@ export const keyStorage = {
     const db = await openDatabase();
 
     return new Promise((resolve, reject) => {
-      const transaction = db.transaction(KEYS_STORE, 'readonly');
+      const transaction = db.transaction(KEYS_STORE, "readonly");
       const store = transaction.objectStore(KEYS_STORE);
       const request = store.getAllKeys();
 
@@ -199,7 +199,7 @@ export const keyStorage = {
     const db = await openDatabase();
 
     return new Promise((resolve, reject) => {
-      const transaction = db.transaction(KEYS_STORE, 'readwrite');
+      const transaction = db.transaction(KEYS_STORE, "readwrite");
       const store = transaction.objectStore(KEYS_STORE);
       const request = store.clear();
 
@@ -221,6 +221,6 @@ export const keyStorage = {
    * Check if IndexedDB is available
    */
   isAvailable(): boolean {
-    return typeof indexedDB !== 'undefined';
+    return typeof indexedDB !== "undefined";
   },
 };

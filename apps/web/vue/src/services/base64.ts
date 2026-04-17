@@ -12,18 +12,18 @@
  */
 export function decodeBase64(
   base64: string,
-  encoding: 'base64' | 'base64url' = 'base64'
+  encoding: "base64" | "base64url" = "base64",
 ): Uint8Array {
   let normalizedBase64 = base64;
 
-  if (encoding === 'base64url') {
+  if (encoding === "base64url") {
     // Convert base64url to standard base64
-    normalizedBase64 = base64.replace(/-/g, '+').replace(/_/g, '/');
+    normalizedBase64 = base64.replace(/-/g, "+").replace(/_/g, "/");
 
     // Add padding if necessary
     const padding = normalizedBase64.length % 4;
     if (padding) {
-      normalizedBase64 += '='.repeat(4 - padding);
+      normalizedBase64 += "=".repeat(4 - padding);
     }
   }
 
@@ -45,14 +45,14 @@ export function decodeBase64(
  */
 export function encodeBase64(
   buffer: Uint8Array,
-  encoding: 'base64' | 'base64url' = 'base64'
+  encoding: "base64" | "base64url" = "base64",
 ): string {
   const binaryString = String.fromCharCode.apply(null, Array.from(buffer));
   const base64 = btoa(binaryString);
 
-  if (encoding === 'base64url') {
+  if (encoding === "base64url") {
     // Convert to URL-safe base64
-    return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
   }
 
   return base64;

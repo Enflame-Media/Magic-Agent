@@ -26,9 +26,9 @@
  * ```
  */
 
-import { useAuthStore } from '@/stores/auth';
-import { ELEVENLABS_CONFIG } from '@/services/voice/config';
-import { getApiBaseUrl } from './apiBase';
+import { useAuthStore } from "@/stores/auth";
+import { ELEVENLABS_CONFIG } from "@/services/voice/config";
+import { getApiBaseUrl } from "./apiBase";
 
 /**
  * Voice token response from server
@@ -91,14 +91,14 @@ function getServerUrl(): string {
  * @returns Voice token response
  */
 export async function fetchVoiceToken(
-  options: FetchVoiceTokenOptions
+  options: FetchVoiceTokenOptions,
 ): Promise<VoiceTokenResponse> {
   const authStore = useAuthStore();
 
   if (!authStore.isAuthenticated || !authStore.token) {
     return {
       allowed: false,
-      error: 'Not authenticated',
+      error: "Not authenticated",
     };
   }
 
@@ -107,10 +107,10 @@ export async function fetchVoiceToken(
 
   try {
     const response = await fetch(`${serverUrl}/v1/voice/token`, {
-      method: 'POST',
+      method: "POST",
       headers: {
         Authorization: `Bearer ${authStore.token}`,
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         agentId,
@@ -124,14 +124,14 @@ export async function fetchVoiceToken(
         const errorData = (await response.json()) as VoiceTokenResponse;
         return {
           allowed: false,
-          error: errorData.error ?? 'Voice token request failed',
+          error: errorData.error ?? "Voice token request failed",
         };
       }
 
       if (response.status === 401) {
         return {
           allowed: false,
-          error: 'Authentication expired',
+          error: "Authentication expired",
         };
       }
 
@@ -144,10 +144,10 @@ export async function fetchVoiceToken(
     const data = (await response.json()) as VoiceTokenResponse;
     return data;
   } catch (error) {
-    console.error('[apiVoice] Failed to fetch voice token:', error);
+    console.error("[apiVoice] Failed to fetch voice token:", error);
     return {
       allowed: false,
-      error: error instanceof Error ? error.message : 'Network error',
+      error: error instanceof Error ? error.message : "Network error",
     };
   }
 }
@@ -163,7 +163,7 @@ export async function fetchVoiceToken(
  * @returns Voice access response with allowed status and optional reason
  */
 export async function checkVoiceAccess(
-  options?: CheckVoiceAccessOptions
+  options?: CheckVoiceAccessOptions,
 ): Promise<VoiceAccessResponse> {
   // In development, always allow
   if (import.meta.env.DEV) {
@@ -175,7 +175,7 @@ export async function checkVoiceAccess(
   if (!authStore.isAuthenticated || !authStore.token) {
     return {
       allowed: false,
-      reason: 'not_authenticated',
+      reason: "not_authenticated",
     };
   }
 
@@ -184,14 +184,14 @@ export async function checkVoiceAccess(
   // Build query string for optional parameters
   const params = new URLSearchParams();
   if (options?.revenueCatPublicKey) {
-    params.set('revenueCatPublicKey', options.revenueCatPublicKey);
+    params.set("revenueCatPublicKey", options.revenueCatPublicKey);
   }
   const queryString = params.toString();
-  const url = `${serverUrl}/v1/voice/access${queryString ? `?${queryString}` : ''}`;
+  const url = `${serverUrl}/v1/voice/access${queryString ? `?${queryString}` : ""}`;
 
   try {
     const response = await fetch(url, {
-      method: 'GET',
+      method: "GET",
       headers: {
         Authorization: `Bearer ${authStore.token}`,
       },
@@ -201,7 +201,7 @@ export async function checkVoiceAccess(
       if (response.status === 401) {
         return {
           allowed: false,
-          reason: 'authentication_expired',
+          reason: "authentication_expired",
         };
       }
 
@@ -214,10 +214,10 @@ export async function checkVoiceAccess(
     const data = (await response.json()) as VoiceAccessResponse;
     return data;
   } catch (error) {
-    console.error('[apiVoice] Failed to check voice access:', error);
+    console.error("[apiVoice] Failed to check voice access:", error);
     return {
       allowed: false,
-      reason: 'network_error',
+      reason: "network_error",
     };
   }
 }

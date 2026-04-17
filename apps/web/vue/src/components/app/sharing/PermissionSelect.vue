@@ -8,17 +8,17 @@
  * @see HAP-769 - Implement Share Session UI for happy-vue web app
  */
 
-import { computed } from 'vue';
-import { useI18n } from 'vue-i18n';
-import { Eye, MessageSquare } from 'lucide-vue-next';
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+import { Eye, MessageSquare } from "lucide-vue-next";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import type { SessionSharePermission } from '@magic-agent/protocol';
+} from "@/components/ui/select";
+import type { SessionSharePermission } from "@magic-agent/protocol";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Props & Emits
@@ -30,16 +30,16 @@ interface Props {
   /** Whether the select is disabled */
   disabled?: boolean;
   /** Size variant */
-  size?: 'sm' | 'md';
+  size?: "sm" | "md";
 }
 
 const props = withDefaults(defineProps<Props>(), {
   disabled: false,
-  size: 'md',
+  size: "md",
 });
 
 const emit = defineEmits<{
-  'update:modelValue': [value: SessionSharePermission];
+  "update:modelValue": [value: SessionSharePermission];
 }>();
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -53,7 +53,7 @@ const { t } = useI18n();
 // ─────────────────────────────────────────────────────────────────────────────
 
 const triggerClass = computed(() => {
-  return props.size === 'sm' ? 'h-8 text-xs' : 'h-9 text-sm';
+  return props.size === "sm" ? "h-8 text-xs" : "h-9 text-sm";
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -61,18 +61,14 @@ const triggerClass = computed(() => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function handleValueChange(value: string | number | bigint | Record<string, unknown> | null): void {
-  if (typeof value === 'string') {
-    emit('update:modelValue', value as SessionSharePermission);
+  if (typeof value === "string") {
+    emit("update:modelValue", value as SessionSharePermission);
   }
 }
 </script>
 
 <template>
-  <Select
-    :model-value="modelValue"
-    :disabled="disabled"
-    @update:model-value="handleValueChange"
-  >
+  <Select :model-value="modelValue" :disabled="disabled" @update:model-value="handleValueChange">
     <SelectTrigger :class="triggerClass">
       <SelectValue :placeholder="t('sharing.permission.placeholder')" />
     </SelectTrigger>
@@ -80,13 +76,13 @@ function handleValueChange(value: string | number | bigint | Record<string, unkn
       <SelectItem value="view_only">
         <div class="flex items-center gap-2">
           <Eye class="size-4 text-muted-foreground" />
-          <span>{{ t('sharing.permission.viewOnly') }}</span>
+          <span>{{ t("sharing.permission.viewOnly") }}</span>
         </div>
       </SelectItem>
       <SelectItem value="view_and_chat">
         <div class="flex items-center gap-2">
           <MessageSquare class="size-4 text-muted-foreground" />
-          <span>{{ t('sharing.permission.viewAndChat') }}</span>
+          <span>{{ t("sharing.permission.viewAndChat") }}</span>
         </div>
       </SelectItem>
     </SelectContent>

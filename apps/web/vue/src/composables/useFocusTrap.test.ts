@@ -15,13 +15,13 @@
  * @see WCAG 2.4.3 - Focus Order
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vite-plus/test';
-import { ref, nextTick } from 'vue';
-import { useFocusTrap, getTabbableElements, getTabbableEdges } from './useFocusTrap';
+import { describe, it, expect, beforeEach, afterEach, vi } from "vite-plus/test";
+import { ref, nextTick } from "vue";
+import { useFocusTrap, getTabbableElements, getTabbableEdges } from "./useFocusTrap";
 
 // Mock onUnmounted since we're not in a component context
-vi.mock('vue', async () => {
-  const actual = await vi.importActual<typeof import('vue')>('vue');
+vi.mock("vue", async () => {
+  const actual = await vi.importActual<typeof import("vue")>("vue");
   return {
     ...actual,
     onUnmounted: vi.fn((fn: () => void) => {
@@ -36,22 +36,22 @@ vi.mock('vue', async () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function createDialogContainer(): HTMLElement {
-  const container = document.createElement('div');
-  container.setAttribute('role', 'dialog');
-  container.setAttribute('aria-modal', 'true');
+  const container = document.createElement("div");
+  container.setAttribute("role", "dialog");
+  container.setAttribute("aria-modal", "true");
 
-  const button1 = document.createElement('button');
-  button1.textContent = 'First Button';
-  button1.setAttribute('data-testid', 'first');
+  const button1 = document.createElement("button");
+  button1.textContent = "First Button";
+  button1.setAttribute("data-testid", "first");
 
-  const input = document.createElement('input');
-  input.type = 'text';
-  input.placeholder = 'Middle Input';
-  input.setAttribute('data-testid', 'middle');
+  const input = document.createElement("input");
+  input.type = "text";
+  input.placeholder = "Middle Input";
+  input.setAttribute("data-testid", "middle");
 
-  const button2 = document.createElement('button');
-  button2.textContent = 'Last Button';
-  button2.setAttribute('data-testid', 'last');
+  const button2 = document.createElement("button");
+  button2.textContent = "Last Button";
+  button2.setAttribute("data-testid", "last");
 
   container.appendChild(button1);
   container.appendChild(input);
@@ -62,12 +62,12 @@ function createDialogContainer(): HTMLElement {
 }
 
 function createEmptyContainer(): HTMLElement {
-  const container = document.createElement('div');
-  container.setAttribute('role', 'dialog');
-  container.setAttribute('aria-modal', 'true');
+  const container = document.createElement("div");
+  container.setAttribute("role", "dialog");
+  container.setAttribute("aria-modal", "true");
 
-  const span = document.createElement('span');
-  span.textContent = 'No focusable elements here';
+  const span = document.createElement("span");
+  span.textContent = "No focusable elements here";
   container.appendChild(span);
 
   document.body.appendChild(container);
@@ -75,13 +75,13 @@ function createEmptyContainer(): HTMLElement {
 }
 
 function createSingleFocusableContainer(): HTMLElement {
-  const container = document.createElement('div');
-  container.setAttribute('role', 'dialog');
-  container.setAttribute('aria-modal', 'true');
+  const container = document.createElement("div");
+  container.setAttribute("role", "dialog");
+  container.setAttribute("aria-modal", "true");
 
-  const button = document.createElement('button');
-  button.textContent = 'Only Button';
-  button.setAttribute('data-testid', 'only');
+  const button = document.createElement("button");
+  button.textContent = "Only Button";
+  button.setAttribute("data-testid", "only");
   container.appendChild(button);
 
   document.body.appendChild(container);
@@ -89,8 +89,8 @@ function createSingleFocusableContainer(): HTMLElement {
 }
 
 function createTabEvent(shiftKey = false): KeyboardEvent {
-  return new KeyboardEvent('keydown', {
-    key: 'Tab',
+  return new KeyboardEvent("keydown", {
+    key: "Tab",
     shiftKey,
     bubbles: true,
     cancelable: true,
@@ -98,42 +98,42 @@ function createTabEvent(shiftKey = false): KeyboardEvent {
 }
 
 function createContainerWithMixedElements(): HTMLElement {
-  const container = document.createElement('div');
-  container.setAttribute('role', 'dialog');
-  container.setAttribute('aria-modal', 'true');
+  const container = document.createElement("div");
+  container.setAttribute("role", "dialog");
+  container.setAttribute("aria-modal", "true");
 
-  const enabledButton = document.createElement('button');
-  enabledButton.textContent = 'Enabled';
+  const enabledButton = document.createElement("button");
+  enabledButton.textContent = "Enabled";
 
-  const disabledButton = document.createElement('button');
-  disabledButton.textContent = 'Disabled';
+  const disabledButton = document.createElement("button");
+  disabledButton.textContent = "Disabled";
   disabledButton.disabled = true;
 
-  const disabledInput = document.createElement('input');
-  disabledInput.type = 'text';
+  const disabledInput = document.createElement("input");
+  disabledInput.type = "text";
   disabledInput.disabled = true;
 
-  const hiddenInput = document.createElement('input');
-  hiddenInput.type = 'hidden';
+  const hiddenInput = document.createElement("input");
+  hiddenInput.type = "hidden";
 
-  const textarea = document.createElement('textarea');
+  const textarea = document.createElement("textarea");
 
-  const select = document.createElement('select');
-  const option = document.createElement('option');
-  option.textContent = 'Option';
+  const select = document.createElement("select");
+  const option = document.createElement("option");
+  option.textContent = "Option";
   select.appendChild(option);
 
-  const link = document.createElement('a');
-  link.href = '#';
-  link.textContent = 'Link';
+  const link = document.createElement("a");
+  link.href = "#";
+  link.textContent = "Link";
 
-  const nonTabbableDiv = document.createElement('div');
-  nonTabbableDiv.setAttribute('tabindex', '-1');
-  nonTabbableDiv.textContent = 'Not tabbable';
+  const nonTabbableDiv = document.createElement("div");
+  nonTabbableDiv.setAttribute("tabindex", "-1");
+  nonTabbableDiv.textContent = "Not tabbable";
 
-  const tabbableDiv = document.createElement('div');
-  tabbableDiv.setAttribute('tabindex', '0');
-  tabbableDiv.textContent = 'Tabbable';
+  const tabbableDiv = document.createElement("div");
+  tabbableDiv.setAttribute("tabindex", "0");
+  tabbableDiv.textContent = "Tabbable";
 
   container.appendChild(enabledButton);
   container.appendChild(disabledButton);
@@ -153,14 +153,14 @@ function createContainerWithMixedElements(): HTMLElement {
 // Utility function tests
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('getTabbableElements', () => {
+describe("getTabbableElements", () => {
   let container: HTMLElement;
 
   afterEach(() => {
     container?.remove();
   });
 
-  it('should find buttons, inputs, textareas, selects, and links', () => {
+  it("should find buttons, inputs, textareas, selects, and links", () => {
     container = createContainerWithMixedElements();
 
     const elements = getTabbableElements(container);
@@ -168,15 +168,15 @@ describe('getTabbableElements', () => {
     expect(elements).toHaveLength(5);
   });
 
-  it('should exclude disabled elements', () => {
-    container = document.createElement('div');
-    const enabledBtn = document.createElement('button');
-    enabledBtn.textContent = 'Enabled';
-    const disabledBtn = document.createElement('button');
-    disabledBtn.textContent = 'Disabled';
+  it("should exclude disabled elements", () => {
+    container = document.createElement("div");
+    const enabledBtn = document.createElement("button");
+    enabledBtn.textContent = "Enabled";
+    const disabledBtn = document.createElement("button");
+    disabledBtn.textContent = "Disabled";
     disabledBtn.disabled = true;
-    const disabledInput = document.createElement('input');
-    disabledInput.type = 'text';
+    const disabledInput = document.createElement("input");
+    disabledInput.type = "text";
     disabledInput.disabled = true;
     container.appendChild(enabledBtn);
     container.appendChild(disabledBtn);
@@ -187,12 +187,12 @@ describe('getTabbableElements', () => {
     expect(elements).toHaveLength(1);
   });
 
-  it('should exclude hidden inputs', () => {
-    container = document.createElement('div');
-    const textInput = document.createElement('input');
-    textInput.type = 'text';
-    const hiddenInput = document.createElement('input');
-    hiddenInput.type = 'hidden';
+  it("should exclude hidden inputs", () => {
+    container = document.createElement("div");
+    const textInput = document.createElement("input");
+    textInput.type = "text";
+    const hiddenInput = document.createElement("input");
+    hiddenInput.type = "hidden";
     container.appendChild(textInput);
     container.appendChild(hiddenInput);
     document.body.appendChild(container);
@@ -202,12 +202,12 @@ describe('getTabbableElements', () => {
   });
 
   it('should exclude elements with tabindex="-1"', () => {
-    container = document.createElement('div');
-    const button = document.createElement('button');
-    button.textContent = 'Normal';
-    const div = document.createElement('div');
-    div.setAttribute('tabindex', '-1');
-    div.textContent = 'Not tabbable';
+    container = document.createElement("div");
+    const button = document.createElement("button");
+    button.textContent = "Normal";
+    const div = document.createElement("div");
+    div.setAttribute("tabindex", "-1");
+    div.textContent = "Not tabbable";
     container.appendChild(button);
     container.appendChild(div);
     document.body.appendChild(container);
@@ -217,12 +217,12 @@ describe('getTabbableElements', () => {
   });
 
   it('should include elements with tabindex="0"', () => {
-    container = document.createElement('div');
-    const button = document.createElement('button');
-    button.textContent = 'Normal';
-    const div = document.createElement('div');
-    div.setAttribute('tabindex', '0');
-    div.textContent = 'Tabbable div';
+    container = document.createElement("div");
+    const button = document.createElement("button");
+    button.textContent = "Normal";
+    const div = document.createElement("div");
+    div.setAttribute("tabindex", "0");
+    div.textContent = "Tabbable div";
     container.appendChild(button);
     container.appendChild(div);
     document.body.appendChild(container);
@@ -231,12 +231,12 @@ describe('getTabbableElements', () => {
     expect(elements).toHaveLength(2);
   });
 
-  it('should return empty array for container with no focusable elements', () => {
-    container = document.createElement('div');
-    const span = document.createElement('span');
-    span.textContent = 'Not focusable';
-    const p = document.createElement('p');
-    p.textContent = 'Also not focusable';
+  it("should return empty array for container with no focusable elements", () => {
+    container = document.createElement("div");
+    const span = document.createElement("span");
+    span.textContent = "Not focusable";
+    const p = document.createElement("p");
+    p.textContent = "Also not focusable";
     container.appendChild(span);
     container.appendChild(p);
     document.body.appendChild(container);
@@ -246,30 +246,30 @@ describe('getTabbableElements', () => {
   });
 });
 
-describe('getTabbableEdges', () => {
+describe("getTabbableEdges", () => {
   let container: HTMLElement;
 
   afterEach(() => {
     container?.remove();
   });
 
-  it('should return first and last tabbable elements', () => {
+  it("should return first and last tabbable elements", () => {
     container = createDialogContainer();
     const [first, last] = getTabbableEdges(container);
 
-    expect(first?.getAttribute('data-testid')).toBe('first');
-    expect(last?.getAttribute('data-testid')).toBe('last');
+    expect(first?.getAttribute("data-testid")).toBe("first");
+    expect(last?.getAttribute("data-testid")).toBe("last");
   });
 
-  it('should return same element for both when only one focusable element', () => {
+  it("should return same element for both when only one focusable element", () => {
     container = createSingleFocusableContainer();
     const [first, last] = getTabbableEdges(container);
 
-    expect(first?.getAttribute('data-testid')).toBe('only');
-    expect(last?.getAttribute('data-testid')).toBe('only');
+    expect(first?.getAttribute("data-testid")).toBe("only");
+    expect(last?.getAttribute("data-testid")).toBe("only");
   });
 
-  it('should return [null, null] when no focusable elements', () => {
+  it("should return [null, null] when no focusable elements", () => {
     container = createEmptyContainer();
     const [first, last] = getTabbableEdges(container);
 
@@ -282,15 +282,15 @@ describe('getTabbableEdges', () => {
 // useFocusTrap composable tests
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('useFocusTrap', () => {
+describe("useFocusTrap", () => {
   let container: HTMLElement;
   let triggerButton: HTMLElement;
 
   beforeEach(() => {
     // Create a trigger button (simulates the element that opens the dialog)
-    triggerButton = document.createElement('button');
-    triggerButton.textContent = 'Open Dialog';
-    triggerButton.setAttribute('data-testid', 'trigger');
+    triggerButton = document.createElement("button");
+    triggerButton.textContent = "Open Dialog";
+    triggerButton.setAttribute("data-testid", "trigger");
     document.body.appendChild(triggerButton);
     triggerButton.focus();
   });
@@ -300,8 +300,8 @@ describe('useFocusTrap', () => {
     triggerButton?.remove();
   });
 
-  describe('activation and deactivation', () => {
-    it('should activate when enabled is set to true', async () => {
+  describe("activation and deactivation", () => {
+    it("should activate when enabled is set to true", async () => {
       container = createDialogContainer();
       const enabled = ref(false);
 
@@ -317,7 +317,7 @@ describe('useFocusTrap', () => {
       expect(isActive.value).toBe(true);
     });
 
-    it('should deactivate when enabled is set to false', async () => {
+    it("should deactivate when enabled is set to false", async () => {
       container = createDialogContainer();
       const enabled = ref(true);
 
@@ -335,7 +335,7 @@ describe('useFocusTrap', () => {
       expect(isActive.value).toBe(false);
     });
 
-    it('should support manual activate/deactivate', async () => {
+    it("should support manual activate/deactivate", async () => {
       container = createDialogContainer();
       const enabled = ref(false);
 
@@ -349,7 +349,7 @@ describe('useFocusTrap', () => {
       expect(isActive.value).toBe(false);
     });
 
-    it('should not activate without a container element', async () => {
+    it("should not activate without a container element", async () => {
       const enabled = ref(true);
 
       const { isActive } = useFocusTrap({ enabled });
@@ -358,7 +358,7 @@ describe('useFocusTrap', () => {
       expect(isActive.value).toBe(false);
     });
 
-    it('should not double-activate', async () => {
+    it("should not double-activate", async () => {
       container = createDialogContainer();
       const enabled = ref(false);
 
@@ -373,7 +373,7 @@ describe('useFocusTrap', () => {
       expect(isActive.value).toBe(true);
     });
 
-    it('should not double-deactivate', async () => {
+    it("should not double-deactivate", async () => {
       container = createDialogContainer();
       const enabled = ref(false);
 
@@ -387,8 +387,8 @@ describe('useFocusTrap', () => {
     });
   });
 
-  describe('auto-focus behavior', () => {
-    it('should auto-focus the first tabbable element on activation', async () => {
+  describe("auto-focus behavior", () => {
+    it("should auto-focus the first tabbable element on activation", async () => {
       container = createDialogContainer();
       const enabled = ref(true);
 
@@ -402,7 +402,7 @@ describe('useFocusTrap', () => {
       expect(document.activeElement).toBe(firstButton);
     });
 
-    it('should skip auto-focus when autoFocus option is false', async () => {
+    it("should skip auto-focus when autoFocus option is false", async () => {
       container = createDialogContainer();
       const enabled = ref(true);
 
@@ -415,7 +415,7 @@ describe('useFocusTrap', () => {
       expect(document.activeElement).toBe(triggerButton);
     });
 
-    it('should focus the container if no tabbable elements exist', async () => {
+    it("should focus the container if no tabbable elements exist", async () => {
       container = createEmptyContainer();
       const enabled = ref(true);
 
@@ -426,12 +426,12 @@ describe('useFocusTrap', () => {
       await nextTick();
 
       expect(document.activeElement).toBe(container);
-      expect(container.getAttribute('tabindex')).toBe('-1');
+      expect(container.getAttribute("tabindex")).toBe("-1");
     });
   });
 
-  describe('focus restoration', () => {
-    it('should restore focus to the previously focused element on deactivation', async () => {
+  describe("focus restoration", () => {
+    it("should restore focus to the previously focused element on deactivation", async () => {
       container = createDialogContainer();
       triggerButton.focus();
 
@@ -455,7 +455,7 @@ describe('useFocusTrap', () => {
       expect(document.activeElement).toBe(triggerButton);
     });
 
-    it('should not restore focus when restoreFocus option is false', async () => {
+    it("should not restore focus when restoreFocus option is false", async () => {
       container = createDialogContainer();
       triggerButton.focus();
 
@@ -479,8 +479,8 @@ describe('useFocusTrap', () => {
     });
   });
 
-  describe('Tab key trapping', () => {
-    it('should prevent Tab from escaping when on last element (loop enabled)', async () => {
+  describe("Tab key trapping", () => {
+    it("should prevent Tab from escaping when on last element (loop enabled)", async () => {
       container = createDialogContainer();
       const enabled = ref(true);
 
@@ -500,7 +500,7 @@ describe('useFocusTrap', () => {
       expect(event.defaultPrevented).toBe(true);
     });
 
-    it('should prevent Shift+Tab from escaping when on first element (loop enabled)', async () => {
+    it("should prevent Shift+Tab from escaping when on first element (loop enabled)", async () => {
       container = createDialogContainer();
       const enabled = ref(true);
 
@@ -520,7 +520,7 @@ describe('useFocusTrap', () => {
       expect(event.defaultPrevented).toBe(true);
     });
 
-    it('should prevent Tab when no focusable elements exist', async () => {
+    it("should prevent Tab when no focusable elements exist", async () => {
       container = createEmptyContainer();
       const enabled = ref(true);
 
@@ -535,7 +535,7 @@ describe('useFocusTrap', () => {
       expect(event.defaultPrevented).toBe(true);
     });
 
-    it('should not interfere with non-Tab keys', async () => {
+    it("should not interfere with non-Tab keys", async () => {
       container = createDialogContainer();
       const enabled = ref(true);
 
@@ -544,8 +544,8 @@ describe('useFocusTrap', () => {
       await nextTick();
       await nextTick();
 
-      const event = new KeyboardEvent('keydown', {
-        key: 'Enter',
+      const event = new KeyboardEvent("keydown", {
+        key: "Enter",
         bubbles: true,
         cancelable: true,
       });
@@ -554,7 +554,7 @@ describe('useFocusTrap', () => {
       expect(event.defaultPrevented).toBe(false);
     });
 
-    it('should not loop when loop is disabled and on last element', async () => {
+    it("should not loop when loop is disabled and on last element", async () => {
       container = createDialogContainer();
       const enabled = ref(true);
 
@@ -576,14 +576,14 @@ describe('useFocusTrap', () => {
     });
   });
 
-  describe('nested focus trap support', () => {
+  describe("nested focus trap support", () => {
     let innerContainer: HTMLElement;
 
     afterEach(() => {
       innerContainer?.remove();
     });
 
-    it('should support nested focus traps by pausing the outer trap', async () => {
+    it("should support nested focus traps by pausing the outer trap", async () => {
       // Create outer dialog
       container = createDialogContainer();
       const outerEnabled = ref(true);
@@ -596,12 +596,12 @@ describe('useFocusTrap', () => {
       expect(outer.isActive.value).toBe(true);
 
       // Create inner dialog (nested)
-      innerContainer = document.createElement('div');
-      innerContainer.setAttribute('role', 'dialog');
-      innerContainer.setAttribute('aria-modal', 'true');
-      const innerButton = document.createElement('button');
-      innerButton.textContent = 'Inner Button';
-      innerButton.setAttribute('data-testid', 'inner');
+      innerContainer = document.createElement("div");
+      innerContainer.setAttribute("role", "dialog");
+      innerContainer.setAttribute("aria-modal", "true");
+      const innerButton = document.createElement("button");
+      innerButton.textContent = "Inner Button";
+      innerButton.setAttribute("data-testid", "inner");
       innerContainer.appendChild(innerButton);
       document.body.appendChild(innerContainer);
 
@@ -626,8 +626,8 @@ describe('useFocusTrap', () => {
     });
   });
 
-  describe('cleanup on unmount', () => {
-    it('should deactivate on component unmount', async () => {
+  describe("cleanup on unmount", () => {
+    it("should deactivate on component unmount", async () => {
       container = createDialogContainer();
       const enabled = ref(true);
 
@@ -646,17 +646,17 @@ describe('useFocusTrap', () => {
     });
   });
 
-  describe('return type', () => {
-    it('should return all expected properties', () => {
+  describe("return type", () => {
+    it("should return all expected properties", () => {
       const enabled = ref(false);
       const result = useFocusTrap({ enabled });
 
-      expect(result).toHaveProperty('containerRef');
-      expect(result).toHaveProperty('activate');
-      expect(result).toHaveProperty('deactivate');
-      expect(result).toHaveProperty('isActive');
-      expect(typeof result.activate).toBe('function');
-      expect(typeof result.deactivate).toBe('function');
+      expect(result).toHaveProperty("containerRef");
+      expect(result).toHaveProperty("activate");
+      expect(result).toHaveProperty("deactivate");
+      expect(result).toHaveProperty("isActive");
+      expect(typeof result.activate).toBe("function");
+      expect(typeof result.deactivate).toBe("function");
     });
   });
 });

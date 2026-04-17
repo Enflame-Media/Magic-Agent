@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { CommandDialog } from '@/components/ui/command'
+import { CommandDialog } from "@/components/ui/command";
 
-type VoiceSelectorDialogProps = InstanceType<typeof CommandDialog>['$props']
+type VoiceSelectorDialogProps = InstanceType<typeof CommandDialog>["$props"];
 
 interface Props extends /* @vue-ignore */ VoiceSelectorDialogProps {}
 
-defineProps<Props>()
+defineProps<Props>();
 </script>
 
 <template>

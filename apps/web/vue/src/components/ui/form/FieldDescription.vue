@@ -4,13 +4,13 @@
  *
  * Provides helper text below form inputs.
  */
-import type { HTMLAttributes } from 'vue'
-import { cn } from '@/lib/utils'
+import type { HTMLAttributes } from "vue";
+import { cn } from "@/lib/utils";
 
 const props = defineProps<{
-  class?: HTMLAttributes['class']
-  id?: string
-}>()
+  class?: HTMLAttributes["class"];
+  id?: string;
+}>();
 </script>
 
 <template>

@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { CommandGroup } from '@/components/ui/command'
+import { CommandGroup } from "@/components/ui/command";
 
-type VoiceSelectorGroupProps = InstanceType<typeof CommandGroup>['$props']
+type VoiceSelectorGroupProps = InstanceType<typeof CommandGroup>["$props"];
 
 interface Props extends /* @vue-ignore */ VoiceSelectorGroupProps {}
 
-defineProps<Props>()
+defineProps<Props>();
 </script>
 
 <template>

@@ -7,19 +7,19 @@
  * @see HAP-720 - NativeScript Mobile Testing Suite
  */
 
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig, devices } from "@playwright/test";
 
 /**
  * Base URL for the application under test.
  * Uses environment variable or defaults to local development server.
  */
-const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:5173';
+const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:5173";
 
 export default defineConfig({
   /**
    * Directory containing E2E test files
    */
-  testDir: './e2e',
+  testDir: "./e2e",
 
   /**
    * Maximum time one test can run for
@@ -53,9 +53,9 @@ export default defineConfig({
    * - json: Machine-readable output for CI integration
    */
   reporter: [
-    ['list'],
-    ['html', { outputFolder: 'playwright-report' }],
-    ['json', { outputFile: 'playwright-report/results.json' }],
+    ["list"],
+    ["html", { outputFolder: "playwright-report" }],
+    ["json", { outputFile: "playwright-report/results.json" }],
   ],
 
   /**
@@ -66,13 +66,13 @@ export default defineConfig({
     baseURL,
 
     /* Collect trace when retrying the failed test */
-    trace: 'on-first-retry',
+    trace: "on-first-retry",
 
     /* Capture screenshot on failure */
-    screenshot: 'only-on-failure',
+    screenshot: "only-on-failure",
 
     /* Record video on failure */
-    video: 'on-first-retry',
+    video: "on-first-retry",
   },
 
   /**
@@ -82,32 +82,32 @@ export default defineConfig({
   projects: [
     /* Desktop browsers */
     {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      name: "chromium",
+      use: { ...devices["Desktop Chrome"] },
     },
     {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
+      name: "firefox",
+      use: { ...devices["Desktop Firefox"] },
     },
     {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
+      name: "webkit",
+      use: { ...devices["Desktop Safari"] },
     },
 
     /* Mobile viewports */
     {
-      name: 'mobile-chrome',
-      use: { ...devices['Pixel 5'] },
+      name: "mobile-chrome",
+      use: { ...devices["Pixel 5"] },
     },
     {
-      name: 'mobile-safari',
-      use: { ...devices['iPhone 12'] },
+      name: "mobile-safari",
+      use: { ...devices["iPhone 12"] },
     },
 
     /* Tablet viewport */
     {
-      name: 'tablet',
-      use: { ...devices['iPad (gen 7)'] },
+      name: "tablet",
+      use: { ...devices["iPad (gen 7)"] },
     },
   ],
 
@@ -116,7 +116,7 @@ export default defineConfig({
    * Starts Vite dev server before running tests
    */
   webServer: {
-    command: 'yarn dev',
+    command: "yarn dev",
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
@@ -125,5 +125,5 @@ export default defineConfig({
   /**
    * Output directory for test artifacts
    */
-  outputDir: 'test-results',
+  outputDir: "test-results",
 });

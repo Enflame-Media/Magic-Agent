@@ -12,13 +12,13 @@
  * @see HAP-916 - Responsive Design System
  */
 
-import { computed, ref, type ComputedRef, type Ref } from 'vue';
-import { useBreakpoints, type BreakpointKey } from '@/composables/useBreakpoints';
+import { computed, ref, type ComputedRef, type Ref } from "vue";
+import { useBreakpoints, type BreakpointKey } from "@/composables/useBreakpoints";
 
 /**
  * Layout modes for responsive content display
  */
-export type LayoutMode = 'single' | 'dual' | 'triple';
+export type LayoutMode = "single" | "dual" | "triple";
 
 /**
  * Panel configuration for responsive layouts
@@ -70,9 +70,9 @@ export interface UseResponsiveLayoutReturn {
  * Default panel configurations for common layouts
  */
 export const DEFAULT_PANELS: PanelConfig[] = [
-  { id: 'sidebar', minBreakpoint: 'lg', defaultWidth: 25, collapsible: true },
-  { id: 'main', minBreakpoint: 'sm', defaultWidth: 50, collapsible: false },
-  { id: 'detail', minBreakpoint: 'xl', defaultWidth: 25, collapsible: true },
+  { id: "sidebar", minBreakpoint: "lg", defaultWidth: 25, collapsible: true },
+  { id: "main", minBreakpoint: "sm", defaultWidth: 50, collapsible: false },
+  { id: "detail", minBreakpoint: "xl", defaultWidth: 25, collapsible: true },
 ];
 
 /**
@@ -110,7 +110,7 @@ export const DEFAULT_PANELS: PanelConfig[] = [
  */
 export function useResponsiveLayout(
   panels: PanelConfig[] = DEFAULT_PANELS,
-  defaultPanel = 'main',
+  defaultPanel = "main",
 ): UseResponsiveLayoutReturn {
   const { isMobile, isDesktop, isLargeScreen, greaterOrEqual } = useBreakpoints();
 
@@ -119,14 +119,14 @@ export function useResponsiveLayout(
 
   // Determine layout mode based on viewport
   const layoutMode = computed<LayoutMode>(() => {
-    if (isLargeScreen.value) return 'triple';
-    if (isDesktop.value) return 'dual';
-    return 'single';
+    if (isLargeScreen.value) return "triple";
+    if (isDesktop.value) return "dual";
+    return "single";
   });
 
-  const isSinglePanel = computed(() => layoutMode.value === 'single');
-  const isDualPanel = computed(() => layoutMode.value === 'dual');
-  const isTriplePanel = computed(() => layoutMode.value === 'triple');
+  const isSinglePanel = computed(() => layoutMode.value === "single");
+  const isDualPanel = computed(() => layoutMode.value === "dual");
+  const isTriplePanel = computed(() => layoutMode.value === "triple");
 
   // Count visible panels at current breakpoint
   const visiblePanelCount = computed(() => {
@@ -165,13 +165,13 @@ export function useResponsiveLayout(
   // Container CSS class based on layout mode
   const containerClass = computed(() => {
     switch (layoutMode.value) {
-      case 'triple':
-        return 'grid grid-cols-[minmax(200px,25%)_1fr_minmax(200px,25%)] gap-0 h-full';
-      case 'dual':
-        return 'grid grid-cols-[minmax(200px,30%)_1fr] gap-0 h-full';
-      case 'single':
+      case "triple":
+        return "grid grid-cols-[minmax(200px,25%)_1fr_minmax(200px,25%)] gap-0 h-full";
+      case "dual":
+        return "grid grid-cols-[minmax(200px,30%)_1fr] gap-0 h-full";
+      case "single":
       default:
-        return 'flex flex-col h-full';
+        return "flex flex-col h-full";
     }
   });
 

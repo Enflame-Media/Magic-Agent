@@ -7,8 +7,8 @@
  * @see HAP-708 - Integrate Artifacts Store with Sync Service
  */
 
-import { decodeBase64, encodeBase64 } from '@/services/base64';
-import { AES256Encryption } from './encryptors';
+import { decodeBase64, encodeBase64 } from "@/services/base64";
+import { AES256Encryption } from "./encryptors";
 
 /**
  * Decrypted artifact header structure
@@ -57,7 +57,7 @@ export class ArtifactEncryption {
    */
   async decryptHeader(encryptedHeader: string): Promise<ArtifactHeader | null> {
     try {
-      const encryptedData = decodeBase64(encryptedHeader, 'base64');
+      const encryptedData = decodeBase64(encryptedHeader, "base64");
       const decrypted = await this.encryptor.decrypt([encryptedData]);
       if (!decrypted[0]) {
         return null;
@@ -65,20 +65,20 @@ export class ArtifactEncryption {
 
       // Validate structure
       const header = decrypted[0] as Record<string, unknown>;
-      if (typeof header !== 'object' || header === null) {
+      if (typeof header !== "object" || header === null) {
         return null;
       }
 
       return {
-        title: typeof header.title === 'string' ? header.title : null,
-        mimeType: typeof header.mimeType === 'string' ? header.mimeType : undefined,
-        filePath: typeof header.filePath === 'string' ? header.filePath : undefined,
-        language: typeof header.language === 'string' ? header.language : undefined,
-        sessions: Array.isArray(header.sessions) ? header.sessions as string[] : undefined,
-        draft: typeof header.draft === 'boolean' ? header.draft : undefined,
+        title: typeof header.title === "string" ? header.title : null,
+        mimeType: typeof header.mimeType === "string" ? header.mimeType : undefined,
+        filePath: typeof header.filePath === "string" ? header.filePath : undefined,
+        language: typeof header.language === "string" ? header.language : undefined,
+        sessions: Array.isArray(header.sessions) ? (header.sessions as string[]) : undefined,
+        draft: typeof header.draft === "boolean" ? header.draft : undefined,
       };
     } catch (error) {
-      console.error('[artifact] Failed to decrypt header:', error);
+      console.error("[artifact] Failed to decrypt header:", error);
       return null;
     }
   }
@@ -91,7 +91,7 @@ export class ArtifactEncryption {
    */
   async decryptBody(encryptedBody: string): Promise<ArtifactBody | null> {
     try {
-      const encryptedData = decodeBase64(encryptedBody, 'base64');
+      const encryptedData = decodeBase64(encryptedBody, "base64");
       const decrypted = await this.encryptor.decrypt([encryptedData]);
       if (!decrypted[0]) {
         return null;
@@ -99,15 +99,15 @@ export class ArtifactEncryption {
 
       // Validate structure
       const body = decrypted[0] as Record<string, unknown>;
-      if (typeof body !== 'object' || body === null) {
+      if (typeof body !== "object" || body === null) {
         return null;
       }
 
       return {
-        body: typeof body.body === 'string' ? body.body : null,
+        body: typeof body.body === "string" ? body.body : null,
       };
     } catch (error) {
-      console.error('[artifact] Failed to decrypt body:', error);
+      console.error("[artifact] Failed to decrypt body:", error);
       return null;
     }
   }
@@ -121,9 +121,9 @@ export class ArtifactEncryption {
   async encryptHeader(header: ArtifactHeader): Promise<string> {
     const encrypted = await this.encryptor.encrypt([header]);
     if (!encrypted[0]) {
-      throw new Error('Failed to encrypt artifact header');
+      throw new Error("Failed to encrypt artifact header");
     }
-    return encodeBase64(encrypted[0], 'base64');
+    return encodeBase64(encrypted[0], "base64");
   }
 
   /**
@@ -135,8 +135,8 @@ export class ArtifactEncryption {
   async encryptBody(body: ArtifactBody): Promise<string> {
     const encrypted = await this.encryptor.encrypt([body]);
     if (!encrypted[0]) {
-      throw new Error('Failed to encrypt artifact body');
+      throw new Error("Failed to encrypt artifact body");
     }
-    return encodeBase64(encrypted[0], 'base64');
+    return encodeBase64(encrypted[0], "base64");
   }
 }

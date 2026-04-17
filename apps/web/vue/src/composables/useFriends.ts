@@ -35,14 +35,14 @@
  * @see HAP-717 - Implement friends UI for happy-vue web app
  */
 
-import { ref, computed, type Ref, type ComputedRef } from 'vue';
-import { storeToRefs } from 'pinia';
-import { z } from 'zod';
-import { useAuthStore } from '@/stores/auth';
-import { getApiBaseUrl } from '@/services/apiBase';
-import type { UserProfile, RelationshipStatus } from '@magic-agent/protocol';
-import { UserProfileSchema } from '@magic-agent/protocol';
-import { toast } from 'vue-sonner';
+import { ref, computed, type Ref, type ComputedRef } from "vue";
+import { storeToRefs } from "pinia";
+import { z } from "zod";
+import { useAuthStore } from "@/stores/auth";
+import { getApiBaseUrl } from "@/services/apiBase";
+import type { UserProfile, RelationshipStatus } from "@magic-agent/protocol";
+import { UserProfileSchema } from "@magic-agent/protocol";
+import { toast } from "vue-sonner";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
@@ -132,7 +132,7 @@ export interface UseFriendsReturn {
  * Get display name from user profile
  */
 export function getDisplayName(profile: UserProfile): string {
-  const fullName = [profile.firstName, profile.lastName].filter(Boolean).join(' ');
+  const fullName = [profile.firstName, profile.lastName].filter(Boolean).join(" ");
   return fullName || profile.username;
 }
 
@@ -140,15 +140,15 @@ export function getDisplayName(profile: UserProfile): string {
  * Check relationship status helpers
  */
 export function isFriend(status: RelationshipStatus): boolean {
-  return status === 'friend';
+  return status === "friend";
 }
 
 export function isPendingRequest(status: RelationshipStatus): boolean {
-  return status === 'pending';
+  return status === "pending";
 }
 
 export function isRequested(status: RelationshipStatus): boolean {
-  return status === 'requested';
+  return status === "requested";
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -180,17 +180,17 @@ export function useFriends(): UseFriendsReturn {
 
   /** Friends with accepted status */
   const acceptedFriends = computed(() =>
-    friends.value.filter((f: UserProfile) => f.status === 'friend')
+    friends.value.filter((f: UserProfile) => f.status === "friend"),
   );
 
   /** Incoming friend requests (they requested us) */
   const pendingRequests = computed(() =>
-    friends.value.filter((f: UserProfile) => f.status === 'pending')
+    friends.value.filter((f: UserProfile) => f.status === "pending"),
   );
 
   /** Outgoing friend requests (we requested them) */
   const sentRequests = computed(() =>
-    friends.value.filter((f: UserProfile) => f.status === 'requested')
+    friends.value.filter((f: UserProfile) => f.status === "requested"),
   );
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -203,7 +203,7 @@ export function useFriends(): UseFriendsReturn {
    */
   async function loadFriends(): Promise<void> {
     if (!token.value) {
-      error.value = 'Not authenticated';
+      error.value = "Not authenticated";
       return;
     }
 
@@ -212,7 +212,7 @@ export function useFriends(): UseFriendsReturn {
 
     try {
       const response = await fetch(`${API_URL}/v1/friends`, {
-        method: 'GET',
+        method: "GET",
         headers: {
           Authorization: `Bearer ${token.value}`,
         },
@@ -226,17 +226,17 @@ export function useFriends(): UseFriendsReturn {
       const parsed = FriendsResponseSchema.safeParse(data);
 
       if (!parsed.success) {
-        console.error('[useFriends] Failed to parse friends list:', parsed.error);
+        console.error("[useFriends] Failed to parse friends list:", parsed.error);
         friends.value = [];
         return;
       }
 
       friends.value = parsed.data.friends;
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to load friends';
+      const message = err instanceof Error ? err.message : "Failed to load friends";
       error.value = message;
-      console.error('[useFriends] Error loading friends:', err);
-      toast.error('Failed to load friends');
+      console.error("[useFriends] Error loading friends:", err);
+      toast.error("Failed to load friends");
     } finally {
       isLoading.value = false;
     }
@@ -250,15 +250,15 @@ export function useFriends(): UseFriendsReturn {
    */
   async function addFriend(userId: string): Promise<UserProfile | null> {
     if (!token.value) {
-      toast.error('Not authenticated');
+      toast.error("Not authenticated");
       return null;
     }
 
     try {
       const response = await fetch(`${API_URL}/v1/friends/add`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
           Authorization: `Bearer ${token.value}`,
         },
         body: JSON.stringify({ uid: userId }),
@@ -266,7 +266,7 @@ export function useFriends(): UseFriendsReturn {
 
       if (!response.ok) {
         if (response.status === 404) {
-          toast.error('User not found');
+          toast.error("User not found");
           return null;
         }
         throw new Error(`Failed to add friend: ${String(response.status)}`);
@@ -276,18 +276,18 @@ export function useFriends(): UseFriendsReturn {
       const parsed = UserResponseSchema.safeParse(data);
 
       if (!parsed.success) {
-        console.error('[useFriends] Failed to parse add friend response:', parsed.error);
+        console.error("[useFriends] Failed to parse add friend response:", parsed.error);
         return null;
       }
 
       // Update local cache
       updateFriend(parsed.data.user);
-      toast.success('Friend request sent');
+      toast.success("Friend request sent");
 
       return parsed.data.user;
     } catch (err) {
-      console.error('[useFriends] Error adding friend:', err);
-      toast.error('Failed to add friend');
+      console.error("[useFriends] Error adding friend:", err);
+      toast.error("Failed to add friend");
       return null;
     }
   }
@@ -300,15 +300,15 @@ export function useFriends(): UseFriendsReturn {
    */
   async function removeFriend(userId: string): Promise<boolean> {
     if (!token.value) {
-      toast.error('Not authenticated');
+      toast.error("Not authenticated");
       return false;
     }
 
     try {
       const response = await fetch(`${API_URL}/v1/friends/remove`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
           Authorization: `Bearer ${token.value}`,
         },
         body: JSON.stringify({ uid: userId }),
@@ -325,12 +325,12 @@ export function useFriends(): UseFriendsReturn {
 
       // Remove from local cache
       removeFriendFromCache(userId);
-      toast.success('Friend removed');
+      toast.success("Friend removed");
 
       return true;
     } catch (err) {
-      console.error('[useFriends] Error removing friend:', err);
-      toast.error('Failed to remove friend');
+      console.error("[useFriends] Error removing friend:", err);
+      toast.error("Failed to remove friend");
       return false;
     }
   }
@@ -342,7 +342,7 @@ export function useFriends(): UseFriendsReturn {
    */
   async function searchUsers(query: string): Promise<void> {
     if (!token.value) {
-      error.value = 'Not authenticated';
+      error.value = "Not authenticated";
       return;
     }
 
@@ -356,7 +356,7 @@ export function useFriends(): UseFriendsReturn {
     try {
       const params = new URLSearchParams({ query });
       const response = await fetch(`${API_URL}/v1/users/search?${params.toString()}`, {
-        method: 'GET',
+        method: "GET",
         headers: {
           Authorization: `Bearer ${token.value}`,
         },
@@ -374,15 +374,15 @@ export function useFriends(): UseFriendsReturn {
       const parsed = UsersSearchResponseSchema.safeParse(data);
 
       if (!parsed.success) {
-        console.error('[useFriends] Failed to parse search response:', parsed.error);
+        console.error("[useFriends] Failed to parse search response:", parsed.error);
         searchResults.value = [];
         return;
       }
 
       searchResults.value = parsed.data.users;
     } catch (err) {
-      console.error('[useFriends] Error searching users:', err);
-      toast.error('Search failed');
+      console.error("[useFriends] Error searching users:", err);
+      toast.error("Search failed");
       searchResults.value = [];
     } finally {
       isSearching.value = false;
@@ -437,15 +437,15 @@ export function useFriends(): UseFriendsReturn {
    */
   async function blockUser(userId: string): Promise<boolean> {
     if (!token.value) {
-      toast.error('Not authenticated');
+      toast.error("Not authenticated");
       return false;
     }
 
     try {
       const response = await fetch(`${API_URL}/v1/friends/block`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
           Authorization: `Bearer ${token.value}`,
         },
         body: JSON.stringify({ uid: userId }),
@@ -457,12 +457,12 @@ export function useFriends(): UseFriendsReturn {
 
       // Remove from local cache
       removeFriendFromCache(userId);
-      toast.success('User blocked');
+      toast.success("User blocked");
 
       return true;
     } catch (err) {
-      console.error('[useFriends] Error blocking user:', err);
-      toast.error('Failed to block user');
+      console.error("[useFriends] Error blocking user:", err);
+      toast.error("Failed to block user");
       return false;
     }
   }
@@ -482,7 +482,7 @@ export function useFriends(): UseFriendsReturn {
     const match = friendMatch ?? webMatch;
 
     if (!match?.[1]) {
-      toast.error('Invalid friend invite link');
+      toast.error("Invalid friend invite link");
       return false;
     }
 

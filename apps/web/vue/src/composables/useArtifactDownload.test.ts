@@ -12,8 +12,8 @@
  * @see HAP-709 - Implement Download All Artifacts as ZIP
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test';
-import type { DecryptedArtifact } from '@/stores/artifacts';
+import { describe, it, expect, vi, beforeEach, afterEach } from "vite-plus/test";
+import type { DecryptedArtifact } from "@/stores/artifacts";
 
 // Mock JSZip
 const mockFile = vi.fn();
@@ -25,7 +25,7 @@ class MockJSZip {
   generateAsync = mockGenerateAsync;
 }
 
-vi.mock('jszip', () => ({
+vi.mock("jszip", () => ({
   default: MockJSZip,
 }));
 
@@ -42,17 +42,17 @@ beforeEach(() => {
   // Reset mocks
   mockFile.mockClear();
   mockGenerateAsync.mockClear();
-  mockGenerateAsync.mockResolvedValue(new Blob(['test-zip-content'], { type: 'application/zip' }));
+  mockGenerateAsync.mockResolvedValue(new Blob(["test-zip-content"], { type: "application/zip" }));
   mockClick.mockClear();
 
   // Spy on URL methods
-  globalThis.URL.createObjectURL = vi.fn().mockReturnValue('blob:test-url');
+  globalThis.URL.createObjectURL = vi.fn().mockReturnValue("blob:test-url");
   globalThis.URL.revokeObjectURL = vi.fn();
 
   // Mock document.createElement to intercept anchor creation
   globalThis.document.createElement = vi.fn((tagName: string) => {
-    if (tagName === 'a') {
-      const anchor = originalCreateElement('a') as HTMLAnchorElement;
+    if (tagName === "a") {
+      const anchor = originalCreateElement("a") as HTMLAnchorElement;
       anchor.click = mockClick;
       return anchor;
     }
@@ -73,14 +73,14 @@ afterEach(() => {
  */
 function createMockArtifact(overrides: Partial<DecryptedArtifact> = {}): DecryptedArtifact {
   return {
-    id: 'artifact-1',
-    title: 'test-file.ts',
-    filePath: 'src/test-file.ts',
-    mimeType: 'text/typescript',
-    language: 'typescript',
-    sessions: ['session-1'],
-    body: 'const x = 1;',
-    fileType: 'code',
+    id: "artifact-1",
+    title: "test-file.ts",
+    filePath: "src/test-file.ts",
+    mimeType: "text/typescript",
+    language: "typescript",
+    sessions: ["session-1"],
+    body: "const x = 1;",
+    fileType: "code",
     headerVersion: 1,
     bodyVersion: 1,
     seq: 1,
@@ -92,42 +92,42 @@ function createMockArtifact(overrides: Partial<DecryptedArtifact> = {}): Decrypt
   };
 }
 
-describe('useArtifactDownload', () => {
-  let useArtifactDownload: typeof import('./useArtifactDownload').useArtifactDownload;
+describe("useArtifactDownload", () => {
+  let useArtifactDownload: typeof import("./useArtifactDownload").useArtifactDownload;
 
   beforeEach(async () => {
     vi.resetModules();
-    const module = await import('./useArtifactDownload');
+    const module = await import("./useArtifactDownload");
     useArtifactDownload = module.useArtifactDownload;
   });
 
-  describe('initialization', () => {
-    it('should return expected properties', () => {
+  describe("initialization", () => {
+    it("should return expected properties", () => {
       const download = useArtifactDownload();
 
-      expect(download).toHaveProperty('downloadAll');
-      expect(download).toHaveProperty('downloadSingle');
-      expect(download).toHaveProperty('downloadProgress');
-      expect(download).toHaveProperty('isDownloading');
+      expect(download).toHaveProperty("downloadAll");
+      expect(download).toHaveProperty("downloadSingle");
+      expect(download).toHaveProperty("downloadProgress");
+      expect(download).toHaveProperty("isDownloading");
     });
 
-    it('should start with isDownloading as false', () => {
+    it("should start with isDownloading as false", () => {
       const download = useArtifactDownload();
       expect(download.isDownloading.value).toBe(false);
     });
 
-    it('should start with downloadProgress as null', () => {
+    it("should start with downloadProgress as null", () => {
       const download = useArtifactDownload();
       expect(download.downloadProgress.value).toBeNull();
     });
   });
 
-  describe('downloadSingle', () => {
-    it('should create blob and trigger download for text content', () => {
+  describe("downloadSingle", () => {
+    it("should create blob and trigger download for text content", () => {
       const download = useArtifactDownload();
       const artifact = createMockArtifact({
-        body: 'const x = 1;',
-        filePath: 'src/index.ts',
+        body: "const x = 1;",
+        filePath: "src/index.ts",
       });
 
       download.downloadSingle(artifact);
@@ -137,7 +137,7 @@ describe('useArtifactDownload', () => {
       expect(globalThis.URL.revokeObjectURL).toHaveBeenCalled();
     });
 
-    it('should not trigger download if artifact has no body', () => {
+    it("should not trigger download if artifact has no body", () => {
       const download = useArtifactDownload();
       const artifact = createMockArtifact({ body: null });
 
@@ -146,11 +146,11 @@ describe('useArtifactDownload', () => {
       expect(globalThis.URL.createObjectURL).not.toHaveBeenCalled();
     });
 
-    it('should use filePath as filename when available', () => {
+    it("should use filePath as filename when available", () => {
       const download = useArtifactDownload();
       const artifact = createMockArtifact({
-        filePath: 'src/components/Button.vue',
-        title: 'Button Component',
+        filePath: "src/components/Button.vue",
+        title: "Button Component",
       });
 
       download.downloadSingle(artifact);
@@ -159,11 +159,11 @@ describe('useArtifactDownload', () => {
       expect(mockClick).toHaveBeenCalled();
     });
 
-    it('should use title as filename when filePath is null', () => {
+    it("should use title as filename when filePath is null", () => {
       const download = useArtifactDownload();
       const artifact = createMockArtifact({
         filePath: null,
-        title: 'my-script.js',
+        title: "my-script.js",
       });
 
       download.downloadSingle(artifact);
@@ -171,10 +171,10 @@ describe('useArtifactDownload', () => {
       expect(mockClick).toHaveBeenCalled();
     });
 
-    it('should use artifact id as fallback filename', () => {
+    it("should use artifact id as fallback filename", () => {
       const download = useArtifactDownload();
       const artifact = createMockArtifact({
-        id: 'abc123',
+        id: "abc123",
         filePath: null,
         title: null,
       });
@@ -184,13 +184,13 @@ describe('useArtifactDownload', () => {
       expect(mockClick).toHaveBeenCalled();
     });
 
-    it('should handle base64 image content', () => {
+    it("should handle base64 image content", () => {
       const download = useArtifactDownload();
       const artifact = createMockArtifact({
-        fileType: 'image',
-        mimeType: 'image/png',
-        body: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
-        filePath: 'screenshot.png',
+        fileType: "image",
+        mimeType: "image/png",
+        body: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+        filePath: "screenshot.png",
       });
 
       download.downloadSingle(artifact);
@@ -200,35 +200,35 @@ describe('useArtifactDownload', () => {
     });
   });
 
-  describe('downloadAll', () => {
-    it('should return error if no artifacts provided', async () => {
+  describe("downloadAll", () => {
+    it("should return error if no artifacts provided", async () => {
       const download = useArtifactDownload();
 
       const result = await download.downloadAll([]);
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('No artifacts with content to download');
+      expect(result.error).toBe("No artifacts with content to download");
     });
 
-    it('should return error if all artifacts have no body', async () => {
+    it("should return error if all artifacts have no body", async () => {
       const download = useArtifactDownload();
       const artifacts = [
-        createMockArtifact({ id: '1', body: null }),
-        createMockArtifact({ id: '2', body: null }),
+        createMockArtifact({ id: "1", body: null }),
+        createMockArtifact({ id: "2", body: null }),
       ];
 
       const result = await download.downloadAll(artifacts);
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('No artifacts with content to download');
+      expect(result.error).toBe("No artifacts with content to download");
     });
 
-    it('should create ZIP with all artifacts that have content', async () => {
+    it("should create ZIP with all artifacts that have content", async () => {
       const download = useArtifactDownload();
       const artifacts = [
-        createMockArtifact({ id: '1', filePath: 'src/a.ts', body: 'const a = 1;' }),
-        createMockArtifact({ id: '2', filePath: 'src/b.ts', body: 'const b = 2;' }),
-        createMockArtifact({ id: '3', body: null }), // Should be skipped
+        createMockArtifact({ id: "1", filePath: "src/a.ts", body: "const a = 1;" }),
+        createMockArtifact({ id: "2", filePath: "src/b.ts", body: "const b = 2;" }),
+        createMockArtifact({ id: "3", body: null }), // Should be skipped
       ];
 
       const result = await download.downloadAll(artifacts);
@@ -238,63 +238,64 @@ describe('useArtifactDownload', () => {
       expect(mockFile).toHaveBeenCalledTimes(2);
     });
 
-    it('should use proper folder structure from file paths', async () => {
+    it("should use proper folder structure from file paths", async () => {
       const download = useArtifactDownload();
       const artifacts = [
-        createMockArtifact({ id: '1', filePath: 'src/components/Button.vue', body: '<template>' }),
-        createMockArtifact({ id: '2', filePath: 'src/utils/helpers.ts', body: 'export {}' }),
+        createMockArtifact({ id: "1", filePath: "src/components/Button.vue", body: "<template>" }),
+        createMockArtifact({ id: "2", filePath: "src/utils/helpers.ts", body: "export {}" }),
       ];
 
       await download.downloadAll(artifacts);
 
-      expect(mockFile).toHaveBeenCalledWith('src/components/Button.vue', '<template>');
-      expect(mockFile).toHaveBeenCalledWith('src/utils/helpers.ts', 'export {}');
+      expect(mockFile).toHaveBeenCalledWith("src/components/Button.vue", "<template>");
+      expect(mockFile).toHaveBeenCalledWith("src/utils/helpers.ts", "export {}");
     });
 
-    it('should handle path collisions by appending index', async () => {
+    it("should handle path collisions by appending index", async () => {
       const download = useArtifactDownload();
       const artifacts = [
-        createMockArtifact({ id: '1', filePath: 'index.ts', body: 'first' }),
-        createMockArtifact({ id: '2', filePath: 'index.ts', body: 'second' }),
-        createMockArtifact({ id: '3', filePath: 'index.ts', body: 'third' }),
+        createMockArtifact({ id: "1", filePath: "index.ts", body: "first" }),
+        createMockArtifact({ id: "2", filePath: "index.ts", body: "second" }),
+        createMockArtifact({ id: "3", filePath: "index.ts", body: "third" }),
       ];
 
       await download.downloadAll(artifacts);
 
-      expect(mockFile).toHaveBeenCalledWith('index.ts', 'first');
-      expect(mockFile).toHaveBeenCalledWith('index-1.ts', 'second');
-      expect(mockFile).toHaveBeenCalledWith('index-2.ts', 'third');
+      expect(mockFile).toHaveBeenCalledWith("index.ts", "first");
+      expect(mockFile).toHaveBeenCalledWith("index-1.ts", "second");
+      expect(mockFile).toHaveBeenCalledWith("index-2.ts", "third");
     });
 
-    it('should remove leading slashes from paths', async () => {
+    it("should remove leading slashes from paths", async () => {
       const download = useArtifactDownload();
       const artifacts = [
-        createMockArtifact({ id: '1', filePath: '/src/file.ts', body: 'content' }),
+        createMockArtifact({ id: "1", filePath: "/src/file.ts", body: "content" }),
       ];
 
       await download.downloadAll(artifacts);
 
-      expect(mockFile).toHaveBeenCalledWith('src/file.ts', 'content');
+      expect(mockFile).toHaveBeenCalledWith("src/file.ts", "content");
     });
 
-    it('should handle base64 images in ZIP', async () => {
+    it("should handle base64 images in ZIP", async () => {
       const download = useArtifactDownload();
-      const base64Data = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+      const base64Data =
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
       const artifacts = [
         createMockArtifact({
-          id: '1',
-          fileType: 'image',
-          filePath: 'image.png',
+          id: "1",
+          fileType: "image",
+          filePath: "image.png",
           body: `data:image/png;base64,${base64Data}`,
         }),
       ];
 
       await download.downloadAll(artifacts);
 
-      expect(mockFile).toHaveBeenCalledWith('image.png', base64Data, { base64: true });
+      expect(mockFile).toHaveBeenCalledWith("image.png", base64Data, { base64: true });
     });
 
-    it('should trigger ZIP download', async () => {
+    it("should trigger ZIP download", async () => {
       const download = useArtifactDownload();
       const artifacts = [createMockArtifact()];
 
@@ -305,17 +306,17 @@ describe('useArtifactDownload', () => {
       expect(mockClick).toHaveBeenCalled();
     });
 
-    it('should include session name in ZIP filename when provided', async () => {
+    it("should include session name in ZIP filename when provided", async () => {
       const download = useArtifactDownload();
       const artifacts = [createMockArtifact()];
 
-      await download.downloadAll(artifacts, 'my-session');
+      await download.downloadAll(artifacts, "my-session");
 
       // The filename should include the session name
       expect(mockClick).toHaveBeenCalled();
     });
 
-    it('should use compression with DEFLATE', async () => {
+    it("should use compression with DEFLATE", async () => {
       const download = useArtifactDownload();
       const artifacts = [createMockArtifact()];
 
@@ -323,16 +324,16 @@ describe('useArtifactDownload', () => {
 
       expect(mockGenerateAsync).toHaveBeenCalledWith(
         expect.objectContaining({
-          type: 'blob',
-          compression: 'DEFLATE',
+          type: "blob",
+          compression: "DEFLATE",
         }),
-        expect.any(Function)
+        expect.any(Function),
       );
     });
   });
 
-  describe('progress tracking', () => {
-    it('should set isDownloading to true during download', async () => {
+  describe("progress tracking", () => {
+    it("should set isDownloading to true during download", async () => {
       const download = useArtifactDownload();
       const artifacts = [createMockArtifact()];
 
@@ -345,11 +346,11 @@ describe('useArtifactDownload', () => {
       await promise;
     });
 
-    it('should update progress during download', async () => {
+    it("should update progress during download", async () => {
       const download = useArtifactDownload();
       const artifacts = [
-        createMockArtifact({ id: '1', filePath: 'a.ts', body: 'a' }),
-        createMockArtifact({ id: '2', filePath: 'b.ts', body: 'b' }),
+        createMockArtifact({ id: "1", filePath: "a.ts", body: "a" }),
+        createMockArtifact({ id: "2", filePath: "b.ts", body: "b" }),
       ];
 
       // Start download
@@ -361,7 +362,7 @@ describe('useArtifactDownload', () => {
       await promise;
     });
 
-    it('should clear progress and isDownloading after completion', async () => {
+    it("should clear progress and isDownloading after completion", async () => {
       vi.useFakeTimers();
 
       const download = useArtifactDownload();
@@ -379,9 +380,9 @@ describe('useArtifactDownload', () => {
     });
   });
 
-  describe('error handling', () => {
-    it('should handle JSZip errors gracefully', async () => {
-      mockGenerateAsync.mockRejectedValueOnce(new Error('ZIP generation failed'));
+  describe("error handling", () => {
+    it("should handle JSZip errors gracefully", async () => {
+      mockGenerateAsync.mockRejectedValueOnce(new Error("ZIP generation failed"));
 
       const download = useArtifactDownload();
       const artifacts = [createMockArtifact()];
@@ -389,11 +390,11 @@ describe('useArtifactDownload', () => {
       const result = await download.downloadAll(artifacts);
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('ZIP generation failed');
+      expect(result.error).toBe("ZIP generation failed");
     });
 
-    it('should handle unknown errors', async () => {
-      mockGenerateAsync.mockRejectedValueOnce('Unknown error');
+    it("should handle unknown errors", async () => {
+      mockGenerateAsync.mockRejectedValueOnce("Unknown error");
 
       const download = useArtifactDownload();
       const artifacts = [createMockArtifact()];
@@ -401,13 +402,13 @@ describe('useArtifactDownload', () => {
       const result = await download.downloadAll(artifacts);
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Unknown error occurred');
+      expect(result.error).toBe("Unknown error occurred");
     });
 
-    it('should clear download state after error', async () => {
+    it("should clear download state after error", async () => {
       vi.useFakeTimers();
 
-      mockGenerateAsync.mockRejectedValueOnce(new Error('Failed'));
+      mockGenerateAsync.mockRejectedValueOnce(new Error("Failed"));
 
       const download = useArtifactDownload();
       const artifacts = [createMockArtifact()];
@@ -423,54 +424,62 @@ describe('useArtifactDownload', () => {
     });
   });
 
-  describe('edge cases', () => {
-    it('should handle artifacts with no extension', async () => {
+  describe("edge cases", () => {
+    it("should handle artifacts with no extension", async () => {
       const download = useArtifactDownload();
       const artifacts = [
-        createMockArtifact({ id: '1', filePath: 'Dockerfile', body: 'FROM node' }),
-        createMockArtifact({ id: '2', filePath: 'Dockerfile', body: 'FROM python' }),
+        createMockArtifact({ id: "1", filePath: "Dockerfile", body: "FROM node" }),
+        createMockArtifact({ id: "2", filePath: "Dockerfile", body: "FROM python" }),
       ];
 
       await download.downloadAll(artifacts);
 
-      expect(mockFile).toHaveBeenCalledWith('Dockerfile', 'FROM node');
-      expect(mockFile).toHaveBeenCalledWith('Dockerfile-1', 'FROM python');
+      expect(mockFile).toHaveBeenCalledWith("Dockerfile", "FROM node");
+      expect(mockFile).toHaveBeenCalledWith("Dockerfile-1", "FROM python");
     });
 
-    it('should handle very long file paths', async () => {
+    it("should handle very long file paths", async () => {
       const download = useArtifactDownload();
-      const longPath = 'a/'.repeat(50) + 'file.ts';
-      const artifacts = [
-        createMockArtifact({ id: '1', filePath: longPath, body: 'content' }),
-      ];
+      const longPath = "a/".repeat(50) + "file.ts";
+      const artifacts = [createMockArtifact({ id: "1", filePath: longPath, body: "content" })];
 
       const result = await download.downloadAll(artifacts);
 
       expect(result.success).toBe(true);
     });
 
-    it('should handle artifacts with unicode in paths', async () => {
+    it("should handle artifacts with unicode in paths", async () => {
       const download = useArtifactDownload();
       const artifacts = [
-        createMockArtifact({ id: '1', filePath: 'src/komponenty.ts', body: 'content' }),
+        createMockArtifact({ id: "1", filePath: "src/komponenty.ts", body: "content" }),
       ];
 
       await download.downloadAll(artifacts);
 
-      expect(mockFile).toHaveBeenCalledWith('src/komponenty.ts', 'content');
+      expect(mockFile).toHaveBeenCalledWith("src/komponenty.ts", "content");
     });
 
-    it('should handle mixed content types', async () => {
+    it("should handle mixed content types", async () => {
       const download = useArtifactDownload();
       const artifacts = [
-        createMockArtifact({ id: '1', fileType: 'code', filePath: 'code.ts', body: 'const x = 1;' }),
         createMockArtifact({
-          id: '2',
-          fileType: 'image',
-          filePath: 'image.png',
-          body: 'data:image/png;base64,abc123',
+          id: "1",
+          fileType: "code",
+          filePath: "code.ts",
+          body: "const x = 1;",
         }),
-        createMockArtifact({ id: '3', fileType: 'data', filePath: 'data.json', body: '{"key":"value"}' }),
+        createMockArtifact({
+          id: "2",
+          fileType: "image",
+          filePath: "image.png",
+          body: "data:image/png;base64,abc123",
+        }),
+        createMockArtifact({
+          id: "3",
+          fileType: "data",
+          filePath: "data.json",
+          body: '{"key":"value"}',
+        }),
       ];
 
       const result = await download.downloadAll(artifacts);

@@ -8,10 +8,10 @@
  * @see HAP-769 - Implement Share Session UI for happy-vue web app
  */
 
-import { useI18n } from 'vue-i18n';
-import { Users } from 'lucide-vue-next';
-import ShareListItem from './ShareListItem.vue';
-import type { SessionShareEntry, SessionSharePermission } from '@magic-agent/protocol';
+import { useI18n } from "vue-i18n";
+import { Users } from "lucide-vue-next";
+import ShareListItem from "./ShareListItem.vue";
+import type { SessionShareEntry, SessionSharePermission } from "@magic-agent/protocol";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Props & Emits
@@ -29,8 +29,8 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<{
-  'update:permission': [shareId: string, permission: SessionSharePermission];
-  'remove': [shareId: string];
+  "update:permission": [shareId: string, permission: SessionSharePermission];
+  remove: [shareId: string];
 }>();
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -44,11 +44,11 @@ const { t } = useI18n();
 // ─────────────────────────────────────────────────────────────────────────────
 
 function handlePermissionUpdate(shareId: string, permission: SessionSharePermission): void {
-  emit('update:permission', shareId, permission);
+  emit("update:permission", shareId, permission);
 }
 
 function handleRemove(shareId: string): void {
-  emit('remove', shareId);
+  emit("remove", shareId);
 }
 </script>
 
@@ -57,10 +57,8 @@ function handleRemove(shareId: string): void {
     <!-- Section Header -->
     <div class="flex items-center gap-2 text-sm font-medium text-muted-foreground">
       <Users class="size-4" />
-      <span>{{ t('sharing.peopleWithAccess') }}</span>
-      <span v-if="shares.length > 0" class="text-xs">
-        ({{ shares.length }})
-      </span>
+      <span>{{ t("sharing.peopleWithAccess") }}</span>
+      <span v-if="shares.length > 0" class="text-xs"> ({{ shares.length }}) </span>
     </div>
 
     <!-- Empty State -->
@@ -68,7 +66,7 @@ function handleRemove(shareId: string): void {
       v-if="shares.length === 0 && !isLoading"
       class="py-6 text-center text-sm text-muted-foreground"
     >
-      {{ t('sharing.noShares') }}
+      {{ t("sharing.noShares") }}
     </div>
 
     <!-- Share List -->

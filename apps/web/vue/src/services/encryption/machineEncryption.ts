@@ -1,5 +1,5 @@
-import { decodeBase64, encodeBase64 } from '@/services/base64';
-import type { Decryptor, Encryptor } from './encryptors';
+import { decodeBase64, encodeBase64 } from "@/services/base64";
+import type { Decryptor, Encryptor } from "./encryptors";
 
 export class MachineEncryption {
   private readonly machineId: string;

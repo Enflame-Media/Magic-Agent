@@ -1,4 +1,4 @@
-import type { ToolCall } from '@/services/messages/types';
+import type { ToolCall } from "@/services/messages/types";
 
 type KnownToolConfig = {
   title?: string | ((tool: ToolCall) => string);
@@ -8,25 +8,25 @@ type KnownToolConfig = {
 };
 
 function extractPath(input: unknown): string | null {
-  if (!input || typeof input !== 'object') {
+  if (!input || typeof input !== "object") {
     return null;
   }
   const record = input as Record<string, unknown>;
-  if (typeof record.path === 'string') {
+  if (typeof record.path === "string") {
     return record.path;
   }
-  if (typeof record.filePath === 'string') {
+  if (typeof record.filePath === "string") {
     return record.filePath;
   }
   return null;
 }
 
 function extractCommand(input: unknown): string | null {
-  if (!input || typeof input !== 'object') {
+  if (!input || typeof input !== "object") {
     return null;
   }
   const record = input as Record<string, unknown>;
-  if (typeof record.command === 'string') {
+  if (typeof record.command === "string") {
     return record.command;
   }
   if (Array.isArray(record.parsed_cmd) && record.parsed_cmd.length > 0) {
@@ -40,17 +40,17 @@ function extractCommand(input: unknown): string | null {
 
 function snakeToPascalWithSpaces(value: string): string {
   return value
-    .split('_')
+    .split("_")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(' ');
+    .join(" ");
 }
 
 function formatMcpTitle(toolName: string): string {
-  const withoutPrefix = toolName.replace(/^mcp__/, '');
-  const parts = withoutPrefix.split('__');
+  const withoutPrefix = toolName.replace(/^mcp__/, "");
+  const parts = withoutPrefix.split("__");
   if (parts.length >= 2) {
-    const serverName = snakeToPascalWithSpaces(parts[0] ?? 'mcp');
-    const toolNamePart = snakeToPascalWithSpaces(parts.slice(1).join('_'));
+    const serverName = snakeToPascalWithSpaces(parts[0] ?? "mcp");
+    const toolNamePart = snakeToPascalWithSpaces(parts.slice(1).join("_"));
     return `MCP: ${serverName} ${toolNamePart}`;
   }
   return `MCP: ${snakeToPascalWithSpaces(withoutPrefix)}`;
@@ -60,24 +60,24 @@ export const knownTools: Record<string, KnownToolConfig> = {
   Task: {
     title: (tool) => {
       const input = tool.input as { description?: string } | null;
-      return input?.description ?? 'Task';
+      return input?.description ?? "Task";
     },
     minimal: false,
   },
   Bash: {
-    title: 'Bash',
+    title: "Bash",
     subtitle: (tool) => extractCommand(tool.input),
     minimal: true,
     hideDefaultError: true,
   },
   CodexBash: {
-    title: 'Codex Bash',
+    title: "Codex Bash",
     subtitle: (tool) => extractCommand(tool.input),
     minimal: true,
     hideDefaultError: true,
   },
   Glob: {
-    title: 'Search files',
+    title: "Search files",
     subtitle: (tool) => {
       const input = tool.input as { pattern?: string } | null;
       return input?.pattern ?? null;
@@ -85,7 +85,7 @@ export const knownTools: Record<string, KnownToolConfig> = {
     minimal: true,
   },
   Grep: {
-    title: 'Search content',
+    title: "Search content",
     subtitle: (tool) => {
       const input = tool.input as { pattern?: string } | null;
       return input?.pattern ?? null;
@@ -93,51 +93,51 @@ export const knownTools: Record<string, KnownToolConfig> = {
     minimal: true,
   },
   LS: {
-    title: 'List files',
+    title: "List files",
     subtitle: (tool) => extractPath(tool.input),
     minimal: true,
   },
   Read: {
-    title: 'Read',
+    title: "Read",
     subtitle: (tool) => extractPath(tool.input),
     minimal: true,
   },
   Write: {
-    title: 'Write',
+    title: "Write",
     subtitle: (tool) => extractPath(tool.input),
   },
   Edit: {
-    title: 'Edit',
+    title: "Edit",
     subtitle: (tool) => extractPath(tool.input),
   },
   MultiEdit: {
-    title: 'Multi Edit',
+    title: "Multi Edit",
     subtitle: (tool) => extractPath(tool.input),
   },
   TodoWrite: {
-    title: 'Todo',
+    title: "Todo",
     minimal: true,
   },
   todo_write: {
-    title: 'Todo',
+    title: "Todo",
     minimal: true,
   },
   ExitPlanMode: {
-    title: 'Plan',
+    title: "Plan",
   },
   exit_plan_mode: {
-    title: 'Plan',
+    title: "Plan",
   },
   CodexDiff: {
-    title: 'Diff',
+    title: "Diff",
   },
   CodexPatch: {
-    title: 'Patch',
+    title: "Patch",
   },
 };
 
 export function getToolConfig(tool: ToolCall): KnownToolConfig | null {
-  if (tool.name.startsWith('mcp__')) {
+  if (tool.name.startsWith("mcp__")) {
     return {
       title: formatMcpTitle(tool.name),
       minimal: true,

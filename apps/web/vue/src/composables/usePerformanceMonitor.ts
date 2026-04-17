@@ -1,12 +1,12 @@
-import { ref } from 'vue';
+import { ref } from "vue";
 
 export function usePerformanceMonitor() {
   const apiLatencyMs = ref(180);
-  const lastCheckedAt = ref('Just now');
+  const lastCheckedAt = ref("Just now");
 
   function refreshMetrics() {
     // TODO: wire to performance monitoring events
-    lastCheckedAt.value = 'Just now';
+    lastCheckedAt.value = "Just now";
   }
 
   return {

@@ -8,13 +8,17 @@
  * @see HAP-1046 - Build Vue ACP foundation
  */
 
-import { AcpSessionUpdateSchema } from '@magic-agent/protocol';
-import { useSessionsStore } from '@/stores/sessions';
-import { useAcpStore } from '@/stores/acp';
-import { decodeBase64 } from '@/services/base64';
-import { secureStorage } from '@/services/storage';
-import { EncryptionManager } from '@/services/encryption/encryptionManager';
-import { AES256Encryption, SecretBoxEncryption, type Decryptor } from '@/services/encryption/encryptors';
+import { AcpSessionUpdateSchema } from "@magic-agent/protocol";
+import { useSessionsStore } from "@/stores/sessions";
+import { useAcpStore } from "@/stores/acp";
+import { decodeBase64 } from "@/services/base64";
+import { secureStorage } from "@/services/storage";
+import { EncryptionManager } from "@/services/encryption/encryptionManager";
+import {
+  AES256Encryption,
+  SecretBoxEncryption,
+  type Decryptor,
+} from "@/services/encryption/encryptors";
 
 // Cache encryption managers and session decryptors
 let encryptionManagerPromise: Promise<EncryptionManager | null> | null = null;
@@ -41,7 +45,7 @@ async function getSessionDecryptor(sessionId: string): Promise<Decryptor | null>
     return null;
   }
 
-  const cacheKey = `${session.id}:${session.dataEncryptionKey ?? 'legacy'}`;
+  const cacheKey = `${session.id}:${session.dataEncryptionKey ?? "legacy"}`;
   let existing = sessionDecryptors.get(cacheKey);
   if (!existing) {
     existing = (async () => {
@@ -56,7 +60,9 @@ async function getSessionDecryptor(sessionId: string): Promise<Decryptor | null>
         if (!encryptionManager) {
           return null;
         }
-        const decryptedKey = await encryptionManager.decryptEncryptionKey(session.dataEncryptionKey);
+        const decryptedKey = await encryptionManager.decryptEncryptionKey(
+          session.dataEncryptionKey,
+        );
         if (!decryptedKey) {
           return null;
         }

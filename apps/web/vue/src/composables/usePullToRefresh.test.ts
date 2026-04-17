@@ -14,20 +14,20 @@
  * @see HAP-919 - Mobile Web Enhancements
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test';
+import { describe, it, expect, vi, beforeEach, afterEach } from "vite-plus/test";
 import {
   usePullToRefresh,
   type UsePullToRefreshOptions,
   type UsePullToRefreshReturn,
-} from './usePullToRefresh';
+} from "./usePullToRefresh";
 
 // Store mounted callbacks to call after containerRef is set
 let mountedCallbacks: (() => void)[] = [];
 let unmountedCallbacks: (() => void)[] = [];
 
 // Mock Vue lifecycle hooks since we're testing outside component context
-vi.mock('vue', async () => {
-  const actual = await vi.importActual('vue');
+vi.mock("vue", async () => {
+  const actual = await vi.importActual("vue");
   return {
     ...actual,
     onMounted: vi.fn((cb) => {
@@ -73,8 +73,8 @@ function createMockContainer(scrollTop = 0): HTMLElement {
  * Create a mock TouchEvent
  */
 function createTouchEvent(
-  type: 'touchstart' | 'touchmove' | 'touchend' | 'touchcancel',
-  clientY: number
+  type: "touchstart" | "touchmove" | "touchend" | "touchcancel",
+  clientY: number,
 ): TouchEvent {
   const touch = {
     clientY,
@@ -93,8 +93,8 @@ function createTouchEvent(
 
   return {
     type,
-    touches: type === 'touchend' || type === 'touchcancel' ? [] : [touch],
-    targetTouches: type === 'touchend' || type === 'touchcancel' ? [] : [touch],
+    touches: type === "touchend" || type === "touchcancel" ? [] : [touch],
+    targetTouches: type === "touchend" || type === "touchcancel" ? [] : [touch],
     changedTouches: [touch],
     preventDefault: vi.fn(),
     stopPropagation: vi.fn(),
@@ -108,15 +108,15 @@ function simulatePullGesture(
   container: HTMLElement,
   startY: number,
   endY: number,
-  steps = 1
+  steps = 1,
 ): void {
   // Trigger touchstart
-  (container as any).dispatchEvent(createTouchEvent('touchstart', startY));
+  (container as any).dispatchEvent(createTouchEvent("touchstart", startY));
 
   // Trigger touchmove(s)
   const delta = (endY - startY) / steps;
   for (let i = 1; i <= steps; i++) {
-    (container as any).dispatchEvent(createTouchEvent('touchmove', startY + delta * i));
+    (container as any).dispatchEvent(createTouchEvent("touchmove", startY + delta * i));
   }
 }
 
@@ -125,7 +125,7 @@ function simulatePullGesture(
  */
 function setupComposable(
   options: UsePullToRefreshOptions = {},
-  scrollTop = 0
+  scrollTop = 0,
 ): { composable: UsePullToRefreshReturn; container: HTMLElement } {
   mountedCallbacks = [];
   unmountedCallbacks = [];
@@ -135,12 +135,12 @@ function setupComposable(
   composable.containerRef.value = container;
 
   // Trigger mounted callbacks after containerRef is set
-  mountedCallbacks.forEach(cb => cb());
+  mountedCallbacks.forEach((cb) => cb());
 
   return { composable, container };
 }
 
-describe('usePullToRefresh', () => {
+describe("usePullToRefresh", () => {
   let composable: UsePullToRefreshReturn;
 
   beforeEach(() => {
@@ -155,46 +155,46 @@ describe('usePullToRefresh', () => {
     unmountedCallbacks = [];
   });
 
-  describe('initialization', () => {
-    it('should return expected properties', () => {
+  describe("initialization", () => {
+    it("should return expected properties", () => {
       composable = usePullToRefresh();
 
-      expect(composable).toHaveProperty('containerRef');
-      expect(composable).toHaveProperty('isPulling');
-      expect(composable).toHaveProperty('isRefreshing');
-      expect(composable).toHaveProperty('pullDistance');
-      expect(composable).toHaveProperty('pullProgress');
-      expect(composable).toHaveProperty('canRefresh');
-      expect(composable).toHaveProperty('refresh');
-      expect(composable).toHaveProperty('reset');
+      expect(composable).toHaveProperty("containerRef");
+      expect(composable).toHaveProperty("isPulling");
+      expect(composable).toHaveProperty("isRefreshing");
+      expect(composable).toHaveProperty("pullDistance");
+      expect(composable).toHaveProperty("pullProgress");
+      expect(composable).toHaveProperty("canRefresh");
+      expect(composable).toHaveProperty("refresh");
+      expect(composable).toHaveProperty("reset");
     });
 
-    it('should start with isPulling as false', () => {
+    it("should start with isPulling as false", () => {
       composable = usePullToRefresh();
       expect(composable.isPulling.value).toBe(false);
     });
 
-    it('should start with isRefreshing as false', () => {
+    it("should start with isRefreshing as false", () => {
       composable = usePullToRefresh();
       expect(composable.isRefreshing.value).toBe(false);
     });
 
-    it('should start with pullDistance as 0', () => {
+    it("should start with pullDistance as 0", () => {
       composable = usePullToRefresh();
       expect(composable.pullDistance.value).toBe(0);
     });
 
-    it('should start with pullProgress as 0', () => {
+    it("should start with pullProgress as 0", () => {
       composable = usePullToRefresh();
       expect(composable.pullProgress.value).toBe(0);
     });
 
-    it('should start with canRefresh as false', () => {
+    it("should start with canRefresh as false", () => {
       composable = usePullToRefresh();
       expect(composable.canRefresh.value).toBe(false);
     });
 
-    it('should use default threshold of 80', () => {
+    it("should use default threshold of 80", () => {
       composable = usePullToRefresh();
       const container = createMockContainer(0);
       composable.containerRef.value = container;
@@ -207,8 +207,8 @@ describe('usePullToRefresh', () => {
     });
   });
 
-  describe('touch event handling', () => {
-    it('should not start pulling when container is not at scroll top', () => {
+  describe("touch event handling", () => {
+    it("should not start pulling when container is not at scroll top", () => {
       const { composable, container } = setupComposable({}, 100); // Scrolled down
 
       simulatePullGesture(container, 0, 50);
@@ -217,67 +217,67 @@ describe('usePullToRefresh', () => {
       expect(composable.pullDistance.value).toBe(0);
     });
 
-    it('should start pulling on touchmove when at scroll top', () => {
+    it("should start pulling on touchmove when at scroll top", () => {
       const { composable, container } = setupComposable({}, 0);
 
-      (container as any).dispatchEvent(createTouchEvent('touchstart', 0));
-      (container as any).dispatchEvent(createTouchEvent('touchmove', 50));
+      (container as any).dispatchEvent(createTouchEvent("touchstart", 0));
+      (container as any).dispatchEvent(createTouchEvent("touchmove", 50));
 
       expect(composable.isPulling.value).toBe(true);
       expect(composable.pullDistance.value).toBeGreaterThan(0);
     });
 
-    it('should not pull on upward swipe (negative distance)', () => {
+    it("should not pull on upward swipe (negative distance)", () => {
       const { composable, container } = setupComposable({}, 0);
 
-      (container as any).dispatchEvent(createTouchEvent('touchstart', 100));
-      (container as any).dispatchEvent(createTouchEvent('touchmove', 50)); // Moving up
+      (container as any).dispatchEvent(createTouchEvent("touchstart", 100));
+      (container as any).dispatchEvent(createTouchEvent("touchmove", 50)); // Moving up
 
       expect(composable.isPulling.value).toBe(false);
       expect(composable.pullDistance.value).toBe(0);
     });
 
-    it('should reset on touchend when threshold not reached', () => {
+    it("should reset on touchend when threshold not reached", () => {
       const { composable, container } = setupComposable({}, 0);
 
       // Small pull that won't reach threshold
-      (container as any).dispatchEvent(createTouchEvent('touchstart', 0));
-      (container as any).dispatchEvent(createTouchEvent('touchmove', 30));
-      (container as any).dispatchEvent(createTouchEvent('touchend', 30));
+      (container as any).dispatchEvent(createTouchEvent("touchstart", 0));
+      (container as any).dispatchEvent(createTouchEvent("touchmove", 30));
+      (container as any).dispatchEvent(createTouchEvent("touchend", 30));
 
       expect(composable.isPulling.value).toBe(false);
       expect(composable.pullDistance.value).toBe(0);
     });
 
-    it('should reset on touchcancel', () => {
+    it("should reset on touchcancel", () => {
       const { composable, container } = setupComposable({}, 0);
 
-      (container as any).dispatchEvent(createTouchEvent('touchstart', 0));
-      (container as any).dispatchEvent(createTouchEvent('touchmove', 50));
-      (container as any).dispatchEvent(createTouchEvent('touchcancel', 50));
+      (container as any).dispatchEvent(createTouchEvent("touchstart", 0));
+      (container as any).dispatchEvent(createTouchEvent("touchmove", 50));
+      (container as any).dispatchEvent(createTouchEvent("touchcancel", 50));
 
       expect(composable.isPulling.value).toBe(false);
       expect(composable.pullDistance.value).toBe(0);
     });
 
-    it('should prevent default during pull to stop scroll', () => {
+    it("should prevent default during pull to stop scroll", () => {
       const { container } = setupComposable({}, 0);
 
-      (container as any).dispatchEvent(createTouchEvent('touchstart', 0));
-      const moveEvent = createTouchEvent('touchmove', 50);
+      (container as any).dispatchEvent(createTouchEvent("touchstart", 0));
+      const moveEvent = createTouchEvent("touchmove", 50);
       (container as any).dispatchEvent(moveEvent);
 
       expect(moveEvent.preventDefault).toHaveBeenCalled();
     });
 
-    it('should handle missing touch in touchmove gracefully', () => {
+    it("should handle missing touch in touchmove gracefully", () => {
       const { composable, container } = setupComposable({}, 0);
 
-      (container as any).dispatchEvent(createTouchEvent('touchstart', 0));
+      (container as any).dispatchEvent(createTouchEvent("touchstart", 0));
 
       // Create event with no touches
       const event = {
-        type: 'touchmove',
+        type: "touchmove",
         touches: [],
         preventDefault: vi.fn(),
       } as unknown as TouchEvent;
@@ -289,90 +289,93 @@ describe('usePullToRefresh', () => {
     });
   });
 
-  describe('resistance calculation', () => {
-    it('should apply resistance to pull distance', () => {
+  describe("resistance calculation", () => {
+    it("should apply resistance to pull distance", () => {
       const { composable, container } = setupComposable({ resistance: 0.5 }, 0);
 
       // Pull 100px
-      (container as any).dispatchEvent(createTouchEvent('touchstart', 0));
-      (container as any).dispatchEvent(createTouchEvent('touchmove', 100));
+      (container as any).dispatchEvent(createTouchEvent("touchstart", 0));
+      (container as any).dispatchEvent(createTouchEvent("touchmove", 100));
 
       // With 0.5 resistance, distance should be less than 100
       expect(composable.pullDistance.value).toBeLessThan(100);
       expect(composable.pullDistance.value).toBeGreaterThan(0);
     });
 
-    it('should cap pull distance at maxPullDistance', () => {
+    it("should cap pull distance at maxPullDistance", () => {
       const { composable, container } = setupComposable({ maxPullDistance: 50 }, 0);
 
       // Pull far beyond max
-      (container as any).dispatchEvent(createTouchEvent('touchstart', 0));
-      (container as any).dispatchEvent(createTouchEvent('touchmove', 500));
+      (container as any).dispatchEvent(createTouchEvent("touchstart", 0));
+      (container as any).dispatchEvent(createTouchEvent("touchmove", 500));
 
       expect(composable.pullDistance.value).toBeLessThanOrEqual(50);
     });
 
-    it('should return 0 for negative distance', () => {
+    it("should return 0 for negative distance", () => {
       const { composable, container } = setupComposable({}, 0);
 
       // Upward swipe
-      (container as any).dispatchEvent(createTouchEvent('touchstart', 100));
-      (container as any).dispatchEvent(createTouchEvent('touchmove', 50));
+      (container as any).dispatchEvent(createTouchEvent("touchstart", 100));
+      (container as any).dispatchEvent(createTouchEvent("touchmove", 50));
 
       expect(composable.pullDistance.value).toBe(0);
     });
   });
 
-  describe('progress computation', () => {
-    it('should calculate progress as percentage of threshold', () => {
+  describe("progress computation", () => {
+    it("should calculate progress as percentage of threshold", () => {
       const { composable, container } = setupComposable({ threshold: 100, resistance: 0 }, 0);
 
-      (container as any).dispatchEvent(createTouchEvent('touchstart', 0));
-      (container as any).dispatchEvent(createTouchEvent('touchmove', 50));
+      (container as any).dispatchEvent(createTouchEvent("touchstart", 0));
+      (container as any).dispatchEvent(createTouchEvent("touchmove", 50));
 
       // At 50px of 100px threshold = ~50% (may vary with resistance)
       expect(composable.pullProgress.value).toBeGreaterThan(0);
       expect(composable.pullProgress.value).toBeLessThanOrEqual(100);
     });
 
-    it('should cap progress at 100%', () => {
+    it("should cap progress at 100%", () => {
       const { composable, container } = setupComposable({ threshold: 50 }, 0);
 
       // Pull well beyond threshold
-      (container as any).dispatchEvent(createTouchEvent('touchstart', 0));
-      (container as any).dispatchEvent(createTouchEvent('touchmove', 200));
+      (container as any).dispatchEvent(createTouchEvent("touchstart", 0));
+      (container as any).dispatchEvent(createTouchEvent("touchmove", 200));
 
       expect(composable.pullProgress.value).toBeLessThanOrEqual(100);
     });
 
-    it('should handle zero threshold gracefully', () => {
+    it("should handle zero threshold gracefully", () => {
       composable = usePullToRefresh({ threshold: 0 });
       expect(composable.pullProgress.value).toBe(0);
     });
   });
 
-  describe('canRefresh', () => {
-    it('should be true when pullDistance >= threshold', () => {
-      const { composable, container } = setupComposable({ threshold: 30, resistance: 0, maxPullDistance: 200 }, 0);
+  describe("canRefresh", () => {
+    it("should be true when pullDistance >= threshold", () => {
+      const { composable, container } = setupComposable(
+        { threshold: 30, resistance: 0, maxPullDistance: 200 },
+        0,
+      );
 
-      (container as any).dispatchEvent(createTouchEvent('touchstart', 0));
-      (container as any).dispatchEvent(createTouchEvent('touchmove', 100));
+      (container as any).dispatchEvent(createTouchEvent("touchstart", 0));
+      (container as any).dispatchEvent(createTouchEvent("touchmove", 100));
 
       expect(composable.canRefresh.value).toBe(true);
     });
 
-    it('should be false when pullDistance < threshold', () => {
+    it("should be false when pullDistance < threshold", () => {
       const { composable, container } = setupComposable({ threshold: 100 }, 0);
 
-      (container as any).dispatchEvent(createTouchEvent('touchstart', 0));
-      (container as any).dispatchEvent(createTouchEvent('touchmove', 20));
+      (container as any).dispatchEvent(createTouchEvent("touchstart", 0));
+      (container as any).dispatchEvent(createTouchEvent("touchmove", 20));
 
       expect(composable.canRefresh.value).toBe(false);
     });
   });
 
-  describe('refresh', () => {
-    it('should call onRefresh callback when refresh is triggered', async () => {
+  describe("refresh", () => {
+    it("should call onRefresh callback when refresh is triggered", async () => {
       const onRefresh = vi.fn().mockResolvedValue(undefined);
       composable = usePullToRefresh({ onRefresh });
 
@@ -381,7 +384,7 @@ describe('usePullToRefresh', () => {
       expect(onRefresh).toHaveBeenCalled();
     });
 
-    it('should set isRefreshing to true during refresh', async () => {
+    it("should set isRefreshing to true during refresh", async () => {
       let isRefreshingDuringCallback = false;
       const onRefresh = vi.fn().mockImplementation(() => {
         isRefreshingDuringCallback = composable.isRefreshing.value;
@@ -394,7 +397,7 @@ describe('usePullToRefresh', () => {
       expect(isRefreshingDuringCallback).toBe(true);
     });
 
-    it('should hold pullDistance at threshold during refresh', async () => {
+    it("should hold pullDistance at threshold during refresh", async () => {
       let pullDistanceDuringRefresh = 0;
       const onRefresh = vi.fn().mockImplementation(() => {
         pullDistanceDuringRefresh = composable.pullDistance.value;
@@ -407,7 +410,7 @@ describe('usePullToRefresh', () => {
       expect(pullDistanceDuringRefresh).toBe(80);
     });
 
-    it('should reset state after refresh completes', async () => {
+    it("should reset state after refresh completes", async () => {
       const onRefresh = vi.fn().mockResolvedValue(undefined);
       composable = usePullToRefresh({ onRefresh });
 
@@ -418,8 +421,8 @@ describe('usePullToRefresh', () => {
       expect(composable.pullDistance.value).toBe(0);
     });
 
-    it('should reset even if onRefresh throws', async () => {
-      const onRefresh = vi.fn().mockRejectedValue(new Error('Refresh failed'));
+    it("should reset even if onRefresh throws", async () => {
+      const onRefresh = vi.fn().mockRejectedValue(new Error("Refresh failed"));
       composable = usePullToRefresh({ onRefresh });
 
       // The refresh function catches errors internally and resets state
@@ -434,10 +437,10 @@ describe('usePullToRefresh', () => {
       expect(composable.pullDistance.value).toBe(0);
     });
 
-    it('should not trigger refresh if already refreshing', async () => {
-      const onRefresh = vi.fn().mockImplementation(
-        () => new Promise((resolve) => setTimeout(resolve, 100))
-      );
+    it("should not trigger refresh if already refreshing", async () => {
+      const onRefresh = vi
+        .fn()
+        .mockImplementation(() => new Promise((resolve) => setTimeout(resolve, 100)));
       composable = usePullToRefresh({ onRefresh });
 
       // Start first refresh
@@ -452,7 +455,7 @@ describe('usePullToRefresh', () => {
       expect(onRefresh).toHaveBeenCalledTimes(1);
     });
 
-    it('should work without onRefresh callback', async () => {
+    it("should work without onRefresh callback", async () => {
       composable = usePullToRefresh(); // No onRefresh provided
 
       // Should not throw
@@ -460,13 +463,13 @@ describe('usePullToRefresh', () => {
     });
   });
 
-  describe('reset', () => {
-    it('should reset all state values', () => {
+  describe("reset", () => {
+    it("should reset all state values", () => {
       const { composable, container } = setupComposable({}, 0);
 
       // Get into pulling state
-      (container as any).dispatchEvent(createTouchEvent('touchstart', 0));
-      (container as any).dispatchEvent(createTouchEvent('touchmove', 50));
+      (container as any).dispatchEvent(createTouchEvent("touchstart", 0));
+      (container as any).dispatchEvent(createTouchEvent("touchmove", 50));
 
       // Reset
       composable.reset();
@@ -477,25 +480,25 @@ describe('usePullToRefresh', () => {
     });
   });
 
-  describe('enabled option', () => {
-    it('should not respond to touch when enabled is false', () => {
+  describe("enabled option", () => {
+    it("should not respond to touch when enabled is false", () => {
       const { composable, container } = setupComposable({ enabled: false }, 0);
 
-      (container as any).dispatchEvent(createTouchEvent('touchstart', 0));
-      (container as any).dispatchEvent(createTouchEvent('touchmove', 100));
+      (container as any).dispatchEvent(createTouchEvent("touchstart", 0));
+      (container as any).dispatchEvent(createTouchEvent("touchmove", 100));
 
       expect(composable.isPulling.value).toBe(false);
       expect(composable.pullDistance.value).toBe(0);
     });
 
-    it('should not trigger refresh when enabled is false', async () => {
+    it("should not trigger refresh when enabled is false", async () => {
       const onRefresh = vi.fn();
       const { composable, container } = setupComposable({ enabled: false, onRefresh }, 0);
 
       // Try to pull and release
-      (container as any).dispatchEvent(createTouchEvent('touchstart', 0));
-      (container as any).dispatchEvent(createTouchEvent('touchmove', 200));
-      (container as any).dispatchEvent(createTouchEvent('touchend', 200));
+      (container as any).dispatchEvent(createTouchEvent("touchstart", 0));
+      (container as any).dispatchEvent(createTouchEvent("touchmove", 200));
+      (container as any).dispatchEvent(createTouchEvent("touchend", 200));
 
       // Manually calling refresh should still work (for programmatic use)
       await composable.refresh();
@@ -503,55 +506,55 @@ describe('usePullToRefresh', () => {
     });
   });
 
-  describe('event listener lifecycle', () => {
-    it('should register event listeners on mount', () => {
+  describe("event listener lifecycle", () => {
+    it("should register event listeners on mount", () => {
       const { container } = setupComposable({}, 0);
 
       // Check that addEventListener was called
       expect(container.addEventListener).toHaveBeenCalledWith(
-        'touchstart',
+        "touchstart",
         expect.any(Function),
-        expect.objectContaining({ passive: true })
+        expect.objectContaining({ passive: true }),
       );
       expect(container.addEventListener).toHaveBeenCalledWith(
-        'touchmove',
+        "touchmove",
         expect.any(Function),
-        expect.objectContaining({ passive: false })
+        expect.objectContaining({ passive: false }),
       );
       expect(container.addEventListener).toHaveBeenCalledWith(
-        'touchend',
+        "touchend",
         expect.any(Function),
-        expect.objectContaining({ passive: true })
+        expect.objectContaining({ passive: true }),
       );
       expect(container.addEventListener).toHaveBeenCalledWith(
-        'touchcancel',
+        "touchcancel",
         expect.any(Function),
-        expect.objectContaining({ passive: true })
+        expect.objectContaining({ passive: true }),
       );
     });
   });
 
-  describe('scroll position handling', () => {
-    it('should reset if container scrolls away from top during pull', () => {
+  describe("scroll position handling", () => {
+    it("should reset if container scrolls away from top during pull", () => {
       const { composable, container } = setupComposable({}, 0);
 
       // Start pulling
-      (container as any).dispatchEvent(createTouchEvent('touchstart', 0));
-      (container as any).dispatchEvent(createTouchEvent('touchmove', 50));
+      (container as any).dispatchEvent(createTouchEvent("touchstart", 0));
+      (container as any).dispatchEvent(createTouchEvent("touchmove", 50));
 
       expect(composable.isPulling.value).toBe(true);
 
       // Simulate scroll away from top
       (container as any).scrollTop = 100;
-      (container as any).dispatchEvent(createTouchEvent('touchmove', 60));
+      (container as any).dispatchEvent(createTouchEvent("touchmove", 60));
 
       expect(composable.isPulling.value).toBe(false);
       expect(composable.pullDistance.value).toBe(0);
     });
   });
 
-  describe('edge cases', () => {
-    it('should handle null containerRef gracefully', () => {
+  describe("edge cases", () => {
+    it("should handle null containerRef gracefully", () => {
       composable = usePullToRefresh();
       // containerRef is null by default
 
@@ -559,14 +562,14 @@ describe('usePullToRefresh', () => {
       expect(() => composable.refresh()).not.toThrow();
     });
 
-    it('should handle rapid touch events', () => {
+    it("should handle rapid touch events", () => {
       const { composable, container } = setupComposable({}, 0);
 
       // Rapid sequence of events
       for (let i = 0; i < 100; i++) {
-        (container as any).dispatchEvent(createTouchEvent('touchstart', 0));
-        (container as any).dispatchEvent(createTouchEvent('touchmove', i));
-        (container as any).dispatchEvent(createTouchEvent('touchend', i));
+        (container as any).dispatchEvent(createTouchEvent("touchstart", 0));
+        (container as any).dispatchEvent(createTouchEvent("touchmove", i));
+        (container as any).dispatchEvent(createTouchEvent("touchend", i));
       }
 
       // Should still be in a valid state
@@ -574,18 +577,21 @@ describe('usePullToRefresh', () => {
       expect(composable.pullDistance.value).toBe(0);
     });
 
-    it('should handle custom threshold values', () => {
+    it("should handle custom threshold values", () => {
       const customThreshold = 150;
-      const { composable, container } = setupComposable({ threshold: customThreshold, resistance: 0, maxPullDistance: 300 }, 0);
+      const { composable, container } = setupComposable(
+        { threshold: customThreshold, resistance: 0, maxPullDistance: 300 },
+        0,
+      );
 
       // Pull to just under threshold
-      (container as any).dispatchEvent(createTouchEvent('touchstart', 0));
-      (container as any).dispatchEvent(createTouchEvent('touchmove', 140));
+      (container as any).dispatchEvent(createTouchEvent("touchstart", 0));
+      (container as any).dispatchEvent(createTouchEvent("touchmove", 140));
 
       expect(composable.canRefresh.value).toBe(false);
 
       // Pull to just over threshold
-      (container as any).dispatchEvent(createTouchEvent('touchmove', 160));
+      (container as any).dispatchEvent(createTouchEvent("touchmove", 160));
 
       expect(composable.canRefresh.value).toBe(true);
     });

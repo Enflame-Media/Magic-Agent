@@ -19,11 +19,11 @@
  * @see HAP-750 - Integrate useSessionRevival with WebSocket error events
  */
 
-import { ref, readonly, onMounted, onUnmounted } from 'vue';
-import { toast } from 'vue-sonner';
-import { useI18n } from 'vue-i18n';
-import { useAuthStore } from '@/stores/auth';
-import { getApiBaseUrl } from '@/services/apiBase';
+import { ref, readonly, onMounted, onUnmounted } from "vue";
+import { toast } from "vue-sonner";
+import { useI18n } from "vue-i18n";
+import { useAuthStore } from "@/stores/auth";
+import { getApiBaseUrl } from "@/services/apiBase";
 
 /** Session revival failure state */
 export interface RevivalFailedState {
@@ -81,8 +81,8 @@ export function useSessionRevival() {
    */
   function showRevivingToast(): void {
     reviving.value = true;
-    revivingToastId = toast.loading(t('sessionRevival.reviving'), {
-      description: t('sessionRevival.revivingDescription'),
+    revivingToastId = toast.loading(t("sessionRevival.reviving"), {
+      description: t("sessionRevival.revivingDescription"),
     });
   }
 
@@ -108,13 +108,13 @@ export function useSessionRevival() {
     dismissRevivingToast();
 
     // Check if this is a session revival failure
-    if (error.code === 'SESSION_REVIVAL_FAILED') {
+    if (error.code === "SESSION_REVIVAL_FAILED") {
       const sessionId = error.context?.sessionId;
 
       if (sessionId) {
         revivalFailed.value = {
           sessionId,
-          error: error.message ?? t('sessionRevival.unknownError'),
+          error: error.message ?? t("sessionRevival.unknownError"),
         };
         return true;
       }
@@ -133,9 +133,9 @@ export function useSessionRevival() {
 
     try {
       await navigator.clipboard.writeText(revivalFailed.value.sessionId);
-      toast.success(t('common.copied'));
+      toast.success(t("common.copied"));
     } catch {
-      toast.error(t('errors.operationFailed'));
+      toast.error(t("errors.operationFailed"));
     }
   }
 
@@ -155,30 +155,30 @@ export function useSessionRevival() {
       const token = authStore.token;
 
       if (!token) {
-        toast.error(t('errors.notAuthenticated'));
+        toast.error(t("errors.notAuthenticated"));
         return;
       }
 
       const response = await fetch(`${API_URL}/v1/sessions/${sessionId}/archive`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          reason: 'revival_failed',
+          reason: "revival_failed",
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Archive failed with status ' + String(response.status));
+        throw new Error("Archive failed with status " + String(response.status));
       }
 
-      toast.success(t('sessionRevival.archiveSuccess'));
+      toast.success(t("sessionRevival.archiveSuccess"));
       revivalFailed.value = null;
     } catch (error) {
-      console.error('[useSessionRevival] Failed to archive session:', error);
-      toast.error(t('sessionRevival.archiveFailed'));
+      console.error("[useSessionRevival] Failed to archive session:", error);
+      toast.error(t("sessionRevival.archiveFailed"));
     }
   }
 
@@ -211,12 +211,12 @@ export function useSessionRevival() {
 
   onMounted(() => {
     // Listen for session revival errors from WebSocket sync handlers
-    window.addEventListener('session-revival-error', handleSessionRevivalError as EventListener);
+    window.addEventListener("session-revival-error", handleSessionRevivalError as EventListener);
   });
 
   onUnmounted(() => {
     // Clean up event listener
-    window.removeEventListener('session-revival-error', handleSessionRevivalError as EventListener);
+    window.removeEventListener("session-revival-error", handleSessionRevivalError as EventListener);
   });
 
   // ─────────────────────────────────────────────────────────────────────────

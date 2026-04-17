@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import type { HTMLAttributes } from 'vue'
-import 'media-chrome'
+import type { HTMLAttributes } from "vue";
+import "media-chrome";
 
 interface Props {
-  class?: HTMLAttributes['class']
-  style?: HTMLAttributes['style']
+  class?: HTMLAttributes["class"];
+  style?: HTMLAttributes["style"];
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 </script>
 
 <template>

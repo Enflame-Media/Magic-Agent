@@ -8,10 +8,10 @@ This Cloudflare Worker uses Browser Rendering to capture screenshots of the Happ
 
 ## Screenshots Generated
 
-| File | Dimensions | Description |
-|------|------------|-------------|
-| `desktop-home.png` | 1920x1080 | Desktop layout of Happy dashboard |
-| `mobile-home.png` | 390x844 | Mobile layout of Happy dashboard |
+| File               | Dimensions | Description                       |
+| ------------------ | ---------- | --------------------------------- |
+| `desktop-home.png` | 1920x1080  | Desktop layout of Happy dashboard |
+| `mobile-home.png`  | 390x844    | Mobile layout of Happy dashboard  |
 
 ## Setup
 
@@ -62,26 +62,29 @@ yarn pwa-screenshots:download:dev
 
 ### API Endpoints
 
-| Endpoint | Description |
-|----------|-------------|
-| `GET /` | API documentation |
-| `GET /generate` | Generate all PWA screenshots |
-| `GET /screenshot/:name` | Serve a specific screenshot |
-| `GET /status` | Check if screenshots exist |
+| Endpoint                | Description                  |
+| ----------------------- | ---------------------------- |
+| `GET /`                 | API documentation            |
+| `GET /generate`         | Generate all PWA screenshots |
+| `GET /screenshot/:name` | Serve a specific screenshot  |
+| `GET /status`           | Check if screenshots exist   |
 
 ## Workflow
 
 1. **Deploy the Worker** (one-time setup):
+
    ```bash
    yarn pwa-screenshots:deploy:dev
    ```
 
 2. **Generate Screenshots** (after UI changes):
+
    ```bash
    yarn pwa-screenshots:generate:dev
    ```
 
 3. **Download to Local** (for static serving):
+
    ```bash
    yarn pwa-screenshots:download:dev
    ```

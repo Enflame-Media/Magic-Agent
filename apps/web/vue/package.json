@@ -2,8 +2,15 @@
   "name": "happy-vue",
   "version": "0.0.1",
   "private": true,
-  "type": "module",
   "description": "Happy Vue.js web application for Claude Code remote control",
+  "keywords": [
+    "claude-code",
+    "happy",
+    "monorepo",
+    "vue"
+  ],
+  "license": "MIT",
+  "type": "module",
   "scripts": {
     "preinstall": "node -e \"if(!process.env.INIT_CWD?.endsWith('/happy')){console.error('❌ Run yarn install from monorepo root');process.exit(1)}\"",
     "dev": "vp dev",
@@ -128,12 +135,5 @@
   },
   "engines": {
     "node": ">=22.0.0"
-  },
-  "keywords": [
-    "happy",
-    "vue",
-    "monorepo",
-    "claude-code"
-  ],
-  "license": "MIT"
+  }
 }

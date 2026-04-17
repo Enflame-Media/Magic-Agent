@@ -140,15 +140,15 @@ export enum LogLevel {
  */
 export enum PaywallResult {
   /** Paywall was not presented (user already has entitlement) */
-  NOT_PRESENTED = 'NOT_PRESENTED',
+  NOT_PRESENTED = "NOT_PRESENTED",
   /** An error occurred */
-  ERROR = 'ERROR',
+  ERROR = "ERROR",
   /** User cancelled the paywall */
-  CANCELLED = 'CANCELLED',
+  CANCELLED = "CANCELLED",
   /** User successfully purchased */
-  PURCHASED = 'PURCHASED',
+  PURCHASED = "PURCHASED",
   /** User successfully restored purchases */
-  RESTORED = 'RESTORED',
+  RESTORED = "RESTORED",
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -235,9 +235,7 @@ export interface RevenueCatInterface {
   /**
    * Present the paywall only if user doesn't have required entitlement.
    */
-  presentPaywallIfNeeded(
-    options: PaywallIfNeededOptions
-  ): Promise<PaywallResult>;
+  presentPaywallIfNeeded(options: PaywallIfNeededOptions): Promise<PaywallResult>;
 
   /**
    * Check if user has a specific entitlement.
@@ -259,17 +257,17 @@ export interface RevenueCatInterface {
  */
 export enum PurchaseErrorCode {
   /** RevenueCat not configured */
-  NOT_CONFIGURED = 'PURCHASE_NOT_CONFIGURED',
+  NOT_CONFIGURED = "PURCHASE_NOT_CONFIGURED",
   /** Product not found */
-  PRODUCT_NOT_FOUND = 'PURCHASE_PRODUCT_NOT_FOUND',
+  PRODUCT_NOT_FOUND = "PURCHASE_PRODUCT_NOT_FOUND",
   /** Purchase was cancelled by user */
-  CANCELLED = 'PURCHASE_CANCELLED',
+  CANCELLED = "PURCHASE_CANCELLED",
   /** Network error during purchase */
-  NETWORK_ERROR = 'PURCHASE_NETWORK_ERROR',
+  NETWORK_ERROR = "PURCHASE_NETWORK_ERROR",
   /** Purchase already owned */
-  ALREADY_OWNED = 'PURCHASE_ALREADY_OWNED',
+  ALREADY_OWNED = "PURCHASE_ALREADY_OWNED",
   /** Unknown error */
-  UNKNOWN = 'PURCHASE_UNKNOWN_ERROR',
+  UNKNOWN = "PURCHASE_UNKNOWN_ERROR",
 }
 
 /**
@@ -279,9 +277,9 @@ export class PurchaseError extends Error {
   constructor(
     public readonly code: PurchaseErrorCode,
     message: string,
-    public readonly originalError?: unknown
+    public readonly originalError?: unknown,
   ) {
     super(message);
-    this.name = 'PurchaseError';
+    this.name = "PurchaseError";
   }
 }

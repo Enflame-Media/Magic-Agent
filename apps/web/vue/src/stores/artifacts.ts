@@ -19,20 +19,15 @@
  * @see HAP-874 - Offline Artifact Caching
  */
 
-import { defineStore } from 'pinia';
-import { ref, shallowRef, computed, triggerRef } from 'vue';
-import type { ApiNewArtifact } from '@magic-agent/protocol';
-import { artifactCache, type CacheStats, type CacheConfig } from '@/services/artifactCache';
+import { defineStore } from "pinia";
+import { ref, shallowRef, computed, triggerRef } from "vue";
+import type { ApiNewArtifact } from "@magic-agent/protocol";
+import { artifactCache, type CacheStats, type CacheConfig } from "@/services/artifactCache";
 
 /**
  * Artifact file types for display and syntax highlighting
  */
-export type ArtifactFileType =
-  | 'code'
-  | 'image'
-  | 'document'
-  | 'data'
-  | 'unknown';
+export type ArtifactFileType = "code" | "image" | "document" | "data" | "unknown";
 
 /**
  * File tree node for hierarchical display
@@ -111,43 +106,66 @@ export interface DecryptedArtifact {
 /**
  * Infer file type from MIME type or extension
  */
-function inferFileType(
-  mimeType: string | null,
-  filePath: string | null
-): ArtifactFileType {
+function inferFileType(mimeType: string | null, filePath: string | null): ArtifactFileType {
   if (mimeType) {
-    if (mimeType.startsWith('image/')) return 'image';
-    if (mimeType.startsWith('text/')) return 'code';
-    if (mimeType.includes('json') || mimeType.includes('xml')) return 'data';
-    if (mimeType.includes('pdf') || mimeType.includes('document')) return 'document';
+    if (mimeType.startsWith("image/")) return "image";
+    if (mimeType.startsWith("text/")) return "code";
+    if (mimeType.includes("json") || mimeType.includes("xml")) return "data";
+    if (mimeType.includes("pdf") || mimeType.includes("document")) return "document";
   }
 
   if (filePath) {
-    const ext = filePath.split('.').pop()?.toLowerCase();
-    if (!ext) return 'unknown';
+    const ext = filePath.split(".").pop()?.toLowerCase();
+    if (!ext) return "unknown";
 
     // Code files
     const codeExts = [
-      'ts', 'tsx', 'js', 'jsx', 'vue', 'py', 'rb', 'go', 'rs', 'java',
-      'kt', 'swift', 'c', 'cpp', 'h', 'hpp', 'cs', 'php', 'sh', 'bash',
-      'zsh', 'fish', 'ps1', 'sql', 'html', 'css', 'scss', 'less', 'sass',
+      "ts",
+      "tsx",
+      "js",
+      "jsx",
+      "vue",
+      "py",
+      "rb",
+      "go",
+      "rs",
+      "java",
+      "kt",
+      "swift",
+      "c",
+      "cpp",
+      "h",
+      "hpp",
+      "cs",
+      "php",
+      "sh",
+      "bash",
+      "zsh",
+      "fish",
+      "ps1",
+      "sql",
+      "html",
+      "css",
+      "scss",
+      "less",
+      "sass",
     ];
-    if (codeExts.includes(ext)) return 'code';
+    if (codeExts.includes(ext)) return "code";
 
     // Image files
-    const imageExts = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'ico', 'bmp'];
-    if (imageExts.includes(ext)) return 'image';
+    const imageExts = ["png", "jpg", "jpeg", "gif", "webp", "svg", "ico", "bmp"];
+    if (imageExts.includes(ext)) return "image";
 
     // Data files
-    const dataExts = ['json', 'xml', 'yaml', 'yml', 'toml', 'csv', 'tsv'];
-    if (dataExts.includes(ext)) return 'data';
+    const dataExts = ["json", "xml", "yaml", "yml", "toml", "csv", "tsv"];
+    if (dataExts.includes(ext)) return "data";
 
     // Document files
-    const docExts = ['md', 'txt', 'pdf', 'doc', 'docx', 'rtf'];
-    if (docExts.includes(ext)) return 'document';
+    const docExts = ["md", "txt", "pdf", "doc", "docx", "rtf"];
+    if (docExts.includes(ext)) return "document";
   }
 
-  return 'unknown';
+  return "unknown";
 }
 
 /**
@@ -156,46 +174,46 @@ function inferFileType(
 function inferLanguage(filePath: string | null): string | null {
   if (!filePath) return null;
 
-  const ext = filePath.split('.').pop()?.toLowerCase();
+  const ext = filePath.split(".").pop()?.toLowerCase();
   if (!ext) return null;
 
   const langMap: Record<string, string> = {
-    ts: 'typescript',
-    tsx: 'tsx',
-    js: 'javascript',
-    jsx: 'jsx',
-    vue: 'vue',
-    py: 'python',
-    rb: 'ruby',
-    go: 'go',
-    rs: 'rust',
-    java: 'java',
-    kt: 'kotlin',
-    swift: 'swift',
-    c: 'c',
-    cpp: 'cpp',
-    h: 'c',
-    hpp: 'cpp',
-    cs: 'csharp',
-    php: 'php',
-    sh: 'bash',
-    bash: 'bash',
-    zsh: 'bash',
-    fish: 'fish',
-    ps1: 'powershell',
-    sql: 'sql',
-    html: 'html',
-    css: 'css',
-    scss: 'scss',
-    less: 'less',
-    sass: 'sass',
-    json: 'json',
-    xml: 'xml',
-    yaml: 'yaml',
-    yml: 'yaml',
-    toml: 'toml',
-    md: 'markdown',
-    txt: 'plaintext',
+    ts: "typescript",
+    tsx: "tsx",
+    js: "javascript",
+    jsx: "jsx",
+    vue: "vue",
+    py: "python",
+    rb: "ruby",
+    go: "go",
+    rs: "rust",
+    java: "java",
+    kt: "kotlin",
+    swift: "swift",
+    c: "c",
+    cpp: "cpp",
+    h: "c",
+    hpp: "cpp",
+    cs: "csharp",
+    php: "php",
+    sh: "bash",
+    bash: "bash",
+    zsh: "bash",
+    fish: "fish",
+    ps1: "powershell",
+    sql: "sql",
+    html: "html",
+    css: "css",
+    scss: "scss",
+    less: "less",
+    sass: "sass",
+    json: "json",
+    xml: "xml",
+    yaml: "yaml",
+    yml: "yaml",
+    toml: "toml",
+    md: "markdown",
+    txt: "plaintext",
   };
 
   return langMap[ext] ?? null;
@@ -216,7 +234,7 @@ function fromApiUpdate(update: ApiNewArtifact): DecryptedArtifact {
     language: null,
     sessions: [],
     body: null,
-    fileType: 'unknown',
+    fileType: "unknown",
     headerVersion: update.headerVersion,
     bodyVersion: update.bodyVersion ?? null,
     seq: update.seq,
@@ -227,7 +245,7 @@ function fromApiUpdate(update: ApiNewArtifact): DecryptedArtifact {
   };
 }
 
-export const useArtifactsStore = defineStore('artifacts', () => {
+export const useArtifactsStore = defineStore("artifacts", () => {
   // ─────────────────────────────────────────────────────────────────────────
   // State
   // ─────────────────────────────────────────────────────────────────────────
@@ -259,9 +277,7 @@ export const useArtifactsStore = defineStore('artifacts', () => {
 
   /** Currently selected artifact */
   const selectedArtifact = computed(() =>
-    selectedArtifactId.value
-      ? artifacts.value.get(selectedArtifactId.value) ?? null
-      : null
+    selectedArtifactId.value ? (artifacts.value.get(selectedArtifactId.value) ?? null) : null,
   );
 
   /** Total number of artifacts */
@@ -269,7 +285,7 @@ export const useArtifactsStore = defineStore('artifacts', () => {
 
   /** Artifacts sorted by updatedAt (most recent first) */
   const artifactsList = computed(() =>
-    Array.from(artifacts.value.values()).sort((a, b) => b.updatedAt - a.updatedAt)
+    Array.from(artifacts.value.values()).sort((a, b) => b.updatedAt - a.updatedAt),
   );
 
   /** Artifacts grouped by file type */
@@ -316,11 +332,11 @@ export const useArtifactsStore = defineStore('artifacts', () => {
     // Build tree in a single pass
     for (const artifact of artifactValues.values()) {
       const path = artifact.filePath || artifact.title || artifact.id;
-      const parts = path.split('/').filter(Boolean);
+      const parts = path.split("/").filter(Boolean);
 
       if (parts.length === 0) continue;
 
-      let currentPath = '';
+      let currentPath = "";
       let currentLevel = root;
 
       for (let i = 0; i < parts.length; i++) {
@@ -339,7 +355,7 @@ export const useArtifactsStore = defineStore('artifacts', () => {
             isDirectory: !isLast,
             children: isLast ? undefined : [],
             artifactId: isLast ? artifact.id : undefined,
-            extension: isLast ? part.split('.').pop() ?? undefined : undefined,
+            extension: isLast ? (part.split(".").pop() ?? undefined) : undefined,
           };
           pathMap.set(currentPath, node);
           currentLevel.push(node);
@@ -414,10 +430,10 @@ export const useArtifactsStore = defineStore('artifacts', () => {
    */
   function upsertArtifact(artifact: DecryptedArtifact) {
     // Infer file type and language if not set
-    if (artifact.fileType === 'unknown') {
+    if (artifact.fileType === "unknown") {
       artifact.fileType = inferFileType(artifact.mimeType, artifact.filePath);
     }
-    if (!artifact.language && artifact.fileType === 'code') {
+    if (!artifact.language && artifact.fileType === "code") {
       artifact.language = inferLanguage(artifact.filePath);
     }
 
@@ -491,10 +507,7 @@ export const useArtifactsStore = defineStore('artifacts', () => {
   /**
    * Update partial artifact data
    */
-  function updateArtifact(
-    id: string,
-    updates: Partial<Omit<DecryptedArtifact, 'id'>>
-  ) {
+  function updateArtifact(id: string, updates: Partial<Omit<DecryptedArtifact, "id">>) {
     const existing = artifacts.value.get(id);
     if (existing) {
       artifacts.value.set(id, { ...existing, ...updates });
@@ -569,9 +582,9 @@ export const useArtifactsStore = defineStore('artifacts', () => {
       await artifactCache.initialize();
       cacheInitialized.value = true;
       await refreshCacheStats();
-      console.debug('[artifacts] Cache initialized');
+      console.debug("[artifacts] Cache initialized");
     } catch (error) {
-      console.error('[artifacts] Failed to initialize cache:', error);
+      console.error("[artifacts] Failed to initialize cache:", error);
     }
   }
 
@@ -592,7 +605,7 @@ export const useArtifactsStore = defineStore('artifacts', () => {
         console.debug(`[artifacts] Loaded ${cachedArtifacts.length} artifacts from cache`);
       }
     } catch (error) {
-      console.error('[artifacts] Failed to load from cache:', error);
+      console.error("[artifacts] Failed to load from cache:", error);
     }
   }
 
@@ -614,7 +627,9 @@ export const useArtifactsStore = defineStore('artifacts', () => {
         }
         triggerRef(artifacts);
         isOfflineMode.value = true;
-        console.debug(`[artifacts] Loaded ${cachedArtifacts.length} cached artifacts for session ${sessionId}`);
+        console.debug(
+          `[artifacts] Loaded ${cachedArtifacts.length} cached artifacts for session ${sessionId}`,
+        );
       }
     } catch (error) {
       console.error(`[artifacts] Failed to load cached artifacts for session ${sessionId}:`, error);
@@ -667,7 +682,7 @@ export const useArtifactsStore = defineStore('artifacts', () => {
   async function isCacheStale(
     id: string,
     headerVersion: number,
-    bodyVersion: number | null
+    bodyVersion: number | null,
   ): Promise<boolean> {
     if (!cacheInitialized.value) return true;
     return artifactCache.isStale(id, headerVersion, bodyVersion);
@@ -695,9 +710,9 @@ export const useArtifactsStore = defineStore('artifacts', () => {
     try {
       await artifactCache.clearCache();
       await refreshCacheStats();
-      console.debug('[artifacts] Cache cleared');
+      console.debug("[artifacts] Cache cleared");
     } catch (error) {
-      console.error('[artifacts] Failed to clear cache:', error);
+      console.error("[artifacts] Failed to clear cache:", error);
     }
   }
 
@@ -708,7 +723,7 @@ export const useArtifactsStore = defineStore('artifacts', () => {
     try {
       cacheStats.value = await artifactCache.getStats();
     } catch (error) {
-      console.error('[artifacts] Failed to get cache stats:', error);
+      console.error("[artifacts] Failed to get cache stats:", error);
     }
   }
 

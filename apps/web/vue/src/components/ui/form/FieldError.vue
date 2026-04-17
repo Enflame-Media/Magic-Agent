@@ -8,28 +8,28 @@
  * @example
  * <FieldError v-if="isInvalid(field)" :errors="field.state.meta.errors" />
  */
-import type { HTMLAttributes } from 'vue'
-import { computed } from 'vue'
-import { cn } from '@/lib/utils'
-import type { ValidationError } from '@tanstack/vue-form'
+import type { HTMLAttributes } from "vue";
+import { computed } from "vue";
+import { cn } from "@/lib/utils";
+import type { ValidationError } from "@tanstack/vue-form";
 
 const props = defineProps<{
-  class?: HTMLAttributes['class']
-  id?: string
-  errors?: ValidationError[]
-}>()
+  class?: HTMLAttributes["class"];
+  id?: string;
+  errors?: ValidationError[];
+}>();
 
 const errorMessage = computed(() => {
-  if (!props.errors || props.errors.length === 0) return null
+  if (!props.errors || props.errors.length === 0) return null;
 
   // Get first error message
-  const firstError = props.errors[0]
-  if (typeof firstError === 'string') return firstError
-  if (firstError && typeof firstError === 'object' && 'message' in firstError) {
-    return (firstError as { message: string }).message
+  const firstError = props.errors[0];
+  if (typeof firstError === "string") return firstError;
+  if (firstError && typeof firstError === "object" && "message" in firstError) {
+    return (firstError as { message: string }).message;
   }
-  return String(firstError)
-})
+  return String(firstError);
+});
 </script>
 
 <template>

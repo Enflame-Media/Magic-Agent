@@ -1,22 +1,18 @@
 <script setup lang="ts">
-import type { MediaSeekForwardButton } from 'media-chrome'
-import { Button } from '@/components/ui/button'
+import type { MediaSeekForwardButton } from "media-chrome";
+import { Button } from "@/components/ui/button";
 
 interface Props extends /* @vue-ignore */ Partial<MediaSeekForwardButton> {
-  seekOffset?: number
+  seekOffset?: number;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   seekOffset: 20,
-})
+});
 </script>
 
 <template>
-  <Button
-    as-child
-    size="icon-sm"
-    variant="outline"
-  >
+  <Button as-child size="icon-sm" variant="outline">
     <media-seek-forward-button
       data-slot="audio-player-seek-forward-button"
       :seekoffset="props.seekOffset"

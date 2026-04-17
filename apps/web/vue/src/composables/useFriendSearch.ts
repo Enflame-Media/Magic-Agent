@@ -36,10 +36,10 @@
  * @see HAP-769 - Implement Share Session UI for happy-vue web app
  */
 
-import { ref, computed, watch, type Ref, type ComputedRef } from 'vue';
-import { useDebounceFn } from '@vueuse/core';
-import { useFriends } from './useFriends';
-import type { UserProfile } from '@magic-agent/protocol';
+import { ref, computed, watch, type Ref, type ComputedRef } from "vue";
+import { useDebounceFn } from "@vueuse/core";
+import { useFriends } from "./useFriends";
+import type { UserProfile } from "@magic-agent/protocol";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
@@ -80,22 +80,16 @@ export interface UseFriendSearchReturn {
  * @param excludeUserIds - Reactive array of user IDs to exclude from results
  * @returns Object with reactive state and methods
  */
-export function useFriendSearch(
-  excludeUserIds: Ref<string[]> = ref([])
-): UseFriendSearchReturn {
-  const {
-    acceptedFriends,
-    loadFriends: loadFriendsFromApi,
-    isLoading,
-  } = useFriends();
+export function useFriendSearch(excludeUserIds: Ref<string[]> = ref([])): UseFriendSearchReturn {
+  const { acceptedFriends, loadFriends: loadFriendsFromApi, isLoading } = useFriends();
 
   // ─────────────────────────────────────────────────────────────────────────
   // Reactive State
   // ─────────────────────────────────────────────────────────────────────────
 
-  const searchQuery = ref('');
+  const searchQuery = ref("");
   const isSearching = ref(false);
-  const debouncedQuery = ref('');
+  const debouncedQuery = ref("");
 
   // ─────────────────────────────────────────────────────────────────────────
   // Debounced Search
@@ -112,7 +106,7 @@ export function useFriendSearch(
       isSearching.value = true;
       debouncedUpdate(newQuery.trim().toLowerCase());
     } else {
-      debouncedQuery.value = '';
+      debouncedQuery.value = "";
       isSearching.value = false;
     }
   });
@@ -123,9 +117,7 @@ export function useFriendSearch(
 
   /** All accepted friends, excluding those already shared with */
   const allFriends = computed<UserProfile[]>(() => {
-    return acceptedFriends.value.filter(
-      (friend) => !excludeUserIds.value.includes(friend.id)
-    );
+    return acceptedFriends.value.filter((friend) => !excludeUserIds.value.includes(friend.id));
   });
 
   /** Filtered search results based on query and exclusions */
@@ -139,15 +131,9 @@ export function useFriendSearch(
 
     // Filter friends by query
     return allFriends.value.filter((friend) => {
-      const searchableFields = [
-        friend.username,
-        friend.firstName,
-        friend.lastName,
-      ].filter(Boolean);
+      const searchableFields = [friend.username, friend.firstName, friend.lastName].filter(Boolean);
 
-      return searchableFields.some((field) =>
-        field?.toLowerCase().includes(query)
-      );
+      return searchableFields.some((field) => field?.toLowerCase().includes(query));
     });
   });
 
@@ -159,8 +145,8 @@ export function useFriendSearch(
    * Clear the search query and results.
    */
   function clearSearch(): void {
-    searchQuery.value = '';
-    debouncedQuery.value = '';
+    searchQuery.value = "";
+    debouncedQuery.value = "";
     isSearching.value = false;
   }
 

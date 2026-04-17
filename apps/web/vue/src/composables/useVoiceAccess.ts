@@ -30,8 +30,8 @@
  * ```
  */
 
-import { ref, readonly, type Ref, type DeepReadonly } from 'vue';
-import { checkVoiceAccess as apiCheckVoiceAccess } from '@/services/apiVoice';
+import { ref, readonly, type Ref, type DeepReadonly } from "vue";
+import { checkVoiceAccess as apiCheckVoiceAccess } from "@/services/apiVoice";
 
 /**
  * Voice access composable return type
@@ -100,9 +100,7 @@ export function useVoiceAccess(): UseVoiceAccessReturn {
 
       return result.allowed;
     } catch (err) {
-      const errorMessage = err instanceof Error
-        ? err.message
-        : 'Failed to check voice access';
+      const errorMessage = err instanceof Error ? err.message : "Failed to check voice access";
       error.value = errorMessage;
       hasAccess.value = false;
       return false;

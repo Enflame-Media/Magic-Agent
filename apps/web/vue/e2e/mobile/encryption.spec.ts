@@ -10,21 +10,21 @@
  * @see HAP-720 - NativeScript Mobile Testing Suite
  */
 
-describe('Mobile Encryption E2E', () => {
-  describe('Key Generation', () => {
-    it('should generate keys when app first launches', async () => {
+describe("Mobile Encryption E2E", () => {
+  describe("Key Generation", () => {
+    it("should generate keys when app first launches", async () => {
       // Clear app data to simulate fresh install
-      await browser.terminateApp('com.enflame.happyvue');
+      await browser.terminateApp("com.enflame.happyvue");
 
       // Clear app storage (platform-specific)
-      if (browser.capabilities['platformName'] === 'Android') {
-        await browser.execute('mobile: clearApp', {
-          appId: 'com.enflame.happyvue',
+      if (browser.capabilities["platformName"] === "Android") {
+        await browser.execute("mobile: clearApp", {
+          appId: "com.enflame.happyvue",
         });
       }
 
       // Relaunch app
-      await browser.activateApp('com.enflame.happyvue');
+      await browser.activateApp("com.enflame.happyvue");
       await browser.pause(5000);
 
       // App should launch and be functional
@@ -32,14 +32,14 @@ describe('Mobile Encryption E2E', () => {
       expect(pageSource).toBeTruthy();
     });
 
-    it('should persist keys across app restarts', async () => {
+    it("should persist keys across app restarts", async () => {
       // First, ensure app has generated keys
       await browser.pause(2000);
 
       // Terminate and restart
-      await browser.terminateApp('com.enflame.happyvue');
+      await browser.terminateApp("com.enflame.happyvue");
       await browser.pause(1000);
-      await browser.activateApp('com.enflame.happyvue');
+      await browser.activateApp("com.enflame.happyvue");
       await browser.pause(3000);
 
       // App should still be functional
@@ -48,10 +48,12 @@ describe('Mobile Encryption E2E', () => {
     });
   });
 
-  describe('QR Code Authentication', () => {
-    it('should navigate to QR scanner', async () => {
+  describe("QR Code Authentication", () => {
+    it("should navigate to QR scanner", async () => {
       // Look for connect/scan button
-      const connectButtons = await $$('//Button[contains(@text, "Connect") or contains(@text, "Scan")]');
+      const connectButtons = await $$(
+        '//Button[contains(@text, "Connect") or contains(@text, "Scan")]',
+      );
 
       if (connectButtons.length > 0) {
         await connectButtons[0].click();
@@ -63,7 +65,7 @@ describe('Mobile Encryption E2E', () => {
       }
     });
 
-    it('should handle invalid QR codes gracefully', async () => {
+    it("should handle invalid QR codes gracefully", async () => {
       // This test would require mocking the camera input
       // For real testing, we'd inject test QR codes
 
@@ -73,8 +75,8 @@ describe('Mobile Encryption E2E', () => {
     });
   });
 
-  describe('Encrypted Session Data', () => {
-    it('should display sessions without exposing encrypted content', async () => {
+  describe("Encrypted Session Data", () => {
+    it("should display sessions without exposing encrypted content", async () => {
       // Navigate back to sessions list
       await browser.back();
       await browser.pause(1000);
@@ -84,14 +86,14 @@ describe('Mobile Encryption E2E', () => {
       // Page source should not contain encryption keys or raw encrypted data
       // that could indicate security issues
       const hasSecurityIssues =
-        pageSource.includes('secretKey') ||
-        pageSource.includes('privateKey') ||
-        pageSource.includes('-----BEGIN');
+        pageSource.includes("secretKey") ||
+        pageSource.includes("privateKey") ||
+        pageSource.includes("-----BEGIN");
 
       expect(hasSecurityIssues).toBe(false);
     });
 
-    it('should handle session metadata decryption', async () => {
+    it("should handle session metadata decryption", async () => {
       // When connected, sessions should show readable names
       // (after decryption), not encrypted blobs
 
@@ -106,8 +108,8 @@ describe('Mobile Encryption E2E', () => {
     });
   });
 
-  describe('Secure Storage', () => {
-    it('should protect keys from direct access', async () => {
+  describe("Secure Storage", () => {
+    it("should protect keys from direct access", async () => {
       // On iOS: Keys should be in Keychain
       // On Android: Keys should be in EncryptedSharedPreferences or KeyStore
 
@@ -119,8 +121,8 @@ describe('Mobile Encryption E2E', () => {
     });
   });
 
-  describe('Network Security', () => {
-    it('should use HTTPS for API calls', async () => {
+  describe("Network Security", () => {
+    it("should use HTTPS for API calls", async () => {
       // This test verifies network traffic uses TLS
       // In CI, we'd use a proxy to inspect traffic
 
@@ -129,7 +131,7 @@ describe('Mobile Encryption E2E', () => {
       expect(pageSource).toBeTruthy();
     });
 
-    it('should handle certificate errors appropriately', async () => {
+    it("should handle certificate errors appropriately", async () => {
       // App should not accept invalid certificates
       // This would be tested with a MITM proxy in CI
 
@@ -138,11 +140,11 @@ describe('Mobile Encryption E2E', () => {
     });
   });
 
-  describe('Memory Security', () => {
-    it('should not log sensitive data', async () => {
+  describe("Memory Security", () => {
+    it("should not log sensitive data", async () => {
       // Get device logs and check for sensitive content
       try {
-        const logs = await browser.getLogs('logcat');
+        const logs = await browser.getLogs("logcat");
 
         // Check logs for sensitive patterns
         const sensitivePatterns = [
@@ -164,11 +166,11 @@ describe('Mobile Encryption E2E', () => {
 
         // Warning but not failure - depends on environment
         if (hasSensitiveData) {
-          console.warn('[Security] Potential sensitive data found in logs');
+          console.warn("[Security] Potential sensitive data found in logs");
         }
       } catch {
         // Log access may not be available on all platforms
-        console.log('Log access not available');
+        console.log("Log access not available");
       }
 
       // Basic check that app is still functional

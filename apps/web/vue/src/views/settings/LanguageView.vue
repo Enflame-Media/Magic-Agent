@@ -15,18 +15,18 @@
  * - Chinese Simplified (zh-Hans)
  */
 
-import { useRouter } from 'vue-router';
-import { ChevronLeft, Check } from 'lucide-vue-next';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useLocale } from '@/composables/useLocale';
-import ResponsiveContainer from '@/components/app/ResponsiveContainer.vue';
+import { useRouter } from "vue-router";
+import { ChevronLeft, Check } from "lucide-vue-next";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useLocale } from "@/composables/useLocale";
+import ResponsiveContainer from "@/components/app/ResponsiveContainer.vue";
 
 const router = useRouter();
 const { locale, availableLanguages, setLocale, t } = useLocale();
 
 function goBack() {
-  router.push('/settings');
+  router.push("/settings");
 }
 </script>
 
@@ -37,13 +37,13 @@ function goBack() {
       <Button variant="ghost" size="icon" @click="goBack">
         <ChevronLeft class="h-5 w-5" />
       </Button>
-      <h1 class="text-2xl font-semibold">{{ t('languageSelector.title') }}</h1>
+      <h1 class="text-2xl font-semibold">{{ t("languageSelector.title") }}</h1>
     </header>
 
     <!-- Language Selection -->
     <Card>
       <CardHeader>
-        <CardTitle>{{ t('languageSelector.description') }}</CardTitle>
+        <CardTitle>{{ t("languageSelector.description") }}</CardTitle>
       </CardHeader>
       <CardContent class="p-0">
         <div class="divide-y">
@@ -57,10 +57,7 @@ function goBack() {
               <p class="font-medium">{{ lang.nativeName }}</p>
               <p class="text-sm text-muted-foreground">{{ lang.englishName }}</p>
             </div>
-            <Check
-              v-if="locale === lang.code"
-              class="h-5 w-5 text-primary"
-            />
+            <Check v-if="locale === lang.code" class="h-5 w-5 text-primary" />
           </button>
         </div>
       </CardContent>

@@ -14,8 +14,8 @@
  * 3. Strict CSP headers recommended - reduces XSS attack surface
  */
 
-const AUTH_KEY = 'happy_auth_credentials';
-const ENCRYPTION_KEY = 'happy_auth_enc_key';
+const AUTH_KEY = "happy_auth_credentials";
+const ENCRYPTION_KEY = "happy_auth_enc_key";
 const AES_GCM_IV_LENGTH = 12;
 
 let securityWarningLogged = false;
@@ -37,8 +37,8 @@ function logSecurityWarning(): void {
   securityWarningLogged = true;
 
   console.warn(
-    '[Security] Web browser storage is inherently less secure than native apps. ' +
-      'Tokens are stored in sessionStorage and will be cleared when you close the browser.'
+    "[Security] Web browser storage is inherently less secure than native apps. " +
+      "Tokens are stored in sessionStorage and will be cleared when you close the browser.",
   );
 }
 
@@ -46,7 +46,7 @@ function logSecurityWarning(): void {
  * Check if we're in a secure context (HTTPS)
  */
 function isSecureContext(): boolean {
-  return typeof window !== 'undefined' && window.isSecureContext;
+  return typeof window !== "undefined" && window.isSecureContext;
 }
 
 /**
@@ -54,7 +54,7 @@ function isSecureContext(): boolean {
  */
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
-  let binary = '';
+  let binary = "";
   const len = bytes.byteLength;
   for (let i = 0; i < len; i++) {
     binary += String.fromCharCode(bytes[i] as number);
@@ -82,17 +82,17 @@ async function getOrCreateEncryptionKey(): Promise<CryptoKey> {
 
   if (stored) {
     const keyData = base64ToArrayBuffer(stored);
-    return crypto.subtle.importKey('raw', keyData, 'AES-GCM', true, ['encrypt', 'decrypt']);
+    return crypto.subtle.importKey("raw", keyData, "AES-GCM", true, ["encrypt", "decrypt"]);
   }
 
   // Generate new key
-  const key = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, [
-    'encrypt',
-    'decrypt',
+  const key = await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, [
+    "encrypt",
+    "decrypt",
   ]);
 
   // Export and store
-  const exported = await crypto.subtle.exportKey('raw', key);
+  const exported = await crypto.subtle.exportKey("raw", key);
   sessionStorage.setItem(ENCRYPTION_KEY, arrayBufferToBase64(exported));
 
   return key;
@@ -103,14 +103,14 @@ async function getOrCreateEncryptionKey(): Promise<CryptoKey> {
  */
 async function encryptForStorage(data: string): Promise<string> {
   if (!isSecureContext()) {
-    throw new Error('Web Crypto API requires a secure context (HTTPS)');
+    throw new Error("Web Crypto API requires a secure context (HTTPS)");
   }
 
   const key = await getOrCreateEncryptionKey();
   const iv = crypto.getRandomValues(new Uint8Array(AES_GCM_IV_LENGTH));
   const encoded = new TextEncoder().encode(data);
 
-  const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, encoded);
+  const ciphertext = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, encoded);
 
   // Concatenate IV + ciphertext
   const result = new Uint8Array(iv.length + ciphertext.byteLength);
@@ -129,7 +129,7 @@ async function decryptFromStorage(encrypted: string): Promise<string> {
   const iv = new Uint8Array(data.slice(0, AES_GCM_IV_LENGTH));
   const ciphertext = data.slice(AES_GCM_IV_LENGTH);
 
-  const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
+  const decrypted = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ciphertext);
 
   return new TextDecoder().decode(decrypted);
 }
@@ -138,10 +138,10 @@ async function decryptFromStorage(encrypted: string): Promise<string> {
  * Validate credentials object shape
  */
 function isValidCredentials(value: unknown): value is StoredCredentials {
-  if (typeof value !== 'object' || value === null) return false;
+  if (typeof value !== "object" || value === null) return false;
   const obj = value as Record<string, unknown>;
-  if (typeof obj.token !== 'string' || typeof obj.secret !== 'string') return false;
-  if (obj.expiresAt !== undefined && typeof obj.expiresAt !== 'number') return false;
+  if (typeof obj.token !== "string" || typeof obj.secret !== "string") return false;
+  if (obj.expiresAt !== undefined && typeof obj.expiresAt !== "number") return false;
   return true;
 }
 
@@ -158,7 +158,7 @@ export const secureStorage = {
     // Try migration from localStorage (old storage)
     const oldStored = localStorage.getItem(AUTH_KEY);
     if (oldStored) {
-      console.info('[Storage] Migrating credentials from localStorage to sessionStorage');
+      console.info("[Storage] Migrating credentials from localStorage to sessionStorage");
       sessionStorage.setItem(AUTH_KEY, oldStored);
 
       const oldKey = localStorage.getItem(ENCRYPTION_KEY);
@@ -178,7 +178,7 @@ export const secureStorage = {
       const parsed: unknown = JSON.parse(decrypted);
 
       if (!isValidCredentials(parsed)) {
-        console.error('[Storage] Invalid credentials format');
+        console.error("[Storage] Invalid credentials format");
         return null;
       }
 
@@ -219,7 +219,7 @@ export const secureStorage = {
       sessionStorage.setItem(AUTH_KEY, encrypted);
       return true;
     } catch (error) {
-      console.error('[Storage] Failed to encrypt credentials:', error);
+      console.error("[Storage] Failed to encrypt credentials:", error);
       return false;
     }
   },

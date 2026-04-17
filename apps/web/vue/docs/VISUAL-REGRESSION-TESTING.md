@@ -7,6 +7,7 @@ This document describes how to use and maintain visual regression tests for the 
 Visual regression testing ensures that UI changes don't introduce unintended visual differences. We use [Percy](https://percy.io) integrated with Playwright to capture and compare screenshots across builds.
 
 **Related Issues:**
+
 - HAP-876 - Visual Regression Testing Implementation
 - HAP-720 - NativeScript Mobile Testing Suite (parent)
 
@@ -50,25 +51,30 @@ yarn workspace @happy-vue/web test:e2e:visual
 Visual tests are located in `apps/web/e2e/visual.spec.ts` and organized into test groups:
 
 ### Authentication Screens
+
 - Login screen (desktop and responsive)
 - QR Scanner screen
 - Manual Entry screen
 - Connecting screen
 
 ### Main Application Screens
+
 - Dashboard (empty state)
 - Settings page and sub-pages
 - Account, Appearance, Privacy, Notifications, Features, Server, MCP
 
 ### Mobile Viewports
+
 - iPhone 12, iPhone SE, iPhone 14 Pro
 - Pixel 5, Pixel 7, Galaxy S21
 
 ### Theme Variations
+
 - Light theme tests
 - Dark theme tests
 
 ### Connection Status Indicators
+
 - Disconnected state
 - Settings connection indicator
 
@@ -77,6 +83,7 @@ Visual tests are located in `apps/web/e2e/visual.spec.ts` and organized into tes
 ### When to Update Baselines
 
 Update visual baselines when:
+
 1. **Intentional UI changes** - New features, design updates, or bug fixes that change the UI
 2. **Dependency updates** - When updating UI libraries (Vue, Tailwind, shadcn-vue)
 3. **Initial setup** - When first establishing baselines
@@ -156,25 +163,28 @@ const MOBILE_VIEWPORTS = {
 ### Writing Visual Tests
 
 1. **Wait for content**: Always wait for `networkidle` and visibility
+
    ```typescript
-   await page.waitForLoadState('networkidle');
-   await expect(page.locator('body')).toBeVisible();
+   await page.waitForLoadState("networkidle");
+   await expect(page.locator("body")).toBeVisible();
    ```
 
 2. **Handle dynamic content**: Hide or mask dynamic elements
+
    ```typescript
-   await percySnapshot(page, 'My Snapshot', {
-     percyCSS: '.dynamic-timestamp { visibility: hidden; }'
+   await percySnapshot(page, "My Snapshot", {
+     percyCSS: ".dynamic-timestamp { visibility: hidden; }",
    });
    ```
 
 3. **Use descriptive names**: Snapshot names should clearly describe the state
+
    ```typescript
    // Good
-   await percySnapshot(page, 'Dashboard - Empty State - Light Theme');
+   await percySnapshot(page, "Dashboard - Empty State - Light Theme");
 
    // Bad
-   await percySnapshot(page, 'test1');
+   await percySnapshot(page, "test1");
    ```
 
 ### Reducing Flakiness
@@ -196,17 +206,20 @@ const MOBILE_VIEWPORTS = {
 ### Common Issues
 
 #### "Percy is not receiving any snapshots"
+
 - Verify `PERCY_TOKEN` is set correctly
 - Check Percy CLI output for errors
 - Ensure tests are actually calling `percySnapshot()`
 
 #### "Visual diffs are inconsistent"
+
 - Check for animations or dynamic content
 - Ensure consistent viewport sizes
 - Mock time-dependent data
 - Use `percyCSS` to hide flaky elements
 
 #### "Tests are slow"
+
 - Reduce the number of viewport widths
 - Run visual tests only on Chromium
 - Use `test.skip` for redundant viewport combinations

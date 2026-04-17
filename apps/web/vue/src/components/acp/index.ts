@@ -10,14 +10,14 @@
  */
 
 // Display components (HAP-1047)
-export { default as AcpModeIndicator } from './AcpModeIndicator.vue';
-export { default as AcpUsageWidget } from './AcpUsageWidget.vue';
-export { default as AcpCommandPalette } from './AcpCommandPalette.vue';
-export { default as AcpConfigPanel } from './AcpConfigPanel.vue';
-export { default as AcpContentBlockRenderer } from './AcpContentBlockRenderer.vue';
-export { default as AcpSessionView } from './AcpSessionView.vue';
+export { default as AcpModeIndicator } from "./AcpModeIndicator.vue";
+export { default as AcpUsageWidget } from "./AcpUsageWidget.vue";
+export { default as AcpCommandPalette } from "./AcpCommandPalette.vue";
+export { default as AcpConfigPanel } from "./AcpConfigPanel.vue";
+export { default as AcpContentBlockRenderer } from "./AcpContentBlockRenderer.vue";
+export { default as AcpSessionView } from "./AcpSessionView.vue";
 
 // Interactive components (HAP-1048)
-export { default as AcpSessionBrowser } from './AcpSessionBrowser.vue';
-export { default as AcpAgentPicker } from './AcpAgentPicker.vue';
-export { default as AcpAgentBadge } from './AcpAgentBadge.vue';
+export { default as AcpSessionBrowser } from "./AcpSessionBrowser.vue";
+export { default as AcpAgentPicker } from "./AcpAgentPicker.vue";
+export { default as AcpAgentBadge } from "./AcpAgentBadge.vue";

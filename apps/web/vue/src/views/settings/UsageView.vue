@@ -2,14 +2,14 @@
 /**
  * Usage Settings - Plan limits and usage summary.
  */
-import { computed } from 'vue';
-import { useRouter } from 'vue-router';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { usePlanLimits } from '@/composables/usePlanLimits';
-import { usePerformanceMonitor } from '@/composables/usePerformanceMonitor';
-import ResponsiveContainer from '@/components/app/ResponsiveContainer.vue';
+import { computed } from "vue";
+import { useRouter } from "vue-router";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { usePlanLimits } from "@/composables/usePlanLimits";
+import { usePerformanceMonitor } from "@/composables/usePerformanceMonitor";
+import ResponsiveContainer from "@/components/app/ResponsiveContainer.vue";
 
 const router = useRouter();
 const { limit, used, resetAt, refreshLimits } = usePlanLimits();
@@ -18,7 +18,7 @@ const { apiLatencyMs, lastCheckedAt, refreshMetrics } = usePerformanceMonitor();
 const percentUsed = computed(() => Math.min(100, Math.round((used.value / limit.value) * 100)));
 
 function goBack() {
-  router.push('/settings');
+  router.push("/settings");
 }
 </script>
 
@@ -34,11 +34,7 @@ function goBack() {
           stroke="currentColor"
           stroke-width="2"
         >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M15 19l-7-7 7-7"
-          />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
         </svg>
       </Button>
       <h1 class="text-2xl font-semibold">Usage</h1>
@@ -54,7 +50,9 @@ function goBack() {
           <div class="space-y-2">
             <div class="flex items-center justify-between text-sm">
               <span class="text-muted-foreground">Usage</span>
-              <span class="font-medium">{{ used.toLocaleString() }} / {{ limit.toLocaleString() }} tokens</span>
+              <span class="font-medium"
+                >{{ used.toLocaleString() }} / {{ limit.toLocaleString() }} tokens</span
+              >
             </div>
             <Progress :model-value="percentUsed" />
           </div>

@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import type { HTMLAttributes } from 'vue'
-import type { SchemaParameter } from './context'
-import { Badge } from '@/components/ui/badge'
-import { cn } from '@/lib/utils'
+import type { HTMLAttributes } from "vue";
+import type { SchemaParameter } from "./context";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 interface Props extends /* @vue-ignore */ HTMLAttributes, SchemaParameter {
-  class?: HTMLAttributes['class']
+  class?: HTMLAttributes["class"];
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 </script>
 
 <template>

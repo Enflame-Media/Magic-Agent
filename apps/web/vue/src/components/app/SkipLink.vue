@@ -18,30 +18,30 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  targetId: 'main-content',
-  label: 'Skip to main content',
+  targetId: "main-content",
+  label: "Skip to main content",
 });
 
 function handleClick(event: Event) {
   event.preventDefault();
   const target = document.getElementById(props.targetId);
   if (target) {
-    target.setAttribute('tabindex', '-1');
+    target.setAttribute("tabindex", "-1");
     target.focus();
     // Remove tabindex after blur to avoid breaking natural tab order
-    target.addEventListener('blur', () => {
-      target.removeAttribute('tabindex');
-    }, { once: true });
+    target.addEventListener(
+      "blur",
+      () => {
+        target.removeAttribute("tabindex");
+      },
+      { once: true },
+    );
   }
 }
 </script>
 
 <template>
-  <a
-    :href="`#${targetId}`"
-    class="skip-link"
-    @click="handleClick"
-  >
+  <a :href="`#${targetId}`" class="skip-link" @click="handleClick">
     {{ label }}
   </a>
 </template>

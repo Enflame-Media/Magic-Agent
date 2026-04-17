@@ -29,8 +29,8 @@
  * @see HAP-814 - Implement real QR connection logic in mobile auth
  */
 
-import { ref, computed } from 'vue';
-import { useAuthStore } from '@/stores/auth';
+import { ref, computed } from "vue";
+import { useAuthStore } from "@/stores/auth";
 import {
   parseConnectionCode,
   approveCliConnection,
@@ -39,15 +39,15 @@ import {
   CliApprovalError,
   CliConnectionError,
   type CliConnectionErrorCode,
-} from '@/services/auth';
-import type { StoredCredentials } from '@/services/storage';
+} from "@/services/auth";
+import type { StoredCredentials } from "@/services/storage";
 
 /**
  * Connection result with typed error codes
  */
 export interface ConnectionResult {
   success: boolean;
-  errorCode?: CliConnectionErrorCode | 'parse_error' | 'not_authenticated' | 'unknown';
+  errorCode?: CliConnectionErrorCode | "parse_error" | "not_authenticated" | "unknown";
   errorMessage?: string;
 }
 
@@ -58,7 +58,7 @@ export interface AuthSessionState {
   qrData: string;
   waitForAuth: (
     onProgress?: (dots: number) => void,
-    shouldCancel?: () => boolean
+    shouldCancel?: () => boolean,
   ) => Promise<StoredCredentials | null>;
 }
 
@@ -81,7 +81,7 @@ export function useAuth() {
   const errorMessage = ref<string | null>(null);
 
   /** Current error code, if any */
-  const errorCode = ref<ConnectionResult['errorCode'] | null>(null);
+  const errorCode = ref<ConnectionResult["errorCode"] | null>(null);
 
   // ─────────────────────────────────────────────────────────────────────────
   // Computed
@@ -144,32 +144,28 @@ export function useAuth() {
       try {
         connectionInfo = parseConnectionCode(qrData);
       } catch {
-        errorCode.value = 'parse_error';
-        errorMessage.value = 'Invalid QR code format. Please scan a valid Happy CLI QR code.';
+        errorCode.value = "parse_error";
+        errorMessage.value = "Invalid QR code format. Please scan a valid Happy CLI QR code.";
         return {
           success: false,
-          errorCode: 'parse_error',
+          errorCode: "parse_error",
           errorMessage: errorMessage.value,
         };
       }
 
       // Check if we're authenticated and have the secret
       if (!authStore.canApproveConnections || !authStore.token || !authStore.secret) {
-        errorCode.value = 'not_authenticated';
-        errorMessage.value = 'Please log in first before connecting a CLI.';
+        errorCode.value = "not_authenticated";
+        errorMessage.value = "Please log in first before connecting a CLI.";
         return {
           success: false,
-          errorCode: 'not_authenticated',
+          errorCode: "not_authenticated",
           errorMessage: errorMessage.value,
         };
       }
 
       // Approve the CLI connection with real encryption
-      await approveCliConnection(
-        authStore.token,
-        connectionInfo.publicKey,
-        authStore.secret
-      );
+      await approveCliConnection(authStore.token, connectionInfo.publicKey, authStore.secret);
 
       return { success: true };
     } catch (error) {
@@ -194,13 +190,13 @@ export function useAuth() {
       }
 
       // Unknown error
-      const message = error instanceof Error ? error.message : 'Connection failed';
-      errorCode.value = 'unknown';
+      const message = error instanceof Error ? error.message : "Connection failed";
+      errorCode.value = "unknown";
       errorMessage.value = message;
 
       return {
         success: false,
-        errorCode: 'unknown',
+        errorCode: "unknown",
         errorMessage: message,
       };
     } finally {
@@ -222,18 +218,18 @@ export function useAuth() {
       const credentials = await authenticateWithSecretKey(secretKey);
 
       // Update auth store with credentials
-      authStore.setCredentials(credentials.token, 'temp-account-id');
+      authStore.setCredentials(credentials.token, "temp-account-id");
       authStore.setSecret(credentials.secret);
 
       return { success: true };
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Authentication failed';
-      errorCode.value = 'unknown';
+      const message = error instanceof Error ? error.message : "Authentication failed";
+      errorCode.value = "unknown";
       errorMessage.value = message;
 
       return {
         success: false,
-        errorCode: 'unknown',
+        errorCode: "unknown",
         errorMessage: message,
       };
     } finally {
@@ -262,7 +258,7 @@ export function useAuth() {
    * @param credentials - The credentials from the auth session
    */
   function completeAuthentication(credentials: StoredCredentials): void {
-    authStore.setCredentials(credentials.token, 'temp-account-id');
+    authStore.setCredentials(credentials.token, "temp-account-id");
     authStore.setSecret(credentials.secret);
   }
 

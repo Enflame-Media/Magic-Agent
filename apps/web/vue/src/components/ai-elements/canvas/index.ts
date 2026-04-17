@@ -1,4 +1,4 @@
-export { default as Canvas } from './Canvas.vue'
+export { default as Canvas } from "./Canvas.vue";
 
 // Re-export commonly-used Vue Flow types so consumers do not import from
 // @vue-flow/* directly. AI Elements is the canonical entry point for the
@@ -17,11 +17,7 @@ export type {
   NodeChange,
   ViewportTransform,
   XYPosition,
-} from '@vue-flow/core'
+} from "@vue-flow/core";
 
 // Runtime helpers commonly needed when constructing workflow state
-export {
-  MarkerType,
-  Position,
-  useVueFlow,
-} from '@vue-flow/core'
+export { MarkerType, Position, useVueFlow } from "@vue-flow/core";

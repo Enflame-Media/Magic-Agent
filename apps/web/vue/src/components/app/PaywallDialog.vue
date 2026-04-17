@@ -16,7 +16,7 @@
  * @see HAP-967 - Focus trapping in modals/dialogs
  */
 
-import { computed, ref } from 'vue';
+import { computed, ref } from "vue";
 import {
   Dialog,
   DialogContent,
@@ -24,18 +24,12 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { usePurchases } from '@/composables/usePurchases';
-import type { Package } from '@/shared';
-import { PaywallResult } from '@/shared';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { usePurchases } from "@/composables/usePurchases";
+import type { Package } from "@/shared";
+import { PaywallResult } from "@/shared";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Props & Emits
@@ -52,7 +46,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   /** Dialog visibility changed */
-  'update:open': [value: boolean];
+  "update:open": [value: boolean];
   /** Purchase completed successfully */
   purchased: [];
   /** Purchase was cancelled */
@@ -82,8 +76,8 @@ const {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const selectedPackage = ref<Package | null>(null);
-const isPurchasing = computed(() => status.value === 'purchasing');
-const isRestoring = computed(() => status.value === 'restoring');
+const isPurchasing = computed(() => status.value === "purchasing");
+const isRestoring = computed(() => status.value === "restoring");
 const isProcessing = computed(() => isPurchasing.value || isRestoring.value);
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -92,7 +86,9 @@ const isProcessing = computed(() => isPurchasing.value || isRestoring.value);
 
 const dialogOpen = computed({
   get: () => props.open,
-  set: (value) => { emit('update:open', value); },
+  set: (value) => {
+    emit("update:open", value);
+  },
 });
 
 /** Packages to display, prioritizing annual then monthly */
@@ -149,9 +145,9 @@ function isSelected(pkg: Package): boolean {
 
 function isAnnual(pkg: Package): boolean {
   return (
-    pkg.packageType === 'annual' ||
-    pkg.identifier.toLowerCase().includes('annual') ||
-    pkg.identifier.toLowerCase().includes('year')
+    pkg.packageType === "annual" ||
+    pkg.identifier.toLowerCase().includes("annual") ||
+    pkg.identifier.toLowerCase().includes("year")
   );
 }
 
@@ -162,14 +158,14 @@ async function handlePurchase() {
 
   switch (result) {
     case PaywallResult.PURCHASED:
-      emit('purchased');
+      emit("purchased");
       dialogOpen.value = false;
       break;
     case PaywallResult.CANCELLED:
-      emit('cancelled');
+      emit("cancelled");
       break;
     case PaywallResult.ERROR:
-      emit('error', 'Purchase failed. Please try again.');
+      emit("error", "Purchase failed. Please try again.");
       break;
   }
 }
@@ -177,16 +173,16 @@ async function handlePurchase() {
 async function handleRestore() {
   try {
     await restorePurchases();
-    emit('restored');
+    emit("restored");
     dialogOpen.value = false;
   } catch {
-    emit('error', 'Failed to restore purchases. Please try again.');
+    emit("error", "Failed to restore purchases. Please try again.");
   }
 }
 
 function closeDialog() {
   dialogOpen.value = false;
-  emit('cancelled');
+  emit("cancelled");
 }
 </script>
 
@@ -194,9 +190,7 @@ function closeDialog() {
   <Dialog v-model:open="dialogOpen">
     <DialogContent class="sm:max-w-lg">
       <DialogHeader>
-        <DialogTitle class="text-2xl font-bold text-center">
-          Upgrade to Pro
-        </DialogTitle>
+        <DialogTitle class="text-2xl font-bold text-center"> Upgrade to Pro </DialogTitle>
         <DialogDescription class="text-center">
           Unlock all features and get the most out of Happy
         </DialogDescription>
@@ -206,26 +200,66 @@ function closeDialog() {
       <div class="py-4">
         <ul class="space-y-2 text-sm">
           <li class="flex items-center gap-2">
-            <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            <svg
+              class="w-5 h-5 text-green-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M5 13l4 4L19 7"
+              />
             </svg>
             <span>Unlimited sessions</span>
           </li>
           <li class="flex items-center gap-2">
-            <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            <svg
+              class="w-5 h-5 text-green-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M5 13l4 4L19 7"
+              />
             </svg>
             <span>Sync across all devices</span>
           </li>
           <li class="flex items-center gap-2">
-            <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            <svg
+              class="w-5 h-5 text-green-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M5 13l4 4L19 7"
+              />
             </svg>
             <span>Voice assistant integration</span>
           </li>
           <li class="flex items-center gap-2">
-            <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            <svg
+              class="w-5 h-5 text-green-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M5 13l4 4L19 7"
+              />
             </svg>
             <span>Priority support</span>
           </li>
@@ -250,7 +284,10 @@ function closeDialog() {
               <CardTitle class="text-lg">
                 {{ pkg.product.title }}
               </CardTitle>
-              <div v-if="isAnnual(pkg) && annualSavings" class="text-xs font-semibold text-green-600 bg-green-100 dark:bg-green-900 dark:text-green-400 px-2 py-1 rounded-full">
+              <div
+                v-if="isAnnual(pkg) && annualSavings"
+                class="text-xs font-semibold text-green-600 bg-green-100 dark:bg-green-900 dark:text-green-400 px-2 py-1 rounded-full"
+              >
                 Save {{ annualSavings.percentage }}%
               </div>
             </div>
@@ -262,7 +299,7 @@ function closeDialog() {
             <div class="flex items-baseline gap-1">
               <span class="text-2xl font-bold">{{ pkg.product.priceString }}</span>
               <span class="text-muted-foreground text-sm">
-                / {{ isAnnual(pkg) ? 'year' : 'month' }}
+                / {{ isAnnual(pkg) ? "year" : "month" }}
               </span>
             </div>
           </CardContent>
@@ -290,28 +327,16 @@ function closeDialog() {
             <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
             Processing...
           </span>
-          <span v-else>
-            Subscribe Now
-          </span>
+          <span v-else> Subscribe Now </span>
         </Button>
 
         <div class="flex items-center justify-between w-full text-sm">
-          <Button
-            variant="link"
-            size="sm"
-            :disabled="isProcessing"
-            @click="handleRestore"
-          >
+          <Button variant="link" size="sm" :disabled="isProcessing" @click="handleRestore">
             <span v-if="isRestoring">Restoring...</span>
             <span v-else>Restore Purchases</span>
           </Button>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            :disabled="isProcessing"
-            @click="closeDialog"
-          >
+          <Button variant="ghost" size="sm" :disabled="isProcessing" @click="closeDialog">
             Cancel
           </Button>
         </div>

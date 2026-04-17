@@ -30,7 +30,7 @@
  * @see HAP-868 - macOS implementation
  */
 
-import { ref, readonly, onMounted, onUnmounted } from 'vue';
+import { ref, readonly, onMounted, onUnmounted } from "vue";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -41,7 +41,7 @@ import { ref, readonly, onMounted, onUnmounted } from 'vue';
  */
 export interface RevivalCooldownState {
   /** Reason for the cooldown (currently only 'circuit_breaker') */
-  reason: 'circuit_breaker';
+  reason: "circuit_breaker";
   /** Remaining time in seconds (updated every second) */
   remainingSeconds: number;
   /** Timestamp when cooldown will expire */
@@ -55,7 +55,7 @@ export interface RevivalCooldownState {
  * This matches the CLI's event emission format from HAP-784.
  */
 export interface SessionRevivalPausedPayload {
-  reason: 'circuit_breaker';
+  reason: "circuit_breaker";
   remainingMs: number;
   resumesAt: number;
   machineId: string;
@@ -168,14 +168,14 @@ export function useRevivalCooldown(): RevivalCooldownHandler {
 
     // Validate payload structure
     if (
-      typeof payload !== 'object' ||
+      typeof payload !== "object" ||
       payload === null ||
-      payload.reason !== 'circuit_breaker' ||
-      typeof payload.remainingMs !== 'number' ||
-      typeof payload.resumesAt !== 'number' ||
-      typeof payload.machineId !== 'string'
+      payload.reason !== "circuit_breaker" ||
+      typeof payload.remainingMs !== "number" ||
+      typeof payload.resumesAt !== "number" ||
+      typeof payload.machineId !== "string"
     ) {
-      console.warn('[HAP-869] Invalid session-revival-paused payload:', payload);
+      console.warn("[HAP-869] Invalid session-revival-paused payload:", payload);
       return;
     }
 
@@ -200,11 +200,7 @@ export function useRevivalCooldown(): RevivalCooldownHandler {
     const payload = event.detail;
 
     // Validate it's a valid session-revived event
-    if (
-      typeof payload !== 'object' ||
-      payload === null ||
-      typeof payload.machineId !== 'string'
-    ) {
+    if (typeof payload !== "object" || payload === null || typeof payload.machineId !== "string") {
       return;
     }
 
@@ -220,27 +216,15 @@ export function useRevivalCooldown(): RevivalCooldownHandler {
 
   onMounted(() => {
     // Listen for session revival paused events from sync handlers
-    window.addEventListener(
-      'session-revival-paused',
-      handleRevivalPaused as EventListener
-    );
+    window.addEventListener("session-revival-paused", handleRevivalPaused as EventListener);
     // Listen for session revived events to clear cooldown
-    window.addEventListener(
-      'session-revived',
-      handleSessionRevived as EventListener
-    );
+    window.addEventListener("session-revived", handleSessionRevived as EventListener);
   });
 
   onUnmounted(() => {
     // Clean up event listeners
-    window.removeEventListener(
-      'session-revival-paused',
-      handleRevivalPaused as EventListener
-    );
-    window.removeEventListener(
-      'session-revived',
-      handleSessionRevived as EventListener
-    );
+    window.removeEventListener("session-revival-paused", handleRevivalPaused as EventListener);
+    window.removeEventListener("session-revived", handleSessionRevived as EventListener);
     // Clean up timer
     clearTimer();
   });

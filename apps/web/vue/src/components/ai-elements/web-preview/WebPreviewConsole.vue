@@ -1,43 +1,37 @@
 <script setup lang="ts">
-import type { HTMLAttributes } from 'vue'
-import { Button } from '@/components/ui/button'
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible'
-import { cn } from '@/lib/utils'
-import { ChevronDownIcon } from 'lucide-vue-next'
-import { computed } from 'vue'
-import { useWebPreviewContext } from './context'
+import type { HTMLAttributes } from "vue";
+import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { cn } from "@/lib/utils";
+import { ChevronDownIcon } from "lucide-vue-next";
+import { computed } from "vue";
+import { useWebPreviewContext } from "./context";
 
-type LogLevel = 'log' | 'warn' | 'error'
+type LogLevel = "log" | "warn" | "error";
 
 interface ConsoleLog {
-  level: LogLevel
-  message: string
-  timestamp: Date
+  level: LogLevel;
+  message: string;
+  timestamp: Date;
 }
 
 interface Props {
-  class?: HTMLAttributes['class']
-  logs?: ConsoleLog[]
+  class?: HTMLAttributes["class"];
+  logs?: ConsoleLog[];
 }
 
 const props = withDefaults(defineProps<Props>(), {
   logs: () => [],
-})
+});
 
-const context = useWebPreviewContext()
+const context = useWebPreviewContext();
 
-const isConsoleOpen = computed(() => context.consoleOpen.value)
+const isConsoleOpen = computed(() => context.consoleOpen.value);
 
 function levelClass(level: LogLevel) {
-  if (level === 'error')
-    return 'text-destructive'
-  if (level === 'warn')
-    return 'text-yellow-600'
-  return 'text-foreground'
+  if (level === "error") return "text-destructive";
+  if (level === "warn") return "text-yellow-600";
+  return "text-foreground";
 }
 </script>
 
@@ -69,9 +63,7 @@ function levelClass(level: LogLevel) {
       class="px-4 pb-4 data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 outline-none data-[state=closed]:animate-out data-[state=open]:animate-in"
     >
       <div class="max-h-48 space-y-1 overflow-y-auto">
-        <p v-if="!props.logs.length" class="text-muted-foreground">
-          No console output
-        </p>
+        <p v-if="!props.logs.length" class="text-muted-foreground">No console output</p>
         <template v-else>
           <div
             v-for="(log, index) in props.logs"
@@ -81,7 +73,7 @@ function levelClass(level: LogLevel) {
             <span class="text-muted-foreground">
               {{ log.timestamp.toLocaleTimeString() }}
             </span>
-            {{ ' ' }}
+            {{ " " }}
             {{ log.message }}
           </div>
         </template>

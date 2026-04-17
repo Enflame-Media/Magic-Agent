@@ -2,12 +2,12 @@
 /**
  * MCP Servers - Overview of connected MCP servers.
  */
-import { computed } from 'vue';
-import { useRouter } from 'vue-router';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useSyncStore } from '@/stores/sync';
-import ResponsiveContainer from '@/components/app/ResponsiveContainer.vue';
+import { computed } from "vue";
+import { useRouter } from "vue-router";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useSyncStore } from "@/stores/sync";
+import ResponsiveContainer from "@/components/app/ResponsiveContainer.vue";
 
 const router = useRouter();
 const syncStore = useSyncStore();
@@ -15,7 +15,7 @@ const syncStore = useSyncStore();
 const isConnected = computed(() => syncStore.isConnected);
 
 function goBack() {
-  router.push('/settings');
+  router.push("/settings");
 }
 </script>
 
@@ -31,11 +31,7 @@ function goBack() {
           stroke="currentColor"
           stroke-width="2"
         >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M15 19l-7-7 7-7"
-          />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
         </svg>
       </Button>
       <h1 class="text-2xl font-semibold">MCP Servers</h1>

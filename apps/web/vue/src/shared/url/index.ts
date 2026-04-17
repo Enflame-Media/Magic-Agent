@@ -23,7 +23,7 @@ export function isValidUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
     // Only allow http, https, and mailto schemes
-    const allowedSchemes = ['http:', 'https:', 'mailto:'];
+    const allowedSchemes = ["http:", "https:", "mailto:"];
     return allowedSchemes.includes(parsed.protocol);
   } catch {
     return false;
@@ -52,7 +52,7 @@ export async function openUrl(url: string): Promise<OpenUrlResult> {
   if (!isValidUrl(url)) {
     return {
       success: false,
-      error: 'Invalid or unsafe URL',
+      error: "Invalid or unsafe URL",
     };
   }
 
@@ -60,19 +60,19 @@ export async function openUrl(url: string): Promise<OpenUrlResult> {
     // Use window.open for web platforms
     // The '_blank' target opens in a new tab
     // The 'noopener,noreferrer' options are security best practices
-    const newWindow = globalThis.window?.open(url, '_blank', 'noopener,noreferrer');
+    const newWindow = globalThis.window?.open(url, "_blank", "noopener,noreferrer");
 
     // Check if the popup was blocked
-    if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+    if (!newWindow || newWindow.closed || typeof newWindow.closed === "undefined") {
       return {
         success: false,
-        error: 'Popup blocked. Please allow popups for this site.',
+        error: "Popup blocked. Please allow popups for this site.",
       };
     }
 
     return { success: true };
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
+    const message = error instanceof Error ? error.message : "Unknown error";
     return {
       success: false,
       error: `Failed to open URL: ${message}`,

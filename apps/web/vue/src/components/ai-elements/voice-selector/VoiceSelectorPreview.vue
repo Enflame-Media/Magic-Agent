@@ -1,25 +1,25 @@
 <script setup lang="ts">
-import type { HTMLAttributes } from 'vue'
-import { Button } from '@/components/ui/button'
-import { Spinner } from '@/components/ui/spinner'
-import { cn } from '@/lib/utils'
-import { PauseIcon, PlayIcon } from 'lucide-vue-next'
+import type { HTMLAttributes } from "vue";
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
+import { cn } from "@/lib/utils";
+import { PauseIcon, PlayIcon } from "lucide-vue-next";
 
 interface Props {
-  class?: HTMLAttributes['class']
-  playing?: boolean
-  loading?: boolean
+  class?: HTMLAttributes["class"];
+  playing?: boolean;
+  loading?: boolean;
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
-  (e: 'play'): void
-}>()
+  (e: "play"): void;
+}>();
 
 function handleClick(event: MouseEvent) {
-  event.stopPropagation()
-  emit('play')
+  event.stopPropagation();
+  emit("play");
 }
 </script>
 

@@ -5,14 +5,10 @@ import {
   IconNotification,
   IconSettings,
   IconUserCircle,
-} from '@tabler/icons-vue';
-import { useRouter } from 'vue-router';
+} from "@tabler/icons-vue";
+import { useRouter } from "vue-router";
 
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,14 +17,14 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from "@/components/ui/dropdown-menu";
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from '@/components/ui/sidebar';
-import { useAuthStore } from '@/stores/auth';
+} from "@/components/ui/sidebar";
+import { useAuthStore } from "@/stores/auth";
 
 interface User {
   name: string;
@@ -51,7 +47,7 @@ function navigateTo(path: string) {
 
 function handleLogout() {
   authStore.logout();
-  router.push('/auth');
+  router.push("/auth");
 }
 </script>
 
@@ -67,7 +63,7 @@ function handleLogout() {
             <Avatar class="h-8 w-8 rounded-lg grayscale">
               <AvatarImage :src="user.avatar" :alt="user.name" />
               <AvatarFallback class="rounded-lg">
-                {{ user.initials ?? 'HU' }}
+                {{ user.initials ?? "HU" }}
               </AvatarFallback>
             </Avatar>
             <div class="grid flex-1 text-left text-sm leading-tight">
@@ -90,7 +86,7 @@ function handleLogout() {
               <Avatar class="h-8 w-8 rounded-lg">
                 <AvatarImage :src="user.avatar" :alt="user.name" />
                 <AvatarFallback class="rounded-lg">
-                  {{ user.initials ?? 'HU' }}
+                  {{ user.initials ?? "HU" }}
                 </AvatarFallback>
               </Avatar>
               <div class="grid flex-1 text-left text-sm leading-tight">

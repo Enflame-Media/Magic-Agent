@@ -6,15 +6,15 @@
  * Uses cached friends data when available and falls back to refreshing the list.
  */
 
-import { computed, onMounted, ref, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import type { UserProfile } from '@magic-agent/protocol';
-import { useFriends, getDisplayName } from '@/composables/useFriends';
-import { Card, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-import ResponsiveContainer from '@/components/app/ResponsiveContainer.vue';
+import { computed, onMounted, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import type { UserProfile } from "@magic-agent/protocol";
+import { useFriends, getDisplayName } from "@/composables/useFriends";
+import { Card, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import ResponsiveContainer from "@/components/app/ResponsiveContainer.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -24,57 +24,57 @@ const profile = ref<UserProfile | null>(null);
 const isLoading = ref(true);
 const errorMessage = ref<string | null>(null);
 
-const userId = computed(() => String(route.params.id ?? ''));
+const userId = computed(() => String(route.params.id ?? ""));
 
-const displayName = computed(() => (profile.value ? getDisplayName(profile.value) : 'Profile'));
-const avatarUrl = computed(() => profile.value?.avatar?.url ?? profile.value?.avatar?.path ?? '');
+const displayName = computed(() => (profile.value ? getDisplayName(profile.value) : "Profile"));
+const avatarUrl = computed(() => profile.value?.avatar?.url ?? profile.value?.avatar?.path ?? "");
 const initials = computed(() => {
-  if (!profile.value) return '?';
-  const first = profile.value.firstName?.[0]?.toUpperCase() ?? '';
-  const last = profile.value.lastName?.[0]?.toUpperCase() ?? '';
-  return (first + last) || (profile.value.username[0]?.toUpperCase() ?? '?');
+  if (!profile.value) return "?";
+  const first = profile.value.firstName?.[0]?.toUpperCase() ?? "";
+  const last = profile.value.lastName?.[0]?.toUpperCase() ?? "";
+  return first + last || (profile.value.username[0]?.toUpperCase() ?? "?");
 });
 
 const statusLabel = computed(() => {
-  if (!profile.value) return '';
+  if (!profile.value) return "";
   switch (profile.value.status) {
-    case 'friend':
-      return 'Friends';
-    case 'pending':
-      return 'Incoming Request';
-    case 'requested':
-      return 'Outgoing Request';
-    case 'rejected':
-      return 'Blocked';
+    case "friend":
+      return "Friends";
+    case "pending":
+      return "Incoming Request";
+    case "requested":
+      return "Outgoing Request";
+    case "rejected":
+      return "Blocked";
     default:
-      return 'Not Connected';
+      return "Not Connected";
   }
 });
 
 const statusClasses = computed(() => {
-  if (!profile.value) return '';
+  if (!profile.value) return "";
   switch (profile.value.status) {
-    case 'friend':
-      return 'bg-green-100 text-green-800';
-    case 'pending':
-      return 'bg-amber-100 text-amber-800';
-    case 'requested':
-      return 'bg-blue-100 text-blue-800';
-    case 'rejected':
-      return 'bg-red-100 text-red-800';
+    case "friend":
+      return "bg-green-100 text-green-800";
+    case "pending":
+      return "bg-amber-100 text-amber-800";
+    case "requested":
+      return "bg-blue-100 text-blue-800";
+    case "rejected":
+      return "bg-red-100 text-red-800";
     default:
-      return 'bg-muted text-muted-foreground';
+      return "bg-muted text-muted-foreground";
   }
 });
 
 function goBack() {
-  router.push('/friends');
+  router.push("/friends");
 }
 
 async function loadProfile(): Promise<void> {
   const id = userId.value;
   if (!id) {
-    errorMessage.value = 'Profile not found.';
+    errorMessage.value = "Profile not found.";
     profile.value = null;
     isLoading.value = false;
     return;
@@ -97,7 +97,7 @@ async function loadProfile(): Promise<void> {
     profile.value = friend;
   } else {
     profile.value = null;
-    errorMessage.value = 'This profile is unavailable or you no longer have access.';
+    errorMessage.value = "This profile is unavailable or you no longer have access.";
   }
 
   isLoading.value = false;
@@ -124,11 +124,7 @@ watch(userId, () => {
           stroke="currentColor"
           stroke-width="2"
         >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M15 19l-7-7 7-7"
-          />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
         </svg>
       </Button>
       <div class="flex-1 min-w-0">
@@ -147,9 +143,7 @@ watch(userId, () => {
       <Card v-else-if="errorMessage" class="border-destructive/50">
         <CardContent class="py-8 text-center">
           <p class="text-destructive">{{ errorMessage }}</p>
-          <Button variant="outline" class="mt-4" @click="goBack">
-            Back to Friends
-          </Button>
+          <Button variant="outline" class="mt-4" @click="goBack"> Back to Friends </Button>
         </CardContent>
       </Card>
 

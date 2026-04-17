@@ -6,9 +6,9 @@
   Uses the shadcn-vue Command component for consistent UX.
 -->
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
-import { useI18n } from 'vue-i18n';
-import { IconTerminal, IconCode } from '@tabler/icons-vue';
+import { ref, onMounted, onUnmounted } from "vue";
+import { useI18n } from "vue-i18n";
+import { IconTerminal, IconCode } from "@tabler/icons-vue";
 import {
   CommandDialog,
   CommandInput,
@@ -16,8 +16,8 @@ import {
   CommandEmpty,
   CommandGroup,
   CommandItem,
-} from '@/components/ui/command';
-import type { AcpAvailableCommand } from '@magic-agent/protocol';
+} from "@/components/ui/command";
+import type { AcpAvailableCommand } from "@magic-agent/protocol";
 
 const props = defineProps<{
   commands: AcpAvailableCommand[];
@@ -31,23 +31,23 @@ const { t } = useI18n();
 const open = ref(false);
 
 function handleKeydown(e: KeyboardEvent) {
-  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+  if ((e.metaKey || e.ctrlKey) && e.key === "k") {
     e.preventDefault();
     open.value = !open.value;
   }
 }
 
 onMounted(() => {
-  document.addEventListener('keydown', handleKeydown);
+  document.addEventListener("keydown", handleKeydown);
 });
 
 onUnmounted(() => {
-  document.removeEventListener('keydown', handleKeydown);
+  document.removeEventListener("keydown", handleKeydown);
 });
 
 function handleSelect(command: AcpAvailableCommand) {
   open.value = false;
-  emit('invoke', command);
+  emit("invoke", command);
 }
 </script>
 
@@ -60,7 +60,7 @@ function handleSelect(command: AcpAvailableCommand) {
     <CommandInput :placeholder="t('acp.commandPalette.searchPlaceholder')" />
     <CommandList>
       <CommandEmpty>
-        {{ t('acp.commandPalette.noResults') }}
+        {{ t("acp.commandPalette.noResults") }}
       </CommandEmpty>
       <CommandGroup v-if="props.commands.length > 0" :heading="t('acp.commandPalette.title')">
         <CommandItem
@@ -79,10 +79,10 @@ function handleSelect(command: AcpAvailableCommand) {
       <div v-else class="flex flex-col items-center justify-center py-12 px-8">
         <IconCode class="size-8 text-muted-foreground mb-3" />
         <p class="text-base font-semibold text-foreground mb-1">
-          {{ t('acp.commandPalette.emptyTitle') }}
+          {{ t("acp.commandPalette.emptyTitle") }}
         </p>
         <p class="text-sm text-muted-foreground text-center leading-5">
-          {{ t('acp.commandPalette.emptyDescription') }}
+          {{ t("acp.commandPalette.emptyDescription") }}
         </p>
       </div>
     </CommandList>

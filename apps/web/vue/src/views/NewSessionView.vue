@@ -10,18 +10,22 @@
  * Uses TanStack Form with Zod validation.
  */
 
-import { computed, ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
-import { useI18n } from 'vue-i18n';
-import { toast } from 'vue-sonner';
-import { useForm } from '@tanstack/vue-form';
-import { z } from 'zod';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Field, FieldLabel, FieldError, isInvalid } from '@/components/ui/form';
-import { useMachinesStore, type Machine } from '@/stores/machines';
-import { machineSpawnNewSession, isTemporaryPidSessionId, pollForRealSession } from '@/services/sync/ops';
-import ResponsiveContainer from '@/components/app/ResponsiveContainer.vue';
+import { computed, ref, watch } from "vue";
+import { useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
+import { toast } from "vue-sonner";
+import { useForm } from "@tanstack/vue-form";
+import { z } from "zod";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Field, FieldLabel, FieldError, isInvalid } from "@/components/ui/form";
+import { useMachinesStore, type Machine } from "@/stores/machines";
+import {
+  machineSpawnNewSession,
+  isTemporaryPidSessionId,
+  pollForRealSession,
+} from "@/services/sync/ops";
+import ResponsiveContainer from "@/components/app/ResponsiveContainer.vue";
 
 const router = useRouter();
 const { t } = useI18n();
@@ -32,19 +36,20 @@ const machinesStore = useMachinesStore();
 // ─────────────────────────────────────────────────────────────────────────────
 
 const newSessionSchema = z.object({
-  machineId: z.string().min(1, 'Please select a machine'),
-  path: z.string()
-    .min(1, 'Path is required')
-    .regex(/^\//, 'Path must be an absolute path starting with /'),
-  sessionType: z.enum(['simple', 'worktree']),
-  agentType: z.enum(['claude', 'codex', 'gemini']),
-  initialPrompt: z.string().default(''),
+  machineId: z.string().min(1, "Please select a machine"),
+  path: z
+    .string()
+    .min(1, "Path is required")
+    .regex(/^\//, "Path must be an absolute path starting with /"),
+  sessionType: z.enum(["simple", "worktree"]),
+  agentType: z.enum(["claude", "codex", "gemini"]),
+  initialPrompt: z.string().default(""),
 });
 
 type NewSessionFormValues = z.infer<typeof newSessionSchema>;
 
-type SessionType = 'simple' | 'worktree';
-type AgentType = 'claude' | 'codex' | 'gemini';
+type SessionType = "simple" | "worktree";
+type AgentType = "claude" | "codex" | "gemini";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Form Setup
@@ -60,22 +65,22 @@ const offlineMachines = computed(() => machinesStore.offlineMachines);
 // Get default machine (first online, or first available)
 const defaultMachineId = computed(() => {
   const preferred = onlineMachines.value[0] ?? machines.value[0];
-  return preferred?.id ?? '';
+  return preferred?.id ?? "";
 });
 
 const form = useForm({
   defaultValues: {
     machineId: defaultMachineId.value,
-    path: '',
-    sessionType: 'simple' as SessionType,
-    agentType: 'claude' as AgentType,
-    initialPrompt: '',
+    path: "",
+    sessionType: "simple" as SessionType,
+    agentType: "claude" as AgentType,
+    initialPrompt: "",
   },
   onSubmit: async ({ value }) => {
     // Validate with Zod before submitting
     const result = newSessionSchema.safeParse(value);
     if (!result.success) {
-      toast.error(result.error.issues[0]?.message ?? 'Validation failed');
+      toast.error(result.error.issues[0]?.message ?? "Validation failed");
       return;
     }
     await startSession(result.data);
@@ -86,12 +91,12 @@ const form = useForm({
 watch(
   [machines, defaultMachineId],
   ([, newDefault]) => {
-    const currentMachine = form.getFieldValue('machineId');
+    const currentMachine = form.getFieldValue("machineId");
     if (!currentMachine && newDefault) {
-      form.setFieldValue('machineId', newDefault);
+      form.setFieldValue("machineId", newDefault);
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -135,8 +140,8 @@ async function startSession(values: NewSessionFormValues): Promise<void> {
       agent: values.agentType,
     });
   } catch (error) {
-    console.error('[NewSessionView] Failed to spawn session:', error);
-    toast.error(t('newSession.failedToStart'));
+    console.error("[NewSessionView] Failed to spawn session:", error);
+    toast.error(t("newSession.failedToStart"));
     isSubmitting.value = false;
     return;
   }
@@ -144,11 +149,11 @@ async function startSession(values: NewSessionFormValues): Promise<void> {
   let sessionId: string | null = null;
 
   // Handle success response
-  if (result.type === 'success') {
+  if (result.type === "success") {
     // Validate sessionId is present and non-empty
     if (!result.sessionId) {
-      console.error('[NewSessionView] Success response missing sessionId:', result);
-      toast.error(t('newSession.sessionSpawningFailed'));
+      console.error("[NewSessionView] Success response missing sessionId:", result);
+      toast.error(t("newSession.sessionSpawningFailed"));
       isSubmitting.value = false;
       return;
     }
@@ -157,19 +162,19 @@ async function startSession(values: NewSessionFormValues): Promise<void> {
 
     // Check if this is a temporary PID-based session ID (CLI is still waiting for real session)
     if (isTemporaryPidSessionId(result.sessionId)) {
-      pendingStatus.value = t('newSession.sessionPolling');
+      pendingStatus.value = t("newSession.sessionPolling");
       const realSessionId = await pollForRealSession(values.machineId, spawnStartTime, {
         interval: 5000,
         maxAttempts: 24,
         onPoll: (attempt, maxAttempts) => {
-          pendingStatus.value = t('newSession.sessionPollingProgress', { attempt, maxAttempts });
+          pendingStatus.value = t("newSession.sessionPollingProgress", { attempt, maxAttempts });
         },
       });
 
       if (!realSessionId) {
         pendingStatus.value = null;
         // Session is starting but taking too long - inform user but don't treat as error
-        toast.warning(t('newSession.sessionStartingSlow'));
+        toast.warning(t("newSession.sessionStartingSlow"));
         isSubmitting.value = false;
         return;
       }
@@ -177,35 +182,35 @@ async function startSession(values: NewSessionFormValues): Promise<void> {
       sessionId = realSessionId;
       pendingStatus.value = null;
     }
-  } else if (result.type === 'requestToApproveDirectoryCreation') {
-    toast.error(t('newSession.directoryDoesNotExist'));
+  } else if (result.type === "requestToApproveDirectoryCreation") {
+    toast.error(t("newSession.directoryDoesNotExist"));
     isSubmitting.value = false;
     return;
-  } else if (result.type === 'error') {
-    toast.error(result.errorMessage || t('newSession.failedToStart'));
+  } else if (result.type === "error") {
+    toast.error(result.errorMessage || t("newSession.failedToStart"));
     isSubmitting.value = false;
     return;
   } else {
     // Unknown response type - log for debugging and show generic error
-    console.error('[NewSessionView] Unexpected response type:', result);
-    toast.error(t('newSession.failedToStart'));
+    console.error("[NewSessionView] Unexpected response type:", result);
+    toast.error(t("newSession.failedToStart"));
     isSubmitting.value = false;
     return;
   }
 
   // Final validation that we have a valid session ID
   if (!sessionId) {
-    console.error('[NewSessionView] No session ID after processing:', result);
-    toast.error(t('newSession.sessionSpawningFailed'));
+    console.error("[NewSessionView] No session ID after processing:", result);
+    toast.error(t("newSession.sessionSpawningFailed"));
     isSubmitting.value = false;
     return;
   }
 
   if (values.initialPrompt?.trim()) {
-    toast.info('Prompt saved locally. Use the CLI to send messages for now.');
+    toast.info("Prompt saved locally. Use the CLI to send messages for now.");
   }
 
-  toast.success(t('newSession.sessionStarted'));
+  toast.success(t("newSession.sessionStarted"));
   router.push(`/session/${sessionId}`);
   isSubmitting.value = false;
 }
@@ -215,8 +220,8 @@ async function startSession(values: NewSessionFormValues): Promise<void> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const canSubmit = computed(() => {
-  const machineId = form.getFieldValue('machineId');
-  const path = form.getFieldValue('path');
+  const machineId = form.getFieldValue("machineId");
+  const path = form.getFieldValue("path");
   return Boolean(machineId && path?.trim());
 });
 </script>
@@ -297,18 +302,27 @@ const canSubmit = computed(() => {
                     <div class="flex items-center gap-2">
                       <span class="h-2 w-2 rounded-full bg-primary" />
                       <span class="text-foreground">
-                        {{ agentField.state.value === 'claude' ? 'Claude' : agentField.state.value === 'codex' ? 'Codex' : 'Gemini' }}
+                        {{
+                          agentField.state.value === "claude"
+                            ? "Claude"
+                            : agentField.state.value === "codex"
+                              ? "Codex"
+                              : "Gemini"
+                        }}
                       </span>
                     </div>
                   </form.Field>
                   <form.Field name="machineId" v-slot="{ field: machineField }">
                     <div class="flex items-center gap-2">
-                      <span class="h-2 w-2 rounded-full" :class="onlineMachines.length ? 'bg-green-500' : 'bg-gray-400'" />
+                      <span
+                        class="h-2 w-2 rounded-full"
+                        :class="onlineMachines.length ? 'bg-green-500' : 'bg-gray-400'"
+                      />
                       <span class="text-foreground">
                         {{
                           machineField.state.value
                             ? machineLabel(machinesStore.getMachine(machineField.state.value)!)
-                            : 'Select a machine'
+                            : "Select a machine"
                         }}
                       </span>
                     </div>
@@ -327,7 +341,9 @@ const canSubmit = computed(() => {
 
             <form.Field name="path" v-slot="{ field }">
               <Field :data-invalid="isInvalid(field)">
-                <div class="flex items-center gap-2 rounded-full border border-border/60 bg-muted/30 px-4 py-2 text-sm">
+                <div
+                  class="flex items-center gap-2 rounded-full border border-border/60 bg-muted/30 px-4 py-2 text-sm"
+                >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     class="h-4 w-4 text-muted-foreground"
@@ -336,7 +352,11 @@ const canSubmit = computed(() => {
                     stroke="currentColor"
                     stroke-width="2"
                   >
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 7h5l2 2h11v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" />
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M3 7h5l2 2h11v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"
+                    />
                   </svg>
                   <Input
                     :id="field.name"
@@ -360,7 +380,9 @@ const canSubmit = computed(() => {
           <section class="grid gap-4 md:grid-cols-2">
             <form.Field name="agentType" v-slot="{ field }">
               <Field>
-                <FieldLabel class="text-xs uppercase tracking-wide text-muted-foreground">Agent</FieldLabel>
+                <FieldLabel class="text-xs uppercase tracking-wide text-muted-foreground"
+                  >Agent</FieldLabel
+                >
                 <div class="mt-2 flex flex-wrap gap-2">
                   <Button
                     type="button"
@@ -392,7 +414,9 @@ const canSubmit = computed(() => {
 
             <form.Field name="machineId" v-slot="{ field }">
               <Field :data-invalid="isInvalid(field)">
-                <FieldLabel class="text-xs uppercase tracking-wide text-muted-foreground">Machine</FieldLabel>
+                <FieldLabel class="text-xs uppercase tracking-wide text-muted-foreground"
+                  >Machine</FieldLabel
+                >
                 <select
                   :value="field.state.value"
                   @change="field.handleChange(($event.target as HTMLSelectElement).value)"
@@ -408,7 +432,11 @@ const canSubmit = computed(() => {
                     </option>
                   </optgroup>
                   <optgroup v-if="offlineMachines.length > 0" label="Offline">
-                    <option v-for="machine in offlineMachines" :key="machine.id" :value="machine.id">
+                    <option
+                      v-for="machine in offlineMachines"
+                      :key="machine.id"
+                      :value="machine.id"
+                    >
                       {{ machineLabel(machine) }} (Offline)
                     </option>
                   </optgroup>
@@ -433,7 +461,7 @@ const canSubmit = computed(() => {
                 {{ pendingStatus }}
               </span>
               <Button type="submit" :disabled="!canSubmit || isSubmitting">
-                {{ isSubmitting ? 'Starting...' : 'Start Session' }}
+                {{ isSubmitting ? "Starting..." : "Start Session" }}
               </Button>
             </div>
           </div>

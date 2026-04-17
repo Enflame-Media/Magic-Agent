@@ -7,12 +7,12 @@
  * @see HAP-769 - Implement Share Session UI for happy-vue web app
  */
 
-import { computed } from 'vue';
-import { useI18n } from 'vue-i18n';
-import { Mail, Clock, X, RotateCw } from 'lucide-vue-next';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import type { SessionShareInvitation, SessionSharePermission } from '@magic-agent/protocol';
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+import { Mail, Clock, X, RotateCw } from "lucide-vue-next";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import type { SessionShareInvitation, SessionSharePermission } from "@magic-agent/protocol";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Props & Emits
@@ -30,8 +30,8 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<{
-  'revoke': [invitationId: string];
-  'resend': [invitationId: string];
+  revoke: [invitationId: string];
+  resend: [invitationId: string];
 }>();
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -46,7 +46,7 @@ const { t, d } = useI18n();
 
 /** Only show pending invitations */
 const pendingInvitations = computed(() =>
-  props.invitations.filter((inv) => inv.status === 'pending')
+  props.invitations.filter((inv) => inv.status === "pending"),
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -54,15 +54,15 @@ const pendingInvitations = computed(() =>
 // ─────────────────────────────────────────────────────────────────────────────
 
 function getPermissionLabel(permission: SessionSharePermission): string {
-  return permission === 'view_and_chat'
-    ? t('sharing.permission.viewAndChat')
-    : t('sharing.permission.viewOnly');
+  return permission === "view_and_chat"
+    ? t("sharing.permission.viewAndChat")
+    : t("sharing.permission.viewOnly");
 }
 
 function formatDate(dateString: string): string {
   try {
     const date = new Date(dateString);
-    return d(date, 'short');
+    return d(date, "short");
   } catch {
     return dateString;
   }
@@ -73,11 +73,11 @@ function formatDate(dateString: string): string {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function handleRevoke(invitationId: string): void {
-  emit('revoke', invitationId);
+  emit("revoke", invitationId);
 }
 
 function handleResend(invitationId: string): void {
-  emit('resend', invitationId);
+  emit("resend", invitationId);
 }
 </script>
 
@@ -86,7 +86,7 @@ function handleResend(invitationId: string): void {
     <!-- Section Header -->
     <div class="flex items-center gap-2 text-sm font-medium text-muted-foreground">
       <Mail class="size-4" />
-      <span>{{ t('sharing.invitations.title') }}</span>
+      <span>{{ t("sharing.invitations.title") }}</span>
       <span class="text-xs">({{ pendingInvitations.length }})</span>
     </div>
 
@@ -111,7 +111,7 @@ function handleResend(invitationId: string): void {
             </Badge>
             <span class="flex items-center gap-1">
               <Clock class="size-3" />
-              {{ t('sharing.invitations.expires', { date: formatDate(invitation.expiresAt) }) }}
+              {{ t("sharing.invitations.expires", { date: formatDate(invitation.expiresAt) }) }}
             </span>
           </div>
         </div>
@@ -127,7 +127,7 @@ function handleResend(invitationId: string): void {
             @click="handleResend(invitation.id)"
           >
             <RotateCw class="size-4" />
-            <span class="sr-only">{{ t('sharing.invitations.resend') }}</span>
+            <span class="sr-only">{{ t("sharing.invitations.resend") }}</span>
           </Button>
 
           <!-- Revoke Button -->
@@ -139,7 +139,7 @@ function handleResend(invitationId: string): void {
             @click="handleRevoke(invitation.id)"
           >
             <X class="size-4" />
-            <span class="sr-only">{{ t('sharing.invitations.revoke') }}</span>
+            <span class="sr-only">{{ t("sharing.invitations.revoke") }}</span>
           </Button>
         </div>
       </div>

@@ -9,15 +9,15 @@
  * - PWA with service worker for offline support
  */
 
-import { createApp } from 'vue';
-import { createPinia } from 'pinia';
-import App from './App.vue';
-import router from './router';
-import i18n from './i18n';
-import { useAuthStore } from './stores/auth';
+import { createApp } from "vue";
+import { createPinia } from "pinia";
+import App from "./App.vue";
+import router from "./router";
+import i18n from "./i18n";
+import { useAuthStore } from "./stores/auth";
 
 // Import global styles (Tailwind CSS + ShadCN-Vue variables)
-import './assets/index.css';
+import "./assets/index.css";
 
 const app = createApp(App);
 const pinia = createPinia();
@@ -33,32 +33,34 @@ const authStore = useAuthStore(pinia);
 void authStore.initialize();
 
 // Mount the application
-app.mount('#app');
+app.mount("#app");
 
 // Register service worker for PWA support
 // Uses vite-plugin-pwa with autoUpdate strategy
-if ('serviceWorker' in navigator) {
-  import('virtual:pwa-register').then(({ registerSW }) => {
-    registerSW({
-      immediate: true,
-      onNeedRefresh() {
-        // New content available - auto-update is enabled
-        // so this will reload automatically
-        console.log('[PWA] New content available, updating...');
-      },
-      onOfflineReady() {
-        console.log('[PWA] App ready to work offline');
-      },
-      onRegistered(registration) {
-        if (registration) {
-          console.log('[PWA] Service worker registered');
-        }
-      },
-      onRegisterError(error) {
-        console.error('[PWA] Service worker registration failed:', error);
-      },
+if ("serviceWorker" in navigator) {
+  import("virtual:pwa-register")
+    .then(({ registerSW }) => {
+      registerSW({
+        immediate: true,
+        onNeedRefresh() {
+          // New content available - auto-update is enabled
+          // so this will reload automatically
+          console.log("[PWA] New content available, updating...");
+        },
+        onOfflineReady() {
+          console.log("[PWA] App ready to work offline");
+        },
+        onRegistered(registration) {
+          if (registration) {
+            console.log("[PWA] Service worker registered");
+          }
+        },
+        onRegisterError(error) {
+          console.error("[PWA] Service worker registration failed:", error);
+        },
+      });
+    })
+    .catch((error: unknown) => {
+      console.warn("[PWA] Failed to load PWA module:", error);
     });
-  }).catch((error: unknown) => {
-    console.warn('[PWA] Failed to load PWA module:', error);
-  });
 }

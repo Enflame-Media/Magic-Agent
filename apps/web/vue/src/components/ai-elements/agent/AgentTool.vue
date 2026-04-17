@@ -1,32 +1,28 @@
 <script setup lang="ts">
-import type { Tool } from 'ai'
-import type { HTMLAttributes } from 'vue'
-import {
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion'
-import { cn } from '@/lib/utils'
-import { computed } from 'vue'
-import { CodeBlock } from '../code-block'
+import type { Tool } from "ai";
+import type { HTMLAttributes } from "vue";
+import { AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { cn } from "@/lib/utils";
+import { computed } from "vue";
+import { CodeBlock } from "../code-block";
 
-type AgentToolProps = InstanceType<typeof AccordionItem>['$props']
+type AgentToolProps = InstanceType<typeof AccordionItem>["$props"];
 
 interface Props extends /* @vue-ignore */ AgentToolProps {
-  tool: Tool
-  value: string
-  class?: HTMLAttributes['class']
+  tool: Tool;
+  value: string;
+  class?: HTMLAttributes["class"];
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
 const schema = computed(() => {
-  return 'jsonSchema' in props.tool && props.tool.jsonSchema
+  return "jsonSchema" in props.tool && props.tool.jsonSchema
     ? props.tool.jsonSchema
-    : props.tool.inputSchema
-})
+    : props.tool.inputSchema;
+});
 
-const schemaString = computed(() => JSON.stringify(schema.value, null, 2))
+const schemaString = computed(() => JSON.stringify(schema.value, null, 2));
 </script>
 
 <template>

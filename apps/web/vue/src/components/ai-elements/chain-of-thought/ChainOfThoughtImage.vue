@@ -1,18 +1,15 @@
 <script setup lang="ts">
-import type { HTMLAttributes } from 'vue'
-import { cn } from '@/lib/utils'
+import type { HTMLAttributes } from "vue";
+import { cn } from "@/lib/utils";
 
 const props = defineProps<{
-  caption?: string
-  class?: HTMLAttributes['class']
-}>()
+  caption?: string;
+  class?: HTMLAttributes["class"];
+}>();
 </script>
 
 <template>
-  <div
-    :class="cn('mt-2 space-y-2', props.class)"
-    v-bind="$attrs"
-  >
+  <div :class="cn('mt-2 space-y-2', props.class)" v-bind="$attrs">
     <div
       class="relative flex max-h-[22rem] items-center justify-center overflow-hidden rounded-lg bg-muted p-3"
     >

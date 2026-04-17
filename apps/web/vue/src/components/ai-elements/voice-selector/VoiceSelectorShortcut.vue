@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { CommandShortcut } from '@/components/ui/command'
+import { CommandShortcut } from "@/components/ui/command";
 
-type VoiceSelectorShortcutProps = InstanceType<typeof CommandShortcut>['$props']
+type VoiceSelectorShortcutProps = InstanceType<typeof CommandShortcut>["$props"];
 
 interface Props extends /* @vue-ignore */ VoiceSelectorShortcutProps {}
 
-defineProps<Props>()
+defineProps<Props>();
 </script>
 
 <template>

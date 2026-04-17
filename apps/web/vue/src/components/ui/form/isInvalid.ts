@@ -5,8 +5,8 @@
  * - Field has been touched (user interacted)
  * - Field has validation errors
  */
-import type { AnyFieldApi } from '@tanstack/vue-form'
+import type { AnyFieldApi } from "@tanstack/vue-form";
 
 export function isInvalid(field: AnyFieldApi): boolean {
-  return field.state.meta.isTouched && !field.state.meta.isValid
+  return field.state.meta.isTouched && !field.state.meta.isValid;
 }

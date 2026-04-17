@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { HTMLAttributes } from 'vue'
-import { cn } from '@/lib/utils'
+import type { HTMLAttributes } from "vue";
+import { cn } from "@/lib/utils";
 import {
   CircleSmallIcon,
   MarsIcon,
@@ -9,26 +9,18 @@ import {
   TransgenderIcon,
   VenusAndMarsIcon,
   VenusIcon,
-} from 'lucide-vue-next'
+} from "lucide-vue-next";
 
 interface Props extends /* @vue-ignore */ HTMLAttributes {
-  class?: HTMLAttributes['class']
-  value?:
-    | 'male'
-    | 'female'
-    | 'transgender'
-    | 'androgyne'
-    | 'non-binary'
-    | 'intersex'
+  class?: HTMLAttributes["class"];
+  value?: "male" | "female" | "transgender" | "androgyne" | "non-binary" | "intersex";
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 </script>
 
 <template>
-  <span
-    :class="cn('text-muted-foreground text-xs', props.class)"
-  >
+  <span :class="cn('text-muted-foreground text-xs', props.class)">
     <slot>
       <MarsIcon v-if="props.value === 'male'" class="size-4" />
       <VenusIcon v-else-if="props.value === 'female'" class="size-4" />

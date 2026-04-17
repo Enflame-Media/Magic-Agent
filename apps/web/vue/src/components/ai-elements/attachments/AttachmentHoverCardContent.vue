@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import type { HTMLAttributes } from 'vue'
-import { HoverCardContent } from '@/components/ui/hover-card'
-import { cn } from '@/lib/utils'
+import type { HTMLAttributes } from "vue";
+import { HoverCardContent } from "@/components/ui/hover-card";
+import { cn } from "@/lib/utils";
 
-type AttachmentHoverCardContentProps = InstanceType<typeof HoverCardContent>['$props']
+type AttachmentHoverCardContentProps = InstanceType<typeof HoverCardContent>["$props"];
 
 interface Props extends /* @vue-ignore */ AttachmentHoverCardContentProps {
-  class?: HTMLAttributes['class']
+  class?: HTMLAttributes["class"];
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  align: 'start',
-})
+  align: "start",
+});
 </script>
 
 <template>

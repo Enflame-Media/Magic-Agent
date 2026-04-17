@@ -1,22 +1,19 @@
 <script setup lang="ts">
-import type { HTMLAttributes } from 'vue'
-import { CollapsibleTrigger } from '@/components/ui/collapsible'
-import { cn } from '@/lib/utils'
+import type { HTMLAttributes } from "vue";
+import { CollapsibleTrigger } from "@/components/ui/collapsible";
+import { cn } from "@/lib/utils";
 
-type CommitHeaderProps = InstanceType<typeof CollapsibleTrigger>['$props']
+type CommitHeaderProps = InstanceType<typeof CollapsibleTrigger>["$props"];
 
 interface Props extends /* @vue-ignore */ CommitHeaderProps {
-  class?: HTMLAttributes['class']
+  class?: HTMLAttributes["class"];
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 </script>
 
 <template>
-  <CollapsibleTrigger
-    as-child
-    v-bind="$attrs"
-  >
+  <CollapsibleTrigger as-child v-bind="$attrs">
     <div
       :class="
         cn(

@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { Button } from '@/components/ui/button';
-import { CodeBlock } from '@/components/app';
-import { parseMarkdown, type MarkdownBlock, type MarkdownSpan } from './parseMarkdown';
-import MermaidRenderer from './MermaidRenderer.vue';
+import { computed, ref } from "vue";
+import { Button } from "@/components/ui/button";
+import { CodeBlock } from "@/components/app";
+import { parseMarkdown, type MarkdownBlock, type MarkdownSpan } from "./parseMarkdown";
+import MermaidRenderer from "./MermaidRenderer.vue";
 
 export type Option = {
   title: string;
@@ -21,10 +21,10 @@ const blocks = computed<MarkdownBlock[]>(() => parseMarkdown(props.markdown));
 
 function spanClasses(span: MarkdownSpan): string[] {
   const classes: string[] = [];
-  if (span.styles.includes('bold')) classes.push('font-semibold');
-  if (span.styles.includes('italic')) classes.push('italic');
-  if (span.styles.includes('code')) {
-    classes.push('font-mono', 'bg-muted/70', 'px-1', 'py-0.5', 'rounded');
+  if (span.styles.includes("bold")) classes.push("font-semibold");
+  if (span.styles.includes("italic")) classes.push("italic");
+  if (span.styles.includes("code")) {
+    classes.push("font-mono", "bg-muted/70", "px-1", "py-0.5", "rounded");
   }
   return classes;
 }
@@ -33,11 +33,11 @@ async function copyMarkdown(): Promise<void> {
   try {
     await globalThis.navigator.clipboard.writeText(props.markdown);
   } catch {
-    const textarea = globalThis.document.createElement('textarea');
+    const textarea = globalThis.document.createElement("textarea");
     textarea.value = props.markdown;
     globalThis.document.body.appendChild(textarea);
     textarea.select();
-    globalThis.document.execCommand('copy');
+    globalThis.document.execCommand("copy");
     globalThis.document.body.removeChild(textarea);
   }
   copied.value = true;
@@ -56,7 +56,7 @@ async function copyMarkdown(): Promise<void> {
       class="absolute -top-2 right-0 h-6 px-2 text-[11px]"
       @click="copyMarkdown"
     >
-      {{ copied ? 'Copied' : 'Copy' }}
+      {{ copied ? "Copied" : "Copy" }}
     </Button>
     <template v-for="(block, index) in blocks" :key="index">
       <p
@@ -93,17 +93,10 @@ async function copyMarkdown(): Promise<void> {
         </template>
       </p>
 
-      <div
-        v-else-if="block.type === 'horizontal-rule'"
-        class="h-px bg-border/60 my-2"
-      />
+      <div v-else-if="block.type === 'horizontal-rule'" class="h-px bg-border/60 my-2" />
 
       <ul v-else-if="block.type === 'list'" class="space-y-1 text-sm text-foreground">
-        <li
-          v-for="(item, itemIndex) in block.items"
-          :key="itemIndex"
-          class="flex gap-2"
-        >
+        <li v-for="(item, itemIndex) in block.items" :key="itemIndex" class="flex gap-2">
           <span class="text-muted-foreground">-</span>
           <span>
             <template v-for="(span, spanIndex) in item" :key="spanIndex">
@@ -114,11 +107,7 @@ async function copyMarkdown(): Promise<void> {
       </ul>
 
       <ol v-else-if="block.type === 'numbered-list'" class="space-y-1 text-sm text-foreground">
-        <li
-          v-for="(item, itemIndex) in block.items"
-          :key="itemIndex"
-          class="flex gap-2"
-        >
+        <li v-for="(item, itemIndex) in block.items" :key="itemIndex" class="flex gap-2">
           <span class="text-muted-foreground">{{ item.number }}.</span>
           <span>
             <template v-for="(span, spanIndex) in item.spans" :key="spanIndex">
@@ -129,16 +118,10 @@ async function copyMarkdown(): Promise<void> {
       </ol>
 
       <div v-else-if="block.type === 'code-block'" class="group">
-        <CodeBlock
-          :code="block.content"
-          :language="block.language ?? undefined"
-        />
+        <CodeBlock :code="block.content" :language="block.language ?? undefined" />
       </div>
 
-      <MermaidRenderer
-        v-else-if="block.type === 'mermaid'"
-        :content="block.content"
-      />
+      <MermaidRenderer v-else-if="block.type === 'mermaid'" :content="block.content" />
 
       <div v-else-if="block.type === 'options'" class="space-y-2">
         <Button
@@ -176,7 +159,7 @@ async function copyMarkdown(): Promise<void> {
                 :key="header"
                 class="px-3 py-2 text-muted-foreground"
               >
-                {{ row[cellIndex] ?? '' }}
+                {{ row[cellIndex] ?? "" }}
               </td>
             </tr>
           </tbody>

@@ -21,22 +21,18 @@
  * @module composables/usePurchases
  */
 
-import { readonly } from 'vue';
-import { storeToRefs } from 'pinia';
-import { usePurchasesStore } from '@/stores/purchases';
-import { useAuthStore } from '@/stores/auth';
-import type {
-  CustomerInfo,
-  Offerings,
-  Package,
-} from '@/shared';
+import { readonly } from "vue";
+import { storeToRefs } from "pinia";
+import { usePurchasesStore } from "@/stores/purchases";
+import { useAuthStore } from "@/stores/auth";
+import type { CustomerInfo, Offerings, Package } from "@/shared";
 import {
   PaywallResult,
   PurchaseError,
   PurchaseErrorCode,
   trackPurchaseEvent,
   PurchaseAnalyticsEvent,
-} from '@/shared';
+} from "@/shared";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // RevenueCat SDK Types (from @revenuecat/purchases-js)
@@ -130,15 +126,11 @@ export function usePurchases() {
 
     try {
       // Dynamic import to avoid SSR issues
-      const module = await import('@revenuecat/purchases-js');
+      const module = await import("@revenuecat/purchases-js");
       Purchases = module.Purchases;
     } catch (error) {
-      console.error('[usePurchases] Failed to load RevenueCat SDK:', error);
-      throw new PurchaseError(
-        PurchaseErrorCode.UNKNOWN,
-        'Failed to load RevenueCat SDK',
-        error
-      );
+      console.error("[usePurchases] Failed to load RevenueCat SDK:", error);
+      throw new PurchaseError(PurchaseErrorCode.UNKNOWN, "Failed to load RevenueCat SDK", error);
     }
   }
 
@@ -147,7 +139,7 @@ export function usePurchases() {
    */
   async function initialize(): Promise<void> {
     if (store.isConfigured) {
-      console.log('[usePurchases] Already configured');
+      console.log("[usePurchases] Already configured");
       return;
     }
 
@@ -161,7 +153,7 @@ export function usePurchases() {
       if (!apiKey) {
         throw new PurchaseError(
           PurchaseErrorCode.NOT_CONFIGURED,
-          'VITE_REVENUECAT_WEB_KEY not set'
+          "VITE_REVENUECAT_WEB_KEY not set",
         );
       }
 
@@ -179,16 +171,12 @@ export function usePurchases() {
       // Fetch initial data
       await Promise.all([refreshCustomerInfo(), refreshOfferings()]);
 
-      console.log('[usePurchases] Initialized successfully');
+      console.log("[usePurchases] Initialized successfully");
     } catch (error) {
       const purchaseError =
         error instanceof PurchaseError
           ? error
-          : new PurchaseError(
-              PurchaseErrorCode.UNKNOWN,
-              'Failed to initialize RevenueCat',
-              error
-            );
+          : new PurchaseError(PurchaseErrorCode.UNKNOWN, "Failed to initialize RevenueCat", error);
       store.setError(purchaseError.code, purchaseError.message);
       throw purchaseError;
     } finally {
@@ -212,11 +200,11 @@ export function usePurchases() {
       store.setCustomerInfo(info);
       return info;
     } catch (error) {
-      console.error('[usePurchases] Failed to get customer info:', error);
+      console.error("[usePurchases] Failed to get customer info:", error);
       throw new PurchaseError(
         PurchaseErrorCode.NETWORK_ERROR,
-        'Failed to fetch customer info',
-        error
+        "Failed to fetch customer info",
+        error,
       );
     }
   }
@@ -233,12 +221,8 @@ export function usePurchases() {
       store.setOfferings(transformed);
       return transformed;
     } catch (error) {
-      console.error('[usePurchases] Failed to get offerings:', error);
-      throw new PurchaseError(
-        PurchaseErrorCode.NETWORK_ERROR,
-        'Failed to fetch offerings',
-        error
-      );
+      console.error("[usePurchases] Failed to get offerings:", error);
+      throw new PurchaseError(PurchaseErrorCode.NETWORK_ERROR, "Failed to fetch offerings", error);
     }
   }
 
@@ -256,7 +240,7 @@ export function usePurchases() {
 
     // Track purchase started
     trackPurchaseEvent(PurchaseAnalyticsEvent.PURCHASE_STARTED, {
-      platform: 'web',
+      platform: "web",
       packageId: pkg.identifier,
       productId: pkg.product.identifier,
       price: pkg.product.price,
@@ -272,7 +256,7 @@ export function usePurchases() {
       if (!rcPackage) {
         throw new PurchaseError(
           PurchaseErrorCode.PRODUCT_NOT_FOUND,
-          `Package ${pkg.identifier} not found`
+          `Package ${pkg.identifier} not found`,
         );
       }
 
@@ -283,7 +267,7 @@ export function usePurchases() {
 
       // Track purchase completed
       trackPurchaseEvent(PurchaseAnalyticsEvent.PURCHASE_COMPLETED, {
-        platform: 'web',
+        platform: "web",
         packageId: pkg.identifier,
         productId: pkg.product.identifier,
         price: pkg.product.price,
@@ -297,7 +281,7 @@ export function usePurchases() {
       if (isUserCancellation(error)) {
         // Track purchase cancelled
         trackPurchaseEvent(PurchaseAnalyticsEvent.PURCHASE_CANCELLED, {
-          platform: 'web',
+          platform: "web",
           packageId: pkg.identifier,
           productId: pkg.product.identifier,
           userId: authStore.accountId ?? undefined,
@@ -308,15 +292,11 @@ export function usePurchases() {
       const purchaseError =
         error instanceof PurchaseError
           ? error
-          : new PurchaseError(
-              PurchaseErrorCode.UNKNOWN,
-              'Purchase failed',
-              error
-            );
+          : new PurchaseError(PurchaseErrorCode.UNKNOWN, "Purchase failed", error);
 
       // Track purchase failed
       trackPurchaseEvent(PurchaseAnalyticsEvent.PURCHASE_FAILED, {
-        platform: 'web',
+        platform: "web",
         packageId: pkg.identifier,
         productId: pkg.product.identifier,
         errorCode: purchaseError.code,
@@ -341,7 +321,7 @@ export function usePurchases() {
 
     // Track restore started
     trackPurchaseEvent(PurchaseAnalyticsEvent.RESTORE_STARTED, {
-      platform: 'web',
+      platform: "web",
       userId: authStore.accountId ?? undefined,
     });
 
@@ -353,9 +333,9 @@ export function usePurchases() {
 
       // Track restore completed
       const restoredCount = Object.keys(info.activeSubscriptions).length;
-      const restoredPro = info.entitlements?.all?.['pro']?.isActive ?? false;
+      const restoredPro = info.entitlements?.all?.["pro"]?.isActive ?? false;
       trackPurchaseEvent(PurchaseAnalyticsEvent.RESTORE_COMPLETED, {
-        platform: 'web',
+        platform: "web",
         userId: authStore.accountId ?? undefined,
         restoredCount,
         restoredPro,
@@ -368,8 +348,8 @@ export function usePurchases() {
           ? error
           : new PurchaseError(
               PurchaseErrorCode.NETWORK_ERROR,
-              'Failed to restore purchases',
-              error
+              "Failed to restore purchases",
+              error,
             );
 
       store.setError(purchaseError.code, purchaseError.message);
@@ -396,7 +376,7 @@ export function usePurchases() {
   function showPaywall(source?: string): void {
     // Track paywall presented
     trackPurchaseEvent(PurchaseAnalyticsEvent.PAYWALL_PRESENTED, {
-      platform: 'web',
+      platform: "web",
       offeringId: store.currentOffering?.identifier,
       source,
       userId: authStore.accountId ?? undefined,
@@ -416,15 +396,15 @@ export function usePurchases() {
    * Show paywall only if user doesn't have the required entitlement
    */
   async function showPaywallIfNeeded(
-    entitlementId: string = 'pro',
-    source?: string
+    entitlementId: string = "pro",
+    source?: string,
   ): Promise<PaywallResult> {
     const hasIt = store.hasEntitlement(entitlementId);
     if (hasIt) {
       return PaywallResult.NOT_PRESENTED;
     }
 
-    showPaywall(source ?? 'paywall_if_needed');
+    showPaywall(source ?? "paywall_if_needed");
     return PaywallResult.NOT_PRESENTED; // Actual result comes from user interaction
   }
 
@@ -447,7 +427,7 @@ export function usePurchases() {
     if (!purchasesInstance || !store.isConfigured) {
       throw new PurchaseError(
         PurchaseErrorCode.NOT_CONFIGURED,
-        'RevenueCat not configured. Call initialize() first.'
+        "RevenueCat not configured. Call initialize() first.",
       );
     }
   }
@@ -456,18 +436,15 @@ export function usePurchases() {
     if (error instanceof Error) {
       const message = error.message.toLowerCase();
       return (
-        message.includes('cancel') ||
-        message.includes('user cancelled') ||
-        (error as { code?: string }).code === 'UserCancelled'
+        message.includes("cancel") ||
+        message.includes("user cancelled") ||
+        (error as { code?: string }).code === "UserCancelled"
       );
     }
     return false;
   }
 
-  function findPackage(
-    rcOfferings: RCOfferings,
-    identifier: string
-  ): RCPackage | null {
+  function findPackage(rcOfferings: RCOfferings, identifier: string): RCPackage | null {
     for (const offering of Object.values(rcOfferings.all)) {
       for (const pkg of offering.availablePackages) {
         if (pkg.identifier === identifier) {
@@ -505,11 +482,11 @@ export function usePurchases() {
 
       return {
         identifier: pkg.identifier,
-        packageType: pkg.packageType || 'custom',
+        packageType: pkg.packageType || "custom",
         product: {
           identifier: product.identifier,
           title: product.title,
-          description: product.description || '',
+          description: product.description || "",
           priceString: product.currentPrice.formattedPrice,
           price: product.currentPrice.amountMicros / 1_000_000,
           currencyCode: product.currentPrice.currency,
@@ -527,10 +504,7 @@ export function usePurchases() {
     return {
       current: rc.current ? transformOffering(rc.current) : null,
       all: Object.fromEntries(
-        Object.entries(rc.all).map(([key, offering]) => [
-          key,
-          transformOffering(offering),
-        ])
+        Object.entries(rc.all).map(([key, offering]) => [key, transformOffering(offering)]),
       ),
     };
   }

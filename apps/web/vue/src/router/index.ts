@@ -30,9 +30,9 @@ import {
   createWebHistory,
   type RouteLocationNormalized,
   type NavigationGuardNext,
-} from 'vue-router';
-import { useAuthStore } from '@/stores/auth';
-import './types'; // Route meta type augmentation
+} from "vue-router";
+import { useAuthStore } from "@/stores/auth";
+import "./types"; // Route meta type augmentation
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -41,39 +41,39 @@ const router = createRouter({
     // Main Routes (require authentication)
     // ─────────────────────────────────────────────────────────────────────
     {
-      path: '/',
-      name: 'home',
-      component: () => import('@/views/HomeView.vue'),
+      path: "/",
+      name: "home",
+      component: () => import("@/views/HomeView.vue"),
       meta: { requiresAuth: true },
     },
     {
-      path: '/new',
-      name: 'new-session',
-      component: () => import('@/views/NewSessionView.vue'),
+      path: "/new",
+      name: "new-session",
+      component: () => import("@/views/NewSessionView.vue"),
       meta: { requiresAuth: true },
     },
     {
-      path: '/session/:id',
-      name: 'session',
-      component: () => import('@/views/SessionView.vue'),
+      path: "/session/:id",
+      name: "session",
+      component: () => import("@/views/SessionView.vue"),
       meta: { requiresAuth: true },
     },
     {
-      path: '/session/:id/message/:messageId',
-      name: 'session-message',
-      component: () => import('@/views/ToolMessageView.vue'),
+      path: "/session/:id/message/:messageId",
+      name: "session-message",
+      component: () => import("@/views/ToolMessageView.vue"),
       meta: { requiresAuth: true },
     },
     {
-      path: '/session/:id/info',
-      name: 'session-info',
-      component: () => import('@/views/SessionInfoView.vue'),
+      path: "/session/:id/info",
+      name: "session-info",
+      component: () => import("@/views/SessionInfoView.vue"),
       meta: { requiresAuth: true },
     },
     {
-      path: '/session/:id/artifacts',
-      name: 'session-artifacts',
-      component: () => import('@/views/ArtifactsView.vue'),
+      path: "/session/:id/artifacts",
+      name: "session-artifacts",
+      component: () => import("@/views/ArtifactsView.vue"),
       meta: { requiresAuth: true },
     },
 
@@ -81,9 +81,9 @@ const router = createRouter({
     // Artifacts Routes (require authentication)
     // ─────────────────────────────────────────────────────────────────────
     {
-      path: '/artifacts',
-      name: 'artifacts',
-      component: () => import('@/views/ArtifactsView.vue'),
+      path: "/artifacts",
+      name: "artifacts",
+      component: () => import("@/views/ArtifactsView.vue"),
       meta: { requiresAuth: true },
     },
 
@@ -91,15 +91,15 @@ const router = createRouter({
     // Friends Routes (require authentication)
     // ─────────────────────────────────────────────────────────────────────
     {
-      path: '/friends',
-      name: 'friends',
-      component: () => import('@/views/FriendsView.vue'),
+      path: "/friends",
+      name: "friends",
+      component: () => import("@/views/FriendsView.vue"),
       meta: { requiresAuth: true },
     },
     {
-      path: '/friends/:id',
-      name: 'friend-profile',
-      component: () => import('@/views/FriendProfileView.vue'),
+      path: "/friends/:id",
+      name: "friend-profile",
+      component: () => import("@/views/FriendProfileView.vue"),
       meta: { requiresAuth: true },
     },
 
@@ -107,93 +107,93 @@ const router = createRouter({
     // Settings Routes (require authentication)
     // ─────────────────────────────────────────────────────────────────────
     {
-      path: '/settings',
-      name: 'settings',
-      component: () => import('@/views/SettingsView.vue'),
+      path: "/settings",
+      name: "settings",
+      component: () => import("@/views/SettingsView.vue"),
       meta: { requiresAuth: true },
     },
     {
-      path: '/settings/account',
-      name: 'settings-account',
-      component: () => import('@/views/settings/AccountView.vue'),
+      path: "/settings/account",
+      name: "settings-account",
+      component: () => import("@/views/settings/AccountView.vue"),
       meta: { requiresAuth: true },
     },
     {
-      path: '/settings/appearance',
-      name: 'settings-appearance',
-      component: () => import('@/views/settings/AppearanceView.vue'),
+      path: "/settings/appearance",
+      name: "settings-appearance",
+      component: () => import("@/views/settings/AppearanceView.vue"),
       meta: { requiresAuth: true },
     },
     {
-      path: '/settings/language',
-      name: 'settings-language',
-      component: () => import('@/views/settings/LanguageView.vue'),
+      path: "/settings/language",
+      name: "settings-language",
+      component: () => import("@/views/settings/LanguageView.vue"),
       meta: { requiresAuth: true },
     },
     {
-      path: '/settings/notifications',
-      name: 'settings-notifications',
-      component: () => import('@/views/settings/NotificationsView.vue'),
+      path: "/settings/notifications",
+      name: "settings-notifications",
+      component: () => import("@/views/settings/NotificationsView.vue"),
       meta: { requiresAuth: true },
     },
     {
-      path: '/settings/usage',
-      name: 'settings-usage',
-      component: () => import('@/views/settings/UsageView.vue'),
+      path: "/settings/usage",
+      name: "settings-usage",
+      component: () => import("@/views/settings/UsageView.vue"),
       meta: { requiresAuth: true },
     },
     {
-      path: '/settings/features',
-      name: 'settings-features',
-      component: () => import('@/views/settings/FeaturesView.vue'),
+      path: "/settings/features",
+      name: "settings-features",
+      component: () => import("@/views/settings/FeaturesView.vue"),
       meta: { requiresAuth: true },
     },
     {
-      path: '/settings/privacy',
-      name: 'settings-privacy',
-      component: () => import('@/views/settings/PrivacyView.vue'),
+      path: "/settings/privacy",
+      name: "settings-privacy",
+      component: () => import("@/views/settings/PrivacyView.vue"),
       meta: { requiresAuth: true },
     },
     {
-      path: '/settings/voice',
-      name: 'settings-voice',
-      component: () => import('@/views/settings/VoiceView.vue'),
+      path: "/settings/voice",
+      name: "settings-voice",
+      component: () => import("@/views/settings/VoiceView.vue"),
       meta: { requiresAuth: true },
     },
     {
-      path: '/settings/voice/language',
-      name: 'settings-voice-language',
-      component: () => import('@/views/settings/VoiceView.vue'),
+      path: "/settings/voice/language",
+      name: "settings-voice-language",
+      component: () => import("@/views/settings/VoiceView.vue"),
       meta: { requiresAuth: true },
     },
     {
-      path: '/settings/connect/claude',
-      name: 'settings-connect-claude',
-      component: () => import('@/views/settings/ClaudeConnectView.vue'),
+      path: "/settings/connect/claude",
+      name: "settings-connect-claude",
+      component: () => import("@/views/settings/ClaudeConnectView.vue"),
       meta: { requiresAuth: true },
     },
     {
-      path: '/settings/server',
-      name: 'settings-server',
-      component: () => import('@/views/settings/ServerView.vue'),
+      path: "/settings/server",
+      name: "settings-server",
+      component: () => import("@/views/settings/ServerView.vue"),
       meta: { requiresAuth: true },
     },
     {
-      path: '/settings/mcp',
-      name: 'settings-mcp',
-      component: () => import('@/views/settings/McpView.vue'),
+      path: "/settings/mcp",
+      name: "settings-mcp",
+      component: () => import("@/views/settings/McpView.vue"),
       meta: { requiresAuth: true },
     },
     {
-      path: '/settings/mcp/:server',
-      name: 'settings-mcp-server',
-      component: () => import('@/views/settings/McpServerView.vue'),
+      path: "/settings/mcp/:server",
+      name: "settings-mcp-server",
+      component: () => import("@/views/settings/McpServerView.vue"),
       meta: { requiresAuth: true },
     },
     {
-      path: '/settings/storage',
-      name: 'settings-storage',
-      component: () => import('@/views/settings/StorageSettingsView.vue'),
+      path: "/settings/storage",
+      name: "settings-storage",
+      component: () => import("@/views/settings/StorageSettingsView.vue"),
       meta: { requiresAuth: true },
     },
 
@@ -201,25 +201,25 @@ const router = createRouter({
     // Auth Routes (public)
     // ─────────────────────────────────────────────────────────────────────
     {
-      path: '/auth',
-      name: 'auth',
-      component: () => import('@/views/auth/LoginView.vue'),
+      path: "/auth",
+      name: "auth",
+      component: () => import("@/views/auth/LoginView.vue"),
       meta: { guest: true },
     },
     {
-      path: '/auth/scan',
-      name: 'auth-scan',
-      component: () => import('@/views/auth/QRScannerView.vue'),
+      path: "/auth/scan",
+      name: "auth-scan",
+      component: () => import("@/views/auth/QRScannerView.vue"),
     },
     {
-      path: '/auth/manual',
-      name: 'auth-manual',
-      component: () => import('@/views/auth/ManualEntryView.vue'),
+      path: "/auth/manual",
+      name: "auth-manual",
+      component: () => import("@/views/auth/ManualEntryView.vue"),
     },
     {
-      path: '/auth/connect',
-      name: 'auth-connect',
-      component: () => import('@/views/auth/ConnectingView.vue'),
+      path: "/auth/connect",
+      name: "auth-connect",
+      component: () => import("@/views/auth/ConnectingView.vue"),
       meta: { guest: true },
     },
 
@@ -228,15 +228,15 @@ const router = createRouter({
     // ─────────────────────────────────────────────────────────────────────
     // When CLI opens browser with /terminal/connect#key=..., we handle it here
     {
-      path: '/terminal/connect',
-      name: 'terminal-connect',
-      component: () => import('@/views/auth/QRScannerView.vue'),
+      path: "/terminal/connect",
+      name: "terminal-connect",
+      component: () => import("@/views/auth/QRScannerView.vue"),
       meta: { requiresAuth: true },
       beforeEnter: (to: RouteLocationNormalized) => {
         // Extract key from hash and pass as query param
-        if (to.hash.startsWith('#key=')) {
+        if (to.hash.startsWith("#key=")) {
           const key = to.hash.slice(5);
-          return { name: 'auth-manual', query: { code: key } };
+          return { name: "auth-manual", query: { code: key } };
         }
         return true;
       },
@@ -246,9 +246,9 @@ const router = createRouter({
     // Catch-all
     // ─────────────────────────────────────────────────────────────────────
     {
-      path: '/:pathMatch(.*)*',
-      name: 'not-found',
-      redirect: '/',
+      path: "/:pathMatch(.*)*",
+      name: "not-found",
+      redirect: "/",
     },
   ],
 });
@@ -261,7 +261,7 @@ router.beforeEach(
   async (
     to: RouteLocationNormalized,
     _from: RouteLocationNormalized,
-    next: NavigationGuardNext
+    next: NavigationGuardNext,
   ) => {
     const authStore = useAuthStore();
 
@@ -273,7 +273,7 @@ router.beforeEach(
     if (to.meta.requiresAuth && !authStore.isAuthenticated) {
       // Save intended destination
       next({
-        name: 'auth',
+        name: "auth",
         query: { redirect: to.fullPath },
       });
       return;
@@ -281,12 +281,12 @@ router.beforeEach(
 
     // Routes only for guests (redirect to home if authenticated)
     if (to.meta.guest && authStore.isAuthenticated) {
-      next({ name: 'home' });
+      next({ name: "home" });
       return;
     }
 
     next();
-  }
+  },
 );
 
 export default router;

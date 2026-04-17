@@ -41,11 +41,11 @@
  * @see HAP-769 - Implement Share Session UI for happy-vue web app
  */
 
-import { ref, watch, type Ref, type ComputedRef, computed } from 'vue';
-import { storeToRefs } from 'pinia';
-import { z } from 'zod';
-import { useAuthStore } from '@/stores/auth';
-import { getApiBaseUrl } from '@/services/apiBase';
+import { ref, watch, type Ref, type ComputedRef, computed } from "vue";
+import { storeToRefs } from "pinia";
+import { z } from "zod";
+import { useAuthStore } from "@/stores/auth";
+import { getApiBaseUrl } from "@/services/apiBase";
 import {
   SessionShareSettingsSchema,
   SessionShareEntrySchema,
@@ -55,8 +55,8 @@ import {
   type SessionShareUrlConfig,
   type SessionShareInvitation,
   type SessionSharePermission,
-} from '@magic-agent/protocol';
-import { toast } from 'vue-sonner';
+} from "@magic-agent/protocol";
+import { toast } from "vue-sonner";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
@@ -134,7 +134,7 @@ export interface UseSessionSharingReturn {
   configureUrlSharing: (
     enabled: boolean,
     password?: string | null,
-    permission?: SessionSharePermission
+    permission?: SessionSharePermission,
   ) => Promise<boolean>;
   /** Send an email invitation */
   sendInvitation: (email: string, permission: SessionSharePermission) => Promise<boolean>;
@@ -155,9 +155,10 @@ export interface UseSessionSharingReturn {
  */
 function buildShareableUrl(token: string): string {
   // Use the app URL for sharing
-  const baseUrl = typeof window !== 'undefined'
-    ? `${window.location.protocol}//${window.location.host}`
-    : 'https://happy.engineering';
+  const baseUrl =
+    typeof window !== "undefined"
+      ? `${window.location.protocol}//${window.location.host}`
+      : "https://happy.engineering";
   return `${baseUrl}/shared/${token}`;
 }
 
@@ -208,12 +209,12 @@ export function useSessionSharing(sessionId: Ref<string>): UseSessionSharingRetu
    */
   async function loadSharing(): Promise<void> {
     if (!token.value) {
-      error.value = 'Not authenticated';
+      error.value = "Not authenticated";
       return;
     }
 
     if (!sessionId.value) {
-      error.value = 'No session ID provided';
+      error.value = "No session ID provided";
       return;
     }
 
@@ -222,7 +223,7 @@ export function useSessionSharing(sessionId: Ref<string>): UseSessionSharingRetu
 
     try {
       const response = await fetch(`${API_URL}/v1/sessions/${sessionId.value}/sharing`, {
-        method: 'GET',
+        method: "GET",
         headers: {
           Authorization: `Bearer ${token.value}`,
         },
@@ -232,7 +233,7 @@ export function useSessionSharing(sessionId: Ref<string>): UseSessionSharingRetu
         if (response.status === 404) {
           // Session not found or no sharing settings yet
           shares.value = [];
-          urlConfig.value = { enabled: false, permission: 'view_only' };
+          urlConfig.value = { enabled: false, permission: "view_only" };
           invitations.value = [];
           return;
         }
@@ -243,8 +244,8 @@ export function useSessionSharing(sessionId: Ref<string>): UseSessionSharingRetu
       const parsed = SharingResponseSchema.safeParse(data);
 
       if (!parsed.success) {
-        console.error('[useSessionSharing] Failed to parse sharing settings:', parsed.error);
-        error.value = 'Failed to parse sharing data';
+        console.error("[useSessionSharing] Failed to parse sharing settings:", parsed.error);
+        error.value = "Failed to parse sharing data";
         return;
       }
 
@@ -252,10 +253,10 @@ export function useSessionSharing(sessionId: Ref<string>): UseSessionSharingRetu
       urlConfig.value = parsed.data.urlSharing;
       invitations.value = parsed.data.invitations;
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to load sharing settings';
+      const message = err instanceof Error ? err.message : "Failed to load sharing settings";
       error.value = message;
-      console.error('[useSessionSharing] Error loading sharing:', err);
-      toast.error('Failed to load sharing settings');
+      console.error("[useSessionSharing] Error loading sharing:", err);
+      toast.error("Failed to load sharing settings");
     } finally {
       isLoading.value = false;
     }
@@ -270,7 +271,7 @@ export function useSessionSharing(sessionId: Ref<string>): UseSessionSharingRetu
    */
   async function addShare(userId: string, permission: SessionSharePermission): Promise<boolean> {
     if (!token.value) {
-      toast.error('Not authenticated');
+      toast.error("Not authenticated");
       return false;
     }
 
@@ -278,9 +279,9 @@ export function useSessionSharing(sessionId: Ref<string>): UseSessionSharingRetu
 
     try {
       const response = await fetch(`${API_URL}/v1/sessions/${sessionId.value}/sharing`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
           Authorization: `Bearer ${token.value}`,
         },
         body: JSON.stringify({
@@ -292,11 +293,11 @@ export function useSessionSharing(sessionId: Ref<string>): UseSessionSharingRetu
 
       if (!response.ok) {
         if (response.status === 404) {
-          toast.error('User not found');
+          toast.error("User not found");
           return false;
         }
         if (response.status === 409) {
-          toast.error('User already has access');
+          toast.error("User already has access");
           return false;
         }
         throw new Error(`Failed to add share: ${String(response.status)}`);
@@ -306,7 +307,7 @@ export function useSessionSharing(sessionId: Ref<string>): UseSessionSharingRetu
       const parsed = AddShareResponseSchema.safeParse(data);
 
       if (!parsed.success) {
-        console.error('[useSessionSharing] Failed to parse add share response:', parsed.error);
+        console.error("[useSessionSharing] Failed to parse add share response:", parsed.error);
         return false;
       }
 
@@ -315,11 +316,11 @@ export function useSessionSharing(sessionId: Ref<string>): UseSessionSharingRetu
         shares.value = [...shares.value, parsed.data.share];
       }
 
-      toast.success('Session shared successfully');
+      toast.success("Session shared successfully");
       return true;
     } catch (err) {
-      console.error('[useSessionSharing] Error adding share:', err);
-      toast.error('Failed to share session');
+      console.error("[useSessionSharing] Error adding share:", err);
+      toast.error("Failed to share session");
       return false;
     } finally {
       isAdding.value = false;
@@ -335,31 +336,28 @@ export function useSessionSharing(sessionId: Ref<string>): UseSessionSharingRetu
    */
   async function updatePermission(
     shareId: string,
-    permission: SessionSharePermission
+    permission: SessionSharePermission,
   ): Promise<boolean> {
     if (!token.value) {
-      toast.error('Not authenticated');
+      toast.error("Not authenticated");
       return false;
     }
 
     // Optimistic update
     const oldShares = [...shares.value];
     shares.value = shares.value.map((s: SessionShareEntry) =>
-      s.id === shareId ? { ...s, permission } : s
+      s.id === shareId ? { ...s, permission } : s,
     );
 
     try {
-      const response = await fetch(
-        `${API_URL}/v1/sessions/${sessionId.value}/sharing/${shareId}`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token.value}`,
-          },
-          body: JSON.stringify({ shareId, permission }),
-        }
-      );
+      const response = await fetch(`${API_URL}/v1/sessions/${sessionId.value}/sharing/${shareId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token.value}`,
+        },
+        body: JSON.stringify({ shareId, permission }),
+      });
 
       if (!response.ok) {
         // Revert optimistic update
@@ -373,15 +371,15 @@ export function useSessionSharing(sessionId: Ref<string>): UseSessionSharingRetu
       if (parsed.success) {
         // Update with server response
         shares.value = shares.value.map((s: SessionShareEntry) =>
-          s.id === shareId ? parsed.data.share : s
+          s.id === shareId ? parsed.data.share : s,
         );
       }
 
-      toast.success('Permission updated');
+      toast.success("Permission updated");
       return true;
     } catch (err) {
-      console.error('[useSessionSharing] Error updating permission:', err);
-      toast.error('Failed to update permission');
+      console.error("[useSessionSharing] Error updating permission:", err);
+      toast.error("Failed to update permission");
       return false;
     }
   }
@@ -394,7 +392,7 @@ export function useSessionSharing(sessionId: Ref<string>): UseSessionSharingRetu
    */
   async function removeShare(shareId: string): Promise<boolean> {
     if (!token.value) {
-      toast.error('Not authenticated');
+      toast.error("Not authenticated");
       return false;
     }
 
@@ -403,15 +401,12 @@ export function useSessionSharing(sessionId: Ref<string>): UseSessionSharingRetu
     shares.value = shares.value.filter((s: SessionShareEntry) => s.id !== shareId);
 
     try {
-      const response = await fetch(
-        `${API_URL}/v1/sessions/${sessionId.value}/sharing/${shareId}`,
-        {
-          method: 'DELETE',
-          headers: {
-            Authorization: `Bearer ${token.value}`,
-          },
-        }
-      );
+      const response = await fetch(`${API_URL}/v1/sessions/${sessionId.value}/sharing/${shareId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token.value}`,
+        },
+      });
 
       if (!response.ok) {
         // Revert optimistic update
@@ -419,11 +414,11 @@ export function useSessionSharing(sessionId: Ref<string>): UseSessionSharingRetu
         throw new Error(`Failed to remove share: ${String(response.status)}`);
       }
 
-      toast.success('Access removed');
+      toast.success("Access removed");
       return true;
     } catch (err) {
-      console.error('[useSessionSharing] Error removing share:', err);
-      toast.error('Failed to remove access');
+      console.error("[useSessionSharing] Error removing share:", err);
+      toast.error("Failed to remove access");
       return false;
     }
   }
@@ -439,32 +434,29 @@ export function useSessionSharing(sessionId: Ref<string>): UseSessionSharingRetu
   async function configureUrlSharing(
     enabled: boolean,
     password?: string | null,
-    permission?: SessionSharePermission
+    permission?: SessionSharePermission,
   ): Promise<boolean> {
     if (!token.value) {
-      toast.error('Not authenticated');
+      toast.error("Not authenticated");
       return false;
     }
 
     isUpdatingUrl.value = true;
 
     try {
-      const response = await fetch(
-        `${API_URL}/v1/sessions/${sessionId.value}/sharing/url`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token.value}`,
-          },
-          body: JSON.stringify({
-            sessionId: sessionId.value,
-            enabled,
-            password: password ?? null,
-            permission: permission ?? 'view_only',
-          }),
-        }
-      );
+      const response = await fetch(`${API_URL}/v1/sessions/${sessionId.value}/sharing/url`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token.value}`,
+        },
+        body: JSON.stringify({
+          sessionId: sessionId.value,
+          enabled,
+          password: password ?? null,
+          permission: permission ?? "view_only",
+        }),
+      });
 
       if (!response.ok) {
         throw new Error(`Failed to configure URL sharing: ${String(response.status)}`);
@@ -474,16 +466,16 @@ export function useSessionSharing(sessionId: Ref<string>): UseSessionSharingRetu
       const parsed = UrlConfigResponseSchema.safeParse(data);
 
       if (!parsed.success) {
-        console.error('[useSessionSharing] Failed to parse URL config response:', parsed.error);
+        console.error("[useSessionSharing] Failed to parse URL config response:", parsed.error);
         return false;
       }
 
       urlConfig.value = parsed.data.urlSharing;
-      toast.success(enabled ? 'URL sharing enabled' : 'URL sharing disabled');
+      toast.success(enabled ? "URL sharing enabled" : "URL sharing disabled");
       return true;
     } catch (err) {
-      console.error('[useSessionSharing] Error configuring URL sharing:', err);
-      toast.error('Failed to configure URL sharing');
+      console.error("[useSessionSharing] Error configuring URL sharing:", err);
+      toast.error("Failed to configure URL sharing");
       return false;
     } finally {
       isUpdatingUrl.value = false;
@@ -499,35 +491,32 @@ export function useSessionSharing(sessionId: Ref<string>): UseSessionSharingRetu
    */
   async function sendInvitation(
     email: string,
-    permission: SessionSharePermission
+    permission: SessionSharePermission,
   ): Promise<boolean> {
     if (!token.value) {
-      toast.error('Not authenticated');
+      toast.error("Not authenticated");
       return false;
     }
 
     isAdding.value = true;
 
     try {
-      const response = await fetch(
-        `${API_URL}/v1/sessions/${sessionId.value}/sharing/invite`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token.value}`,
-          },
-          body: JSON.stringify({
-            sessionId: sessionId.value,
-            email,
-            permission,
-          }),
-        }
-      );
+      const response = await fetch(`${API_URL}/v1/sessions/${sessionId.value}/sharing/invite`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token.value}`,
+        },
+        body: JSON.stringify({
+          sessionId: sessionId.value,
+          email,
+          permission,
+        }),
+      });
 
       if (!response.ok) {
         if (response.status === 429) {
-          toast.error('Too many invitations. Please try again later.');
+          toast.error("Too many invitations. Please try again later.");
           return false;
         }
         throw new Error(`Failed to send invitation: ${String(response.status)}`);
@@ -537,7 +526,7 @@ export function useSessionSharing(sessionId: Ref<string>): UseSessionSharingRetu
       const parsed = AddShareResponseSchema.safeParse(data);
 
       if (!parsed.success) {
-        console.error('[useSessionSharing] Failed to parse invitation response:', parsed.error);
+        console.error("[useSessionSharing] Failed to parse invitation response:", parsed.error);
         return false;
       }
 
@@ -549,8 +538,8 @@ export function useSessionSharing(sessionId: Ref<string>): UseSessionSharingRetu
       toast.success(`Invitation sent to ${email}`);
       return true;
     } catch (err) {
-      console.error('[useSessionSharing] Error sending invitation:', err);
-      toast.error('Failed to send invitation');
+      console.error("[useSessionSharing] Error sending invitation:", err);
+      toast.error("Failed to send invitation");
       return false;
     } finally {
       isAdding.value = false;
@@ -565,23 +554,25 @@ export function useSessionSharing(sessionId: Ref<string>): UseSessionSharingRetu
    */
   async function revokeInvitation(invitationId: string): Promise<boolean> {
     if (!token.value) {
-      toast.error('Not authenticated');
+      toast.error("Not authenticated");
       return false;
     }
 
     // Optimistic update
     const oldInvitations = [...invitations.value];
-    invitations.value = invitations.value.filter((i: SessionShareInvitation) => i.id !== invitationId);
+    invitations.value = invitations.value.filter(
+      (i: SessionShareInvitation) => i.id !== invitationId,
+    );
 
     try {
       const response = await fetch(
         `${API_URL}/v1/sessions/${sessionId.value}/sharing/invitations/${invitationId}`,
         {
-          method: 'DELETE',
+          method: "DELETE",
           headers: {
             Authorization: `Bearer ${token.value}`,
           },
-        }
+        },
       );
 
       if (!response.ok) {
@@ -590,11 +581,11 @@ export function useSessionSharing(sessionId: Ref<string>): UseSessionSharingRetu
         throw new Error(`Failed to revoke invitation: ${String(response.status)}`);
       }
 
-      toast.success('Invitation revoked');
+      toast.success("Invitation revoked");
       return true;
     } catch (err) {
-      console.error('[useSessionSharing] Error revoking invitation:', err);
-      toast.error('Failed to revoke invitation');
+      console.error("[useSessionSharing] Error revoking invitation:", err);
+      toast.error("Failed to revoke invitation");
       return false;
     }
   }
@@ -607,7 +598,7 @@ export function useSessionSharing(sessionId: Ref<string>): UseSessionSharingRetu
    */
   async function resendInvitation(invitationId: string): Promise<boolean> {
     if (!token.value) {
-      toast.error('Not authenticated');
+      toast.error("Not authenticated");
       return false;
     }
 
@@ -615,26 +606,26 @@ export function useSessionSharing(sessionId: Ref<string>): UseSessionSharingRetu
       const response = await fetch(
         `${API_URL}/v1/sessions/${sessionId.value}/sharing/invitations/${invitationId}/resend`,
         {
-          method: 'POST',
+          method: "POST",
           headers: {
             Authorization: `Bearer ${token.value}`,
           },
-        }
+        },
       );
 
       if (!response.ok) {
         if (response.status === 429) {
-          toast.error('Too many resend attempts. Please try again later.');
+          toast.error("Too many resend attempts. Please try again later.");
           return false;
         }
         throw new Error(`Failed to resend invitation: ${String(response.status)}`);
       }
 
-      toast.success('Invitation resent');
+      toast.success("Invitation resent");
       return true;
     } catch (err) {
-      console.error('[useSessionSharing] Error resending invitation:', err);
-      toast.error('Failed to resend invitation');
+      console.error("[useSessionSharing] Error resending invitation:", err);
+      toast.error("Failed to resend invitation");
       return false;
     }
   }
@@ -646,17 +637,17 @@ export function useSessionSharing(sessionId: Ref<string>): UseSessionSharingRetu
    */
   async function copyShareableUrl(): Promise<boolean> {
     if (!shareableUrl.value) {
-      toast.error('No shareable URL available');
+      toast.error("No shareable URL available");
       return false;
     }
 
     try {
       await navigator.clipboard.writeText(shareableUrl.value);
-      toast.success('Link copied to clipboard');
+      toast.success("Link copied to clipboard");
       return true;
     } catch (err) {
-      console.error('[useSessionSharing] Error copying URL:', err);
-      toast.error('Failed to copy link');
+      console.error("[useSessionSharing] Error copying URL:", err);
+      toast.error("Failed to copy link");
       return false;
     }
   }
