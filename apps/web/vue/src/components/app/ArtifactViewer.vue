@@ -16,15 +16,15 @@
  * ```
  */
 
-import type { BundledLanguage } from 'shiki';
-import { computed, watch } from 'vue';
-import { DownloadIcon, FileIcon, Loader2Icon } from 'lucide-vue-next';
-import { toast } from 'vue-sonner';
-import { useArtifactsStore, type DecryptedArtifact, type FileTreeNode } from '@/stores/artifacts';
-import { useArtifactDownload } from '@/composables/useArtifactDownload';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Progress } from '@/components/ui/progress';
+import type { BundledLanguage } from "shiki";
+import { computed, watch } from "vue";
+import { DownloadIcon, FileIcon, Loader2Icon } from "lucide-vue-next";
+import { toast } from "vue-sonner";
+import { useArtifactsStore, type DecryptedArtifact, type FileTreeNode } from "@/stores/artifacts";
+import { useArtifactDownload } from "@/composables/useArtifactDownload";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
 import {
   Artifact,
   ArtifactActions,
@@ -33,11 +33,11 @@ import {
   ArtifactDescription,
   ArtifactHeader,
   ArtifactTitle,
-} from '@/components/ai-elements/artifact';
-import { FileTree } from '@/components/ai-elements/file-tree';
-import { CodeBlock } from '@/components/ai-elements/code-block';
-import ArtifactTreeNode from './ArtifactTreeNode.vue';
-import ImagePreview from './ImagePreview.vue';
+} from "@/components/ai-elements/artifact";
+import { FileTree } from "@/components/ai-elements/file-tree";
+import { CodeBlock } from "@/components/ai-elements/code-block";
+import ArtifactTreeNode from "./ArtifactTreeNode.vue";
+import ImagePreview from "./ImagePreview.vue";
 
 interface Props {
   /** Filter artifacts by session ID (optional) */
@@ -49,7 +49,12 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const artifactsStore = useArtifactsStore();
-const { downloadAll: downloadAllArtifacts, downloadSingle, downloadProgress, isDownloading } = useArtifactDownload();
+const {
+  downloadAll: downloadAllArtifacts,
+  downloadSingle,
+  downloadProgress,
+  isDownloading,
+} = useArtifactDownload();
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Computed
@@ -78,18 +83,18 @@ const isLoading = computed(() => {
 /** Should show code viewer? */
 const isCode = computed(() => {
   const artifact = selectedArtifact.value;
-  return artifact?.fileType === 'code' || artifact?.fileType === 'data';
+  return artifact?.fileType === "code" || artifact?.fileType === "data";
 });
 
 /** Should show image viewer? */
 const isImage = computed(() => {
-  return selectedArtifact.value?.fileType === 'image';
+  return selectedArtifact.value?.fileType === "image";
 });
 
 /** Get filename for display */
 const displayFilename = computed(() => {
   const artifact = selectedArtifact.value;
-  if (!artifact) return '';
+  if (!artifact) return "";
   return artifact.filePath || artifact.title || artifact.id;
 });
 
@@ -134,9 +139,9 @@ const defaultExpanded = computed<Set<string>>(() => {
   const expanded = new Set<string>();
   const path = selectedPath.value;
   if (!path) return expanded;
-  const parts = path.split('/').filter(Boolean);
+  const parts = path.split("/").filter(Boolean);
   // Build ancestor paths: a, a/b, a/b/c (excluding final leaf)
-  let current = '';
+  let current = "";
   for (let i = 0; i < parts.length - 1; i++) {
     const part = parts[i];
     if (!part) continue;
@@ -155,7 +160,7 @@ const defaultExpanded = computed<Set<string>>(() => {
  */
 const codeLanguage = computed<BundledLanguage>(() => {
   const lang = selectedArtifact.value?.language;
-  return (lang ?? 'text') as BundledLanguage;
+  return (lang ?? "text") as BundledLanguage;
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -183,16 +188,16 @@ function downloadArtifact(artifact: DecryptedArtifact) {
  */
 async function downloadAll() {
   if (artifacts.value.length === 0) {
-    toast.error('No artifacts to download');
+    toast.error("No artifacts to download");
     return;
   }
 
   const result = await downloadAllArtifacts(artifacts.value, props.sessionId ?? undefined);
 
   if (result.success) {
-    toast.success(`Downloaded ${result.fileCount} file${result.fileCount !== 1 ? 's' : ''} as ZIP`);
+    toast.success(`Downloaded ${result.fileCount} file${result.fileCount !== 1 ? "s" : ""} as ZIP`);
   } else {
-    toast.error(result.error ?? 'Failed to create ZIP file');
+    toast.error(result.error ?? "Failed to create ZIP file");
   }
 }
 
@@ -208,7 +213,7 @@ watch(
       }
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
 </script>
 
@@ -231,7 +236,7 @@ watch(
             <Loader2Icon v-if="isDownloading" class="h-4 w-4 animate-spin" />
             <DownloadIcon v-else class="h-4 w-4" />
             <span class="sr-only">
-              {{ isDownloading ? 'Downloading' : 'Download all as ZIP' }}
+              {{ isDownloading ? "Downloading" : "Download all as ZIP" }}
             </span>
           </button>
         </div>
@@ -245,14 +250,9 @@ watch(
       </div>
 
       <!-- Empty state -->
-      <div
-        v-if="artifacts.length === 0"
-        class="flex-1 p-4 text-center text-muted-foreground"
-      >
+      <div v-if="artifacts.length === 0" class="flex-1 p-4 text-center text-muted-foreground">
         <FileIcon class="mx-auto mb-2 h-8 w-8 opacity-50" />
-        <p class="text-sm">
-          No artifacts
-        </p>
+        <p class="text-sm">No artifacts</p>
       </div>
 
       <!-- File tree (AI Elements) -->
@@ -263,11 +263,7 @@ watch(
           :default-expanded="defaultExpanded"
           @update:selected-path="handleSelectPath"
         >
-          <ArtifactTreeNode
-            v-for="node in fileTree"
-            :key="node.path"
-            :node="node"
-          />
+          <ArtifactTreeNode v-for="node in fileTree" :key="node.path" :node="node" />
         </FileTree>
       </ScrollArea>
     </div>
@@ -280,9 +276,7 @@ watch(
         class="flex flex-1 flex-col items-center justify-center text-muted-foreground"
       >
         <FileIcon class="mb-4 h-12 w-12 opacity-50" />
-        <p class="text-sm">
-          Select a file to view
-        </p>
+        <p class="text-sm">Select a file to view</p>
       </div>
 
       <!-- Loading -->
@@ -341,13 +335,8 @@ watch(
           </ScrollArea>
 
           <!-- No content -->
-          <div
-            v-else
-            class="flex h-full items-center justify-center text-muted-foreground"
-          >
-            <p class="text-sm">
-              No content available
-            </p>
+          <div v-else class="flex h-full items-center justify-center text-muted-foreground">
+            <p class="text-sm">No content available</p>
           </div>
         </ArtifactContent>
       </Artifact>

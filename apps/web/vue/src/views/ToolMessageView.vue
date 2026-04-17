@@ -1,20 +1,20 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Skeleton } from '@/components/ui/skeleton';
-import { ToolFullView } from '@/components/app';
-import { getToolConfig } from '@/components/app/tools/knownTools';
-import { useSessionsStore } from '@/stores/sessions';
-import { useMessagesStore } from '@/stores/messages';
-import { useAuthStore } from '@/stores/auth';
-import { decryptMessageContent } from '@/services/encryption/sessionDecryption';
-import { normalizeDecryptedMessage } from '@/services/messages/normalize';
-import { fetchSessionMessages } from '@/services/sessions';
-import type { NormalizedMessage } from '@/services/messages/types';
-import { toast } from 'vue-sonner';
-import ResponsiveContainer from '@/components/app/ResponsiveContainer.vue';
+import { computed, ref, onMounted, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ToolFullView } from "@/components/app";
+import { getToolConfig } from "@/components/app/tools/knownTools";
+import { useSessionsStore } from "@/stores/sessions";
+import { useMessagesStore } from "@/stores/messages";
+import { useAuthStore } from "@/stores/auth";
+import { decryptMessageContent } from "@/services/encryption/sessionDecryption";
+import { normalizeDecryptedMessage } from "@/services/messages/normalize";
+import { fetchSessionMessages } from "@/services/sessions";
+import type { NormalizedMessage } from "@/services/messages/types";
+import { toast } from "vue-sonner";
+import ResponsiveContainer from "@/components/app/ResponsiveContainer.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -26,12 +26,12 @@ const sessionId = computed(() => route.params.id as string);
 const messageId = computed(() => route.params.messageId as string);
 
 const session = computed(() =>
-  sessionId.value ? sessionsStore.getSession(sessionId.value) : undefined
+  sessionId.value ? sessionsStore.getSession(sessionId.value) : undefined,
 );
 const message = computed(() =>
   sessionId.value && messageId.value
     ? messagesStore.getMessage(sessionId.value, messageId.value)
-    : undefined
+    : undefined,
 );
 
 const normalizedMessages = ref<NormalizedMessage[]>([]);
@@ -43,7 +43,7 @@ async function loadArchivedHistory(): Promise<void> {
   }
 
   if (!authStore.token) {
-    toast.error('Not authenticated');
+    toast.error("Not authenticated");
     return;
   }
 
@@ -60,8 +60,8 @@ async function loadArchivedHistory(): Promise<void> {
     mappedMessages.sort((a, b) => a.seq - b.seq);
     messagesStore.setMessagesForSession(sessionId.value, mappedMessages);
   } catch (error) {
-    console.error('[tool-message] Failed to load archived history', error);
-    toast.error('Failed to load session history');
+    console.error("[tool-message] Failed to load archived history", error);
+    toast.error("Failed to load session history");
   }
 }
 
@@ -86,19 +86,19 @@ async function refreshNormalized(): Promise<void> {
 }
 
 const toolMessage = computed(() =>
-  normalizedMessages.value.find((msg) => msg.kind === 'tool-call')
+  normalizedMessages.value.find((msg) => msg.kind === "tool-call"),
 );
 const toolResultMessage = computed(() =>
-  normalizedMessages.value.find((msg) => msg.kind === 'tool-result')
+  normalizedMessages.value.find((msg) => msg.kind === "tool-result"),
 );
 
 const mergedToolCall = computed(() => {
   if (!toolMessage.value) {
     return null;
   }
-  if (toolResultMessage.value && toolResultMessage.value.kind === 'tool-result') {
+  if (toolResultMessage.value && toolResultMessage.value.kind === "tool-result") {
     const tool = { ...toolMessage.value.tool };
-    tool.state = toolResultMessage.value.isError ? 'error' : 'completed';
+    tool.state = toolResultMessage.value.isError ? "error" : "completed";
     tool.result = toolResultMessage.value.content;
     tool.permission = toolResultMessage.value.permission;
     return tool;
@@ -115,10 +115,10 @@ const headerTool = computed(() => mergedToolCall.value ?? toolMessage.value?.too
 
 const headerTitle = computed(() => {
   const tool = headerTool.value;
-  if (!tool) return 'Tool details';
+  if (!tool) return "Tool details";
   const config = getToolConfig(tool);
   if (config?.title) {
-    return typeof config.title === 'function' ? config.title(tool) : config.title;
+    return typeof config.title === "function" ? config.title(tool) : config.title;
   }
   return tool.name;
 });
@@ -152,27 +152,27 @@ watch([sessionId, messageId], async () => {
   <div class="flex h-full flex-col bg-background">
     <header class="flex items-center gap-4 border-b bg-background sticky top-0 z-10">
       <ResponsiveContainer size="full" padding="compact" class="flex items-center gap-4">
-      <Button variant="ghost" size="icon" @click="goBack">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="h-5 w-5"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-        </svg>
-      </Button>
-      <div class="min-w-0 flex-1">
-        <div v-if="headerTool" class="flex flex-col gap-0.5">
-          <div class="truncate text-sm font-semibold text-foreground">{{ headerTitle }}</div>
-          <div v-if="headerSubtitle" class="truncate text-xs text-muted-foreground">
-            {{ headerSubtitle }}
+        <Button variant="ghost" size="icon" @click="goBack">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+        </Button>
+        <div class="min-w-0 flex-1">
+          <div v-if="headerTool" class="flex flex-col gap-0.5">
+            <div class="truncate text-sm font-semibold text-foreground">{{ headerTitle }}</div>
+            <div v-if="headerSubtitle" class="truncate text-xs text-muted-foreground">
+              {{ headerSubtitle }}
+            </div>
           </div>
+          <div v-else class="text-sm text-muted-foreground">Tool details</div>
         </div>
-        <div v-else class="text-sm text-muted-foreground">Tool details</div>
-      </div>
       </ResponsiveContainer>
     </header>
 

@@ -10,15 +10,15 @@
  * @see HAP-1093 - Replace CodeBlock and FileTree with AI Elements equivalents
  */
 
-import { computed } from 'vue';
-import type { BundledLanguage } from 'shiki';
-import { bundledLanguages } from 'shiki/langs';
+import { computed } from "vue";
+import type { BundledLanguage } from "shiki";
+import { bundledLanguages } from "shiki/langs";
 import {
   CodeBlock as AiCodeBlock,
   CodeBlockHeader,
   CodeBlockFilename,
   CodeBlockCopyButton,
-} from '@/components/ai-elements/code-block';
+} from "@/components/ai-elements/code-block";
 
 interface Props {
   /** The code content to display */
@@ -30,8 +30,8 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  language: '',
-  filename: '',
+  language: "",
+  filename: "",
 });
 
 /**
@@ -43,8 +43,8 @@ const props = withDefaults(defineProps<Props>(), {
  * creation time.
  */
 const resolvedLanguage = computed<BundledLanguage>(() => {
-  const raw = props.language?.trim().toLowerCase() ?? '';
-  if (!raw) return 'text' as BundledLanguage;
+  const raw = props.language?.trim().toLowerCase() ?? "";
+  if (!raw) return "text" as BundledLanguage;
 
   // `bundledLanguages` merges base language IDs and their aliases, so a single
   // hasOwnProperty check covers both (e.g. `typescript` and `ts`).
@@ -53,22 +53,19 @@ const resolvedLanguage = computed<BundledLanguage>(() => {
   }
 
   // Unknown language: fall back to plain text (no syntax highlighting, but renders).
-  return 'text' as BundledLanguage;
+  return "text" as BundledLanguage;
 });
 
 /** Label shown in the header: filename if provided, otherwise the language. */
 const displayLabel = computed(() => {
   if (props.filename) return props.filename;
   if (props.language) return props.language;
-  return 'code';
+  return "code";
 });
 </script>
 
 <template>
-  <AiCodeBlock
-    :code="props.code"
-    :language="resolvedLanguage"
-  >
+  <AiCodeBlock :code="props.code" :language="resolvedLanguage">
     <CodeBlockHeader>
       <CodeBlockFilename class="text-xs font-medium text-muted-foreground uppercase tracking-wide">
         {{ displayLabel }}

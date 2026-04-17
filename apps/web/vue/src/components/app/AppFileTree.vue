@@ -11,10 +11,10 @@
  * @see HAP-1093 - Replace CodeBlock and FileTree with AI Elements equivalents
  */
 
-import { computed } from 'vue';
-import type { FileTreeNode } from '@/stores/artifacts';
-import { FileTree } from '@/components/ai-elements/file-tree';
-import AppFileTreeNode from './AppFileTreeNode.vue';
+import { computed } from "vue";
+import type { FileTreeNode } from "@/stores/artifacts";
+import { FileTree } from "@/components/ai-elements/file-tree";
+import AppFileTreeNode from "./AppFileTreeNode.vue";
 
 interface Props {
   /** Root nodes of the file tree */
@@ -48,7 +48,7 @@ const selectedPath = computed<string | undefined>(() => props.selectedId ?? unde
  */
 function handleSelect(path: string) {
   if (isArtifactId(path, props.tree)) {
-    emit('select', path);
+    emit("select", path);
   }
 }
 
@@ -74,10 +74,6 @@ function isArtifactId(id: string, nodes: FileTreeNode[]): boolean {
     class="border-0 bg-transparent"
     @update:selected-path="handleSelect"
   >
-    <AppFileTreeNode
-      v-for="node in tree"
-      :key="node.path"
-      :node="node"
-    />
+    <AppFileTreeNode v-for="node in tree" :key="node.path" :node="node" />
   </FileTree>
 </template>

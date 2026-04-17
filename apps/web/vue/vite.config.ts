@@ -1,10 +1,10 @@
-import { defineConfig } from 'vite-plus';
-import vue from '@vitejs/plugin-vue';
-import { cloudflare } from '@cloudflare/vite-plugin';
-import tailwindcss from '@tailwindcss/vite';
-import { VitePWA } from 'vite-plugin-pwa';
-import { fileURLToPath, URL } from 'node:url';
-import path from 'node:path';
+import { defineConfig } from "vite-plus";
+import vue from "@vitejs/plugin-vue";
+import { cloudflare } from "@cloudflare/vite-plugin";
+import tailwindcss from "@tailwindcss/vite";
+import { VitePWA } from "vite-plugin-pwa";
+import { fileURLToPath, URL } from "node:url";
+import path from "node:path";
 
 /**
  * Vite+ unified configuration for Happy Vue.js web application
@@ -37,7 +37,9 @@ import path from 'node:path';
  */
 
 // Root monorepo node_modules for Vue deduplication
-const rootNodeModules = path.resolve(__dirname, '../../../node_modules');
+// Use import.meta.url for ESM-compatible path resolution (project has "type": "module")
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const rootNodeModules = path.resolve(__dirname, "../../../node_modules");
 
 /**
  * WORKAROUND: Cloudflare plugin conditional exclusion (HAP-1082, HAP-1089)
@@ -60,7 +62,7 @@ const rootNodeModules = path.resolve(__dirname, '../../../node_modules');
  * @see HAP-1089 - Workaround documentation
  * @see https://github.com/nicolo-ribaudo/vite-plus (track stable release)
  */
-const isTest = process.env['VITEST'] === 'true' || process.env['NODE_ENV'] === 'test';
+const isTest = process.env["VITEST"] === "true" || process.env["NODE_ENV"] === "test";
 
 /**
  * Build-only plugins: cloudflare() and VitePWA()
@@ -72,26 +74,21 @@ const buildPlugins = isTest
   : [
       cloudflare(),
       VitePWA({
-        registerType: 'autoUpdate',
-        includeAssets: [
-          'icons/*.png',
-          'splash/*.png',
-          'screenshots/*.png',
-          'og-image.png',
-        ],
+        registerType: "autoUpdate",
+        includeAssets: ["icons/*.png", "splash/*.png", "screenshots/*.png", "og-image.png"],
         // Use existing manifest.json from public folder
         manifest: false,
         workbox: {
           // Cache all static assets
-          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+          globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
           // Runtime caching strategies
           runtimeCaching: [
             // API calls: NetworkFirst with fallback to cache
             {
               urlPattern: /^https:\/\/api\.happy\.theking\.sh\/.*/i,
-              handler: 'NetworkFirst',
+              handler: "NetworkFirst",
               options: {
-                cacheName: 'happy-api-cache',
+                cacheName: "happy-api-cache",
                 expiration: {
                   maxEntries: 50,
                   maxAgeSeconds: 60 * 60 * 24, // 24 hours
@@ -105,14 +102,14 @@ const buildPlugins = isTest
             // WebSocket upgrade requests: NetworkOnly (can't cache)
             {
               urlPattern: /^wss?:\/\/.*/i,
-              handler: 'NetworkOnly',
+              handler: "NetworkOnly",
             },
             // Images: StaleWhileRevalidate for fast display
             {
               urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp)$/i,
-              handler: 'StaleWhileRevalidate',
+              handler: "StaleWhileRevalidate",
               options: {
-                cacheName: 'happy-image-cache',
+                cacheName: "happy-image-cache",
                 expiration: {
                   maxEntries: 100,
                   maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
@@ -122,9 +119,9 @@ const buildPlugins = isTest
             // Fonts: CacheFirst for performance
             {
               urlPattern: /\.(?:woff|woff2|ttf|otf|eot)$/i,
-              handler: 'CacheFirst',
+              handler: "CacheFirst",
               options: {
-                cacheName: 'happy-font-cache',
+                cacheName: "happy-font-cache",
                 expiration: {
                   maxEntries: 30,
                   maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
@@ -134,9 +131,9 @@ const buildPlugins = isTest
             // Google Fonts stylesheets
             {
               urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-              handler: 'StaleWhileRevalidate',
+              handler: "StaleWhileRevalidate",
               options: {
-                cacheName: 'google-fonts-stylesheets',
+                cacheName: "google-fonts-stylesheets",
                 expiration: {
                   maxEntries: 10,
                   maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
@@ -146,9 +143,9 @@ const buildPlugins = isTest
             // Google Fonts webfonts
             {
               urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
-              handler: 'CacheFirst',
+              handler: "CacheFirst",
               options: {
-                cacheName: 'google-fonts-webfonts',
+                cacheName: "google-fonts-webfonts",
                 expiration: {
                   maxEntries: 30,
                   maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
@@ -173,32 +170,22 @@ const buildPlugins = isTest
     ];
 
 export default defineConfig({
-  plugins: [
-    vue(),
-    tailwindcss(),
-    ...buildPlugins,
-  ],
+  plugins: [vue(), tailwindcss(), ...buildPlugins],
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
       // Force Vue packages to resolve from root monorepo node_modules
       // to prevent duplicate module instances (HAP-983)
-      'vue': path.resolve(rootNodeModules, 'vue'),
-      '@vue/runtime-core': path.resolve(rootNodeModules, '@vue/runtime-core'),
-      '@vue/runtime-dom': path.resolve(rootNodeModules, '@vue/runtime-dom'),
-      '@vue/reactivity': path.resolve(rootNodeModules, '@vue/reactivity'),
-      '@vue/shared': path.resolve(rootNodeModules, '@vue/shared'),
+      vue: path.resolve(rootNodeModules, "vue"),
+      "@vue/runtime-core": path.resolve(rootNodeModules, "@vue/runtime-core"),
+      "@vue/runtime-dom": path.resolve(rootNodeModules, "@vue/runtime-dom"),
+      "@vue/reactivity": path.resolve(rootNodeModules, "@vue/reactivity"),
+      "@vue/shared": path.resolve(rootNodeModules, "@vue/shared"),
     },
-    dedupe: [
-      'vue',
-      '@vue/runtime-core',
-      '@vue/runtime-dom',
-      '@vue/reactivity',
-      '@vue/shared',
-    ],
+    dedupe: ["vue", "@vue/runtime-core", "@vue/runtime-dom", "@vue/reactivity", "@vue/shared"],
   },
   build: {
-    target: 'esnext',
+    target: "esnext",
     sourcemap: true,
     // Optimize chunk splitting
     rollupOptions: {
@@ -221,53 +208,60 @@ export default defineConfig({
          * @see HAP-1082 - Vite+ migration
          * @see HAP-1089 - Workaround documentation
          */
-        manualChunks(id: string) {
+        manualChunks(id: string): string | undefined {
           // Separate vendor chunks for better caching
-          if (id.includes('node_modules/vue/') || id.includes('node_modules/vue-router/') || id.includes('node_modules/pinia/')) {
-            return 'vue-vendor';
+          if (
+            id.includes("node_modules/vue/") ||
+            id.includes("node_modules/vue-router/") ||
+            id.includes("node_modules/pinia/")
+          ) {
+            return "vue-vendor";
           }
-          if (id.includes('node_modules/reka-ui/') || id.includes('node_modules/class-variance-authority/') || id.includes('node_modules/clsx/') || id.includes('node_modules/tailwind-merge/')) {
-            return 'ui-vendor';
+          if (
+            id.includes("node_modules/reka-ui/") ||
+            id.includes("node_modules/class-variance-authority/") ||
+            id.includes("node_modules/clsx/") ||
+            id.includes("node_modules/tailwind-merge/")
+          ) {
+            return "ui-vendor";
           }
-          if (id.includes('node_modules/vue-i18n/')) {
-            return 'i18n-vendor';
+          if (id.includes("node_modules/vue-i18n/")) {
+            return "i18n-vendor";
           }
+          return undefined;
         },
       },
     },
   },
   test: {
     globals: true,
-    environment: 'happy-dom',
-    include: ['src/**/*.{test,spec}.{ts,tsx}'],
-    exclude: ['e2e/**/*', 'node_modules/**/*'],
+    environment: "happy-dom",
+    include: ["src/**/*.{test,spec}.{ts,tsx}"],
+    exclude: ["e2e/**/*", "node_modules/**/*"],
     // Set up mocks for browser APIs that happy-dom doesn't provide
-    setupFiles: ['./src/__tests__/setup.ts'],
+    setupFiles: ["./src/__tests__/setup.ts"],
     // Test isolation and performance
     isolate: true,
-    pool: 'threads',
+    pool: "threads",
     // Reporting
-    reporters: ['verbose', 'json'],
+    reporters: ["verbose", "json"],
     outputFile: {
-      json: './test-results/vitest-results.json',
+      json: "./test-results/vitest-results.json",
     },
     // Coverage configuration
     // @see HAP-877 - Increase test coverage to 80% for business logic
     coverage: {
-      provider: 'v8',
-      reporter: ['text', 'json', 'html', 'lcov'],
-      reportsDirectory: './coverage',
-      include: [
-        'src/**/*.ts',
-        'src/**/*.vue',
-      ],
+      provider: "v8",
+      reporter: ["text", "json", "html", "lcov"],
+      reportsDirectory: "./coverage",
+      include: ["src/**/*.ts", "src/**/*.vue"],
       exclude: [
-        'src/**/*.{test,spec}.ts',
-        'src/**/*.d.ts',
-        'src/main.ts',
-        'src/App.vue',
-        'src/vite-env.d.ts',
-        'src/__tests__/**/*',
+        "src/**/*.{test,spec}.ts",
+        "src/**/*.d.ts",
+        "src/main.ts",
+        "src/App.vue",
+        "src/vite-env.d.ts",
+        "src/__tests__/**/*",
       ],
       // Coverage thresholds for business logic (HAP-877)
       // @see https://linear.app/enflame-media/issue/HAP-877
@@ -280,42 +274,42 @@ export default defineConfig({
       // - UI components/views: Lower thresholds (visual regression tests)
       thresholds: {
         // Core encryption services: High coverage (security-critical)
-        'src/services/encryption.ts': {
+        "src/services/encryption.ts": {
           lines: 80,
           functions: 80,
           branches: 80,
           statements: 80,
         },
         // Pinia stores: High coverage for business logic
-        'src/stores/**/*.ts': {
+        "src/stores/**/*.ts": {
           lines: 65,
           functions: 65,
           branches: 55,
           statements: 65,
         },
         // Utility libraries: High coverage (pure functions)
-        'src/lib/**/*.ts': {
+        "src/lib/**/*.ts": {
           lines: 80,
           functions: 80,
           branches: 60,
           statements: 80,
         },
         // Composables: Medium coverage (some require Vue runtime)
-        'src/composables/**/*.ts': {
+        "src/composables/**/*.ts": {
           lines: 12,
           functions: 10,
           branches: 12,
           statements: 12,
         },
         // UI components: Low thresholds (visual regression tests handle UI)
-        'src/components/**/*.vue': {
+        "src/components/**/*.vue": {
           lines: 2,
           functions: 1,
           branches: 2,
           statements: 2,
         },
         // Views: Minimal (primarily E2E tested)
-        'src/views/**/*.vue': {
+        "src/views/**/*.vue": {
           lines: 0,
           functions: 0,
           branches: 0,

@@ -20,18 +20,20 @@
  * @see HAP-1091 - AI Elements Vue component library installation
  */
 
-import { computed, type HTMLAttributes } from 'vue';
-import { MicIcon, MicOffIcon, SquareIcon } from 'lucide-vue-next';
-import { useVoice } from '@/composables/useVoice';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { AudioPlayer } from '@/components/ai-elements/audio-player';
+import { computed, defineAsyncComponent, type HTMLAttributes } from "vue";
+import { MicIcon, MicOffIcon, SquareIcon } from "lucide-vue-next";
+import { useVoice } from "@/composables/useVoice";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+
+// Lazy-load AudioPlayer so media-chrome's ~25 custom elements only ship when a
+// user actually starts voice. Otherwise every active session would pay the
+// bundle cost even if voice is never used.
+const AudioPlayer = defineAsyncComponent(() =>
+  import("@/components/ai-elements/audio-player").then((m) => m.AudioPlayer),
+);
 
 interface Props {
   /** Session ID to start voice for */
@@ -43,7 +45,7 @@ interface Props {
   /** Whether to render the AudioPlayer status surface when active */
   showStatus?: boolean;
   /** Additional classes */
-  class?: HTMLAttributes['class'];
+  class?: HTMLAttributes["class"];
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -51,27 +53,18 @@ const props = withDefaults(defineProps<Props>(), {
   showStatus: true,
 });
 
-const {
-  isActive,
-  isConnecting,
-  isMuted,
-  statusMessage,
-  startSession,
-  endSession,
-  toggleMute,
-} = useVoice();
+const { isActive, isConnecting, isMuted, statusMessage, startSession, endSession, toggleMute } =
+  useVoice();
 
 const isBusy = computed(() => isConnecting.value);
 
 const buttonLabel = computed(() => {
-  if (isBusy.value) return 'Connecting voice...';
-  if (isActive.value) return 'End voice session';
-  return 'Start voice session';
+  if (isBusy.value) return "Connecting voice...";
+  if (isActive.value) return "End voice session";
+  return "Start voice session";
 });
 
-const muteLabel = computed(() =>
-  isMuted.value ? 'Unmute microphone' : 'Mute microphone',
-);
+const muteLabel = computed(() => (isMuted.value ? "Unmute microphone" : "Mute microphone"));
 
 async function handleToggleVoice() {
   if (isBusy.value) return;
@@ -89,10 +82,7 @@ function handleToggleMute() {
 </script>
 
 <template>
-  <div
-    :class="cn('inline-flex items-center gap-2', props.class)"
-    data-slot="app-voice-controls"
-  >
+  <div :class="cn('inline-flex items-center gap-2', props.class)" data-slot="app-voice-controls">
     <!-- SpeechInput-style record trigger (driven by 11Labs via useVoice) -->
     <div class="relative inline-flex items-center justify-center">
       <!-- Animated pulse rings (match AI Elements SpeechInput) -->
@@ -160,10 +150,7 @@ function handleToggleMute() {
       v-if="showStatus && isActive"
       class="flex items-center gap-2 rounded-full border bg-muted/60 px-3 py-1 text-xs"
     >
-      <span
-        class="size-2 rounded-full bg-green-500"
-        :class="{ 'animate-pulse': isConnecting }"
-      />
+      <span class="size-2 rounded-full bg-green-500" :class="{ 'animate-pulse': isConnecting }" />
       <span class="text-foreground">{{ statusMessage }}</span>
     </AudioPlayer>
   </div>

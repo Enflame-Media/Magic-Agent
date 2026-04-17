@@ -7,36 +7,33 @@ on:
   push:
     branches: [main]
     paths:
-      - 'apps/mobile/**'
-      - 'packages/**'
-      - '.github/workflows/build-mobile.yml'
+      - "apps/mobile/**"
+      - "packages/**"
+      - ".github/workflows/build-mobile.yml"
   pull_request:
     branches: [main]
     paths:
-      - 'apps/mobile/**'
-      - 'packages/**'
+      - "apps/mobile/**"
+      - "packages/**"
   workflow_dispatch:
     inputs:
       platform:
-        description: 'Platform to build'
+        description: "Platform to build"
         required: true
         type: choice
         options:
           - ios
           - android
           - both
-        default: 'both'
+        default: "both"
       environment:
-        description: 'Deployment environment'
+        description: "Deployment environment"
         required: true
         type: choice
         options:
           - beta
           - release
-        default: 'beta'
-
-permissions:
-  contents: read
+        default: "beta"
 
 # Cancel in-progress runs for the same branch
 concurrency:
@@ -44,9 +41,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  NODE_VERSION: '20'
-  RUBY_VERSION: '3.2'
-  JAVA_VERSION: '17'
+  NODE_VERSION: "20"
+  RUBY_VERSION: "3.2"
+  JAVA_VERSION: "17"
 
 jobs:
   # ============================================
@@ -104,7 +101,7 @@ jobs:
     name: Build iOS
     needs: setup
     if: needs.setup.outputs.build-ios == 'true'
-    runs-on: macos-14  # Apple Silicon runner for faster builds
+    runs-on: macos-14 # Apple Silicon runner for faster builds
     timeout-minutes: 60
 
     steps:
@@ -120,7 +117,7 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
+          cache: "pnpm"
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
@@ -206,13 +203,13 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
+          cache: "pnpm"
 
       - name: Setup Java
         uses: actions/setup-java@v5
         with:
           java-version: ${{ env.JAVA_VERSION }}
-          distribution: 'temurin'
+          distribution: "temurin"
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1

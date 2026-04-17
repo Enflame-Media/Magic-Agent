@@ -21,9 +21,22 @@
  * @see HAP-889 - Reference implementation in happy-admin
  */
 
-import { configureAxe } from 'vitest-axe';
-import type { VueWrapper } from '@vue/test-utils';
-import type { AxeResults, RunOptions } from 'axe-core';
+import { configureAxe } from "vitest-axe";
+import type { VueWrapper } from "@vue/test-utils";
+import type { AxeResults, RunOptions } from "axe-core";
+
+// vitest-axe v0.1.0 augments the legacy `Vi` namespace, which vitest v4
+// (and vite-plus's bundled expect) no longer expose. The matcher is
+// registered at runtime via `expect.extend(matchers)` in setup.ts. We
+// reach it through a narrow typed helper instead of module augmentation
+// because vite-plus ships its own internal @vitest/expect that is not
+// addressable by an external module augmentation.
+interface AxeAssertion {
+  toHaveNoViolations(): void;
+}
+function expectAxe(results: AxeResults): AxeAssertion {
+  return expect(results) as unknown as AxeAssertion;
+}
 
 /**
  * Default axe-core configuration for WCAG 2.1 AA compliance.
@@ -33,8 +46,8 @@ import type { AxeResults, RunOptions } from 'axe-core';
  */
 const defaultAxeOptions: RunOptions = {
   runOnly: {
-    type: 'tag',
-    values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'],
+    type: "tag",
+    values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"],
   },
 };
 
@@ -89,7 +102,7 @@ export async function checkComponentA11y(
 ): Promise<AxeResults> {
   const html = getComponentHtml(wrapper);
   const results = await axeWithDefaults(html, options);
-  expect(results).toHaveNoViolations();
+  expectAxe(results).toHaveNoViolations();
   return results;
 }
 
@@ -102,11 +115,8 @@ export async function checkComponentA11y(
  * @param options - Optional additional axe-core run options
  * @returns The axe results
  */
-export async function checkHtmlA11y(
-  html: string,
-  options?: RunOptions,
-): Promise<AxeResults> {
+export async function checkHtmlA11y(html: string, options?: RunOptions): Promise<AxeResults> {
   const results = await axeWithDefaults(html, options);
-  expect(results).toHaveNoViolations();
+  expectAxe(results).toHaveNoViolations();
   return results;
 }

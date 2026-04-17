@@ -9,11 +9,8 @@
  * @see HAP-1093 - Replace CodeBlock and FileTree with AI Elements equivalents
  */
 
-import type { FileTreeNode } from '@/stores/artifacts';
-import {
-  FileTreeFile,
-  FileTreeFolder,
-} from '@/components/ai-elements/file-tree';
+import type { FileTreeNode } from "@/stores/artifacts";
+import { FileTreeFile, FileTreeFolder } from "@/components/ai-elements/file-tree";
 
 interface Props {
   node: FileTreeNode;
@@ -24,24 +21,12 @@ defineProps<Props>();
 
 <template>
   <!-- Directory: render folder + recurse into children -->
-  <FileTreeFolder
-    v-if="node.isDirectory"
-    :path="node.path"
-    :name="node.name"
-  >
+  <FileTreeFolder v-if="node.isDirectory" :path="node.path" :name="node.name">
     <template v-if="node.children">
-      <AppFileTreeNode
-        v-for="child in node.children"
-        :key="child.path"
-        :node="child"
-      />
+      <AppFileTreeNode v-for="child in node.children" :key="child.path" :node="child" />
     </template>
   </FileTreeFolder>
 
   <!-- File: leaf node, selection keyed on artifactId (falls back to path) -->
-  <FileTreeFile
-    v-else
-    :path="node.artifactId ?? node.path"
-    :name="node.name"
-  />
+  <FileTreeFile v-else :path="node.artifactId ?? node.path" :name="node.name" />
 </template>

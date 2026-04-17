@@ -17,35 +17,35 @@ import type {
   ToolCall,
   ToolPermission,
   AgentEvent,
-} from '@/services/messages/types';
+} from "@/services/messages/types";
 
 // ---------------------------------------------------------------------------
 // AI Elements Types (locally defined, compatible with @ai-sdk/vue)
 // ---------------------------------------------------------------------------
 
-export type AIElementsRole = 'user' | 'assistant' | 'system';
+export type AIElementsRole = "user" | "assistant" | "system";
 
 export type TextPart = {
-  type: 'text';
+  type: "text";
   text: string;
 };
 
 export type ToolInvocationPart = {
-  type: 'tool-invocation';
+  type: "tool-invocation";
   toolInvocationId: string;
   toolName: string;
   args: unknown;
-  state: 'call' | 'result' | 'partial-call';
+  state: "call" | "result" | "partial-call";
   result?: unknown;
 };
 
 export type ReasoningPart = {
-  type: 'reasoning';
+  type: "reasoning";
   reasoning: string;
 };
 
 export type SourcePart = {
-  type: 'source';
+  type: "source";
   source: {
     sourceType: string;
     id: string;
@@ -54,11 +54,7 @@ export type SourcePart = {
   };
 };
 
-export type AIElementsPart =
-  | TextPart
-  | ToolInvocationPart
-  | ReasoningPart
-  | SourcePart;
+export type AIElementsPart = TextPart | ToolInvocationPart | ReasoningPart | SourcePart;
 
 export type AIElementsMessage = {
   id: string;
@@ -68,17 +64,19 @@ export type AIElementsMessage = {
 };
 
 export type AIToolState =
-  | 'input-streaming'
-  | 'input-available'
-  | 'approval-requested'
-  | 'output-streaming'
-  | 'output-available';
+  | "input-streaming"
+  | "input-available"
+  | "approval-requested"
+  | "output-streaming"
+  | "output-available";
 
-export type AIToolApproval = {
-  id: string;
-  approved?: boolean;
-  reason?: string;
-} | undefined;
+export type AIToolApproval =
+  | {
+      id: string;
+      approved?: boolean;
+      reason?: string;
+    }
+  | undefined;
 
 // ---------------------------------------------------------------------------
 // Formatting Helpers
@@ -89,12 +87,12 @@ export type AIToolApproval = {
  */
 function formatAgentEvent(event: AgentEvent): string {
   switch (event.type) {
-    case 'switch':
+    case "switch":
       return `Switched to ${event.mode} mode`;
-    case 'message':
+    case "message":
       return String(event.message);
-    case 'limit-reached':
-      return 'Rate limit reached';
+    case "limit-reached":
+      return "Rate limit reached";
     default:
       return `Event: ${event.type}`;
   }
@@ -110,13 +108,13 @@ function formatAgentEvent(event: AgentEvent): string {
  *    - error -> 'result' (tool returned an error)
  * 2. Tool component state mapping: see adaptToolState()
  */
-function mapToolCallState(state: ToolCall['state']): ToolInvocationPart['state'] {
+function mapToolCallState(state: ToolCall["state"]): ToolInvocationPart["state"] {
   switch (state) {
-    case 'running':
-      return 'call';
-    case 'completed':
-    case 'error':
-      return 'result';
+    case "running":
+      return "call";
+    case "completed":
+    case "error":
+      return "result";
   }
 }
 
@@ -126,69 +124,71 @@ function mapToolCallState(state: ToolCall['state']): ToolInvocationPart['state']
 
 function adaptSingleMessage(msg: NormalizedMessage): AIElementsMessage {
   switch (msg.kind) {
-    case 'user-text':
+    case "user-text":
       return {
         id: msg.id,
-        role: 'user',
-        parts: [{ type: 'text', text: msg.displayText ?? msg.text }],
+        role: "user",
+        parts: [{ type: "text", text: msg.displayText ?? msg.text }],
         createdAt: msg.createdAt,
       };
 
-    case 'agent-text':
+    case "agent-text":
       return {
         id: msg.id,
-        role: 'assistant',
-        parts: [{ type: 'text', text: msg.text }],
+        role: "assistant",
+        parts: [{ type: "text", text: msg.text }],
         createdAt: msg.createdAt,
       };
 
-    case 'tool-call': {
+    case "tool-call": {
       const part: ToolInvocationPart = {
-        type: 'tool-invocation',
+        type: "tool-invocation",
         toolInvocationId: msg.id,
         toolName: msg.tool.name,
         args: msg.tool.input,
         state: mapToolCallState(msg.tool.state),
       };
-      if (msg.tool.state === 'completed' || msg.tool.state === 'error') {
+      if (msg.tool.state === "completed" || msg.tool.state === "error") {
         part.result = msg.tool.result;
       }
       return {
         id: msg.id,
-        role: 'assistant',
+        role: "assistant",
         parts: [part],
         createdAt: msg.createdAt,
       };
     }
 
-    case 'tool-result':
+    case "tool-result":
       return {
         id: msg.id,
-        role: 'assistant',
-        parts: [{
-          type: 'tool-invocation',
-          toolInvocationId: msg.toolUseId,
-          toolName: 'tool',
-          args: undefined,
-          state: 'result',
-          result: msg.content,
-        }],
+        role: "assistant",
+        parts: [
+          {
+            type: "tool-invocation",
+            toolInvocationId: msg.toolUseId,
+            toolName: "tool",
+            args: undefined,
+            state: "result",
+            result: msg.content,
+          },
+        ],
         createdAt: msg.createdAt,
       };
 
-    case 'agent-event':
+    case "agent-event":
       return {
         id: msg.id,
-        role: 'assistant',
-        parts: [{ type: 'text', text: formatAgentEvent(msg.event) }],
+        role: "assistant",
+        parts: [{ type: "text", text: formatAgentEvent(msg.event) }],
         createdAt: msg.createdAt,
       };
 
-    case 'system':
+    case "system":
       return {
         id: msg.id,
-        role: 'system',
-        parts: [{ type: 'text', text: msg.text }],
+        role: "system",
+        parts: [{ type: "text", text: msg.text }],
         createdAt: msg.createdAt,
       };
   }
@@ -217,18 +217,15 @@ export function adaptMessages(messages: NormalizedMessage[]): AIElementsMessage[
  * - completed                -> 'output-available'
  * - error                    -> 'output-available'  (error shown as output)
  */
-export function adaptToolState(
-  state: ToolCall['state'],
-  permission?: ToolPermission,
-): AIToolState {
-  if (state === 'running') {
-    if (permission?.status === 'pending') {
-      return 'approval-requested';
+export function adaptToolState(state: ToolCall["state"], permission?: ToolPermission): AIToolState {
+  if (state === "running") {
+    if (permission?.status === "pending") {
+      return "approval-requested";
     }
-    return 'input-available';
+    return "input-available";
   }
   // completed or error
-  return 'output-available';
+  return "output-available";
 }
 
 /**
@@ -245,17 +242,17 @@ export function adaptToolApproval(permission?: ToolPermission): AIToolApproval {
     return undefined;
   }
 
-  const id = permission.id ?? '';
+  const id = permission.id ?? "";
 
   switch (permission.status) {
-    case 'pending':
+    case "pending":
       return { id, approved: undefined, reason: permission.reason };
-    case 'approved':
+    case "approved":
       return { id, approved: true, reason: permission.reason };
-    case 'denied':
+    case "denied":
       return { id, approved: false, reason: permission.reason };
-    case 'canceled':
-      return { id, approved: false, reason: permission.reason ?? 'canceled' };
+    case "canceled":
+      return { id, approved: false, reason: permission.reason ?? "canceled" };
     default:
       return { id, approved: undefined, reason: permission.reason };
   }

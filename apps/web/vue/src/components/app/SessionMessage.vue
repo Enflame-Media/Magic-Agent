@@ -27,41 +27,37 @@
  * @see HAP-1095 — Replace ChatList + MessageView with AI Elements
  */
 
-import { computed, ref } from 'vue';
-import { useRouter } from 'vue-router';
-import { ExternalLinkIcon } from 'lucide-vue-next';
-import {
-  Message,
-  MessageContent,
-  MessageResponse,
-} from '@/components/ai-elements/message';
+import { computed, ref } from "vue";
+import { useRouter } from "vue-router";
+import { ExternalLinkIcon } from "lucide-vue-next";
+import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
 import {
   Tool,
   ToolContent,
   ToolHeader,
   ToolInput,
   ToolOutput,
-} from '@/components/ai-elements/tool';
-import { Loader } from '@/components/ai-elements/loader';
-import MarkdownView, { type Option } from './markdown/MarkdownView.vue';
-import { getToolViewComponent } from './tools/views/_all';
-import { getToolConfig } from './tools/knownTools';
-import { adaptToolState } from '@/lib/ai-elements-adapter';
-import type { NormalizedMessage } from '@/services/messages/types';
-import { cn } from '@/lib/utils';
+} from "@/components/ai-elements/tool";
+import { Loader } from "@/components/ai-elements/loader";
+import MarkdownView, { type Option } from "./markdown/MarkdownView.vue";
+import { getToolViewComponent } from "./tools/views/_all";
+import { getToolConfig } from "./tools/knownTools";
+import { adaptToolState } from "@/lib/ai-elements-adapter";
+import type { NormalizedMessage } from "@/services/messages/types";
+import { cn } from "@/lib/utils";
 
 // AI Elements ToolHeader accepts this narrower state union from @ai-sdk.
 // Our adapter's AIToolState union is a superset (includes 'output-streaming')
 // so we narrow it here and upgrade 'error' tool results to 'output-error' so
 // the StatusBadge renders the correct destructive styling.
 type ToolHeaderState =
-  | 'input-streaming'
-  | 'input-available'
-  | 'approval-requested'
-  | 'approval-responded'
-  | 'output-available'
-  | 'output-error'
-  | 'output-denied';
+  | "input-streaming"
+  | "input-available"
+  | "approval-requested"
+  | "approval-responded"
+  | "output-available"
+  | "output-error"
+  | "output-denied";
 
 interface Props {
   message: NormalizedMessage;
@@ -78,43 +74,43 @@ const INITIAL_LINES = 20;
 
 // ── Kind predicates ─────────────────────────────────────────────────────────
 
-const isUser = computed(() => props.message.kind === 'user-text');
-const isAssistant = computed(() => props.message.kind === 'agent-text');
+const isUser = computed(() => props.message.kind === "user-text");
+const isAssistant = computed(() => props.message.kind === "agent-text");
 
 // ── Timestamp (HH:MM) ───────────────────────────────────────────────────────
 
 const timestamp = computed(() => {
   const date = new Date(props.message.createdAt);
   return date.toLocaleTimeString(undefined, {
-    hour: '2-digit',
-    minute: '2-digit',
+    hour: "2-digit",
+    minute: "2-digit",
   });
 });
 
 // ── Text content + truncation (for user-text / agent-text) ──────────────────
 
 const rawMarkdown = computed(() => {
-  if (props.message.kind === 'user-text') {
+  if (props.message.kind === "user-text") {
     return props.message.displayText ?? props.message.text;
   }
-  if (props.message.kind === 'agent-text') {
+  if (props.message.kind === "agent-text") {
     return props.message.text;
   }
-  return '';
+  return "";
 });
 
 const truncatedMarkdown = computed(() => {
   if (!rawMarkdown.value) {
-    return { text: '', needsTruncation: false, hiddenLines: 0 };
+    return { text: "", needsTruncation: false, hiddenLines: 0 };
   }
-  const lines = rawMarkdown.value.split('\n');
+  const lines = rawMarkdown.value.split("\n");
   const needsTruncation = lines.length > LINE_THRESHOLD;
   if (!needsTruncation || isExpanded.value) {
     return { text: rawMarkdown.value, needsTruncation, hiddenLines: 0 };
   }
   const hiddenLines = lines.length - INITIAL_LINES;
   return {
-    text: lines.slice(0, INITIAL_LINES).join('\n'),
+    text: lines.slice(0, INITIAL_LINES).join("\n"),
     needsTruncation,
     hiddenLines,
   };
@@ -126,9 +122,7 @@ function toggleExpanded(): void {
 
 // ── Tool-call rendering ─────────────────────────────────────────────────────
 
-const toolCall = computed(() =>
-  props.message.kind === 'tool-call' ? props.message : null,
-);
+const toolCall = computed(() => (props.message.kind === "tool-call" ? props.message : null));
 
 const toolConfig = computed(() => {
   const t = toolCall.value;
@@ -140,7 +134,7 @@ const toolTitle = computed(() => {
   if (!t) return undefined;
   const cfg = toolConfig.value;
   if (!cfg?.title) return t.tool.name;
-  return typeof cfg.title === 'function' ? cfg.title(t.tool) : cfg.title;
+  return typeof cfg.title === "function" ? cfg.title(t.tool) : cfg.title;
 });
 
 const toolSubtitle = computed(() => {
@@ -156,21 +150,21 @@ const SpecificToolView = computed(() => {
 
 const toolState = computed<ToolHeaderState>(() => {
   const t = toolCall.value;
-  if (!t) return 'input-available';
+  if (!t) return "input-available";
   // adapter maps error -> 'output-available'; upgrade to 'output-error' for UI.
-  if (t.tool.state === 'error') return 'output-error';
+  if (t.tool.state === "error") return "output-error";
   const adapted = adaptToolState(t.tool.state, t.tool.permission);
   // adapter union includes 'output-streaming' which ToolHeader doesn't accept;
   // our adapter never actually returns it for these inputs, but narrow safely.
-  if (adapted === 'output-streaming') return 'output-available';
+  if (adapted === "output-streaming") return "output-available";
   return adapted;
 });
 
 const toolErrorText = computed(() => {
   const t = toolCall.value;
-  if (!t || t.tool.state !== 'error') return undefined;
+  if (!t || t.tool.state !== "error") return undefined;
   const result = t.tool.result;
-  if (typeof result === 'string') return result;
+  if (typeof result === "string") return result;
   if (result == null) return undefined;
   return JSON.stringify(result, null, 2);
 });
@@ -178,15 +172,15 @@ const toolErrorText = computed(() => {
 const toolOutput = computed(() => {
   const t = toolCall.value;
   if (!t) return undefined;
-  if (t.tool.state !== 'completed') return undefined;
+  if (t.tool.state !== "completed") return undefined;
   return t.tool.result;
 });
 
 function openToolMessage(event: Event): void {
   event.stopPropagation();
-  if (props.message.kind !== 'tool-call') return;
+  if (props.message.kind !== "tool-call") return;
   router.push({
-    name: 'session-message',
+    name: "session-message",
     params: {
       id: props.sessionId,
       messageId: props.message.sourceMessageId ?? props.message.id,
@@ -197,59 +191,55 @@ function openToolMessage(event: Event): void {
 // ── Tool-result (standalone) rendering ──────────────────────────────────────
 
 const standaloneToolResult = computed(() => {
-  if (props.message.kind !== 'tool-result') return null;
+  if (props.message.kind !== "tool-result") return null;
   const content = props.message.content;
   return {
     isError: props.message.isError,
     output: content,
-    errorText:
-      props.message.isError && typeof content === 'string' ? content : undefined,
+    errorText: props.message.isError && typeof content === "string" ? content : undefined,
   };
 });
 
 // ── Agent-event formatted text ──────────────────────────────────────────────
 
 const agentEventText = computed(() => {
-  if (props.message.kind !== 'agent-event') return '';
+  if (props.message.kind !== "agent-event") return "";
   const event = props.message.event;
   switch (event.type) {
-    case 'switch':
+    case "switch":
       return `Switched to ${event.mode}`;
-    case 'message':
+    case "message":
       return String(event.message);
-    case 'limit-reached': {
+    case "limit-reached": {
       const endsAt = Number(event.endsAt);
       if (Number.isFinite(endsAt)) {
         return `Usage limit until ${new Date(endsAt * 1000).toLocaleTimeString()}`;
       }
-      return 'Usage limit reached';
+      return "Usage limit reached";
     }
     default:
-      return 'System event';
+      return "System event";
   }
 });
 
 // ── Role for <Message from="..."> ───────────────────────────────────────────
 
-const messageRole = computed<'user' | 'assistant' | 'system'>(() => {
-  if (isUser.value) return 'user';
-  if (isAssistant.value) return 'assistant';
-  return 'system';
+const messageRole = computed<"user" | "assistant" | "system">(() => {
+  if (isUser.value) return "user";
+  if (isAssistant.value) return "assistant";
+  return "system";
 });
 
 // ── System message styling (for kind === 'system' | 'agent-event' | 'tool-result') ──
 
 const systemBubbleClass = cn(
-  'w-full justify-center text-center text-sm italic text-muted-foreground',
+  "w-full justify-center text-center text-sm italic text-muted-foreground",
 );
 </script>
 
 <template>
   <!-- user-text / agent-text -->
-  <Message
-    v-if="message.kind === 'user-text' || message.kind === 'agent-text'"
-    :from="messageRole"
-  >
+  <Message v-if="message.kind === 'user-text' || message.kind === 'agent-text'" :from="messageRole">
     <MessageContent>
       <MarkdownView
         v-if="message.kind === 'user-text'"
@@ -264,18 +254,11 @@ const systemBubbleClass = cn(
         class="mt-1 self-start text-xs text-muted-foreground underline underline-offset-4"
         @click="toggleExpanded"
       >
-        {{
-          isExpanded
-            ? 'Show less'
-            : `Show ${truncatedMarkdown.hiddenLines} more lines`
-        }}
+        {{ isExpanded ? "Show less" : `Show ${truncatedMarkdown.hiddenLines} more lines` }}
       </button>
 
       <span
-        :class="[
-          'mt-1 block text-xs',
-          isUser ? 'text-foreground/60' : 'text-muted-foreground',
-        ]"
+        :class="['mt-1 block text-xs', isUser ? 'text-foreground/60' : 'text-muted-foreground']"
       >
         {{ timestamp }}
       </span>
@@ -283,10 +266,7 @@ const systemBubbleClass = cn(
   </Message>
 
   <!-- tool-call: <Tool> collapsible + header + content -->
-  <Tool
-    v-else-if="message.kind === 'tool-call' && toolCall"
-    class="max-w-full"
-  >
+  <Tool v-else-if="message.kind === 'tool-call' && toolCall" class="max-w-full">
     <div class="flex items-stretch">
       <ToolHeader
         class="flex-1"
@@ -324,11 +304,7 @@ const systemBubbleClass = cn(
 
       <!-- Specific tool view (BashView, EditView, TodoView, etc.) -->
       <div v-if="SpecificToolView" class="p-4">
-        <component
-          :is="SpecificToolView"
-          :tool="toolCall.tool"
-          :messages="toolCall.children"
-        />
+        <component :is="SpecificToolView" :tool="toolCall.tool" :messages="toolCall.children" />
       </div>
 
       <!-- Generic fallback: show parameters + result/error -->
@@ -366,22 +342,14 @@ const systemBubbleClass = cn(
   </Message>
 
   <!-- agent-event -->
-  <Message
-    v-else-if="message.kind === 'agent-event'"
-    from="system"
-    :class="systemBubbleClass"
-  >
+  <Message v-else-if="message.kind === 'agent-event'" from="system" :class="systemBubbleClass">
     <MessageContent class="bg-transparent">
       <p class="whitespace-pre-wrap break-words">{{ agentEventText }}</p>
     </MessageContent>
   </Message>
 
   <!-- system (plain text) -->
-  <Message
-    v-else-if="message.kind === 'system'"
-    from="system"
-    :class="systemBubbleClass"
-  >
+  <Message v-else-if="message.kind === 'system'" from="system" :class="systemBubbleClass">
     <MessageContent class="bg-transparent">
       <p class="whitespace-pre-wrap break-words">{{ message.text }}</p>
     </MessageContent>

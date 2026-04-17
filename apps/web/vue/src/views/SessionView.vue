@@ -6,17 +6,17 @@
  * Shows messages in chronological order with real-time updates.
  */
 
-import { computed, ref, onMounted, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import { useForm } from '@tanstack/vue-form';
-import { z } from 'zod';
-import { useSessionsStore } from '@/stores/sessions';
-import { useMessagesStore } from '@/stores/messages';
-import { useAuthStore } from '@/stores/auth';
-import { useMachinesStore, isMachineOnline } from '@/stores/machines';
-import { SessionMessage, AppVoiceControls } from '@/components/app';
-import { Button } from '@/components/ui/button';
-import { Kbd } from '@/components/ui/kbd';
+import { computed, ref, onMounted, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { useForm } from "@tanstack/vue-form";
+import { z } from "zod";
+import { useSessionsStore } from "@/stores/sessions";
+import { useMessagesStore } from "@/stores/messages";
+import { useAuthStore } from "@/stores/auth";
+import { useMachinesStore, isMachineOnline } from "@/stores/machines";
+import { SessionMessage, AppVoiceControls } from "@/components/app";
+import { Button } from "@/components/ui/button";
+import { Kbd } from "@/components/ui/kbd";
 import {
   PromptInput,
   PromptInputBody,
@@ -27,24 +27,27 @@ import {
   PromptInputSubmit,
   PromptInputButton,
   type PromptInputMessage,
-} from '@/components/ai-elements/prompt-input';
-import { Suggestion, Suggestions } from '@/components/ai-elements/suggestion';
+} from "@/components/ai-elements/prompt-input";
+import { Suggestion, Suggestions } from "@/components/ai-elements/suggestion";
 import {
   Conversation,
   ConversationContent,
   ConversationScrollButton,
-} from '@/components/ai-elements/conversation';
-import { Shimmer } from '@/components/ai-elements/shimmer';
-import { ShareSessionModal } from '@/components/app/sharing';
-import ResponsiveContainer from '@/components/app/ResponsiveContainer.vue';
-import { useResponsiveLayout } from '@/composables/useResponsiveLayout';
-import { fetchSessionMessages } from '@/services/sessions';
-import { decryptMessageContent, decryptSessionMetadata } from '@/services/encryption/sessionDecryption';
-import { normalizeDecryptedMessage } from '@/services/messages/normalize';
-import type { NormalizedMessage } from '@/services/messages/types';
-import { sendSessionMessage } from '@/services/sync/messages';
-import { toast } from 'vue-sonner';
-import { Info, Settings } from 'lucide-vue-next';
+} from "@/components/ai-elements/conversation";
+import { Shimmer } from "@/components/ai-elements/shimmer";
+import { ShareSessionModal } from "@/components/app/sharing";
+import ResponsiveContainer from "@/components/app/ResponsiveContainer.vue";
+import { useResponsiveLayout } from "@/composables/useResponsiveLayout";
+import { fetchSessionMessages } from "@/services/sessions";
+import {
+  decryptMessageContent,
+  decryptSessionMetadata,
+} from "@/services/encryption/sessionDecryption";
+import { normalizeDecryptedMessage } from "@/services/messages/normalize";
+import type { NormalizedMessage } from "@/services/messages/types";
+import { sendSessionMessage } from "@/services/sync/messages";
+import { toast } from "vue-sonner";
+import { Info, Settings } from "lucide-vue-next";
 
 interface SessionMetadata {
   name?: string;
@@ -64,10 +67,8 @@ const machinesStore = useMachinesStore();
 
 // Responsive layout for session view (HAP-976)
 const { containerClass: responsiveContainerClass, isSinglePanel } = useResponsiveLayout(
-  [
-    { id: 'main', minBreakpoint: 'sm', defaultWidth: 100, collapsible: false },
-  ],
-  'main',
+  [{ id: "main", minBreakpoint: "sm", defaultWidth: 100, collapsible: false }],
+  "main",
 );
 
 // Session ID from route params
@@ -75,12 +76,12 @@ const sessionId = computed(() => route.params.id as string);
 
 // Session data
 const session = computed(() =>
-  sessionId.value ? sessionsStore.getSession(sessionId.value) : undefined
+  sessionId.value ? sessionsStore.getSession(sessionId.value) : undefined,
 );
 
 // Messages for this session
 const messages = computed(() =>
-  sessionId.value ? messagesStore.getMessagesForSession(sessionId.value) : []
+  sessionId.value ? messagesStore.getMessagesForSession(sessionId.value) : [],
 );
 
 // Loading state
@@ -91,12 +92,12 @@ const isSending = ref(false);
 const isShareModalOpen = ref(false);
 
 const messageSchema = z.object({
-  message: z.string().min(1, 'Message cannot be empty'),
+  message: z.string().min(1, "Message cannot be empty"),
 });
 
 const messageForm = useForm({
   defaultValues: {
-    message: '',
+    message: "",
   },
   validators: {
     onSubmit: messageSchema,
@@ -106,13 +107,13 @@ const messageForm = useForm({
   },
 });
 
-const sendStatus = ref<'ready' | 'submitted' | 'streaming' | 'error'>('ready');
+const sendStatus = ref<"ready" | "submitted" | "streaming" | "error">("ready");
 
 const emptyStateSuggestions = [
-  'Explain the project structure',
-  'Run the tests',
-  'Show recent changes',
-  'Summarize the conversation',
+  "Explain the project structure",
+  "Run the tests",
+  "Show recent changes",
+  "Summarize the conversation",
 ];
 
 async function refreshMetadata(): Promise<void> {
@@ -151,7 +152,7 @@ async function refreshDecryptedMessages(): Promise<void> {
     currentMessages.map(async (message) => ({
       id: message.id,
       content: await decryptMessageContent(message, currentSession),
-    }))
+    })),
   );
 
   if (session.value?.id !== currentSession.id) {
@@ -168,7 +169,7 @@ async function refreshDecryptedMessages(): Promise<void> {
 }
 
 const sessionName = computed(() => {
-  if (!session.value) return 'Session';
+  if (!session.value) return "Session";
   try {
     const meta = decryptedMetadata.value ?? JSON.parse(session.value.metadata);
     return meta.name || meta.title || `Session ${sessionId.value.slice(0, 8)}`;
@@ -188,63 +189,58 @@ const projectPath = computed(() => {
 });
 
 const statusText = computed(() => {
-  if (!session.value) return 'Disconnected';
-  return session.value.active ? 'Connected' : 'Archived';
+  if (!session.value) return "Disconnected";
+  return session.value.active ? "Connected" : "Archived";
 });
 
-const statusColor = computed(() =>
-  session.value?.active ? 'text-green-500' : 'text-gray-500'
-);
+const statusColor = computed(() => (session.value?.active ? "text-green-500" : "text-gray-500"));
 
-const codexModelOptions = [
-  'gpt-5-codex high',
-  'gpt-5-codex medium',
-  'gpt-5-codex low',
-];
+const codexModelOptions = ["gpt-5-codex high", "gpt-5-codex medium", "gpt-5-codex low"];
 
 const codexPermissionModes = [
-  { value: 'default', label: 'default' },
-  { value: 'read-only', label: 'read-only' },
-  { value: 'safe-yolo', label: 'safe yolo' },
-  { value: 'yolo', label: 'yolo' },
+  { value: "default", label: "default" },
+  { value: "read-only", label: "read-only" },
+  { value: "safe-yolo", label: "safe yolo" },
+  { value: "yolo", label: "yolo" },
 ];
 
 const claudePermissionModes = [
-  { value: 'default', label: 'default' },
-  { value: 'acceptEdits', label: 'accept edits' },
-  { value: 'plan', label: 'plan' },
-  { value: 'bypassPermissions', label: 'bypass permissions' },
+  { value: "default", label: "default" },
+  { value: "acceptEdits", label: "accept edits" },
+  { value: "plan", label: "plan" },
+  { value: "bypassPermissions", label: "bypass permissions" },
 ];
 
-const modelLabel = ref('');
-const permissionMode = ref('default');
+const modelLabel = ref("");
+const permissionMode = ref("default");
 
 const permissionLabel = computed(() => {
-  if (permissionMode.value === 'default') {
-    return '';
+  if (permissionMode.value === "default") {
+    return "";
   }
-  const isCodex = decryptedMetadata.value?.flavor === 'codex' || decryptedMetadata.value?.flavor === 'gpt';
+  const isCodex =
+    decryptedMetadata.value?.flavor === "codex" || decryptedMetadata.value?.flavor === "gpt";
   const options = isCodex ? codexPermissionModes : claudePermissionModes;
   const match = options.find((option) => option.value === permissionMode.value);
-  return match?.label ?? 'default';
+  return match?.label ?? "default";
 });
 
 watch(
   () => decryptedMetadata.value?.flavor,
   (flavor) => {
-    const defaultCodexModel = codexModelOptions[0] ?? 'gpt-5-codex high';
-    const defaultCodexMode = codexPermissionModes[0]?.value ?? 'default';
-    const defaultClaudeMode = claudePermissionModes[0]?.value ?? 'default';
+    const defaultCodexModel = codexModelOptions[0] ?? "gpt-5-codex high";
+    const defaultCodexMode = codexPermissionModes[0]?.value ?? "default";
+    const defaultClaudeMode = claudePermissionModes[0]?.value ?? "default";
 
-    if (flavor === 'codex' || flavor === 'gpt') {
+    if (flavor === "codex" || flavor === "gpt") {
       modelLabel.value = defaultCodexModel;
       permissionMode.value = defaultCodexMode;
       return;
     }
-    modelLabel.value = '';
+    modelLabel.value = "";
     permissionMode.value = defaultClaudeMode;
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 function cycleModelLabel(): void {
@@ -257,11 +253,12 @@ function cycleModelLabel(): void {
 }
 
 function cyclePermissionMode(): void {
-  const isCodex = decryptedMetadata.value?.flavor === 'codex' || decryptedMetadata.value?.flavor === 'gpt';
+  const isCodex =
+    decryptedMetadata.value?.flavor === "codex" || decryptedMetadata.value?.flavor === "gpt";
   const options = isCodex ? codexPermissionModes : claudePermissionModes;
   const currentIndex = options.findIndex((option) => option.value === permissionMode.value);
   const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % options.length;
-  permissionMode.value = options[nextIndex]?.value ?? 'default';
+  permissionMode.value = options[nextIndex]?.value ?? "default";
 }
 
 const normalizedMessages = computed<NormalizedMessage[]>(() => {
@@ -269,21 +266,25 @@ const normalizedMessages = computed<NormalizedMessage[]>(() => {
     return [];
   }
 
-  const result: NormalizedMessage[] = [];
+  // Two-pass to handle out-of-order decryption: a tool-result may arrive
+  // (or decrypt) before its matching tool-call. First pass collects all
+  // normalized items and indexes every tool-call by id; second pass folds
+  // each result into its call if present, otherwise emits the result.
+  const allItems: NormalizedMessage[] = [];
   const toolCalls = new Map<string, NormalizedMessage>();
 
   for (const message of messages.value) {
     const decrypted = decryptedContentById.value.get(message.id);
-      if (!decrypted) {
-        result.push({
-          kind: 'system',
-          id: message.id,
-          sourceMessageId: message.id,
-          localId: message.localId,
-          createdAt: message.createdAt,
-          text: '[Encrypted content]',
-        });
-        continue;
+    if (!decrypted) {
+      allItems.push({
+        kind: "system",
+        id: message.id,
+        sourceMessageId: message.id,
+        localId: message.localId,
+        createdAt: message.createdAt,
+        text: "[Encrypted content]",
+      });
+      continue;
     }
 
     const normalized = normalizeDecryptedMessage({
@@ -293,8 +294,8 @@ const normalizedMessages = computed<NormalizedMessage[]>(() => {
       decrypted,
     });
     if (normalized.length === 0) {
-      result.push({
-        kind: 'system',
+      allItems.push({
+        kind: "system",
         id: message.id,
         sourceMessageId: message.id,
         localId: message.localId,
@@ -305,20 +306,25 @@ const normalizedMessages = computed<NormalizedMessage[]>(() => {
     }
 
     for (const item of normalized) {
-      if (item.kind === 'tool-call') {
+      allItems.push(item);
+      if (item.kind === "tool-call") {
         toolCalls.set(item.id, item);
       }
-      if (item.kind === 'tool-result') {
-        const toolCall = toolCalls.get(item.toolUseId);
-        if (toolCall && toolCall.kind === 'tool-call') {
-          toolCall.tool.state = item.isError ? 'error' : 'completed';
-          toolCall.tool.result = item.content;
-          toolCall.tool.permission = item.permission;
-          continue;
-        }
-      }
-      result.push(item);
     }
+  }
+
+  const result: NormalizedMessage[] = [];
+  for (const item of allItems) {
+    if (item.kind === "tool-result") {
+      const toolCall = toolCalls.get(item.toolUseId);
+      if (toolCall && toolCall.kind === "tool-call") {
+        toolCall.tool.state = item.isError ? "error" : "completed";
+        toolCall.tool.result = item.content;
+        toolCall.tool.permission = item.permission;
+        continue;
+      }
+    }
+    result.push(item);
   }
 
   return result;
@@ -337,7 +343,7 @@ async function loadArchivedHistory(): Promise<void> {
   }
 
   if (!authStore.token) {
-    toast.error('Not authenticated');
+    toast.error("Not authenticated");
     return;
   }
 
@@ -354,8 +360,8 @@ async function loadArchivedHistory(): Promise<void> {
     mappedMessages.sort((a, b) => a.seq - b.seq);
     messagesStore.setMessagesForSession(sessionId.value, mappedMessages);
   } catch (error) {
-    console.error('[session] Failed to load archived history', error);
-    toast.error('Failed to load session history');
+    console.error("[session] Failed to load archived history", error);
+    toast.error("Failed to load session history");
   }
 }
 
@@ -379,11 +385,11 @@ watch(
   async () => {
     await refreshMetadata();
     await refreshDecryptedMessages();
-  }
+  },
 );
 
 function goBack() {
-  router.push('/');
+  router.push("/");
 }
 
 function navigateToInfo() {
@@ -391,7 +397,7 @@ function navigateToInfo() {
 }
 
 function navigateToSettings() {
-  router.push('/settings');
+  router.push("/settings");
 }
 
 function openShareModal() {
@@ -399,14 +405,14 @@ function openShareModal() {
 }
 
 async function handlePromptSubmit(payload: PromptInputMessage): Promise<void> {
-  const text = payload.text ?? '';
-  messageForm.setFieldValue('message', text);
+  const text = payload.text ?? "";
+  messageForm.setFieldValue("message", text);
   await messageForm.handleSubmit();
 }
 
 async function doSendMessage(text: string): Promise<void> {
   if (!session.value || !session.value.active) {
-    toast.error('Session is not active');
+    toast.error("Session is not active");
     return;
   }
 
@@ -420,22 +426,25 @@ async function doSendMessage(text: string): Promise<void> {
   }
 
   isSending.value = true;
-  sendStatus.value = 'submitted';
+  sendStatus.value = "submitted";
   const result = await sendSessionMessage(session.value, trimmedText, permissionMode.value);
   isSending.value = false;
 
   if (!result.ok) {
-    sendStatus.value = 'error';
-    toast.error(result.error ?? 'Failed to send message');
-    return;
+    sendStatus.value = "error";
+    const errorMessage = result.error ?? "Failed to send message";
+    toast.error(errorMessage);
+    // Throw so PromptInput's submit handler treats this as an error and
+    // preserves the user's input instead of clearing it on resolve.
+    throw new Error(errorMessage);
   }
 
-  sendStatus.value = 'ready';
+  sendStatus.value = "ready";
   messageForm.reset();
 }
 
 async function handleOptionPress(option: { title: string }): Promise<void> {
-  messageForm.setFieldValue('message', option.title);
+  messageForm.setFieldValue("message", option.title);
   await messageForm.handleSubmit();
 }
 
@@ -444,13 +453,15 @@ async function handleSuggestionClick(suggestion: string): Promise<void> {
 }
 
 function handlePromptKeydown(event: KeyboardEvent): void {
-  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'm') {
+  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "m") {
     event.preventDefault();
     cycleModelLabel();
     return;
   }
 
-  if (event.key === 'Tab' && event.shiftKey) {
+  // Ctrl/Cmd+Shift+P cycles permission mode without hijacking Shift+Tab
+  // (which must remain free for backward keyboard navigation — WCAG 2.1).
+  if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === "p") {
     event.preventDefault();
     cyclePermissionMode();
   }
@@ -458,43 +469,72 @@ function handlePromptKeydown(event: KeyboardEvent): void {
 </script>
 
 <template>
-  <div :class="[responsiveContainerClass, 'min-h-0 bg-background']" :data-single-panel="isSinglePanel || undefined">
+  <div
+    :class="[responsiveContainerClass, 'min-h-0 bg-background']"
+    :data-single-panel="isSinglePanel || undefined"
+  >
     <header class="flex items-center gap-4 border-b bg-background sticky top-0 z-10">
       <ResponsiveContainer size="full" padding="compact" class="flex items-center gap-4">
-      <Button variant="ghost" size="icon" @click="goBack">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-        </svg>
-      </Button>
+        <Button variant="ghost" size="icon" @click="goBack">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+        </Button>
 
-      <button class="flex-1 min-w-0 text-left" @click="navigateToInfo">
-        <h1 class="font-semibold truncate">{{ sessionName }}</h1>
-        <div class="flex items-center gap-2 text-sm">
-          <p v-if="projectPath" class="text-muted-foreground truncate">{{ projectPath }}</p>
-          <span :class="['flex items-center gap-1', statusColor]">
-            <span class="w-2 h-2 rounded-full bg-current" />
-            {{ statusText }}
-          </span>
-        </div>
-      </button>
+        <button class="flex-1 min-w-0 text-left" @click="navigateToInfo">
+          <h1 class="font-semibold truncate">{{ sessionName }}</h1>
+          <div class="flex items-center gap-2 text-sm">
+            <p v-if="projectPath" class="text-muted-foreground truncate">{{ projectPath }}</p>
+            <span :class="['flex items-center gap-1', statusColor]">
+              <span class="w-2 h-2 rounded-full bg-current" />
+              {{ statusText }}
+            </span>
+          </div>
+        </button>
 
-      <!-- Voice controls (AI Elements SpeechInput + AudioPlayer) -->
-      <AppVoiceControls
-        v-if="session?.active"
-        :session-id="sessionId"
-      />
+        <!-- Voice controls (AI Elements SpeechInput + AudioPlayer) -->
+        <AppVoiceControls v-if="session?.active" :session-id="sessionId" />
 
-      <Button variant="ghost" size="icon" @click="openShareModal" title="Share session">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-        </svg>
-      </Button>
+        <Button variant="ghost" size="icon" @click="openShareModal" title="Share session">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+            />
+          </svg>
+        </Button>
 
-      <Button variant="ghost" size="icon" @click="navigateToInfo">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      </Button>
+        <Button variant="ghost" size="icon" @click="navigateToInfo">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+        </Button>
       </ResponsiveContainer>
     </header>
 
@@ -537,10 +577,7 @@ function handlePromptKeydown(event: KeyboardEvent): void {
       </div>
 
       <!-- Messages — AI Elements Conversation with auto-scroll + scroll-to-bottom -->
-      <Conversation
-        v-else-if="normalizedMessages.length > 0"
-        class="flex-1 min-h-0"
-      >
+      <Conversation v-else-if="normalizedMessages.length > 0" class="flex-1 min-h-0">
         <ConversationContent>
           <SessionMessage
             v-for="message in normalizedMessages"
@@ -554,10 +591,7 @@ function handlePromptKeydown(event: KeyboardEvent): void {
       </Conversation>
 
       <!-- Empty messages — with Suggestions from HAP-1097 -->
-      <div
-        v-else
-        class="flex flex-1 flex-col items-center justify-center p-8 text-center gap-4"
-      >
+      <div v-else class="flex flex-1 flex-col items-center justify-center p-8 text-center gap-4">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           class="h-12 w-12 text-muted-foreground mb-4"
@@ -573,46 +607,88 @@ function handlePromptKeydown(event: KeyboardEvent): void {
           />
         </svg>
         <h2 class="text-lg font-semibold">No Messages Yet</h2>
-        <p class="text-muted-foreground">
-          Messages will appear here when the session starts.
-        </p>
+        <p class="text-muted-foreground">Messages will appear here when the session starts.</p>
         <Suggestions v-if="session?.active" class="mt-2 justify-center">
-          <Suggestion v-for="suggestion in emptyStateSuggestions" :key="suggestion" :suggestion="suggestion" @click="handleSuggestionClick" />
+          <Suggestion
+            v-for="suggestion in emptyStateSuggestions"
+            :key="suggestion"
+            :suggestion="suggestion"
+            @click="handleSuggestionClick"
+          />
         </Suggestions>
       </div>
     </div>
 
-    <ResponsiveContainer v-if="session?.active" size="full" padding="compact" class="border-t bg-muted/20">
+    <ResponsiveContainer
+      v-if="session?.active"
+      size="full"
+      padding="compact"
+      class="border-t bg-muted/20"
+    >
       <PromptInput class="rounded-2xl" :multiple="true" @submit="handlePromptSubmit">
         <PromptInputBody>
           <PromptInputHeader class="justify-between">
             <div class="flex items-center gap-2 text-[11px] text-muted-foreground">
-              <span class="h-2 w-2 rounded-full" :class="machineOnline ? 'bg-emerald-500' : 'bg-gray-400'" />
-              <span>{{ machineOnline ? 'online' : 'offline' }}</span>
+              <span
+                class="h-2 w-2 rounded-full"
+                :class="machineOnline ? 'bg-emerald-500' : 'bg-gray-400'"
+              />
+              <span>{{ machineOnline ? "online" : "offline" }}</span>
             </div>
             <div class="flex items-center gap-2 text-[11px] text-muted-foreground">
-              <span v-if="modelLabel" class="rounded-full border border-border/60 bg-background/40 px-2 py-0.5 text-foreground">{{ modelLabel }}</span>
-              <span v-if="permissionLabel" class="rounded-full border border-border/60 bg-background/40 px-2 py-0.5 text-foreground">{{ permissionLabel }}</span>
-              <Button variant="outline" size="sm" class="h-6 rounded-full border-border/60 bg-background/40 px-3 text-[11px]" @click="navigateToSettings">
+              <span
+                v-if="modelLabel"
+                class="rounded-full border border-border/60 bg-background/40 px-2 py-0.5 text-foreground"
+                >{{ modelLabel }}</span
+              >
+              <span
+                v-if="permissionLabel"
+                class="rounded-full border border-border/60 bg-background/40 px-2 py-0.5 text-foreground"
+                >{{ permissionLabel }}</span
+              >
+              <Button
+                variant="outline"
+                size="sm"
+                class="h-6 rounded-full border-border/60 bg-background/40 px-3 text-[11px]"
+                @click="navigateToSettings"
+              >
                 CLI Settings
               </Button>
             </div>
           </PromptInputHeader>
 
-          <PromptInputTextarea placeholder="Type a message..." :disabled="isSending" @keydown="handlePromptKeydown" />
+          <PromptInputTextarea
+            placeholder="Type a message..."
+            :disabled="isSending"
+            @keydown="handlePromptKeydown"
+          />
 
           <PromptInputFooter>
             <div class="flex items-center gap-2 text-muted-foreground">
-              <PromptInputButton aria-label="Settings" variant="ghost" size="icon-sm" @click="navigateToSettings">
+              <PromptInputButton
+                aria-label="Settings"
+                variant="ghost"
+                size="icon-sm"
+                @click="navigateToSettings"
+              >
                 <Settings class="size-3.5" />
               </PromptInputButton>
-              <PromptInputButton aria-label="Info" variant="ghost" size="icon-sm" @click="navigateToInfo">
+              <PromptInputButton
+                aria-label="Info"
+                variant="ghost"
+                size="icon-sm"
+                @click="navigateToInfo"
+              >
                 <Info class="size-3.5" />
               </PromptInputButton>
               <div class="hidden md:flex items-center gap-2 text-[10px] text-muted-foreground">
                 <div class="flex items-center gap-1"><Kbd>Enter</Kbd><span>Send</span></div>
-                <div class="flex items-center gap-1"><Kbd>Shift</Kbd><Kbd>Tab</Kbd><span>Cycle mode</span></div>
-                <div class="flex items-center gap-1"><Kbd>Cmd</Kbd><Kbd>M</Kbd><span>Cycle model</span></div>
+                <div class="flex items-center gap-1">
+                  <Kbd>Shift</Kbd><Kbd>Tab</Kbd><span>Cycle mode</span>
+                </div>
+                <div class="flex items-center gap-1">
+                  <Kbd>Cmd</Kbd><Kbd>M</Kbd><span>Cycle model</span>
+                </div>
                 <div class="flex items-center gap-1"><Kbd>Esc</Kbd><span>Abort</span></div>
               </div>
             </div>
@@ -625,7 +701,9 @@ function handlePromptKeydown(event: KeyboardEvent): void {
     </ResponsiveContainer>
 
     <div v-else class="border-t p-4 bg-muted/30">
-      <p class="text-sm text-center text-muted-foreground">View-only mode. Use the CLI to send messages.</p>
+      <p class="text-sm text-center text-muted-foreground">
+        View-only mode. Use the CLI to send messages.
+      </p>
     </div>
 
     <ShareSessionModal v-model:open="isShareModalOpen" :session-id="sessionId" />
