@@ -74,6 +74,6 @@ function isArtifactId(id: string, nodes: FileTreeNode[]): boolean {
     class="border-0 bg-transparent"
     @update:selected-path="handleSelect"
   >
-    <AppFileTreeNode v-for="node in tree" :key="node.path" :node="node" />
+    <AppFileTreeNode v-for="node in tree" :key="node.path" :node="node" key-by="artifactId" />
   </FileTree>
 </template>

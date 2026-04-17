@@ -36,7 +36,7 @@ import {
 } from "@/components/ai-elements/artifact";
 import { FileTree } from "@/components/ai-elements/file-tree";
 import { CodeBlock } from "@/components/ai-elements/code-block";
-import ArtifactTreeNode from "./ArtifactTreeNode.vue";
+import AppFileTreeNode from "./AppFileTreeNode.vue";
 import ImagePreview from "./ImagePreview.vue";
 
 interface Props {
@@ -263,7 +263,7 @@ watch(
           :default-expanded="defaultExpanded"
           @update:selected-path="handleSelectPath"
         >
-          <ArtifactTreeNode v-for="node in fileTree" :key="node.path" :node="node" />
+          <AppFileTreeNode v-for="node in fileTree" :key="node.path" :node="node" key-by="path" />
         </FileTree>
       </ScrollArea>
     </div>
