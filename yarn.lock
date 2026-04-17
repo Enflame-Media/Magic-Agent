@@ -8488,13 +8488,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tanstack/virtual-core@npm:3.13.23":
-  version: 3.13.23
-  resolution: "@tanstack/virtual-core@npm:3.13.23"
-  checksum: 10c0/3487089ea4e1dcbb01836f51a1b35b709f9ba03312fe600ddb97c893c16be213e1690af735717b1d6b2e22dfec691c338bc96b5965228c195840249699d5273a
-  languageName: node
-  linkType: hard
-
 "@tanstack/vue-form@npm:^1.29.0":
   version: 1.29.0
   resolution: "@tanstack/vue-form@npm:1.29.0"
@@ -8542,17 +8535,6 @@ __metadata:
   peerDependencies:
     vue: ^2.7.0 || ^3.0.0
   checksum: 10c0/4e0ba29f03d9b00acaf846c73d6970463fe41c5ee3593d5e6b6e87b9b9ead18ddb0ed26b938e56551ee46f1adb4b2227df8866a3ef7987f49cc35abae967a92f
-  languageName: node
-  linkType: hard
-
-"@tanstack/vue-virtual@npm:^3.13.23":
-  version: 3.13.23
-  resolution: "@tanstack/vue-virtual@npm:3.13.23"
-  dependencies:
-    "@tanstack/virtual-core": "npm:3.13.23"
-  peerDependencies:
-    vue: ^2.7.0 || ^3.0.0
-  checksum: 10c0/d036bc1dccd221185bfac6bf7d43bf259000b18c6b4049f581f5de2d4d766c99317ae40643130747050417629f73120ae0d13ea82840827f8d80471669690fb3
   languageName: node
   linkType: hard
 
@@ -17181,7 +17163,6 @@ __metadata:
     "@tailwindcss/vite": "npm:^4.2.2"
     "@tanstack/vue-form": "npm:^1.29.0"
     "@tanstack/vue-table": "npm:^8.21.3"
-    "@tanstack/vue-virtual": "npm:^3.13.23"
     "@types/jszip": "npm:^3.4.1"
     "@types/node": "npm:^25.6.0"
     "@unovis/ts": "npm:^1.6.4"
