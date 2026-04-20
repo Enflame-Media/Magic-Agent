@@ -42,8 +42,8 @@
   "license": "MIT",
   "private": true,
   "devDependencies": {
-    "@axe-core/playwright": "^4.11.1",
-    "@cloudflare/workers-types": "^4.20260415.1",
+    "@axe-core/playwright": "^4.11.2",
+    "@cloudflare/workers-types": "^4.20260420.1",
     "@happy/lint-rules": "workspace:*",
     "@playwright/test": "^1.59.1",
     "@tailwindcss/postcss": "^4.2.2",
@@ -53,17 +53,17 @@
     "autoprefixer": "^10.5.0",
     "happy-dom": "^20.9.0",
     "oxlint": "^1.60.0",
-    "oxlint-tsgolint": "^0.21.0",
-    "postcss": "^8.5.9",
+    "oxlint-tsgolint": "^0.21.1",
+    "postcss": "^8.5.10",
     "tailwindcss": "^4.2.2",
-    "typescript": "^6.0.2",
+    "typescript": "^6.0.3",
     "vite-plus": "^0.1.18",
-    "wrangler": "^4.82.2"
+    "wrangler": "^4.84.0"
   },
   "dependencies": {
     "@hono/swagger-ui": "^0.6.1",
     "@hono/zod-openapi": "^1.3.0",
-    "better-auth": "^1.6.3",
+    "better-auth": "^1.6.5",
     "better-auth-cloudflare": "0.3.0",
     "chart.js": "^4.5.1",
     "drizzle-orm": "^1.0.0-beta.12-18d8bfb",

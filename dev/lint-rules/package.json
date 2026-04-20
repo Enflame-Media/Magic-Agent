@@ -31,8 +31,8 @@
   "license": "UNLICENSED",
   "private": true,
   "devDependencies": {
-    "@typescript-eslint/parser": "^8.58.2",
-    "eslint": "^10.2.0",
+    "@typescript-eslint/parser": "^8.59.0",
+    "eslint": "^10.2.1",
     "oxlint": "^1.60.0"
   },
   "peerDependencies": {
