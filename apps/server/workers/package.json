@@ -87,7 +87,7 @@
     "@stablelib/hex": "^2.0.1",
     "cloudflare": "^5.2.0",
     "drizzle-orm": "^1.0.0-beta.12-18d8bfb",
-    "hono": "^4.12.14",
+    "hono": "^4.12.15",
     "jose": "^6.2.2",
     "jpeg-js": "^0.4.4",
     "thumbhash": "^0.1.1",
