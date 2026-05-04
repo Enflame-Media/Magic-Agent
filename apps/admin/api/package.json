@@ -34,19 +34,19 @@
   "license": "MIT",
   "private": true,
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20260415.1",
+    "@cloudflare/workers-types": "^4.20260504.1",
     "@happy/lint-rules": "workspace:*",
     "@types/node": "^25.6.0",
-    "oxlint": "^1.60.0",
-    "typescript": "^6.0.2",
-    "wrangler": "^4.82.2"
+    "oxlint": "^1.62.0",
+    "typescript": "^6.0.3",
+    "wrangler": "^4.87.0"
   },
   "dependencies": {
     "@hono/swagger-ui": "^0.6.1",
     "@hono/zod-openapi": "^1.3.0",
-    "better-auth": "^1.6.3",
+    "better-auth": "^1.6.9",
     "drizzle-orm": "^1.0.0-beta.12-18d8bfb",
-    "hono": "^4.12.14",
-    "zod": "^4.3.6"
+    "hono": "^4.12.16",
+    "zod": "^4.4.3"
   }
 }
