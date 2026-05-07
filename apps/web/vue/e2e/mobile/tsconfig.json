@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.e2e-mobile.tsbuildinfo",
+    "rootDir": ".",
+    "noEmit": true,
+    "types": ["node", "mocha", "@wdio/globals/types", "expect-webdriverio"]
+  },
+  "include": ["./**/*.ts"],
+  "exclude": ["node_modules"]
+}
