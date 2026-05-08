@@ -10868,6 +10868,21 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@wdio/globals@npm:^9.27.0":
+  version: 9.27.1
+  resolution: "@wdio/globals@npm:9.27.1"
+  peerDependencies:
+    expect-webdriverio: ^5.6.5
+    webdriverio: ^9.0.0
+  peerDependenciesMeta:
+    expect-webdriverio:
+      optional: false
+    webdriverio:
+      optional: false
+  checksum: 10c0/39844e900ca408f4408dc1cf1ba43bf2d37c6c75633cc9fcadcc22e1d27cedf2aeedcf5d5f6e0b71c410d6f7aba3bf1f96c8eed6352919a9a8ad26089cbd595b
+  languageName: node
+  linkType: hard
+
 "@wdio/junit-reporter@npm:^9.27.0":
   version: 9.27.0
   resolution: "@wdio/junit-reporter@npm:9.27.0"
@@ -17175,6 +17190,7 @@ __metadata:
     "@tanstack/vue-form": "npm:^1.29.0"
     "@tanstack/vue-table": "npm:^8.21.3"
     "@types/jszip": "npm:^3.4.1"
+    "@types/mocha": "npm:^10.0.6"
     "@types/node": "npm:^25.6.0"
     "@unovis/ts": "npm:^1.6.4"
     "@unovis/vue": "npm:^1.6.4"
@@ -17189,6 +17205,7 @@ __metadata:
     "@wdio/appium-service": "npm:^9.27.0"
     "@wdio/browserstack-service": "npm:^9.27.0"
     "@wdio/cli": "npm:^9.27.0"
+    "@wdio/globals": "npm:^9.27.0"
     "@wdio/junit-reporter": "npm:^9.27.0"
     "@wdio/local-runner": "npm:^9.27.0"
     "@wdio/mocha-framework": "npm:^9.27.0"
