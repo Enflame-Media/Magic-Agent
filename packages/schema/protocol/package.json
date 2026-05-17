@@ -35,7 +35,7 @@
     "zod": "^4.4.3"
   },
   "scripts": {
-    "preinstall": "node -e \"if(!process.env.INIT_CWD?.endsWith('/happy')){console.error('❌ Run yarn install from monorepo root');process.exit(1)}\"",
+    "preinstall": "node -e \"if(!process.env.INIT_CWD?.endsWith('/magicagent')){console.error('❌ Run yarn install from monorepo root');process.exit(1)}\"",
     "build": "tsdown",
     "typecheck": "tsc --noEmit",
     "lint": "oxlint --config ../../oxlint.json src/",
