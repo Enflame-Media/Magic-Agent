@@ -38,6 +38,12 @@
     "deploy:stack:pro": "turbo run deploy:prod --filter=happy-server-workers --filter=happy",
     "deploy:stack:dev": "turbo run deploy:dev --filter=happy-server-workers --filter=happy"
   },
+  "overrides": {
+    "minimatch": "^10.2.5"
+  },
+  "resolutions": {
+    "minimatch": "^10.2.5"
+  },
   "devDependencies": {
     "tsx": "^4.22.1",
     "turbo": "^2.9.14",
