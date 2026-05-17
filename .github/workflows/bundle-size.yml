@@ -46,6 +46,11 @@ jobs:
     if: github.event_name == 'pull_request'
 
     steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
+        with:
+          egress-policy: audit
+
       - name: Checkout PR branch
         uses: actions/checkout@v6
 
@@ -191,6 +196,11 @@ jobs:
     if: github.event_name == 'push'
 
     steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
+        with:
+          egress-policy: audit
+
       - name: Checkout main branch
         uses: actions/checkout@v6
 
