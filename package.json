@@ -39,9 +39,9 @@
     "deploy:stack:dev": "turbo run deploy:dev --filter=happy-server-workers --filter=happy"
   },
   "devDependencies": {
-    "tsx": "^4.21.0",
-    "turbo": "^2.9.9",
-    "vite-plus": "^0.1.20",
+    "tsx": "^4.22.1",
+    "turbo": "^2.9.14",
+    "vite-plus": "^0.1.21",
     "vite-tsconfig-paths": "^6.1.1"
   },
   "engines": {
