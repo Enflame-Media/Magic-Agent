@@ -72,10 +72,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@cloudflare/workers-types@npm:^4.20260517.1":
-  version: 4.20260517.1
-  resolution: "@cloudflare/workers-types@npm:4.20260517.1"
-  checksum: 10c0/46a87f1a695b33aced8c9fb4c542f56eb9b37ae8d32ceddec93da9bfb72536edd95d3440731b31b01a4ec9af6c5e6c94b9cbe8ab1b2fda9a5d0231819574a5dd
+"@cloudflare/workers-types@npm:^4.20260519.1":
+  version: 4.20260519.1
+  resolution: "@cloudflare/workers-types@npm:4.20260519.1"
+  checksum: 10c0/e29d04acb37de8bf446d770bfd999b6c3bb417a68901befa70d631081f5f3e3b74271835ed008e70d43926a854d2436f07a1439429e3c4cc7b00bd54a89d34df
   languageName: node
   linkType: hard
 
@@ -1249,7 +1249,7 @@ __metadata:
   resolution: "happy-pwa-screenshots@workspace:."
   dependencies:
     "@cloudflare/puppeteer": "npm:^1.1.0"
-    "@cloudflare/workers-types": "npm:^4.20260517.1"
+    "@cloudflare/workers-types": "npm:^4.20260519.1"
     typescript: "npm:^6.0.3"
     wrangler: "npm:^4.92.0"
   languageName: unknown
