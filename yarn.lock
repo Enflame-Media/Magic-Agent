@@ -4512,7 +4512,7 @@ __metadata:
     "@types/upng-js": "npm:^2.1.5"
     cloudflare: "npm:^6.2.0"
     drizzle-kit: "npm:^0.31.10"
-    drizzle-orm: "npm:^1.0.0-rc.2"
+    drizzle-orm: "npm:^1.0.0-rc.3"
     hono: "npm:^4.12.19"
     jose: "npm:^6.2.3"
     jpeg-js: "npm:^0.4.4"
@@ -14543,7 +14543,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"drizzle-orm@npm:^1.0.0-rc.2":
+"drizzle-orm@npm:^1.0.0-rc.3":
   version: 1.0.0-rc.2-e38a2ba
   resolution: "drizzle-orm@npm:1.0.0-rc.2-e38a2ba"
   peerDependencies:
@@ -17326,7 +17326,7 @@ __metadata:
     "@hono/zod-openapi": "npm:^1.4.0"
     "@types/node": "npm:^25.8.0"
     better-auth: "npm:^1.6.11"
-    drizzle-orm: "npm:^1.0.0-rc.2"
+    drizzle-orm: "npm:^1.0.0-rc.3"
     hono: "npm:^4.12.19"
     oxlint: "npm:^1.65.0"
     typescript: "npm:^6.0.3"
@@ -17353,7 +17353,7 @@ __metadata:
     better-auth: "npm:^1.6.11"
     better-auth-cloudflare: "npm:0.3.0"
     chart.js: "npm:^4.5.1"
-    drizzle-orm: "npm:^1.0.0-rc.2"
+    drizzle-orm: "npm:^1.0.0-rc.3"
     happy-dom: "npm:^20.9.0"
     hono: "npm:^4.12.19"
     oxlint: "npm:^1.65.0"
