@@ -45,7 +45,7 @@
     "@config-plugins/react-native-webrtc": "^14.0.0",
     "@elevenlabs/react": "^1.6.0",
     "@elevenlabs/react-native": "^1.2.0",
-    "@expo/ui": "55.0.16",
+    "@expo/ui": "56.0.12",
     "@expo/vector-icons": "^15.1.1",
     "@magic-agent/errors": "workspace:*",
     "@magic-agent/protocol": "workspace:*",
