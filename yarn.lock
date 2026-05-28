@@ -17415,7 +17415,7 @@ __metadata:
     react: "npm:^19.2.6"
     release-it: "npm:^20.0.1"
     tar: "npm:^7.5.15"
-    tmp: "npm:^0.2.5"
+    tmp: "npm:^0.2.6"
     tsx: "npm:^4.22.1"
     tweetnacl: "npm:^1.0.3"
     typescript: "npm:^6.0.3"
@@ -17484,7 +17484,7 @@ __metadata:
     sharp: "npm:^0.34.5"
     socket.io: "npm:^4.8.3"
     socket.io-adapter: "npm:^2.5.6"
-    tmp: "npm:^0.2.5"
+    tmp: "npm:^0.2.6"
     ts-node: "npm:^10.9.2"
     tsx: "npm:^4.22.1"
     tweetnacl: "npm:^1.0.3"
@@ -26239,10 +26239,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tmp@npm:^0.2.3, tmp@npm:^0.2.5":
+"tmp@npm:^0.2.3":
   version: 0.2.5
   resolution: "tmp@npm:0.2.5"
   checksum: 10c0/cee5bb7d674bb4ba3ab3f3841c2ca7e46daeb2109eec395c1ec7329a91d52fcb21032b79ac25161a37b2565c4858fefab927af9735926a113ef7bac9091a6e0e
+  languageName: node
+  linkType: hard
+
+"tmp@npm:^0.2.6":
+  version: 0.2.6
+  resolution: "tmp@npm:0.2.6"
+  checksum: 10c0/fa5b9bfbe60f70904aba5c96b4970e9158d99867891302d10320fe35eee1e45f42946fded4cf5c8514baa087bebee44419029b7deb227da05a68b5205a12d8ab
   languageName: node
   linkType: hard
 
