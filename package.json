@@ -45,9 +45,9 @@
     "minimatch": "^10.2.5"
   },
   "devDependencies": {
-    "tsx": "^4.22.1",
-    "turbo": "^2.9.14",
-    "vite-plus": "^0.1.21",
+    "tsx": "^4.22.3",
+    "turbo": "^2.9.16",
+    "vite-plus": "^0.1.22",
     "vite-tsconfig-paths": "^6.1.1"
   },
   "engines": {
